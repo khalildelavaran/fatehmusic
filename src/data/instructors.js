@@ -1,7 +1,37 @@
 export const instructors = [
 
 {
+
     id:1,
+
+    slug:"reza-fateh",
+
+    name:"رضا فاتح",
+
+    position:"مدیر آموزشگاه و مدرس ویولون",
+	
+    courses:["ویولون"],
+
+    image:"/images/instructors/reza-fateh.webp",
+
+    cover:"/images/instructors/reza-cover.webp",
+
+    experience:"20 سال",
+
+    education:"مدرس موسیقی",
+
+    bio:"مدیر آموزشگاه موسیقی فاتح و مدرس ویولون.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
+
+},
+
+{
+    id:2,
 
     slug:"khalil-delavaran",
 
@@ -20,36 +50,6 @@ export const instructors = [
     education:"کارشناس ارشد علوم کامپیوتر (هوش مصنوعی)",
 
     bio:"مدرس گیتار پاپ، کلاسیک و فلامنکو با بیش از دو دهه سابقه تدریس و اجرای صحنه.",
-
-    instagram:"#",
-
-    facebook:"#",
-
-    website:"#"
-
-},
-
-{
-
-    id:2,
-
-    slug:"reza-fateh",
-
-    name:"رضا فاتح",
-
-    position:"مدیر آموزشگاه و مدرس ویولون",
-
-    courses:["ویولون"],
-
-    image:"/images/instructors/reza-fateh.webp",
-
-    cover:"/images/instructors/reza-cover.webp",
-
-    experience:"20 سال",
-
-    education:"مدرس موسیقی",
-
-    bio:"مدیر آموزشگاه موسیقی فاتح و مدرس ویولون.",
 
     instagram:"#",
 
