@@ -3,7 +3,7 @@
 ========================================== */
 
 .course-page{
-  padding:120px 0 80px;
+  padding:120px 0 60px;
   position:relative;
 }
 
@@ -67,7 +67,7 @@
 }
 
 .course-page__section{
-  padding:90px 0;
+  padding:45px 0;
 }
 
 .course-page__teachers{
@@ -112,7 +112,7 @@
 }
 
 @media(max-width:768px){
-  .course-page{padding:80px 0;}
+  .course-page{padding:45px 0;}
   .course-page__title{font-size:40px;}
   .course-page__meta,
   .course-page__features,
