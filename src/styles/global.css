@@ -47,3 +47,4 @@ a {
   width: min(95%, var(--container));
   margin: auto;
 }
+section{padding:40px 0;}
