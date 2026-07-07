@@ -55,9 +55,15 @@ const gallery = [
 
         <div class="gallery-grid">
 
-            {gallery.map((item) => (
+            {gallery.map((item, index) => (
 
-                <article class="gallery-item">
+                <article
+                    class="gallery-item"
+                    data-index={index}
+                    data-image={item.image}
+                    data-title={item.title}
+                    data-subtitle={item.subtitle}
+                >
 
                     <img
                         src={item.image}
@@ -77,8 +83,11 @@ const gallery = [
                         </p>
 
                         <span class="gallery-link">
+
                             مشاهده تصویر
+
                             <span>←</span>
+
                         </span>
 
                     </div>
@@ -92,3 +101,52 @@ const gallery = [
     </div>
 
 </section>
+
+<!-- ================= LIGHTBOX ================= -->
+
+<div
+    id="lightbox"
+    class="lightbox"
+    aria-hidden="true"
+>
+
+    <button
+        class="lightbox-close"
+        aria-label="بستن"
+    >
+        ✕
+    </button>
+
+    <button
+        class="lightbox-prev"
+        aria-label="تصویر قبلی"
+    >
+        ❮
+    </button>
+
+    <div class="lightbox-content">
+
+        <img
+            id="lightbox-image"
+            src=""
+            alt=""
+        />
+
+        <div class="lightbox-caption">
+
+            <h3 id="lightbox-title"></h3>
+
+            <p id="lightbox-subtitle"></p>
+
+        </div>
+
+    </div>
+
+    <button
+        class="lightbox-next"
+        aria-label="تصویر بعدی"
+    >
+        ❯
+    </button>
+
+</div>
