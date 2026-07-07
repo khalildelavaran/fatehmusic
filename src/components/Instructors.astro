@@ -50,18 +50,6 @@ import { instructors } from "../data/instructors";
 
             <p>{ins.position}</p>
 
-            <div class="tags">
-
-              {ins.courses.map((course) => (
-
-                <span class="tag">
-                  {course}
-                </span>
-
-              ))}
-
-            </div>
-
             <a
               href={`/instructors/${ins.slug}`}
               class="profile-link"

@@ -1,79 +1,94 @@
 ---
 const gallery = [
-
-{
-title:"کلاس گیتار",
-image:"/images/gallery/guitar.webp"
-},
-
-{
-title:"کلاس پیانو",
-image:"/images/gallery/piano.webp"
-},
-
-{
-title:"کلاس ویولون",
-image:"/images/gallery/violin.webp"
-},
-
-{
-title:"اجرای هنرجویان",
-image:"/images/gallery/concert.webp"
-},
-
-{
-title:"کلاس موسیقی کودک",
-image:"/images/gallery/kids.webp"
-},
-
-{
-title:"فضای آموزشگاه",
-image:"/images/gallery/academy.webp"
-}
-
+  {
+    title: "کلاس گیتار",
+    subtitle: "آموزش گیتار کلاسیک، پاپ و فلامنکو",
+    image: "/images/gallery/guitar.webp"
+  },
+  {
+    title: "کلاس پیانو",
+    subtitle: "آموزش پیانو کلاسیک و پاپ",
+    image: "/images/gallery/piano.webp"
+  },
+  {
+    title: "کلاس ویولون",
+    subtitle: "آموزش ویولون ایرانی و کلاسیک",
+    image: "/images/gallery/violin.webp"
+  },
+  {
+    title: "اجرای هنرجویان",
+    subtitle: "کنسرت‌ها و اجراهای پایان دوره",
+    image: "/images/gallery/concert.webp"
+  },
+  {
+    title: "موسیقی کودک",
+    subtitle: "آموزش ویژه کودکان با متدهای نوین",
+    image: "/images/gallery/kids.webp"
+  },
+  {
+    title: "فضای آموزشگاه",
+    subtitle: "محیط آموزشی مدرن و مجهز",
+    image: "/images/gallery/academy.webp"
+  }
 ];
 ---
 
 <section class="gallery">
 
-<div class="container">
+    <div class="container">
 
-<div class="section-header">
+        <div class="section-header">
 
-<span class="section-badge">
-گالری آموزشگاه
-</span>
+            <span class="section-badge">
+                گالری آموزشگاه
+            </span>
 
-<h2>
-لحظاتی از آموزش، تمرین و اجرا
-</h2>
+            <h2>
+                لحظاتی از آموزش، تمرین و اجرا
+            </h2>
 
-<p>
-تصاویری از کلاس‌ها، هنرجویان و فضای آموزشگاه موسیقی فاتح
-</p>
+            <p>
+                تصاویری از کلاس‌ها، هنرجویان و فضای آموزشگاه موسیقی فاتح
+            </p>
 
-</div>
+        </div>
 
-<div class="gallery-grid">
+        <div class="gallery-grid">
 
-{gallery.map((item)=>(
+            {gallery.map((item) => (
 
-<div class="gallery-card">
+                <article class="gallery-item">
 
-<img src={item.image} alt={item.title}>
+                    <img
+                        src={item.image}
+                        alt={item.title}
+                        loading="lazy"
+                        decoding="async"
+                    />
 
-<div class="gallery-overlay">
+                    <div class="gallery-overlay">
 
-<h3>{item.title}</h3>
+                        <h3>
+                            {item.title}
+                        </h3>
 
-</div>
+                        <p>
+                            {item.subtitle}
+                        </p>
 
-</div>
+                        <span class="gallery-link">
+                            مشاهده تصویر
+                            <span>←</span>
+                        </span>
 
-))}
+                    </div>
 
-</div>
+                </article>
 
-</div>
+            ))}
+
+        </div>
+
+    </div>
 
 </section>
