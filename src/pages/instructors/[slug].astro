@@ -1,0 +1,178 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+import { instructors } from "../../data/instructors";
+
+import { courses } from "../../data/courses";
+
+export async function getStaticPaths(){
+
+return instructors.map((teacher)=>({
+
+params:{slug:teacher.slug},
+
+props:{teacher}
+
+}));
+
+}
+
+const { teacher } = Astro.props;
+
+const teacherCourses =
+courses.filter(course=>course.teacher.includes(teacher.name));
+---
+<section class="teacher-hero">
+
+<div class="container teacher-grid">
+
+<div>
+
+<span class="badge">
+
+مدرس آموزشگاه موسیقی فاتح
+
+</span>
+
+<h1>
+
+{teacher.name}
+
+</h1>
+
+<h2>
+
+{teacher.position}
+
+</h2>
+
+<p>
+
+{teacher.bio}
+
+</p>
+
+<div class="teacher-meta">
+
+<div>
+
+<strong>{teacher.experience}</strong>
+
+<span>سابقه تدریس</span>
+
+</div>
+
+<div>
+
+<strong>{teacher.courses.length}</strong>
+
+<span>دوره آموزشی</span>
+
+</div>
+
+</div>
+
+</div>
+
+<div>
+
+<img
+src={teacher.image}
+alt={teacher.name}
+/>
+
+</div>
+
+</div>
+
+</section>
+<section class="teacher-courses">
+
+<div class="container">
+
+<h2>
+
+دوره‌های آموزشی
+
+</h2>
+
+<div class="courses-grid">
+
+{
+
+teacherCourses.map(course=>(
+
+<a
+href={`/courses/${course.slug}`}
+class="course-card"
+>
+
+<img
+src={course.image}
+alt={course.title}
+/>
+
+<h3>
+
+{course.title}
+
+</h3>
+
+<p>
+
+{course.subtitle}
+
+</p>
+
+</a>
+
+))
+
+}
+
+</div>
+
+</div>
+
+</section>
+<section class="teacher-about">
+
+<div class="container">
+
+<h2>
+
+درباره استاد
+
+</h2>
+
+<p>
+
+{teacher.bio}
+
+</p>
+
+</div>
+
+</section>
+<section class="teacher-register">
+
+<div class="container">
+
+<h2>
+
+آماده شروع هستید؟
+
+</h2>
+
+<a
+href="/register"
+class="btn btn-primary"
+>
+
+ثبت نام کلاس
+
+</a>
+
+</div>
+
+</section>

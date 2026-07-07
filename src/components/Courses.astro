@@ -1,0 +1,59 @@
+---
+import { courses } from "../data/courses";
+---
+<section class="courses">
+
+  <div class="container">
+
+    <div class="section-header">
+
+      <span class="section-badge">
+        دوره‌های آموزشی
+      </span>
+
+      <h2>
+        یادگیری موسیقی با بهترین اساتید
+      </h2>
+
+      <p>
+        دوره‌های آموزشی برای تمامی سنین، از مبتدی تا پیشرفته.
+      </p>
+
+    </div>
+
+<div class="courses-grid">
+
+  {courses.map((course) => (
+
+    <article class="course-card">
+
+  <div class="course-image">
+    <img src={course.image} alt={course.title} />
+  </div>
+
+  <div class="course-content">
+
+    <h3>{course.title}</h3>
+
+    <span class="course-subtitle">
+      {course.subtitle}
+    </span>
+
+    <a href={course.link} class="course-link">
+
+      اطلاعات بیشتر
+
+      <span>←</span>
+
+    </a>
+
+  </div>
+
+</article>
+
+  ))}
+
+</div>
+  </div>
+
+</section>

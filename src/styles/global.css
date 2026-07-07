@@ -1,0 +1,48 @@
+@import "./variables.css";
+@import "./header.css";
+@import "./hero.css";
+@import "./buttons.css";
+@import "./animations.css";
+@import "./responsive.css";
+@import "./course.css";
+@import "./instructors.css";
+@import "./components.css";
+@import "./why-us.css";
+@import "./gallery.css";
+@import "./testimonials.css";
+@import "./cta.css";
+@import "./footer.css";
+@import "./course-page.css";
+
+/* base reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: "Vazirmatn", sans-serif;
+  line-height: 1.8;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  width: min(95%, var(--container));
+  margin: auto;
+}

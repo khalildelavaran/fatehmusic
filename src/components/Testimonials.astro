@@ -1,0 +1,59 @@
+---
+import { testimonials } from "../data/testimonials";
+---
+
+<section class="testimonials">
+
+<div class="container">
+
+<div class="section-header">
+
+<span class="section-badge">
+نظرات هنرجویان
+</span>
+
+<h2>
+اعتماد هنرجویان، بزرگ‌ترین افتخار ما
+</h2>
+
+<p>
+تجربه هنرجویانی که آموزش در آموزشگاه موسیقی فاتح را انتخاب کرده‌اند.
+</p>
+
+</div>
+
+<div class="testimonials-grid">
+
+{testimonials.map((item)=>(
+
+<div class="testimonial-card">
+
+<div class="stars">
+
+{"★".repeat(item.stars)}
+
+</div>
+
+<p class="testimonial-text">
+
+{item.text}
+
+</p>
+
+<div class="testimonial-user">
+
+<h3>{item.name}</h3>
+
+<span>{item.course}</span>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+</section>

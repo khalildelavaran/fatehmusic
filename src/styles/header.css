@@ -1,0 +1,348 @@
+/* ==========================================
+   HEADER
+========================================== */
+
+.header {
+
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    background: rgba(10,10,10,.78);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    border-bottom: 1px solid rgba(255,255,255,.05);
+
+    transition:
+        background .35s ease,
+        box-shadow .35s ease,
+        border-color .35s ease;
+
+}
+
+/* ---------- Container ---------- */
+
+.header-container {
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    height: 82px;
+
+    transition: .35s ease;
+
+}
+
+/* ---------- Logo ---------- */
+
+.logo {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+}
+
+.logo img {
+
+    width: 50px;
+    height: 50px;
+
+    border-radius: 14px;
+
+    transition: .35s ease;
+
+}
+
+.logo:hover img {
+
+    transform:
+        rotate(-6deg)
+        scale(1.08);
+
+    filter: drop-shadow(0 0 12px rgba(212,175,55,.45));
+
+}
+
+.logo h2 {
+
+    font-size: 1.8rem;
+
+    color: var(--primary);
+
+    line-height: 1;
+
+    margin-bottom: 4px;
+
+}
+
+.logo span {
+
+    display: block;
+
+    color: var(--text-secondary);
+
+    font-size: .82rem;
+
+    letter-spacing: .4px;
+
+}
+
+/* ---------- Menu ---------- */
+
+.menu {
+
+    display: flex;
+    align-items: center;
+    gap: 38px;
+
+    list-style: none;
+
+}
+
+.menu a {
+
+    position: relative;
+
+    color: var(--text);
+
+    font-size: .96rem;
+
+    font-weight: 500;
+
+    letter-spacing: .3px;
+
+    transition: .3s;
+
+}
+
+/* underline animation */
+
+.menu a::after {
+
+    content: "";
+
+    position: absolute;
+
+    right: 0;
+
+    bottom: -8px;
+
+    width: 0;
+
+    height: 2px;
+
+    background: var(--primary);
+
+    transition: var(--transition);
+
+}
+
+.menu a:hover{
+
+    color: var(--primary);
+
+    text-shadow:
+        0 0 12px rgba(212,175,55,.35);
+
+}
+
+.menu a:hover::after {
+
+    width: 100%;
+
+}
+
+/* ---------- Right CTA ---------- */
+
+.header .btn {
+
+    white-space: nowrap;
+
+}
+
+/* ---------- Sticky Shadow ---------- */
+
+.header:hover{
+
+    border-bottom-color: rgba(212,175,55,.18);
+
+    box-shadow:
+
+        0 10px 40px rgba(0,0,0,.35),
+
+        0 0 35px rgba(212,175,55,.05);
+
+}
+/* ==========================================
+   PREMIUM HEADER
+========================================== */
+
+
+.header-btn{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    padding:14px 24px;
+
+}
+
+
+/* icon */
+
+.header-btn svg{
+
+    transition:.3s;
+
+}
+
+
+.header-btn:hover svg{
+
+    transform:translateY(-3px);
+
+}
+
+
+
+/* Active glass effect */
+
+.header.scrolled{
+
+    background:
+
+    rgba(11,11,11,.95);
+
+    box-shadow:
+
+    0 15px 40px rgba(0,0,0,.45);
+
+}
+/* ==========================================
+ MOBILE HEADER
+========================================== */
+
+
+.mobile-toggle{
+
+display:none;
+
+background:none;
+
+border:none;
+
+color:var(--text);
+
+cursor:pointer;
+
+}
+
+
+/* Mobile Menu */
+
+.mobile-menu{
+
+display:none;
+
+position:absolute;
+
+top:82px;
+
+right:0;
+
+left:0;
+
+background:rgba(11,11,11,.96);
+
+backdrop-filter:blur(20px);
+
+border-bottom:1px solid var(--border);
+
+padding:30px;
+
+flex-direction:column;
+
+gap:22px;
+
+}
+
+
+.mobile-menu a{
+
+color:var(--text);
+
+font-size:18px;
+
+}
+
+
+.mobile-register{
+
+display:flex;
+
+justify-content:center;
+
+padding:14px;
+
+border-radius:12px;
+
+background:var(--primary);
+
+color:#000!important;
+
+font-weight:700;
+
+}
+
+
+.mobile-menu.active{
+
+display:flex;
+
+animation:fadeIn .3s ease;
+
+}
+
+
+
+@media(max-width:900px){
+
+
+.desktop-menu{
+
+display:none;
+
+}
+
+
+.mobile-toggle{
+
+display:block;
+
+}
+
+
+.header-btn{
+
+display:none;
+
+}
+
+
+.header-container{
+
+height:76px;
+
+}
+
+
+}

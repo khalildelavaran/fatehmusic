@@ -1,0 +1,79 @@
+---
+const gallery = [
+
+{
+title:"کلاس گیتار",
+image:"/images/gallery/guitar.webp"
+},
+
+{
+title:"کلاس پیانو",
+image:"/images/gallery/piano.webp"
+},
+
+{
+title:"کلاس ویولون",
+image:"/images/gallery/violin.webp"
+},
+
+{
+title:"اجرای هنرجویان",
+image:"/images/gallery/concert.webp"
+},
+
+{
+title:"کلاس موسیقی کودک",
+image:"/images/gallery/kids.webp"
+},
+
+{
+title:"فضای آموزشگاه",
+image:"/images/gallery/academy.webp"
+}
+
+];
+---
+
+<section class="gallery">
+
+<div class="container">
+
+<div class="section-header">
+
+<span class="section-badge">
+گالری آموزشگاه
+</span>
+
+<h2>
+لحظاتی از آموزش، تمرین و اجرا
+</h2>
+
+<p>
+تصاویری از کلاس‌ها، هنرجویان و فضای آموزشگاه موسیقی فاتح
+</p>
+
+</div>
+
+<div class="gallery-grid">
+
+{gallery.map((item)=>(
+
+<div class="gallery-card">
+
+<img src={item.image} alt={item.title}>
+
+<div class="gallery-overlay">
+
+<h3>{item.title}</h3>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
+</section>

@@ -1,0 +1,133 @@
+/* ==========================================
+   COURSE PAGE
+========================================== */
+
+.course-page{
+
+    padding:120px 0;
+
+}
+
+.course-hero{
+
+    display:grid;
+
+    grid-template-columns:1fr 500px;
+
+    gap:70px;
+
+    align-items:center;
+
+}
+
+.course-badge{
+
+    display:inline-flex;
+
+    padding:8px 18px;
+
+    border-radius:999px;
+
+    background:rgba(212,175,55,.08);
+
+    border:1px solid rgba(212,175,55,.2);
+
+    color:var(--primary);
+
+    margin-bottom:20px;
+
+}
+
+.course-info h1{
+
+    font-size:56px;
+
+    margin-bottom:24px;
+
+}
+
+.course-info p{
+
+    line-height:2;
+
+    color:var(--text-secondary);
+
+    margin-bottom:35px;
+
+}
+
+.course-meta{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:24px;
+
+    margin-bottom:45px;
+
+}
+
+.course-meta div{
+
+    padding:20px;
+
+    border-radius:18px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid var(--border);
+
+}
+
+.course-meta strong{
+
+    display:block;
+
+    margin-bottom:10px;
+
+    color:var(--primary);
+
+}
+
+.course-image{
+
+    border-radius:28px;
+
+    overflow:hidden;
+
+    border:1px solid var(--border);
+
+    box-shadow:0 30px 70px rgba(0,0,0,.35);
+
+}
+
+.course-image img{
+
+    width:100%;
+
+    display:block;
+
+}
+
+@media(max-width:900px){
+
+.course-hero{
+
+grid-template-columns:1fr;
+
+}
+
+.course-meta{
+
+grid-template-columns:1fr;
+
+}
+
+.course-info h1{
+
+font-size:42px;
+
+}
+
+}

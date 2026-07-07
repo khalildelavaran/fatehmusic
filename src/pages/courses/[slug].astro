@@ -1,0 +1,180 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+
+import { courses } from "../../data/courses";
+import { instructors } from "../../data/instructors";
+
+export async function getStaticPaths() {
+  return courses.map((course) => ({
+    params: { slug: course.slug },
+    props: { course }
+  }));
+}
+
+const { course } = Astro.props;
+
+const teachers = instructors.filter(
+  (teacher) => course.teacherIds.includes(teacher.id)
+);
+
+const relatedCourses = courses
+  .filter((item)=>item.slug!==course.slug && item.level===course.level)
+  .slice(0,3);
+---
+
+<MainLayout title={course.seoTitle} description={course.seoDescription}>
+
+<Header />
+
+<section class="course-page">
+
+<div class="container">
+
+<div class="course-page__hero">
+
+<div class="course-page__content">
+
+<span class="course-page__badge">دوره آموزشی</span>
+
+<h1 class="course-page__title">{course.title}</h1>
+
+<p class="course-page__description">
+{course.description}
+</p>
+
+<div class="course-page__meta">
+
+<div class="course-page__meta-item">
+<strong>اساتید</strong>
+<span>{teachers.map(t=>t.name).join(" - ")}</span>
+</div>
+
+<div class="course-page__meta-item">
+<strong>سطح</strong>
+<span>{course.level}</span>
+</div>
+
+<div class="course-page__meta-item">
+<strong>مدت دوره</strong>
+<span>{course.duration}</span>
+</div>
+
+<div class="course-page__meta-item">
+<strong>زمان کلاس</strong>
+<span>{course.classTime}</span>
+</div>
+
+</div>
+
+<a href="/register" class="btn btn-primary">
+ثبت نام آنلاین
+</a>
+
+</div>
+
+<div class="course-page__image">
+<img src={course.heroImage || course.image} alt={course.title}/>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<section class="course-page__section">
+
+<div class="container">
+
+<h2>اساتید دوره</h2>
+
+<div class="course-page__teachers">
+
+{teachers.map((teacher)=>(
+
+<a href={`/instructors/${teacher.slug}`} class="course-page__teacher-card">
+
+<img src={teacher.image} alt={teacher.name}/>
+
+<h3>{teacher.name}</h3>
+
+<p>{teacher.position}</p>
+
+</a>
+
+))}
+
+</div>
+
+</div>
+
+</section>
+
+<section class="course-page__section">
+
+<div class="container">
+
+<h2>سرفصل های آموزشی</h2>
+
+<ul class="course-page__features">
+
+{course.syllabus.map(item=><li>{item}</li>)}
+
+</ul>
+
+</div>
+
+</section>
+
+<section class="course-page__section">
+
+<div class="container">
+
+<h2>چرا این دوره؟</h2>
+
+<ul class="course-page__features">
+
+{course.why.map(item=><li>{item}</li>)}
+
+</ul>
+
+</div>
+
+</section>
+
+<section class="course-page__section">
+
+<div class="container">
+
+<h2>دوره های مرتبط</h2>
+
+<div class="course-page__related-grid">
+
+{relatedCourses.map(item=>(
+
+<a href={`/courses/${item.slug}`} class="course-card">
+
+<div class="course-image">
+<img src={item.image} alt={item.title}/>
+</div>
+
+<div class="course-content">
+<h3>{item.title}</h3>
+<span>{item.level}</span>
+</div>
+
+</a>
+
+))}
+
+</div>
+
+</div>
+
+</section>
+
+<Footer />
+
+</MainLayout>

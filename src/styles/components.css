@@ -1,0 +1,128 @@
+/* ==========================================
+   DESIGN SYSTEM
+========================================== */
+
+/* ---------- Card ---------- */
+
+.card{
+
+    position:relative;
+
+    overflow:hidden;
+
+    border-radius:26px;
+
+    background:linear-gradient(
+        180deg,
+        rgba(255,255,255,.045),
+        rgba(255,255,255,.02)
+    );
+
+    border:1px solid rgba(255,255,255,.06);
+
+    backdrop-filter:blur(16px);
+
+    transition:.4s ease;
+
+}
+
+.card::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:-1px;
+
+    border-radius:26px;
+
+    padding:1px;
+
+    background:linear-gradient(
+        135deg,
+        rgba(212,175,55,.35),
+        transparent,
+        rgba(212,175,55,.12)
+    );
+
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+
+    -webkit-mask-composite:xor;
+
+    mask-composite:exclude;
+
+    opacity:0;
+
+    transition:.4s;
+
+}
+
+.card:hover{
+
+    transform:translateY(-10px);
+
+    box-shadow:
+
+        0 30px 70px rgba(0,0,0,.42),
+
+        0 0 45px rgba(212,175,55,.08);
+
+}
+
+.card:hover::before{
+
+    opacity:1;
+
+}
+
+/* ---------- Badge ---------- */
+
+.badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:8px 16px;
+
+    border-radius:999px;
+
+    background:rgba(212,175,55,.08);
+
+    border:1px solid rgba(212,175,55,.18);
+
+    color:var(--primary);
+
+    font-size:13px;
+
+}
+
+/* ---------- Tag ---------- */
+
+.tag{
+
+    display:inline-flex;
+
+    padding:8px 14px;
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.04);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    transition:.3s;
+
+}
+
+.tag:hover{
+
+    border-color:rgba(212,175,55,.22);
+
+    color:var(--primary);
+
+}

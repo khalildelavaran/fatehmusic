@@ -1,0 +1,144 @@
+---
+import { GraduationCap, Menu, X } from "@lucide/astro";
+---
+
+<header class="header">
+
+<div class="container header-container">
+
+
+<!-- Logo -->
+
+<a href="/" class="logo">
+
+<img src="/favicon.svg" alt="آموزشگاه موسیقی فاتح">
+
+<div>
+
+<h2>
+فاتح
+</h2>
+
+<span>
+آموزشگاه موسیقی
+</span>
+
+</div>
+
+</a>
+
+
+
+<!-- Desktop Menu -->
+
+<nav class="desktop-menu">
+
+<ul class="menu">
+
+<li><a href="/">خانه</a></li>
+
+<li><a href="/courses">دوره‌ها</a></li>
+
+<li><a href="/teachers">اساتید</a></li>
+
+<li><a href="/gallery">گالری</a></li>
+
+<li><a href="/blog">وبلاگ</a></li>
+
+<li><a href="/contact">تماس</a></li>
+
+</ul>
+
+</nav>
+
+
+
+<!-- Register -->
+
+<a href="/register" class="btn header-btn">
+
+<GraduationCap size={20}/>
+
+<span>
+ثبت نام
+</span>
+
+</a>
+
+
+
+<!-- Mobile Button -->
+
+<button class="mobile-toggle" id="menuToggle">
+
+<Menu size={28}/>
+
+</button>
+
+
+</div>
+
+
+<!-- Mobile Menu -->
+
+<div class="mobile-menu" id="mobileMenu">
+
+
+<a href="/">
+خانه
+</a>
+
+
+<a href="/courses">
+دوره‌ها
+</a>
+
+
+<a href="/teachers">
+اساتید
+</a>
+
+
+<a href="/gallery">
+گالری
+</a>
+
+
+<a href="/blog">
+وبلاگ
+</a>
+
+
+<a href="/contact">
+تماس
+</a>
+
+
+<a href="/register" class="mobile-register">
+
+ثبت نام
+
+</a>
+
+
+</div>
+
+
+</header>
+
+
+<script>
+
+const btn = document.getElementById("menuToggle");
+
+const menu = document.getElementById("mobileMenu");
+
+
+btn?.addEventListener("click",()=>{
+
+menu?.classList.toggle("active");
+
+});
+
+
+</script>

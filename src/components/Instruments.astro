@@ -1,0 +1,84 @@
+---
+import { instruments } from "../data/instruments";
+---
+
+<section class="instruments">
+
+  <div class="container">
+
+
+    <div class="section-header">
+
+      <span class="section-badge">
+        سازهای آموزشی
+      </span>
+
+
+      <h2>
+        ساز مورد علاقه خود را انتخاب کنید
+      </h2>
+
+
+      <p>
+        آموزش تخصصی انواع سازهای ایرانی و بین‌المللی در آموزشگاه موسیقی فاتح
+      </p>
+
+
+    </div>
+
+
+
+    <div class="instruments-grid">
+
+
+      {instruments.map((item)=>(
+
+
+        <article class="instrument-card">
+
+
+          <div class="instrument-image">
+
+            <img 
+              src={item.image}
+              alt={item.name}
+            />
+
+          </div>
+
+
+
+          <div class="instrument-content">
+
+
+            <h3>
+              {item.name}
+            </h3>
+
+
+            <span>
+              {item.category}
+            </span>
+
+
+            <a href={item.link}>
+              مشاهده دوره →
+            </a>
+
+
+          </div>
+
+
+        </article>
+
+
+      ))}
+
+
+    </div>
+
+
+  </div>
+
+
+</section>
