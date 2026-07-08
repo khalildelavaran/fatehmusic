@@ -1,48 +1,61 @@
-export const teachers = [
+export const instructors = [
 
 {
+
     id:1,
+
+    slug:"reza-fateh",
+
+    name:"رضا فاتح",
+
+    position:"مدیر آموزشگاه و مدرس ویولون",
+	
+    courses:["ویولون"],
+
+    image:"/images/instructors/reza-fateh.webp",
+
+    cover:"/images/instructors/reza-cover.webp",
+
+    experience:"20 سال",
+
+    education:"مدرس موسیقی",
+
+    bio:"مدیر آموزشگاه موسیقی فاتح و مدرس ویولون.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
+
+},
+
+{
+    id:2,
 
     slug:"khalil-delavaran",
 
     name:"خلیل دلاوران",
 
-    instrument:"گیتار",
+    position:"مدرس گیتار",
 
-    styles:[
-        "پاپ",
-        "کلاسیک",
-        "فلامنکو"
-    ],
+    courses:["گیتار پاپ","گیتار کلاسیک","گیتار فلامنکو"],
 
-    image:"/images/teachers/khalil.webp",
+    image:"/images/instructors/khalil-delavaran.webp",
+
+    cover:"/images/instructors/khalil-cover.webp",
 
     experience:"20 سال",
 
-    bio:
-    "مدرس گیتار پاپ، کلاسیک و فلامنکو با بیش از بیست سال سابقه تدریس.",
+    education:"کارشناس ارشد علوم کامپیوتر (هوش مصنوعی)",
+
+    bio:"مدرس گیتار پاپ، کلاسیک و فلامنکو با بیش از دو دهه سابقه تدریس و اجرای صحنه.",
 
     instagram:"#",
 
-    facebook:"#"
+    facebook:"#",
 
-},
-
-{
-
-    id:2,
-
-    slug:"ali-zafarani",
-
-    name:"علی زعفرانی",
-
-    instrument:"پیانو و کیبورد",
-
-    image:"/images/teachers/ali.webp",
-
-    experience:"15 سال",
-
-    bio:"مدرس پیانو و کیبورد."
+    website:"#"
 
 },
 
@@ -50,17 +63,29 @@ export const teachers = [
 
     id:3,
 
-    slug:"reza-fateh",
+    slug:"ali-zaferani",
 
-    name:"رضا فاتح",
+    name:"علی زعفرانی",
 
-    instrument:"ویولون",
+    position:"مدرس پیانو و کیبورد",
 
-    image:"/images/teachers/reza.webp",
+    courses:["پیانو","کیبورد"],
 
-    experience:"20 سال",
+    image:"/images/instructors/ali-zaferani.webp",
 
-    bio:"مدیر آموزشگاه موسیقی فاتح و مدرس ویولون."
+    cover:"/images/instructors/ali-cover.webp",
+
+    experience:"15 سال",
+
+    education:"مدرس موسیقی",
+
+    bio:"مدرس تخصصی پیانو و کیبورد.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -72,13 +97,25 @@ export const teachers = [
 
     name:"وحید بهمن",
 
-    instrument:"تار و سه‌تار",
+    position:"مدرس تار و سه‌تار",
 
-    image:"/images/teachers/vahid.webp",
+    courses:["تار","سه‌تار"],
+
+    image:"/images/instructors/vahid-bahman.webp",
+
+    cover:"/images/instructors/vahid-cover.webp",
 
     experience:"15 سال",
 
-    bio:"مدرس تار و سه‌تار."
+    education:"مدرس موسیقی",
+
+    bio:"مدرس تار و سه‌تار و موسیقی اصیل ایرانی.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -86,17 +123,29 @@ export const teachers = [
 
     id:5,
 
-    slug:"alireza-chaharmahali",
+    slug:"behnam-irovani",
 
-    name:"علیرضا چهارمحالی",
+    name:"بهنام ایروانی",
 
-    instrument:"نی",
+    position:"مدرس سنتور",
 
-    image:"/images/teachers/ney.webp",
+    courses:["سنتور"],
 
-    experience:"12 سال",
+    image:"/images/instructors/behnam.webp",
 
-    bio:"مدرس ساز نی."
+    cover:"/images/instructors/behnam-cover.webp",
+
+    experience:"15 سال",
+
+    education:"مدرس موسیقی",
+
+    bio:"مدرس سنتور و ردیف موسیقی ایرانی.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -104,17 +153,29 @@ export const teachers = [
 
     id:6,
 
-    slug:"eydi-pour",
+    slug:"alireza-chaharmahali",
 
-    name:"عیدی پور",
+    name:"علیرضا چهارمحالی",
 
-    instrument:"نی‌انبان",
+    position:"مدرس نی",
 
-    image:"/images/teachers/neyanban.webp",
+    courses:["نی"],
+
+    image:"/images/instructors/alireza.webp",
+
+    cover:"/images/instructors/alireza-cover.webp",
 
     experience:"15 سال",
 
-    bio:"مدرس نی‌انبان."
+    education:"مدرس موسیقی",
+
+    bio:"مدرس ساز نی.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -122,17 +183,29 @@ export const teachers = [
 
     id:7,
 
-    slug:"behnam-irovani",
+    slug:"eydi-pour",
 
-    name:"بهنام ایروانی",
+    name:"عیدی پور",
 
-    instrument:"سنتور",
+    position:"مدرس نی‌انبان",
 
-    image:"/images/teachers/santur.webp",
+    courses:["نی‌انبان"],
+
+    image:"/images/instructors/eydi.webp",
+
+    cover:"/images/instructors/eydi-cover.webp",
 
     experience:"15 سال",
 
-    bio:"مدرس سنتور."
+    education:"مدرس موسیقی",
+
+    bio:"مدرس نی‌انبان و موسیقی محلی جنوب.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -144,13 +217,25 @@ export const teachers = [
 
     name:"نژاد صفاری",
 
-    instrument:"دف و تنبک",
+    position:"مدرس تنبک و دف",
 
-    image:"/images/teachers/nejad.webp",
+    courses:["تنبک","دف"],
+
+    image:"/images/instructors/safari.webp",
+
+    cover:"/images/instructors/safari-cover.webp",
 
     experience:"15 سال",
 
-    bio:"مدرس دف و تنبک."
+    education:"مدرس موسیقی",
+
+    bio:"مدرس سازهای کوبه‌ای.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -162,13 +247,25 @@ export const teachers = [
 
     name:"نرگس فاتح",
 
-    instrument:"تنبک",
+    position:"مدرس تنبک",
 
-    image:"/images/teachers/narges.webp",
+    courses:["تنبک"],
+
+    image:"/images/instructors/narges.webp",
+
+    cover:"/images/instructors/narges-cover.webp",
 
     experience:"10 سال",
 
-    bio:"مدرس تنبک."
+    education:"مدرس موسیقی",
+
+    bio:"مدرس تنبک.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -180,13 +277,25 @@ export const teachers = [
 
     name:"فرناز مرادی",
 
-    instrument:"موسیقی کودک",
+    position:"مدرس موسیقی کودک",
 
-    image:"/images/teachers/farnaz.webp",
+    courses:["موسیقی کودک"],
 
-    experience:"12 سال",
+    image:"/images/instructors/farnaz.webp",
 
-    bio:"مدرس موسیقی کودک."
+    cover:"/images/instructors/farnaz-cover.webp",
+
+    experience:"10 سال",
+
+    education:"مدرس موسیقی کودک",
+
+    bio:"مدرس تخصصی موسیقی کودک.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -198,13 +307,25 @@ export const teachers = [
 
     name:"جعفری",
 
-    instrument:"آواز",
+    position:"مدرس آواز",
 
-    image:"/images/teachers/jafari.webp",
+    courses:["آواز"],
+
+    image:"/images/instructors/jafari.webp",
+
+    cover:"/images/instructors/jafari-cover.webp",
 
     experience:"15 سال",
 
-    bio:"مدرس آواز."
+    education:"مدرس آواز",
+
+    bio:"مدرس آواز سنتی و پاپ.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 },
 
@@ -216,13 +337,55 @@ export const teachers = [
 
     name:"بشیرزاده",
 
-    instrument:"آواز",
+    position:"مدرس آواز",
 
-    image:"/images/teachers/bashirzade.webp",
+    courses:["آواز"],
+
+    image:"/images/instructors/bashirzade.webp",
+
+    cover:"/images/instructors/bashirzade-cover.webp",
 
     experience:"15 سال",
 
-    bio:"مدرس آواز."
+    education:"مدرس آواز",
+
+    bio:"مدرس آواز.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
+
+},
+
+{
+
+    id:13,
+
+    slug:"mohsen-naghib",
+
+    name:"محسن نقیب",
+
+    position:"مدرس هنگ درام",
+
+    courses:["هنگ درام"],
+
+    image:"/images/instructors/mohsen-naghib.webp",
+
+    cover:"/images/instructors/mohsen-naghib-cover.webp",
+
+    experience:"15 سال",
+
+    education:"مدرس هنگ درام",
+
+    bio:"مدرس هنگ درام.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
 
 }
 

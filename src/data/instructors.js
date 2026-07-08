@@ -357,6 +357,36 @@ export const instructors = [
 
     website:"#"
 
+},
+
+{
+
+    id:13,
+
+    slug:"mohsen-naghib",
+
+    name:"محسن نقیب",
+
+    position:"مدرس هنگ درام",
+
+    courses:["هنگ درام"],
+
+    image:"/images/instructors/mohsen-naghib.webp",
+
+    cover:"/images/instructors/mohsen-naghib-cover.webp",
+
+    experience:"15 سال",
+
+    education:"مدرس هنگ درام",
+
+    bio:"مدرس هنگ درام.",
+
+    instagram:"#",
+
+    facebook:"#",
+
+    website:"#"
+
 }
 
 ];
