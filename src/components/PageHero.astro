@@ -1,0 +1,64 @@
+---
+interface Props {
+
+    title: string;
+
+    description: string;
+
+    badge?: string;
+
+}
+
+const {
+
+    title,
+
+    description,
+
+    badge = "آموزشگاه موسیقی فاتح"
+
+} = Astro.props;
+---
+
+<section class="page-hero">
+
+    <div class="container">
+
+        <div
+            class="page-hero-content"
+            data-reveal-group
+        >
+
+            <span
+                class="section-badge"
+                data-reveal
+                data-reveal-delay="1"
+            >
+
+                {badge}
+
+            </span>
+
+            <h1
+                data-reveal
+                data-reveal-delay="2"
+            >
+
+                {title}
+
+            </h1>
+
+            <p
+                data-reveal
+                data-reveal-delay="3"
+            >
+
+                {description}
+
+            </p>
+
+        </div>
+
+    </div>
+
+</section>

@@ -1,0 +1,33 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import PageHero from "../components/PageHero.astro";
+import Courses from "../components/Courses.astro";
+import CTA from "../components/CTA.astro";
+---
+
+<MainLayout
+    title="دوره‌های آموزش موسیقی | آموزشگاه موسیقی فاتح"
+    description="آموزش تخصصی گیتار، پیانو، ویولون، آواز و سایر سازهای موسیقی در آموزشگاه موسیقی فاتح شوشتر."
+>
+
+    <Header />
+
+    <PageHero
+
+        badge="دوره‌های آموزشی"
+
+        title="دوره‌های آموزش موسیقی"
+
+        description="در آموزشگاه موسیقی فاتح، دوره‌های تخصصی برای تمامی سنین و تمامی سطوح برگزار می‌شود. از هنرجویان مبتدی تا نوازندگان حرفه‌ای، مسیر آموزشی استاندارد و هدفمند در انتظار شماست."
+
+    />
+
+    <Courses />
+
+    <CTA />
+
+    <Footer />
+
+</MainLayout>

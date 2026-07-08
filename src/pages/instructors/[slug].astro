@@ -1,181 +1,383 @@
 ---
-import Layout from "../../layouts/Layout.astro";
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CTA from "../../components/CTA.astro";
 
 import { instructors } from "../../data/instructors";
-
 import { courses } from "../../data/courses";
 
-export async function getStaticPaths(){
-
-return instructors.map((teacher)=>({
-
-params:{slug:teacher.slug},
-
-props:{teacher}
-
-}));
-
+export async function getStaticPaths() {
+  return instructors.map((teacher) => ({
+    params: {
+      slug: teacher.slug
+    },
+    props: {
+      teacher
+    }
+  }));
 }
 
 const { teacher } = Astro.props;
 
-const teacherCourses =
-courses.filter(course =>
+const teacherCourses = courses.filter(
+  (course) =>
     Array.isArray(course.teacherIds) &&
     course.teacherIds.includes(teacher.id)
 );
 ---
+
+<MainLayout
+  title={`${teacher.name} | آموزشگاه موسیقی فاتح`}
+  description={teacher.bio}
+>
+
+<Header />
+
 <section class="teacher-hero">
 
-<div class="container teacher-grid">
+  <div class="container">
 
-<div>
+    <div class="teacher-grid">
 
-<span class="badge">
+      <div class="teacher-content">
 
-مدرس آموزشگاه موسیقی فاتح
+        <span class="section-badge">
+          مدرس آموزشگاه موسیقی فاتح
+        </span>
 
-</span>
+        <h1>{teacher.name}</h1>
 
-<h1>
+        <h2>{teacher.position}</h2>
 
-{teacher.name}
+        <p>
+          {teacher.bio}
+        </p>
 
-</h1>
+        <div class="teacher-meta">
 
-<h2>
+          <div class="meta-card">
+            <strong>{teacher.experience}</strong>
+            <span>سابقه تدریس</span>
+          </div>
 
-{teacher.position}
+          <div class="meta-card">
+            <strong>{teacherCourses.length}</strong>
+            <span>دوره آموزشی</span>
+          </div>
 
-</h2>
+        </div>
 
-<p>
+      </div>
 
-{teacher.bio}
+      <div class="teacher-image">
 
-</p>
+        <img
+          src={teacher.image}
+          alt={teacher.name}
+          loading="eager"
+          decoding="async"
+        />
 
-<div class="teacher-meta">
+      </div>
 
-<div>
+    </div>
 
-<strong>{teacher.experience}</strong>
-
-<span>سابقه تدریس</span>
-
-</div>
-
-<div>
-
-<strong>{teacher.courses.length}</strong>
-
-<span>دوره آموزشی</span>
-
-</div>
-
-</div>
-
-</div>
-
-<div>
-
-<img
-src={teacher.image}
-alt={teacher.name}
-/>
-
-</div>
-
-</div>
+  </div>
 
 </section>
 <section class="teacher-courses">
 
-<div class="container">
+  <div class="container">
 
-<h2>
+    <div class="section-header">
 
-دوره‌های آموزشی
+      <span class="section-badge">
+        دوره‌های آموزشی
+      </span>
 
-</h2>
+      <h2>
+        کلاس‌های {teacher.name}
+      </h2>
 
-<div class="courses-grid">
+      <p>
+        دوره‌هایی که توسط این مدرس در آموزشگاه موسیقی فاتح برگزار می‌شود.
+      </p>
 
-{
+    </div>
 
-teacherCourses.map(course=>(
+    {
+      teacherCourses.length > 0 ? (
 
-<a
-href={`/courses/${course.slug}`}
-class="course-card"
->
+        <div class="courses-grid">
 
-<img
-src={course.image}
-alt={course.title}
-/>
+          {
+            teacherCourses.map((course) => (
 
-<h3>
+              <a
+                href={`/courses/${course.slug}`}
+                class="course-card"
+              >
 
-{course.title}
+                <img
+                  src={course.image}
+                  alt={course.title}
+                  loading="lazy"
+                  decoding="async"
+                />
 
-</h3>
+                <div class="course-content">
 
-<p>
+                  <h3>{course.title}</h3>
 
-{course.subtitle}
+                  <p>{course.subtitle}</p>
 
-</p>
+                  <span class="course-link">
+                    مشاهده دوره
+                  </span>
 
-</a>
+                </div>
 
-))
+              </a>
 
-}
+            ))
+          }
 
-</div>
+        </div>
 
-</div>
+      ) : (
+
+        <div class="empty-state">
+
+          <p>
+            هنوز دوره‌ای برای این مدرس ثبت نشده است.
+          </p>
+
+        </div>
+
+      )
+    }
+
+  </div>
 
 </section>
+
 <section class="teacher-about">
 
-<div class="container">
+  <div class="container">
 
-<h2>
+    <div class="section-header">
 
-درباره استاد
+      <span class="section-badge">
+        درباره مدرس
+      </span>
 
-</h2>
+      <h2>
+        آشنایی بیشتر با {teacher.name}
+      </h2>
 
-<p>
+    </div>
 
-{teacher.bio}
+    <div class="teacher-about-box">
 
-</p>
+      <p>
+        {teacher.bio}
+      </p>
 
-</div>
+      <div class="teacher-info">
+
+        <div class="info-item">
+
+          <strong>تحصیلات</strong>
+
+          <span>{teacher.education}</span>
+
+        </div>
+
+        <div class="info-item">
+
+          <strong>سابقه تدریس</strong>
+
+          <span>{teacher.experience}</span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
 
 </section>
-<section class="teacher-register">
+  <CTA />
 
-<div class="container">
+  <Footer />
 
-<h2>
+</MainLayout>
 
-آماده شروع هستید؟
+<style>
+.teacher-hero{
+    padding:80px 0;
+}
 
-</h2>
+.teacher-grid{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    gap:3rem;
+    align-items:center;
+}
 
-<a
-href="/register"
-class="btn btn-primary"
->
+.teacher-content h1{
+    margin:.8rem 0;
+}
 
-ثبت نام کلاس
+.teacher-content h2{
+    color:var(--primary);
+    font-size:1.3rem;
+    margin-bottom:1.5rem;
+}
 
-</a>
+.teacher-content p{
+    line-height:2;
+    color:var(--text-muted);
+}
 
-</div>
+.teacher-image img{
+    width:100%;
+    border-radius:24px;
+    display:block;
+    box-shadow:0 20px 50px rgba(0,0,0,.15);
+}
 
-</section>
+.teacher-meta{
+    display:flex;
+    gap:1rem;
+    margin-top:2rem;
+}
+
+.meta-card{
+    flex:1;
+    text-align:center;
+    padding:1.25rem;
+    border-radius:18px;
+    background:var(--surface);
+    border:1px solid var(--border);
+}
+
+.meta-card strong{
+    display:block;
+    font-size:1.5rem;
+    color:var(--primary);
+    margin-bottom:.35rem;
+}
+
+.teacher-courses,
+.teacher-about{
+    padding:80px 0;
+}
+
+.courses-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:2rem;
+    margin-top:3rem;
+}
+
+.course-card{
+    display:block;
+    overflow:hidden;
+    border-radius:22px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    text-decoration:none;
+    color:inherit;
+    transition:.3s;
+}
+
+.course-card:hover{
+    transform:translateY(-8px);
+    box-shadow:0 18px 40px rgba(0,0,0,.12);
+}
+
+.course-card img{
+    width:100%;
+    height:240px;
+    object-fit:cover;
+    display:block;
+}
+
+.course-content{
+    padding:1.5rem;
+}
+
+.course-content h3{
+    margin-bottom:.75rem;
+}
+
+.course-content p{
+    color:var(--text-muted);
+    line-height:1.9;
+    margin-bottom:1rem;
+}
+
+.course-link{
+    color:var(--primary);
+    font-weight:700;
+}
+
+.teacher-about-box{
+    max-width:900px;
+    margin:3rem auto 0;
+    padding:2rem;
+    border-radius:22px;
+    background:var(--surface);
+    border:1px solid var(--border);
+}
+
+.teacher-about-box p{
+    line-height:2.2;
+    margin-bottom:2rem;
+}
+
+.teacher-info{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:1rem;
+}
+
+.info-item{
+    padding:1rem;
+    border-radius:16px;
+    background:rgba(0,0,0,.03);
+}
+
+.info-item strong{
+    display:block;
+    margin-bottom:.5rem;
+}
+
+.empty-state{
+    margin-top:2rem;
+    text-align:center;
+    padding:3rem;
+    border-radius:20px;
+    background:var(--surface);
+    border:1px dashed var(--border);
+}
+
+@media (max-width:900px){
+
+    .teacher-grid{
+        grid-template-columns:1fr;
+    }
+
+    .teacher-image{
+        order:-1;
+    }
+
+    .teacher-meta{
+        flex-direction:column;
+    }
+
+}
+</style>

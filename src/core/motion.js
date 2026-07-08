@@ -206,7 +206,7 @@ Motion.destroy = () => {
 
 };
 
-window.Motion = Motion;
+globalThis.Motion = Motion;
 
 /* ==========================================================
    Safe Execute

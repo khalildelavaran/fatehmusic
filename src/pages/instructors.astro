@@ -1,0 +1,33 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import PageHero from "../components/PageHero.astro";
+import Instructors from "../components/Instructors.astro";
+import CTA from "../components/CTA.astro";
+---
+
+<MainLayout
+    title="اساتید آموزشگاه موسیقی فاتح | مدرسین موسیقی در شوشتر"
+    description="آشنایی با اساتید آموزشگاه موسیقی فاتح؛ مدرسین مجرب گیتار، پیانو، ویولون، آواز و سازهای ایرانی."
+>
+
+    <Header />
+
+    <PageHero
+
+        badge="اساتید آموزشگاه"
+
+        title="تیم حرفه‌ای مدرسین موسیقی"
+
+        description="اساتید آموزشگاه موسیقی فاتح با سال‌ها تجربه در آموزش و اجرا، مسیر یادگیری موسیقی را برای هنرجویان در تمامی سطوح هموار کرده‌اند."
+
+    />
+
+    <Instructors />
+
+    <CTA />
+
+    <Footer />
+
+</MainLayout>

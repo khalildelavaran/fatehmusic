@@ -6,10 +6,7 @@ import { instruments } from "../data/instruments";
     class="instruments"
     data-reveal="fade-up"
 >
-
     <div class="container">
-
-        <!-- Section Header -->
 
         <div
             class="section-header"
@@ -21,78 +18,51 @@ import { instruments } from "../data/instruments";
                 data-reveal
                 data-reveal-delay="1"
             >
-
                 سازهای آموزشی
-
             </span>
 
             <h2
                 data-reveal
                 data-reveal-delay="2"
             >
-
                 ساز مورد علاقه خود را انتخاب کنید
-
             </h2>
 
             <p
                 data-reveal
                 data-reveal-delay="3"
             >
-
                 آموزش تخصصی انواع سازهای ایرانی و بین‌المللی در آموزشگاه موسیقی فاتح
-
             </p>
 
         </div>
-
-        <!-- Instruments -->
 
         <div
             class="instruments-grid"
             data-reveal-group
         >
 
-            {instruments.map((item) => (
+            {instruments.map((item, index) => (
 
-                <article class="instrument-card">
+                <article
+                    class="instrument-card"
+                    data-reveal
+                    data-reveal-delay={index + 1}
+                >
 
-                    <div class="instrument-image">
-
-                        <img
-                            src={item.image}
-                            alt={item.name}
-                            loading="lazy"
-                            decoding="async"
-                        />
-
+                    <div class="instrument-icon">
+                        <i class={item.icon}></i>
                     </div>
 
                     <div class="instrument-content">
 
                         <h3>
-
-                            {item.name}
-
+                            {item.title}
                         </h3>
 
-                        <span>
-
-                            {item.category}
-
-                        </span>
-
-                        <a href={item.link}>
-
-                            مشاهده دوره
-
-                            <span>
-
-                                →
-
-                            </span>
-
-                        </a>
+                        <p>
+                            {item.description}
+                        </p>
 
                     </div>
 
