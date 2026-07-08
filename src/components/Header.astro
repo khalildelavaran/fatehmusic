@@ -1,144 +1,361 @@
----
-import { GraduationCap, Menu, X } from "@lucide/astro";
----
+<header class="header" id="siteHeader">
 
-<header class="header">
+    <div class="container header-container">
 
-<div class="container header-container">
+        <!-- Logo -->
 
+        <a
+            href="/"
+            class="logo"
+            aria-label="آموزشگاه موسیقی فاتح"
+        >
 
-<!-- Logo -->
+            <img
+                src="/images/logo.webp"
+                alt="آموزشگاه موسیقی فاتح"
+                width="64"
+                height="64"
+                decoding="async"
+            />
 
-<a href="/" class="logo">
+            <div class="logo-text">
 
-<img src="/favicon.svg" alt="آموزشگاه موسیقی فاتح">
+                <h1>
 
-<div>
+                    آموزشگاه موسیقی فاتح
 
-<h2>
-فاتح
-</h2>
+                </h1>
 
-<span>
-آموزشگاه موسیقی
-</span>
+                <span>
 
-</div>
+                    آموزش تخصصی موسیقی
 
-</a>
+                </span>
 
+            </div>
 
+        </a>
 
-<!-- Desktop Menu -->
+        <!-- Desktop Navigation -->
 
-<nav class="desktop-menu">
+        <nav
+            class="desktop-menu"
+            aria-label="منوی اصلی"
+        >
 
-<ul class="menu">
+            <ul class="menu">
 
-<li><a href="/">خانه</a></li>
+                <li>
 
-<li><a href="/courses">دوره‌ها</a></li>
+                    <a
+                        href="/"
+                        class="active"
+                    >
 
-<li><a href="/teachers">اساتید</a></li>
+                        خانه
 
-<li><a href="/gallery">گالری</a></li>
+                    </a>
 
-<li><a href="/blog">وبلاگ</a></li>
+                </li>
 
-<li><a href="/contact">تماس</a></li>
+                <li>
 
-</ul>
+                    <a href="/courses">
 
-</nav>
+                        دوره‌ها
 
+                    </a>
 
+                </li>
 
-<!-- Register -->
+                <li>
 
-<a href="/register" class="btn header-btn">
+                    <a href="/teachers">
 
-<GraduationCap size={20}/>
+                        اساتید
 
-<span>
-ثبت نام
-</span>
+                    </a>
 
-</a>
+                </li>
 
+                <li>
 
+                    <a href="/gallery">
 
-<!-- Mobile Button -->
+                        گالری
 
-<button class="mobile-toggle" id="menuToggle">
+                    </a>
 
-<Menu size={28}/>
+                </li>
 
-</button>
+                <li>
 
+                    <a href="/blog">
 
-</div>
+                        وبلاگ
 
+                    </a>
 
-<!-- Mobile Menu -->
+                </li>
 
-<div class="mobile-menu" id="mobileMenu">
+                <li>
 
+                    <a href="/contact">
 
-<a href="/">
-خانه
-</a>
+                        تماس با ما
 
+                    </a>
 
-<a href="/courses">
-دوره‌ها
-</a>
+                </li>
 
+            </ul>
 
-<a href="/teachers">
-اساتید
-</a>
+        </nav>
 
+        <!-- Register -->
 
-<a href="/gallery">
-گالری
-</a>
+        <a
+            href="/register"
+            class="header-register"
+        >
 
+            ثبت نام
 
-<a href="/blog">
-وبلاگ
-</a>
+        </a>
 
+        <!-- Mobile Button -->
 
-<a href="/contact">
-تماس
-</a>
+        <button
+            id="menuToggle"
+            class="mobile-toggle"
+            aria-label="باز کردن منو"
+            aria-expanded="false"
+            aria-controls="mobileMenu"
+        >
 
+            <!-- MENU -->
 
-<a href="/register" class="mobile-register">
+            <svg
+                class="menu-icon"
+                viewBox="0 0 24 24"
+            >
 
-ثبت نام
+                <path
+                    d="M3 6H21M3 12H21M3 18H21"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                />
 
-</a>
+            </svg>
 
+            <!-- CLOSE -->
 
-</div>
+            <svg
+                class="close-icon"
+                viewBox="0 0 24 24"
+            >
 
+                <path
+                    d="M6 6L18 18M18 6L6 18"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                />
+
+            </svg>
+
+        </button>
+
+    </div>
+
+    <!-- Mobile Menu -->
+
+    <nav
+        id="mobileMenu"
+        class="mobile-menu"
+        aria-label="منوی موبایل"
+    >
+
+        <a href="/">
+
+            خانه
+
+        </a>
+
+        <a href="/courses">
+
+            دوره‌ها
+
+        </a>
+
+        <a href="/teachers">
+
+            اساتید
+
+        </a>
+
+        <a href="/gallery">
+
+            گالری
+
+        </a>
+
+        <a href="/blog">
+
+            وبلاگ
+
+        </a>
+
+        <a href="/contact">
+
+            تماس با ما
+
+        </a>
+
+        <a
+            href="/register"
+            class="mobile-register"
+        >
+
+            ثبت نام
+
+        </a>
+
+    </nav>
 
 </header>
 
 
-<script>
+<script is:inline>
 
-const btn = document.getElementById("menuToggle");
+document.addEventListener("astro:page-load", () => {
 
-const menu = document.getElementById("mobileMenu");
+    const header = document.getElementById("siteHeader");
+    const toggle = document.getElementById("menuToggle");
+    const menu = document.getElementById("mobileMenu");
 
+    if (!header || !toggle || !menu) return;
 
-btn?.addEventListener("click",()=>{
+    /* ===============================
+       HEADER SCROLL
+    =============================== */
 
-menu?.classList.toggle("active");
+    const updateHeader = () => {
+
+        header.classList.toggle(
+            "scrolled",
+            window.scrollY > 20
+        );
+
+    };
+
+    updateHeader();
+
+    window.addEventListener(
+        "scroll",
+        updateHeader,
+        { passive: true }
+    );
+
+    /* ===============================
+       MOBILE MENU
+    =============================== */
+
+    const closeMenu = () => {
+
+        toggle.classList.remove("active");
+
+        menu.classList.remove("open");
+
+        document.body.classList.remove("menu-open");
+
+        toggle.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+    };
+
+    const openMenu = () => {
+
+        toggle.classList.add("active");
+
+        menu.classList.add("open");
+
+        document.body.classList.add("menu-open");
+
+        toggle.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+
+    };
+
+    toggle.addEventListener("click", () => {
+
+        if (menu.classList.contains("open")) {
+
+            closeMenu();
+
+        } else {
+
+            openMenu();
+
+        }
+
+    });
+
+    /* ===============================
+       CLICK OUTSIDE
+    =============================== */
+
+    document.addEventListener("click", (e) => {
+
+        if (
+
+            !menu.contains(e.target) &&
+
+            !toggle.contains(e.target)
+
+        ) {
+
+            closeMenu();
+
+        }
+
+    });
+
+    /* ===============================
+       ESC
+    =============================== */
+
+    document.addEventListener("keydown", (e) => {
+
+        if (e.key === "Escape") {
+
+            closeMenu();
+
+        }
+
+    });
+
+    /* ===============================
+       CLOSE AFTER CLICK
+    =============================== */
+
+    menu.querySelectorAll("a").forEach((link) => {
+
+        link.addEventListener("click", () => {
+
+            closeMenu();
+
+        });
+
+    });
 
 });
-
 
 </script>
