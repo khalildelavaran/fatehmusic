@@ -65,7 +65,7 @@ export const instructors = [
 
     slug:"ali-zaferani",
 
-    name:"علی زعفرانی",
+    name:"محمدعلی زعفرانی",
 
     position:"مدرس پیانو و کیبورد",
 
