@@ -1,3 +1,4 @@
+```astro
 ---
 const gallery = [
   {
@@ -34,13 +35,14 @@ const gallery = [
 ---
 
 <section
+    id="gallery"
     class="gallery"
     data-reveal="fade-up"
 >
 
     <div class="container">
 
-        <!-- Section Header -->
+        <!-- ================= HEADER ================= -->
 
         <div
             class="section-header"
@@ -52,32 +54,26 @@ const gallery = [
                 data-reveal
                 data-reveal-delay="1"
             >
-
                 گالری آموزشگاه
-
             </span>
 
             <h2
                 data-reveal
                 data-reveal-delay="2"
             >
-
                 لحظاتی از آموزش، تمرین و اجرا
-
             </h2>
 
             <p
                 data-reveal
                 data-reveal-delay="3"
             >
-
                 تصاویری از کلاس‌ها، هنرجویان و فضای آموزشگاه موسیقی فاتح
-
             </p>
 
         </div>
 
-        <!-- Gallery -->
+        <!-- ================= GRID ================= -->
 
         <div
             class="gallery-grid"
@@ -87,11 +83,27 @@ const gallery = [
             {gallery.map((item, index) => (
 
                 <article
+
                     class="gallery-item"
+
+                    data-reveal
+
+                    data-reveal-delay={index + 1}
+
                     data-index={index}
+
                     data-image={item.image}
+
                     data-title={item.title}
+
                     data-subtitle={item.subtitle}
+
+                    tabindex="0"
+
+                    role="button"
+
+                    aria-label={`مشاهده تصویر ${item.title}`}
+
                 >
 
                     <img
@@ -103,27 +115,15 @@ const gallery = [
 
                     <div class="gallery-overlay">
 
-                        <h3>
+                        <h3>{item.title}</h3>
 
-                            {item.title}
-
-                        </h3>
-
-                        <p>
-
-                            {item.subtitle}
-
-                        </p>
+                        <p>{item.subtitle}</p>
 
                         <span class="gallery-link">
 
                             مشاهده تصویر
 
-                            <span>
-
-                                ←
-
-                            </span>
+                            <span>←</span>
 
                         </span>
 
@@ -142,14 +142,31 @@ const gallery = [
 <!-- ================= LIGHTBOX ================= -->
 
 <div
+
     id="lightbox"
+
     class="lightbox"
+
+    role="dialog"
+
+    aria-modal="true"
+
+    aria-labelledby="lightbox-title"
+
+    aria-describedby="lightbox-subtitle"
+
     aria-hidden="true"
+
 >
 
     <button
+
         class="lightbox-close"
+
         aria-label="بستن"
+
+        type="button"
+
     >
 
         ✕
@@ -157,8 +174,13 @@ const gallery = [
     </button>
 
     <button
+
         class="lightbox-prev"
+
         aria-label="تصویر قبلی"
+
+        type="button"
+
     >
 
         ❮
@@ -168,11 +190,17 @@ const gallery = [
     <div class="lightbox-content">
 
         <img
+
             id="lightbox-image"
+
             src=""
+
             alt=""
+
             loading="eager"
+
             decoding="sync"
+
         />
 
         <div class="lightbox-caption">
@@ -186,8 +214,13 @@ const gallery = [
     </div>
 
     <button
+
         class="lightbox-next"
+
         aria-label="تصویر بعدی"
+
+        type="button"
+
     >
 
         ❯
@@ -195,3 +228,4 @@ const gallery = [
     </button>
 
 </div>
+```
