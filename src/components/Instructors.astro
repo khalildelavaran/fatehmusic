@@ -2,27 +2,50 @@
 import { instructors } from "../data/instructors";
 ---
 
-<section class="instructors">
+<section
+  class="instructors"
+  data-reveal="fade-up"
+>
 
   <div class="container">
 
-    <div class="section-header">
+    <!-- Section Header -->
 
-      <span class="section-badge">
+    <div
+      class="section-header"
+      data-reveal-group
+    >
+
+      <span
+        class="section-badge"
+        data-reveal
+        data-reveal-delay="1"
+      >
         اساتید آموزشگاه
       </span>
 
-      <h2>
+      <h2
+        data-reveal
+        data-reveal-delay="2"
+      >
         تیم حرفه‌ای مدرسین موسیقی
       </h2>
 
-      <p>
+      <p
+        data-reveal
+        data-reveal-delay="3"
+      >
         آموزش توسط اساتید با تجربه در حوزه موسیقی کلاسیک و مدرن
       </p>
 
     </div>
 
-    <div class="instructors-grid">
+    <!-- Instructors -->
+
+    <div
+      class="instructors-grid"
+      data-reveal-group
+    >
 
       {instructors.map((ins) => (
 
@@ -34,27 +57,48 @@ import { instructors } from "../data/instructors";
               src={ins.image}
               alt={ins.name}
               loading="lazy"
+              decoding="async"
             />
 
             {ins.id === 1 && (
+
               <span class="badge">
+
                 مدیر آموزشگاه
+
               </span>
+
             )}
 
           </div>
 
           <div class="instructor-content">
 
-            <h3>{ins.name}</h3>
+            <h3>
 
-            <p>{ins.position}</p>
+              {ins.name}
+
+            </h3>
+
+            <p>
+
+              {ins.position}
+
+            </p>
 
             <a
               href={`/instructors/${ins.slug}`}
               class="profile-link"
             >
-              مشاهده پروفایل →
+
+              مشاهده پروفایل
+
+              <span>
+
+                →
+
+              </span>
+
             </a>
 
           </div>

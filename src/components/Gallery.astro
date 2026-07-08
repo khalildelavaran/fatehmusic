@@ -33,27 +33,56 @@ const gallery = [
 ];
 ---
 
-<section class="gallery">
+<section
+    class="gallery"
+    data-reveal="fade-up"
+>
 
     <div class="container">
 
-        <div class="section-header">
+        <!-- Section Header -->
 
-            <span class="section-badge">
+        <div
+            class="section-header"
+            data-reveal-group
+        >
+
+            <span
+                class="section-badge"
+                data-reveal
+                data-reveal-delay="1"
+            >
+
                 گالری آموزشگاه
+
             </span>
 
-            <h2>
+            <h2
+                data-reveal
+                data-reveal-delay="2"
+            >
+
                 لحظاتی از آموزش، تمرین و اجرا
+
             </h2>
 
-            <p>
+            <p
+                data-reveal
+                data-reveal-delay="3"
+            >
+
                 تصاویری از کلاس‌ها، هنرجویان و فضای آموزشگاه موسیقی فاتح
+
             </p>
 
         </div>
 
-        <div class="gallery-grid">
+        <!-- Gallery -->
+
+        <div
+            class="gallery-grid"
+            data-reveal-group
+        >
 
             {gallery.map((item, index) => (
 
@@ -75,18 +104,26 @@ const gallery = [
                     <div class="gallery-overlay">
 
                         <h3>
+
                             {item.title}
+
                         </h3>
 
                         <p>
+
                             {item.subtitle}
+
                         </p>
 
                         <span class="gallery-link">
 
                             مشاهده تصویر
 
-                            <span>←</span>
+                            <span>
+
+                                ←
+
+                            </span>
 
                         </span>
 
@@ -114,14 +151,18 @@ const gallery = [
         class="lightbox-close"
         aria-label="بستن"
     >
+
         ✕
+
     </button>
 
     <button
         class="lightbox-prev"
         aria-label="تصویر قبلی"
     >
+
         ❮
+
     </button>
 
     <div class="lightbox-content">
@@ -130,6 +171,8 @@ const gallery = [
             id="lightbox-image"
             src=""
             alt=""
+            loading="eager"
+            decoding="sync"
         />
 
         <div class="lightbox-caption">
@@ -146,7 +189,9 @@ const gallery = [
         class="lightbox-next"
         aria-label="تصویر بعدی"
     >
+
         ❯
+
     </button>
 
 </div>

@@ -2,83 +2,106 @@
 import { instruments } from "../data/instruments";
 ---
 
-<section class="instruments">
+<section
+    class="instruments"
+    data-reveal="fade-up"
+>
 
-  <div class="container">
+    <div class="container">
 
+        <!-- Section Header -->
 
-    <div class="section-header">
+        <div
+            class="section-header"
+            data-reveal-group
+        >
 
-      <span class="section-badge">
-        سازهای آموزشی
-      </span>
+            <span
+                class="section-badge"
+                data-reveal
+                data-reveal-delay="1"
+            >
 
+                سازهای آموزشی
 
-      <h2>
-        ساز مورد علاقه خود را انتخاب کنید
-      </h2>
-
-
-      <p>
-        آموزش تخصصی انواع سازهای ایرانی و بین‌المللی در آموزشگاه موسیقی فاتح
-      </p>
-
-
-    </div>
-
-
-
-    <div class="instruments-grid">
-
-
-      {instruments.map((item)=>(
-
-
-        <article class="instrument-card">
-
-
-          <div class="instrument-image">
-
-            <img 
-              src={item.image}
-              alt={item.name}
-            />
-
-          </div>
-
-
-
-          <div class="instrument-content">
-
-
-            <h3>
-              {item.name}
-            </h3>
-
-
-            <span>
-              {item.category}
             </span>
 
+            <h2
+                data-reveal
+                data-reveal-delay="2"
+            >
 
-            <a href={item.link}>
-              مشاهده دوره →
-            </a>
+                ساز مورد علاقه خود را انتخاب کنید
 
+            </h2>
 
-          </div>
+            <p
+                data-reveal
+                data-reveal-delay="3"
+            >
 
+                آموزش تخصصی انواع سازهای ایرانی و بین‌المللی در آموزشگاه موسیقی فاتح
 
-        </article>
+            </p>
 
+        </div>
 
-      ))}
+        <!-- Instruments -->
 
+        <div
+            class="instruments-grid"
+            data-reveal-group
+        >
+
+            {instruments.map((item) => (
+
+                <article class="instrument-card">
+
+                    <div class="instrument-image">
+
+                        <img
+                            src={item.image}
+                            alt={item.name}
+                            loading="lazy"
+                            decoding="async"
+                        />
+
+                    </div>
+
+                    <div class="instrument-content">
+
+                        <h3>
+
+                            {item.name}
+
+                        </h3>
+
+                        <span>
+
+                            {item.category}
+
+                        </span>
+
+                        <a href={item.link}>
+
+                            مشاهده دوره
+
+                            <span>
+
+                                →
+
+                            </span>
+
+                        </a>
+
+                    </div>
+
+                </article>
+
+            ))}
+
+        </div>
 
     </div>
-
-
-  </div>
-
 
 </section>
