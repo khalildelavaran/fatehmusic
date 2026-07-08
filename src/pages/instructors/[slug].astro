@@ -20,7 +20,10 @@ props:{teacher}
 const { teacher } = Astro.props;
 
 const teacherCourses =
-courses.filter(course=>course.teacher.includes(teacher.name));
+courses.filter(course =>
+    Array.isArray(course.teacherIds) &&
+    course.teacherIds.includes(teacher.id)
+);
 ---
 <section class="teacher-hero">
 
