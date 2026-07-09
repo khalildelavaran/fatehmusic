@@ -38,7 +38,31 @@ const {
     href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
     rel="stylesheet"
   />
+<!-- Schema.org -->
+<script
+  type="application/ld+json"
+  set:html={JSON.stringify(schema)}
+/>
 
+<!-- Google Analytics (GA4) -->
+<script
+  async
+  src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"
+></script>
+
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+
+  gtag("js", new Date());
+
+  gtag("config", "G-YKFKP4QH45");
+</script>
+
+</head>
 </head>
 
 <body>
