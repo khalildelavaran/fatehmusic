@@ -1,0 +1,18 @@
+# ============================================
+# Robots.txt
+# Fateh Music Academy
+# https://fatehmusic.ir
+# ============================================
+
+User-agent: *
+
+Allow: /
+
+Disallow: /api/
+Disallow: /admin/
+Disallow: /.git/
+Disallow: /.well-known/
+
+Sitemap: https://fatehmusic.ir/sitemap-index.xml
+
+Host: https://fatehmusic.ir
