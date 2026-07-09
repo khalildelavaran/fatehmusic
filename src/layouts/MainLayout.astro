@@ -6,7 +6,12 @@ interface Props {
   title?: string;
   description?: string;
 }
-
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "MusicSchool",
+  name: "آموزشگاه موسیقی فاتح",
+  url: "https://fatehmusic.ir"
+};
 const {
   title = "آموزشگاه موسیقی فاتح | آموزش موسیقی در شوشتر",
   description =
@@ -62,7 +67,6 @@ const {
   gtag("config", "G-YKFKP4QH45");
 </script>
 
-</head>
 </head>
 
 <body>
