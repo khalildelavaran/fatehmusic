@@ -1,5 +1,40 @@
 ---
 import { courses } from "../data/courses";
+import { instructors } from "../data/instructors";
+import { schedules } from "../data/schedule";
+
+/* -------------------------------------------------
+   Course Cards
+-------------------------------------------------- */
+
+const courseCards = courses.map((course) => {
+
+  const instructor = instructors.find(
+    (i) => i.id === course.instructor
+  );
+
+  const courseSchedules = instructor
+    ? schedules.filter(
+        (s) =>
+          s.active &&
+          s.instructorId === instructor.id
+      )
+    : [];
+
+  const days = [
+    ...new Set(
+      courseSchedules.map((s) => s.weekday)
+    )
+  ];
+
+  return {
+    ...course,
+    instructor,
+    schedules: courseSchedules,
+    days
+  };
+
+});
 ---
 
 <section
@@ -9,7 +44,9 @@ import { courses } from "../data/courses";
 
   <div class="container">
 
-    <!-- Section Header -->
+    <!-- ===========================
+         Section Header
+    ============================ -->
 
     <div
       class="section-header"
@@ -40,21 +77,23 @@ import { courses } from "../data/courses";
 
     </div>
 
-    <!-- Courses -->
+    <!-- ===========================
+         Course Cards
+    ============================ -->
 
     <div
       class="courses-grid"
       data-reveal-group
     >
 
-      {courses.map((course) => (
+      {courseCards.map((course) => (
 
         <article class="course-card">
 
           <div class="course-image">
 
             <img
-              src={course.image}
+              src={course.media.image}
               alt={course.title}
               loading="lazy"
               decoding="async"
@@ -72,9 +111,41 @@ import { courses } from "../data/courses";
 
             <span class="course-subtitle">
 
-              {course.subtitle}
+              {course.content.excerpt}
 
             </span>
+            {course.instructor && (
+
+              <div class="course-instructor">
+
+                {course.instructor.name}
+
+              </div>
+
+            )}
+
+            {course.days.length > 0 && (
+
+              <div class="days-tags">
+
+                {course.days.map((day) => (
+
+                  <span
+                    class="day-tag"
+                    aria-label={`روز برگزاری ${day}`}
+                  >
+
+                    {day}
+
+                  </span>
+
+                ))}
+
+              </div>
+
+            )}
+
+
 
             <a
               href={`/courses/${course.slug}`}

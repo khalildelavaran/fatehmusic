@@ -16,15 +16,15 @@ export async function getStaticPaths() {
 const { course } = Astro.props;
 
 const teachers = instructors.filter(
-  (teacher) => course.teacherIds.includes(teacher.id)
+  (teacher) => teacher.id === course.instructor
 );
 
 const relatedCourses = courses
-  .filter((item)=>item.slug!==course.slug && item.level===course.level)
+  .filter((item)=>item.slug!==course.slug && item.instrument===course.instrument)
   .slice(0,3);
 ---
 
-<MainLayout title={course.seoTitle} description={course.seoDescription}>
+<MainLayout title={course.seo.title} description={course.seo.description}>
 
 <Header />
 
@@ -41,7 +41,7 @@ const relatedCourses = courses
 <h1 class="course-page__title">{course.title}</h1>
 
 <p class="course-page__description">
-{course.description}
+{course.content.description}
 </p>
 
 <div class="course-page__meta">
@@ -53,7 +53,7 @@ const relatedCourses = courses
 
 <div class="course-page__meta-item">
 <strong>سطح</strong>
-<span>{course.level}</span>
+<span>{course.level.join(" - ")}</span>
 </div>
 
 <div class="course-page__meta-item">
@@ -62,8 +62,8 @@ const relatedCourses = courses
 </div>
 
 <div class="course-page__meta-item">
-<strong>زمان کلاس</strong>
-<span>{course.classTime}</span>
+<strong>نوع کلاس</strong>
+<span>{course.classType}</span>
 </div>
 
 </div>
@@ -75,7 +75,7 @@ const relatedCourses = courses
 </div>
 
 <div class="course-page__image">
-<img src={course.heroImage || course.image} alt={course.title}/>
+<img src={course.media.cover || course.media.image} alt={course.title}/>
 </div>
 
 </div>
@@ -96,7 +96,7 @@ const relatedCourses = courses
 
 <a href={`/instructors/${teacher.slug}`} class="course-page__teacher-card">
 
-<img src={teacher.image} alt={teacher.name}/>
+<img src={teacher.media.images.profile} alt={teacher.name}/>
 
 <h3>{teacher.name}</h3>
 
@@ -116,11 +116,11 @@ const relatedCourses = courses
 
 <div class="container">
 
-<h2>سرفصل های آموزشی</h2>
+<h2>برای کدام گروه‌ها مناسب است؟</h2>
 
 <ul class="course-page__features">
 
-{course.syllabus.map(item=><li>{item}</li>)}
+{course.ageGroup.map(item=><li>{item}</li>)}
 
 </ul>
 
@@ -132,13 +132,7 @@ const relatedCourses = courses
 
 <div class="container">
 
-<h2>چرا این دوره؟</h2>
 
-<ul class="course-page__features">
-
-{course.why.map(item=><li>{item}</li>)}
-
-</ul>
 
 </div>
 
@@ -157,12 +151,12 @@ const relatedCourses = courses
 <a href={`/courses/${item.slug}`} class="course-card">
 
 <div class="course-image">
-<img src={item.image} alt={item.title}/>
+<img src={item.media.image} alt={item.title}/>
 </div>
 
 <div class="course-content">
 <h3>{item.title}</h3>
-<span>{item.level}</span>
+<span>{item.category}</span>
 </div>
 
 </a>

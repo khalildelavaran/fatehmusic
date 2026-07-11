@@ -331,3 +331,58 @@
     }
 
 }
+/* ==========================================================
+   Instructor Weekly Schedule Tags
+========================================================== */
+
+.days-tags{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:.45rem;
+
+    margin-top:.90rem;
+
+    margin-bottom:1rem;
+
+}
+
+.day-tag{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    min-height:30px;
+
+    padding:.35rem .85rem;
+
+    border-radius:999px;
+
+    background:rgba(201,168,97,.12);
+
+    border:1px solid rgba(201,168,97,.25);
+
+    color:var(--primary);
+
+    font-size:.78rem;
+
+    font-weight:600;
+
+    white-space:nowrap;
+
+    transition:.25s ease;
+
+}
+
+.day-tag:hover{
+
+    background:rgba(201,168,97,.22);
+
+    transform:translateY(-2px);
+
+}

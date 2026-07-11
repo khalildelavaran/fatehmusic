@@ -1,888 +1,1867 @@
+/**
+ * ============================================================
+ * Fateh Music Academy
+ * courses.js
+ * Architecture: FROZEN v1.0
+ * ============================================================
+ */
+
 export const courses = [
 
+/* ======================================================================
+   1. آموزش گیتار
+====================================================================== */
+
 {
-    id: 1,
+  id: 1,
 
-    slug: "guitar",
+  slug: "guitar-course",
 
-    title: "گیتار",
+  title: "آموزش گیتار",
 
-    subtitle: "پاپ • کلاسیک • فلامنکو",
+  featured: true,
 
-    teacherIds:[1],
+  active: true,
 
-    image: "/images/courses/guitar.webp",
+  priority: 1,
 
-    heroImage: "/images/courses/guitar-hero.webp",
+  instrument: "guitar",
 
-    icon: "/icons/guitar.svg",
+  instructor: 2,
 
-    duration: "۳ تا ۲۴ ماه",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    level: "مبتدی تا پیشرفته",
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    students: "۴۰۰+",
+  category: "سازهای زهی",
 
-    age: "۸ سال به بالا",
+  classType: "حضوری",
 
-    sessions: "هفته‌ای یک جلسه",
+  duration: "آموزش ترمیک",
 
-    classTime: "۳۰، ۴۵ و ۶۰ دقیقه",
+  media: {
 
-    certificate: true,
+    image:
+      "/images/courses/guitar.webp",
 
-    privateClass: true,
+    cover:
+      "/images/courses/guitar-cover.webp",
 
-    groupClass: true,
+    gallery: [
 
-    seoTitle:
-        "آموزش گیتار در شوشتر | آموزشگاه موسیقی فاتح",
+    ],
 
-    seoDescription:
-        "دوره تخصصی آموزش گیتار پاپ، کلاسیک و فلامنکو در آموزشگاه موسیقی فاتح شوشتر.",
+    videos: [
 
-    shortDescription:
-        "آموزش تخصصی گیتار برای تمامی سنین با متدهای روز دنیا.",
+    ]
+
+  },
+
+  content: {
+
+    excerpt:
+      "دوره جامع آموزش گیتار از مبتدی تا پیشرفته",
 
     description:
-        "در این دوره هنرجویان با نت‌خوانی، ریتم، آکوردها، تکنیک‌های نوازندگی، اجرای قطعات و بداهه‌نوازی آشنا شده و به سطح اجرای حرفه‌ای خواهند رسید.",
+      "آموزش گیتار کلاسیک، پاپ، فلامنکو - از مقدماتی تا پیشرفته با خلیل دلاوران در آموزشگاه موسیقی فاتح."
 
-    why: [
+  },
 
-        "آموزش سه سبک پاپ، کلاسیک و فلامنکو",
+  seo: {
 
-        "اساتید با تجربه",
+    title:
+      "آموزش گیتار در شوشتر | آموزشگاه موسیقی فاتح",
 
-        "برگزاری اجراهای هنرجویی",
+    description:
+      "ثبت نام کلاس آموزش گیتار در شوشتر با تدریس خلیل دلاوران در آموزشگاه موسیقی فاتح.",
 
-        "آموزش از پایه تا پیشرفته"
+    keywords: [
 
-    ],
+      "آموزش گیتار شوشتر",
 
-    syllabus: [
+      "کلاس گیتار شوشتر",
 
-        "آشنایی با ساز",
+      "بهترین آموزشگاه گیتار شوشتر",
 
-        "نت‌خوانی",
-
-        "ریتم",
-
-        "آکوردها",
-
-        "تکنیک‌های دست راست",
-
-        "تکنیک‌های دست چپ",
-
-        "اجرای قطعات",
-
-        "بداهه نوازی"
+      "خلیل دلاوران"
 
     ]
+
+  }
 
 },
 
+/* ======================================================================
+   2. آموزش ویولن
+====================================================================== */
+
 {
-    id:2,
+  id: 2,
 
-    slug:"piano",
+  slug: "violin-course",
 
-    title:"پیانو و کیبورد",
+  title: "آموزش ویولن",
 
-    subtitle:"کلاسیک • پاپ",
+  featured: true,
 
-    teacherIds:[3],
+  active: true,
 
-    image:"/images/courses/piano.webp",
+  priority: 2,
 
-    heroImage:"/images/courses/piano-hero.webp",
+  instrument: "violin",
 
-    icon:"/icons/piano.svg",
+  instructor: 1,
 
-    duration:"۳ تا ۲۴ ماه",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    students:"۳۰۰+",
+  category: "سازهای آرشه ای",
 
-    age:"۵ سال به بالا",
+  classType: "حضوری",
 
-    sessions:"هفته‌ای یک جلسه",
+  duration: "آموزش ترمیک",
 
-    classTime:"۳۰، ۴۵ و ۶۰ دقیقه",
+  media: {
 
-    certificate:true,
+    image:
+      "/images/courses/violin.webp",
 
-    privateClass:true,
+    cover:
+      "/images/courses/violin-cover.webp",
 
-    groupClass:true,
+    gallery: [],
 
-    seoTitle:"آموزش پیانو در شوشتر",
+    videos: []
 
-    seoDescription:"کلاس تخصصی پیانو و کیبورد آموزشگاه موسیقی فاتح.",
+  },
 
-    shortDescription:"آموزش پیانو و کیبورد برای کودکان و بزرگسالان.",
+  content: {
 
-    description:"آموزش اصول نوازندگی، نت‌خوانی، تکنیک، هارمونی، اجرای قطعات کلاسیک و پاپ.",
+    excerpt:
+      "دوره آموزش ویولن",
 
-    why:[
+    description:
+      "آموزش تخصصی ویولن با رضا فاتح در آموزشگاه موسیقی فاتح."
 
-        "پیانوی آکوستیک و دیجیتال",
+  },
 
-        "آموزش اصولی",
+  seo: {
 
-        "مناسب تمامی سنین",
+    title:
+      "آموزش ویولن در شوشتر",
 
-        "اجرای هنرجویی"
+    description:
+      "ثبت نام کلاس آموزش ویولن در آموزشگاه موسیقی فاتح.",
 
-    ],
+    keywords: [
 
-    syllabus:[
+      "آموزش ویولن شوشتر",
 
-        "نت‌خوانی",
+      "کلاس ویولن شوشتر",
 
-        "تکنیک",
-
-        "ریتم",
-
-        "دو دست نوازی",
-
-        "اجرای قطعات",
-
-        "هارمونی مقدماتی"
+      "رضا فاتح"
 
     ]
+
+  }
 
 },
 
+/* ======================================================================
+   3. آموزش کمانچه
+====================================================================== */
+
 {
+  id: 3,
 
-    id:3,
+  slug: "kamancheh-course",
 
-    slug:"violin",
+  title: "آموزش کمانچه",
 
-    title:"ویولون",
+  featured: true,
 
-    subtitle:"ایرانی • کلاسیک",
+  active: true,
 
-    teacherIds:[2],
+  priority: 3,
 
-    image:"/images/courses/violin.webp",
+  instrument: "kamancheh",
 
-    heroImage:"/images/courses/violin-hero.webp",
+  instructor: 1,
 
-    icon:"/icons/violin.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۲۴ ماه",
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  category: "سازهای آرشه ای",
 
-    students:"۲۵۰+",
+  classType: "حضوری",
 
-    age:"۶ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image:
+      "/images/courses/kamancheh.webp",
 
-    certificate:true,
+    cover:
+      "/images/courses/kamancheh-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:false,
+    videos: []
 
-    seoTitle:"آموزش ویولون در شوشتر",
+  },
 
-    seoDescription:"کلاس تخصصی ویولون آموزشگاه موسیقی فاتح.",
+  content: {
 
-    shortDescription:"آموزش ویولون ایرانی و کلاسیک.",
+    excerpt:
+      "دوره آموزش کمانچه",
 
-    description:"آموزش ویولون از مقدماتی تا اجرای قطعات حرفه‌ای.",
+    description:
+      "آموزش تخصصی کمانچه با رضا فاتح."
 
-    why:[
+  },
 
-        "متدهای استاندارد",
+  seo: {
 
-        "تمرینات تکنیکی",
+    title:
+      "آموزش کمانچه در شوشتر",
 
-        "اجرای صحنه",
+    description:
+      "ثبت نام کلاس آموزش کمانچه در آموزشگاه موسیقی فاتح.",
 
-        "آموزش فردی"
+    keywords: [
 
-    ],
+      "آموزش کمانچه شوشتر",
 
-    syllabus:[
+      "رضا فاتح",
 
-        "نت‌خوانی",
-
-        "آرشه کشی",
-
-        "پوزیسیون اول",
-
-        "تمرینات تکنیکی",
-
-        "اجرای قطعات"
+      "کلاس کمانچه"
 
     ]
+
+  }
+
+},
+/* ======================================================================
+   4. آموزش پیانو
+====================================================================== */
+
+{
+  id: 4,
+
+  slug: "piano-course",
+
+  title: "آموزش پیانو",
+
+  featured: true,
+
+  active: true,
+
+  priority: 4,
+
+  instrument: "piano",
+
+  instructor: 3,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "سازهای کلاویه‌ای",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/piano.webp",
+
+    cover: "/images/courses/piano-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش پیانو",
+
+    description:
+      "آموزش پیانو از مبتدی تا پیشرفته با محمدعلی زعفرانی."
+
+  },
+
+  seo: {
+
+    title: "آموزش پیانو در شوشتر",
+
+    description:
+      "ثبت نام کلاس آموزش پیانو در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آموزش پیانو شوشتر",
+
+      "کلاس پیانو شوشتر",
+
+      "محمدعلی زعفرانی"
+
+    ]
+
+  }
 
 },
 
+/* ======================================================================
+   5. آموزش ارگ و کیبورد
+====================================================================== */
+
 {
+  id: 5,
 
-    id:4,
+  slug: "keyboard-course",
 
-    slug:"vocal",
+  title: "آموزش ارگ و کیبورد",
 
-    title:"آواز",
+  featured: true,
 
-    subtitle:"سنتی • پاپ",
+  active: true,
 
-    teacherIds:[11,12],
+  priority: 5,
 
-    image:"/images/courses/vocal.webp",
+  instrument: "keyboard",
 
-    heroImage:"/images/courses/vocal-hero.webp",
+  instructor: 3,
 
-    icon:"/icons/microphone.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۱۸ ماه",
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"همه سطوح",
+  category: "سازهای کلاویه‌ای",
 
-    students:"۱۵۰+",
+  classType: "حضوری",
 
-    age:"۱۲ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/keyboard.webp",
 
-    certificate:true,
+    cover: "/images/courses/keyboard-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:false,
+    videos: []
 
-    seoTitle:"آموزش آواز در شوشتر",
+  },
 
-    seoDescription:"کلاس تخصصی آواز سنتی و پاپ.",
+  content: {
 
-    shortDescription:"آموزش آواز با تکنیک‌های علمی.",
+    excerpt: "دوره آموزش ارگ و کیبورد",
 
-    description:"آموزش تنفس، بیان، تحریر، وسعت صدا، سلفژ و اجرای قطعات.",
+    description:
+      "آموزش ارگ و کیبورد با محمدعلی زعفرانی."
 
-    why:[
+  },
 
-        "تقویت صدا",
+  seo: {
 
-        "تنفس صحیح",
+    title: "آموزش ارگ در شوشتر",
 
-        "اجرای زنده",
+    description:
+      "ثبت نام کلاس ارگ و کیبورد در آموزشگاه موسیقی فاتح.",
 
-        "آموزش سلفژ"
+    keywords: [
 
-    ],
+      "آموزش ارگ شوشتر",
 
-    syllabus:[
-
-        "تنفس",
-
-        "سلفژ",
-
-        "تحریر",
-
-        "بیان",
-
-        "اجرای قطعات"
+      "آموزش کیبورد شوشتر"
 
     ]
 
-},
-{
-
-    id:5,
-
-    slug:"santur",
-
-    title:"سنتور",
-
-    subtitle:"موسیقی ایرانی",
-
-    teacherIds:[5],
-
-    image:"/images/courses/santur.webp",
-
-    heroImage:"/images/courses/santur-hero.webp",
-
-    icon:"/icons/santur.svg",
-
-    duration:"۳ تا ۲۴ ماه",
-
-    level:"مبتدی تا پیشرفته",
-
-    students:"۱۸۰+",
-
-    age:"۸ سال به بالا",
-
-    sessions:"هفته‌ای یک جلسه",
-
-    classTime:"۴۵ دقیقه",
-
-    certificate:true,
-
-    privateClass:true,
-
-    groupClass:false,
-
-    seoTitle:"آموزش سنتور در شوشتر",
-
-    seoDescription:"کلاس تخصصی سنتور آموزشگاه موسیقی فاتح.",
-
-    shortDescription:"آموزش سنتور بر اساس ردیف موسیقی ایرانی.",
-
-    description:"در این دوره هنرجو با شیوه صحیح مضراب‌گیری، ردیف موسیقی ایرانی، اجرای قطعات سنتی و تکنیک‌های نوازندگی سنتور آشنا می‌شود.",
-
-    why:[
-
-        "یادگیری اصولی ردیف",
-
-        "تقویت گوش موسیقایی",
-
-        "اجرای قطعات ایرانی",
-
-        "آموزش از پایه"
-
-    ],
-
-    syllabus:[
-
-        "شناخت ساز",
-
-        "مضراب‌گیری",
-
-        "نت‌خوانی",
-
-        "ردیف مقدماتی",
-
-        "اجرای قطعات",
-
-        "تکنیک‌های پیشرفته"
-
-    ]
+  }
 
 },
 
+/* ======================================================================
+   6. آموزش تار
+====================================================================== */
+
 {
+  id: 6,
 
-    id:6,
+  slug: "tar-course",
 
-    slug:"tar-setar",
+  title: "آموزش تار",
 
-    title:"تار و سه‌تار",
+  featured: true,
 
-    subtitle:"موسیقی ایرانی",
+  active: true,
 
-    teacherIds:[4],
+  priority: 6,
 
-    image:"/images/courses/tar-setar.webp",
+  instrument: "tar",
 
-    heroImage:"/images/courses/tar-setar-hero.webp",
+  instructor: 4,
 
-    icon:"/icons/tar.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۲۴ ماه",
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  category: "سازهای زهی",
 
-    students:"۲۵۰+",
+  classType: "حضوری",
 
-    age:"۱۰ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/tar.webp",
 
-    certificate:true,
+    cover: "/images/courses/tar-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:false,
+    videos: []
 
-    seoTitle:"آموزش تار و سه‌تار در شوشتر | آموزشگاه موسیقی فاتح",
+  },
 
-    seoDescription:"دوره تخصصی آموزش تار و سه‌تار با تدریس وحید بهمن در آموزشگاه موسیقی فاتح.",
+  content: {
 
-    shortDescription:"آموزش اصولی تار و سه‌تار از مبتدی تا پیشرفته.",
+    excerpt: "دوره آموزش تار",
 
-    description:"در این دوره هنرجویان با اصول نوازندگی تار و سه‌تار، ردیف موسیقی ایرانی، تکنیک‌های مضراب، جمله‌پردازی و اجرای قطعات سنتی آشنا می‌شوند.",
+    description:
+      "آموزش تخصصی تار با وحید بهمن."
 
-    why:[
+  },
 
-        "آموزش تار و سه‌تار در یک دوره",
+  seo: {
 
-        "یادگیری ردیف موسیقی ایرانی",
+    title: "آموزش تار در شوشتر",
 
-        "تقویت تکنیک و جمله‌پردازی",
+    description:
+      "ثبت نام کلاس آموزش تار در آموزشگاه موسیقی فاتح.",
 
-        "آموزش از پایه تا پیشرفته"
+    keywords: [
 
-    ],
+      "آموزش تار شوشتر",
 
-    syllabus:[
+      "مدرس تار شوشتر",
 
-        "آشنایی با ساز",
-
-        "مضراب صحیح",
-
-        "نت‌خوانی",
-
-        "ردیف مقدماتی",
-
-        "ردیف پیشرفته",
-
-        "اجرای قطعات",
-
-        "بداهه‌نوازی"
+      "وحید بهمن"
 
     ]
+
+  }
 
 },
 
+/* ======================================================================
+   7. آموزش سه تار
+====================================================================== */
+
 {
+  id: 7,
 
-    id:7,
+  slug: "setar-course",
 
-    slug:"tombak",
+  title: "آموزش سه تار",
 
-    title:"تنبک",
+  featured: true,
 
-    subtitle:"سازهای کوبه‌ای",
+  active: true,
 
-    teacherIds:[8,9],
+  priority: 7,
 
-    image:"/images/courses/tombak.webp",
+  instrument: "setar",
 
-    heroImage:"/images/courses/tombak-hero.webp",
+  instructor: 4,
 
-    icon:"/icons/tombak.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۱۸ ماه",
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  category: "سازهای زهی",
 
-    students:"۲۰۰+",
+  classType: "حضوری",
 
-    age:"۷ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/setar.webp",
 
-    certificate:true,
+    cover: "/images/courses/setar-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:true,
+    videos: []
 
-    seoTitle:"آموزش تنبک در شوشتر",
+  },
 
-    seoDescription:"کلاس تخصصی تنبک آموزشگاه موسیقی فاتح.",
+  content: {
 
-    shortDescription:"آموزش تنبک از پایه تا اجرای حرفه‌ای.",
+    excerpt: "دوره آموزش سه تار",
 
-    description:"آموزش ریتم، تکنیک‌های دست، اجرای قطعات و همنوازی با گروه‌های موسیقی ایرانی.",
+    description:
+      "آموزش تخصصی سه تار با وحید بهمن."
 
-    why:[
+  },
 
-        "تقویت ریتم",
+  seo: {
 
-        "هماهنگی دست‌ها",
+    title: "آموزش سه تار در شوشتر",
 
-        "همنوازی گروهی",
+    description:
+      "ثبت نام کلاس سه تار در آموزشگاه موسیقی فاتح.",
 
-        "مناسب تمامی سنین"
+    keywords: [
 
-    ],
+      "آموزش سه تار شوشتر",
 
-    syllabus:[
-
-        "شناخت ساز",
-
-        "ریتم‌های پایه",
-
-        "تکنیک‌های دست",
-
-        "ضرب‌های ترکیبی",
-
-        "همنوازی",
-
-        "اجرای قطعات"
+      "وحید بهمن"
 
     ]
+
+  }
+
+},
+/* ======================================================================
+   8. آموزش سنتور
+====================================================================== */
+
+{
+  id: 8,
+
+  slug: "santur-course",
+
+  title: "آموزش سنتور",
+
+  featured: true,
+
+  active: true,
+
+  priority: 8,
+
+  instrument: "santur",
+
+  instructor: 5,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "سازهای زهی",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/santur.webp",
+
+    cover: "/images/courses/santur-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش سنتور",
+
+    description:
+      "آموزش تخصصی سنتور از مبتدی تا پیشرفته با بهنام ایروانی."
+
+  },
+
+  seo: {
+
+    title: "آموزش سنتور در شوشتر",
+
+    description:
+      "ثبت نام کلاس آموزش سنتور در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آموزش سنتور شوشتر",
+
+      "مدرس سنتور شوشتر",
+
+      "بهنام ایروانی"
+
+    ]
+
+  }
 
 },
 
+/* ======================================================================
+   9. آموزش دف
+====================================================================== */
+
 {
+  id: 9,
 
-    id:8,
+  slug: "daf-course",
 
-    slug:"daf",
+  title: "آموزش دف",
 
-    title:"دف",
+  featured: true,
 
-    subtitle:"سازهای کوبه‌ای",
+  active: true,
 
-    teacherIds:[8],
+  priority: 9,
 
-    image:"/images/courses/daf.webp",
+  instrument: "daf",
 
-    heroImage:"/images/courses/daf-hero.webp",
+  instructor: 6,
 
-    icon:"/icons/daf.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۱۸ ماه",
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  category: "سازهای کوبه‌ای",
 
-    students:"۱۸۰+",
+  classType: "حضوری",
 
-    age:"۷ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/daf.webp",
 
-    certificate:true,
+    cover: "/images/courses/daf-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:true,
+    videos: []
 
-    seoTitle:"آموزش دف در شوشتر",
+  },
 
-    seoDescription:"کلاس تخصصی دف آموزشگاه موسیقی فاتح.",
+  content: {
 
-    shortDescription:"آموزش دف از مقدماتی تا پیشرفته.",
+    excerpt: "دوره آموزش دف",
 
-    description:"آموزش ریتم، تکنیک‌های دف‌نوازی، اجرای قطعات گروهی و همراهی موسیقی سنتی.",
+    description:
+      "آموزش تخصصی دف با مجتبی نژاد صفاری."
 
-    why:[
+  },
 
-        "تقویت حس ریتم",
+  seo: {
 
-        "اجرای گروهی",
+    title: "آموزش دف در شوشتر",
 
-        "مناسب همه سنین",
+    description:
+      "ثبت نام کلاس آموزش دف در آموزشگاه موسیقی فاتح.",
 
-        "آموزش گام‌به‌گام"
+    keywords: [
 
-    ],
+      "آموزش دف شوشتر",
 
-    syllabus:[
+      "مجتبی نژاد صفاری",
 
-        "شناخت ساز",
-
-        "ریتم‌های پایه",
-
-        "تکنیک‌های دف",
-
-        "ضرب‌های ترکیبی",
-
-        "اجرای قطعات"
+      "مدرس دف شوشتر"
 
     ]
+
+  }
 
 },
 
+/* ======================================================================
+   10. آموزش تنبک
+====================================================================== */
+
 {
+  id: 10,
 
-    id:9,
+  slug: "tonbak-course",
 
-    slug:"ney",
+  title: "آموزش تنبک",
 
-    title:"نی",
+  featured: true,
 
-    subtitle:"موسیقی ایرانی",
+  active: true,
 
-    teacherIds:[6],
+  priority: 10,
 
-    image:"/images/courses/ney.webp",
+  instrument: "tonbak",
 
-    heroImage:"/images/courses/ney-hero.webp",
+  instructor: 6,
 
-    icon:"/icons/ney.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۲۴ ماه",
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  category: "سازهای کوبه‌ای",
 
-    students:"۱۰۰+",
+  classType: "حضوری",
 
-    age:"۱۰ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/tonbak.webp",
 
-    certificate:true,
+    cover: "/images/courses/tonbak-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:false,
+    videos: []
 
-    seoTitle:"آموزش نی در شوشتر",
+  },
 
-    seoDescription:"کلاس تخصصی نی آموزشگاه موسیقی فاتح.",
+  content: {
 
-    shortDescription:"آموزش ساز نی بر اساس ردیف موسیقی ایرانی.",
+    excerpt: "دوره آموزش تنبک",
 
-    description:"آموزش صداسازی، تنفس صحیح، ردیف موسیقی ایرانی و اجرای قطعات سنتی.",
+    description:
+      "آموزش تخصصی تنبک با مجتبی نژاد صفاری."
 
-    why:[
+  },
 
-        "تقویت تنفس",
+  seo: {
 
-        "یادگیری ردیف",
+    title: "آموزش تنبک در شوشتر",
 
-        "ساز اصیل ایرانی",
+    description:
+      "ثبت نام کلاس آموزش تنبک در آموزشگاه موسیقی فاتح.",
 
-        "تکنیک‌های حرفه‌ای"
+    keywords: [
 
-    ],
+      "آموزش تنبک شوشتر",
 
-    syllabus:[
+      "مدرس تنبک شوشتر",
 
-        "صداسازی",
-
-        "تنفس",
-
-        "نت‌خوانی",
-
-        "ردیف",
-
-        "اجرای قطعات"
+      "مجتبی نژاد صفاری"
 
     ]
+
+  }
+
+},
+/* ======================================================================
+   11. آموزش ضرب تمپو
+====================================================================== */
+
+{
+  id: 11,
+
+  slug: "zarb-tempo-course",
+
+  title: "آموزش ضرب تمپو",
+
+  featured: true,
+
+  active: true,
+
+  priority: 11,
+
+  instrument: "zarb-tempo",
+
+  instructor: 7,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "کودک",
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "سازهای کوبه‌ای",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/zarb-tempo.webp",
+
+    cover: "/images/courses/zarb-tempo-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش ضرب تمپو",
+
+    description:
+      "آموزش تخصصی ساز ضرب تمپو در آموزشگاه موسیقی فاتح."
+
+  },
+
+  seo: {
+
+    title: "آموزش ضرب تمپو در شوشتر",
+
+    description:
+      "ثبت نام کلاس آموزش ضرب تمپو در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آموزش ضرب تمپو شوشتر",
+
+      "کلاس ضرب تمپو",
+
+      "غلام عباس عباسی"
+
+    ]
+
+  }
 
 },
 
+/* ======================================================================
+   12. آموزش نی انبان
+====================================================================== */
+
 {
+  id: 12,
 
-    id:10,
+  slug: "ney-anban-course",
 
-    slug:"ney-anban",
+  title: "آموزش نی انبان",
 
-    title:"نی‌انبان",
+  featured: true,
 
-    subtitle:"موسیقی محلی جنوب",
+  active: true,
 
-    teacherIds:[7],
+  priority: 12,
 
-    image:"/images/courses/ney-anban.webp",
+  instrument: "ney-anban",
 
-    heroImage:"/images/courses/ney-anban-hero.webp",
+  instructor: 8,
 
-    icon:"/icons/ney-anban.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"۳ تا ۱۸ ماه",
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"مبتدی تا پیشرفته",
+  category: "سازهای بادی",
 
-    students:"۸۰+",
+  classType: "حضوری",
 
-    age:"۱۰ سال به بالا",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/ney-anban.webp",
 
-    certificate:true,
+    cover: "/images/courses/ney-anban-cover.webp",
 
-    privateClass:true,
+    gallery: [],
 
-    groupClass:false,
+    videos: []
 
-    seoTitle:"آموزش نی‌انبان در شوشتر",
+  },
 
-    seoDescription:"کلاس تخصصی نی‌انبان آموزشگاه موسیقی فاتح.",
+  content: {
 
-    shortDescription:"آموزش ساز محلی نی‌انبان جنوب ایران.",
+    excerpt: "دوره آموزش نی انبان",
 
-    description:"آموزش تکنیک‌های نوازندگی نی‌انبان، قطعات محلی خوزستان و جنوب ایران و اجرای گروهی.",
+    description:
+      "آموزش تخصصی نی انبان با علیرضا عیدی نژاد."
 
-    why:[
+  },
 
-        "حفظ موسیقی محلی",
+  seo: {
 
-        "آموزش اصولی",
+    title: "آموزش نی انبان در شوشتر",
 
-        "اجرای صحنه",
+    description:
+      "ثبت نام کلاس نی انبان در آموزشگاه موسیقی فاتح.",
 
-        "ساز اصیل جنوب"
+    keywords: [
 
-    ],
+      "نی انبان شوشتر",
 
-    syllabus:[
+      "آموزش نی انبان",
 
-        "آشنایی با ساز",
-
-        "صداسازی",
-
-        "تنفس",
-
-        "قطعات محلی",
-
-        "اجرای گروهی"
+      "علیرضا عیدی نژاد"
 
     ]
 
-},
-{
-
-    id:11,
-
-    slug:"hang-drum",
-
-    title:"هنگ درام",
-
-    subtitle:"سازهای ملودیک کوبه‌ای",
-
-    teacherIds:[],
-
-    image:"/images/courses/hang-drum.webp",
-
-    heroImage:"/images/courses/hang-drum-hero.webp",
-
-    icon:"/icons/hang-drum.svg",
-
-    duration:"۲ تا ۱۲ ماه",
-
-    level:"مبتدی تا پیشرفته",
-
-    students:"۸۰+",
-
-    age:"۸ سال به بالا",
-
-    sessions:"هفته‌ای یک جلسه",
-
-    classTime:"۴۵ دقیقه",
-
-    certificate:true,
-
-    privateClass:true,
-
-    groupClass:true,
-
-    seoTitle:"آموزش هنگ درام در شوشتر | آموزشگاه موسیقی فاتح",
-
-    seoDescription:"دوره تخصصی آموزش هنگ درام در آموزشگاه موسیقی فاتح.",
-
-    shortDescription:"آموزش هنگ درام از پایه تا اجرای قطعات آرامش‌بخش.",
-
-    description:"در این دوره هنرجویان با تکنیک‌های صحیح نوازندگی هنگ درام، ریتم، ملودی، بداهه‌نوازی و اجرای قطعات آشنا می‌شوند.",
-
-    why:[
-
-        "یادگیری آسان",
-
-        "مناسب تمامی سنین",
-
-        "تقویت خلاقیت",
-
-        "اجرای قطعات آرامش‌بخش"
-
-    ],
-
-    syllabus:[
-
-        "آشنایی با ساز",
-
-        "تکنیک‌های دست",
-
-        "ریتم",
-
-        "ملودی",
-
-        "بداهه‌نوازی",
-
-        "اجرای قطعات"
-
-    ]
+  }
 
 },
 
+/* ======================================================================
+   13. آموزش نی
+====================================================================== */
+
 {
+  id: 13,
 
-    id:12,
+  slug: "ney-course",
 
-    slug:"children-music",
+  title: "آموزش نی",
 
-    title:"موسیقی کودک",
+  featured: true,
 
-    subtitle:"کلاس‌های تخصصی کودک",
+  active: true,
 
-    teacherIds:[10],
+  priority: 13,
 
-    image:"/images/courses/children-music.webp",
+  instrument: "ney",
 
-    heroImage:"/images/courses/children-music-hero.webp",
+  instructor: 9,
 
-    icon:"/icons/children.svg",
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
 
-    duration:"مستمر",
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
 
-    level:"۳ تا ۸ سال",
+  category: "سازهای بادی",
 
-    students:"۲۰۰+",
+  classType: "حضوری",
 
-    age:"۳ تا ۸ سال",
+  duration: "آموزش ترمیک",
 
-    sessions:"هفته‌ای یک جلسه",
+  media: {
 
-    classTime:"۴۵ دقیقه",
+    image: "/images/courses/ney.webp",
 
-    certificate:true,
+    cover: "/images/courses/ney-cover.webp",
 
-    privateClass:false,
+    gallery: [],
 
-    groupClass:true,
+    videos: []
 
-    seoTitle:"آموزش موسیقی کودک در شوشتر | آموزشگاه موسیقی فاتح",
+  },
 
-    seoDescription:"کلاس موسیقی کودک بر پایه آموزش خلاق موسیقی برای کودکان.",
+  content: {
 
-    shortDescription:"آموزش موسیقی کودک همراه با بازی، ریتم، آواز و سازهای آموزشی.",
+    excerpt: "دوره آموزش نی",
 
-    description:"کلاس‌های موسیقی کودک با هدف پرورش خلاقیت، افزایش تمرکز، رشد شنوایی موسیقایی و تقویت مهارت‌های اجتماعی کودکان برگزار می‌شود.",
+    description:
+      "آموزش تخصصی ساز نی با بهرام موسوی."
 
-    why:[
+  },
 
-        "افزایش تمرکز",
+  seo: {
 
-        "تقویت خلاقیت",
+    title: "آموزش نی در شوشتر",
 
-        "آموزش همراه بازی",
+    description:
+      "ثبت نام کلاس نی در آموزشگاه موسیقی فاتح.",
 
-        "مناسب سنین پایین"
+    keywords: [
 
-    ],
+      "آموزش نی شوشتر",
 
-    syllabus:[
+      "مدرس نی شوشتر",
 
-        "بازی‌های موسیقایی",
-
-        "ریتم",
-
-        "آواز",
-
-        "حرکت",
-
-        "آشنایی با سازها",
-
-        "کار گروهی"
+      "بهرام موسوی"
 
     ]
+
+  }
+
+},
+/* ======================================================================
+   14. آموزش موسیقی کودک
+====================================================================== */
+
+{
+  id: 14,
+
+  slug: "children-music-course",
+
+  title: "آموزش موسیقی کودک",
+
+  featured: true,
+
+  active: true,
+
+  priority: 14,
+
+  instrument: "children-music",
+
+  instructor: 10,
+
+  level: [
+    "مبتدی"
+  ],
+
+  ageGroup: [
+    "۳ تا ۷ سال",
+    "۷ تا ۱۲ سال"
+  ],
+
+  category: "آموزش کودک",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/children-music.webp",
+
+    cover: "/images/courses/children-music-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش موسیقی کودک",
+
+    description:
+      "آموزش موسیقی کودک همراه با بازی، ریتم، آواز، سازهای آموزشی و پرورش خلاقیت."
+
+  },
+
+  seo: {
+
+    title: "آموزش موسیقی کودک در شوشتر",
+
+    description:
+      "ثبت نام کلاس موسیقی کودک در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "موسیقی کودک شوشتر",
+
+      "کلاس موسیقی کودک",
+
+      "فرناز کدخدا مرادی"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   15. آموزش هنگ درام
+====================================================================== */
+
+{
+  id: 15,
+
+  slug: "hangdrum-course",
+
+  title: "آموزش هنگ درام",
+
+  featured: true,
+
+  active: true,
+
+  priority: 15,
+
+  instrument: "hangdrum",
+
+  instructor: 12,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "سازهای کوبه‌ای",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/hangdrum.webp",
+
+    cover: "/images/courses/hangdrum-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش هنگ درام",
+
+    description:
+      "آموزش تخصصی هنگ درام از مبتدی تا پیشرفته."
+
+  },
+
+  seo: {
+
+    title: "آموزش هنگ درام در شوشتر",
+
+    description:
+      "ثبت نام کلاس هنگ درام در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "هنگ درام شوشتر",
+
+      "آموزش هنگ درام",
+
+      "محسن نقیب"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   16. آموزش آواز سنتی
+====================================================================== */
+
+{
+  id: 16,
+
+  slug: "traditional-vocal-course",
+
+  title: "آموزش آواز سنتی",
+
+  featured: true,
+
+  active: true,
+
+  priority: 16,
+
+  instrument: "voice",
+
+  instructor: 13,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "آواز",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/traditional-vocal.webp",
+
+    cover: "/images/courses/traditional-vocal-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش آواز سنتی",
+
+    description:
+      "آموزش ردیف آوازی، تکنیک‌های خوانندگی و اجرای آواز سنتی ایرانی."
+
+  },
+
+  seo: {
+
+    title: "آموزش آواز سنتی در شوشتر",
+
+    description:
+      "ثبت نام کلاس آواز سنتی در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آواز سنتی شوشتر",
+
+      "کلاس آواز سنتی",
+
+      "مجید جعفری زاده"
+
+    ]
+
+  }
+
+},
+/* ======================================================================
+   17. آموزش آواز محلی بختیاری
+====================================================================== */
+
+{
+  id: 17,
+
+  slug: "bakhtiari-vocal-course",
+
+  title: "آموزش آواز محلی بختیاری",
+
+  featured: true,
+
+  active: true,
+
+  priority: 17,
+
+  instrument: "voice",
+
+  instructor: 13,
+
+  level: [
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "آواز",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/bakhtiari-vocal.webp",
+
+    cover: "/images/courses/bakhtiari-vocal-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش آواز محلی بختیاری",
+
+    description:
+      "آموزش اصول آواز محلی بختیاری، تکنیک‌های اجرایی و شناخت مقام‌ها."
+
+  },
+
+  seo: {
+
+    title: "آموزش آواز بختیاری در شوشتر",
+
+    description:
+      "ثبت نام کلاس آواز محلی بختیاری در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آواز بختیاری",
+
+      "آموزش آواز بختیاری",
+
+      "مجید جعفری زاده"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   18. آموزش آواز پاپ
+====================================================================== */
+
+{
+  id: 18,
+
+  slug: "pop-vocal-course",
+
+  title: "آموزش آواز پاپ",
+
+  featured: true,
+
+  active: true,
+
+  priority: 18,
+
+  instrument: "voice",
+
+  instructor: 14,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "آواز",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/pop-vocal.webp",
+
+    cover: "/images/courses/pop-vocal-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش آواز پاپ",
+
+    description:
+      "آموزش تکنیک‌های خوانندگی پاپ، تنفس، بیان و اجرای صحنه."
+
+  },
+
+  seo: {
+
+    title: "آموزش آواز پاپ در شوشتر",
+
+    description:
+      "ثبت نام کلاس آواز پاپ در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آواز پاپ شوشتر",
+
+      "آموزش آواز پاپ",
+
+      "رضا بشیر"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   19. آموزش آواز محلی شوشتری
+====================================================================== */
+
+{
+  id: 19,
+
+  slug: "shushtari-vocal-course",
+
+  title: "آموزش آواز محلی شوشتری",
+
+  featured: true,
+
+  active: true,
+
+  priority: 19,
+
+  instrument: "voice",
+
+  instructor: 14,
+
+  level: [
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "آواز",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/shushtari-vocal.webp",
+
+    cover: "/images/courses/shushtari-vocal-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش آواز محلی شوشتری",
+
+    description:
+      "آموزش شیوه‌های اصیل آواز محلی شوشتری و اجرای مقام‌های بومی."
+
+  },
+
+  seo: {
+
+    title: "آموزش آواز محلی شوشتری",
+
+    description:
+      "ثبت نام کلاس آواز محلی شوشتری در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "آواز شوشتری",
+
+      "آواز محلی شوشتر",
+
+      "رضا بشیر"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   20. دوره سلفژ
+====================================================================== */
+
+{
+  id: 20,
+
+  slug: "solfege-course",
+
+  title: "دوره سلفژ",
+
+  featured: true,
+
+  active: true,
+
+  priority: 20,
+
+  instrument: "theory",
+
+  instructor: 2,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "دروس پایه موسیقی",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/solfege.webp",
+
+    cover: "/images/courses/solfege-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره آموزش سلفژ",
+
+    description:
+      "آموزش کامل سلفژ، دیکته موسیقی، تربیت شنوایی و نت‌خوانی."
+
+  },
+
+  seo: {
+
+    title: "دوره سلفژ در شوشتر",
+
+    description:
+      "ثبت نام دوره سلفژ در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "سلفژ شوشتر",
+
+      "نت خوانی",
+
+      "خلیل دلاوران"
+
+    ]
+
+  }
+
+},
+/* ======================================================================
+   21. دوره ریتم و وزن خوانی
+====================================================================== */
+
+{
+  id: 21,
+
+  slug: "rhythm-reading-course",
+
+  title: "دوره ریتم و وزن خوانی",
+
+  featured: true,
+
+  active: true,
+
+  priority: 21,
+
+  instrument: "theory",
+
+  instructor: 2,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "دروس پایه موسیقی",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/rhythm-reading.webp",
+
+    cover: "/images/courses/rhythm-reading-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره ریتم و وزن خوانی",
+
+    description:
+      "آموزش کامل ریتم، وزن‌خوانی، درک میزان‌ها، سکوت‌ها و تمرینات عملی."
+
+  },
+
+  seo: {
+
+    title: "دوره ریتم و وزن خوانی در شوشتر",
+
+    description:
+      "ثبت نام دوره ریتم و وزن خوانی در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "ریتم خوانی",
+
+      "وزن خوانی",
+
+      "آموزش ریتم شوشتر",
+
+      "خلیل دلاوران"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   22. دوره تئوری موسیقی
+====================================================================== */
+
+{
+  id: 22,
+
+  slug: "music-theory-course",
+
+  title: "دوره تئوری موسیقی",
+
+  featured: true,
+
+  active: true,
+
+  priority: 22,
+
+  instrument: "theory",
+
+  instructor: 2,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "دروس پایه موسیقی",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/music-theory.webp",
+
+    cover: "/images/courses/music-theory-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره تئوری موسیقی",
+
+    description:
+      "آموزش نت‌خوانی، فواصل، گام‌ها، آکوردها، ریتم، فرم موسیقی و مبانی علمی موسیقی."
+
+  },
+
+  seo: {
+
+    title: "دوره تئوری موسیقی در شوشتر",
+
+    description:
+      "ثبت نام دوره تئوری موسیقی در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "تئوری موسیقی",
+
+      "آموزش تئوری موسیقی",
+
+      "خلیل دلاوران"
+
+    ]
+
+  }
+
+},
+
+/* ======================================================================
+   23. دوره صداسازی
+====================================================================== */
+
+{
+  id: 23,
+
+  slug: "voice-training-course",
+
+  title: "دوره صداسازی",
+
+  featured: true,
+
+  active: true,
+
+  priority: 23,
+
+  instrument: "voice",
+
+  instructor: 2,
+
+  level: [
+    "مبتدی",
+    "متوسط",
+    "پیشرفته"
+  ],
+
+  ageGroup: [
+    "نوجوان",
+    "بزرگسال"
+  ],
+
+  category: "آواز",
+
+  classType: "حضوری",
+
+  duration: "آموزش ترمیک",
+
+  media: {
+
+    image: "/images/courses/voice-training.webp",
+
+    cover: "/images/courses/voice-training-cover.webp",
+
+    gallery: [],
+
+    videos: []
+
+  },
+
+  content: {
+
+    excerpt: "دوره صداسازی",
+
+    description:
+      "آموزش تنفس صحیح، رزونانس، وسعت صدا، کنترل حنجره و تکنیک‌های صداسازی."
+
+  },
+
+  seo: {
+
+    title: "دوره صداسازی در شوشتر",
+
+    description:
+      "ثبت نام دوره صداسازی در آموزشگاه موسیقی فاتح.",
+
+    keywords: [
+
+      "صداسازی",
+
+      "آموزش صداسازی",
+
+      "کلاس صداسازی شوشتر",
+
+      "خلیل دلاوران"
+
+    ]
+
+  }
 
 }
-
 
 ];

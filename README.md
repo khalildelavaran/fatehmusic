@@ -1,43 +1,117 @@
-# Astro Starter Kit: Minimal
+# 🎼 Fateh Music Academy
 
-```sh
-npm create astro@latest -- --template minimal
+Official website of **Fateh Music Academy** (آموزشگاه موسیقی فاتح)
+
+Website:
+https://fatehmusic.ir
+
+---
+
+## Project Overview
+
+This project is a production-grade Astro website designed for long-term growth.
+
+The project focuses on:
+
+- Brand Authority
+- Local SEO
+- Entity SEO
+- AI Search Optimization
+- High Performance
+- Clean Architecture
+- Cloudflare Pages Deployment
+
+---
+
+## Technology Stack
+
+- Astro
+- TypeScript
+- Cloudflare Pages
+- Cloudflare Images
+- Cloudflare KV
+- CSS
+- JavaScript
+
+---
+
+## Project Goals
+
+The primary goal is to become the strongest music academy website in Shushtar.
+
+Secondary goals:
+
+- Strong Google rankings
+- Strong AI visibility
+- Brand authority
+- High-quality educational content
+- Excellent user experience
+
+---
+
+## Main Sections
+
+- Home
+- Courses
+- Teachers
+- Articles
+- Gallery
+- Registration
+- Contact
+
+---
+
+## SEO Strategy
+
+This website follows:
+
+- Entity SEO
+- Topical Authority
+- Local SEO
+- Helpful Content
+- Structured Data
+- Internal Linking Strategy
+
+---
+
+## Development
+
+Run development server
+
+```bash
+astro dev --background
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Stop server
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```bash
+astro dev stop
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+Check project
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+```bash
+astro check
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+Build project
 
-## 🧞 Commands
+```bash
+npm run build
+```
 
-All commands are run from the root of the project, from a terminal:
+---
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+## Documentation
 
-## 👀 Want to learn more?
+All project documentation is located in
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+/docs
+
+Documentation is considered the single source of truth.
+
+---
+
+## License
+
+See LICENSE.

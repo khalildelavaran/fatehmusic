@@ -22,14 +22,13 @@ const { teacher } = Astro.props;
 
 const teacherCourses = courses.filter(
   (course) =>
-    Array.isArray(course.teacherIds) &&
-    course.teacherIds.includes(teacher.id)
+    course.instructor === teacher.id
 );
 ---
 
 <MainLayout
   title={`${teacher.name} | آموزشگاه موسیقی فاتح`}
-  description={teacher.bio}
+  description={teacher.content.biography}
 >
 
 <Header />
@@ -51,13 +50,13 @@ const teacherCourses = courses.filter(
         <h2>{teacher.position}</h2>
 
         <p>
-          {teacher.bio}
+          {teacher.content.biography}
         </p>
 
         <div class="teacher-meta">
 
           <div class="meta-card">
-            <strong>{teacher.experience}</strong>
+            <strong>{teacher.professional.experienceYears}</strong>
             <span>سابقه تدریس</span>
           </div>
 
@@ -73,7 +72,7 @@ const teacherCourses = courses.filter(
       <div class="teacher-image">
 
         <img
-          src={teacher.image}
+          src={teacher.media.images.profile}
           alt={teacher.name}
           loading="eager"
           decoding="async"
@@ -120,7 +119,7 @@ const teacherCourses = courses.filter(
               >
 
                 <img
-                  src={course.image}
+                  src={course.media.image}
                   alt={course.title}
                   loading="lazy"
                   decoding="async"
@@ -130,7 +129,7 @@ const teacherCourses = courses.filter(
 
                   <h3>{course.title}</h3>
 
-                  <p>{course.subtitle}</p>
+                  <p>{course.content.excerpt}</p>
 
                   <span class="course-link">
                     مشاهده دوره
@@ -181,7 +180,7 @@ const teacherCourses = courses.filter(
     <div class="teacher-about-box">
 
       <p>
-        {teacher.bio}
+        {teacher.content.biography}
       </p>
 
       <div class="teacher-info">
@@ -190,15 +189,11 @@ const teacherCourses = courses.filter(
 
           <strong>تحصیلات</strong>
 
-          <span>{teacher.education}</span>
-
-        </div>
-
-        <div class="info-item">
+          <span>{teacher.professional.education}</span>
 
           <strong>سابقه تدریس</strong>
 
-          <span>{teacher.experience}</span>
+          <span>{teacher.professional.experienceYears}</span>
 
         </div>
 

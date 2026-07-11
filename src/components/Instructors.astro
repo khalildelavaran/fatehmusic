@@ -1,5 +1,32 @@
 ---
 import { instructors } from "../data/instructors";
+import { schedules } from "../data/schedule";
+
+/* -------------------------------------------------
+   Instructor Cards
+-------------------------------------------------- */
+
+const instructorCards = instructors.map((ins) => {
+
+  const instructorSchedules = schedules.filter(
+    (s) =>
+      s.active &&
+      s.instructorId === ins.id
+  );
+
+  const days = [
+    ...new Set(
+      instructorSchedules.map((s) => s.weekday)
+    )
+  ];
+
+  return {
+    ...ins,
+    schedules: instructorSchedules,
+    days
+  };
+
+});
 ---
 
 <section
@@ -9,7 +36,9 @@ import { instructors } from "../data/instructors";
 
   <div class="container">
 
-    <!-- Section Header -->
+    <!-- ===========================
+         Section Header
+    ============================ -->
 
     <div
       class="section-header"
@@ -40,21 +69,23 @@ import { instructors } from "../data/instructors";
 
     </div>
 
-    <!-- Instructors -->
+    <!-- ===========================
+         Instructor Cards
+    ============================ -->
 
     <div
       class="instructors-grid"
       data-reveal-group
     >
 
-      {instructors.map((ins) => (
+      {instructorCards.map((ins) => (
 
         <article class="instructor-card">
 
           <div class="instructor-image">
 
             <img
-              src={ins.image}
+              src={ins.media.images.profile}
               alt={ins.name}
               loading="lazy"
               decoding="async"
@@ -85,6 +116,28 @@ import { instructors } from "../data/instructors";
               {ins.position}
 
             </p>
+            {ins.days.length > 0 && (
+
+              <div class="days-tags">
+
+                {ins.days.map((day) => (
+
+                  <span
+                    class="day-tag"
+                    aria-label={`روز حضور ${day}`}
+                  >
+
+                    {day}
+
+                  </span>
+
+                ))}
+
+              </div>
+
+            )}
+
+
 
             <a
               href={`/instructors/${ins.slug}`}
@@ -106,7 +159,6 @@ import { instructors } from "../data/instructors";
         </article>
 
       ))}
-
     </div>
 
   </div>
