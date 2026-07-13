@@ -31,9 +31,9 @@ export const instruments = [
 
   icon: "guitar",
 
-  image: "/images/instruments/guitar.webp",
+  image: "/images/courses/guitar.webp",
 
-  cover: "/images/instruments/guitar-cover.webp",
+  cover: "/images/courses/guitar-cover.webp",
 
   instructors: [
     2
@@ -69,9 +69,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/guitar/gallery-01.webp",
+      "/images/courses/guitar/gallery-01.webp",
 
-      "/images/instruments/guitar/gallery-02.webp"
+      "/images/courses/guitar/gallery-02.webp"
 
     ],
 
@@ -130,9 +130,9 @@ export const instruments = [
 
   icon: "violin",
 
-  image: "/images/instruments/violin.webp",
+  image: "/images/courses/violin.webp",
 
-  cover: "/images/instruments/violin-cover.webp",
+  cover: "/images/courses/violin-cover.webp",
 
   instructors: [
     1
@@ -168,9 +168,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/violin/gallery-01.webp",
+      "/images/courses/violin/gallery-01.webp",
 
-      "/images/instruments/violin/gallery-02.webp"
+      "/images/courses/violin/gallery-02.webp"
 
     ],
 
@@ -225,9 +225,9 @@ export const instruments = [
 
   icon: "kamancheh",
 
-  image: "/images/instruments/kamancheh.webp",
+  image: "/images/courses/kamancheh.webp",
 
-  cover: "/images/instruments/kamancheh-cover.webp",
+  cover: "/images/courses/kamancheh-cover.webp",
 
   instructors: [
     1
@@ -262,9 +262,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/kamancheh/gallery-01.webp",
+      "/images/courses/kamancheh/gallery-01.webp",
 
-      "/images/instruments/kamancheh/gallery-02.webp"
+      "/images/courses/kamancheh/gallery-02.webp"
 
     ],
 
@@ -318,9 +318,9 @@ export const instruments = [
 
   icon: "piano",
 
-  image: "/images/instruments/piano.webp",
+  image: "/images/courses/piano.webp",
 
-  cover: "/images/instruments/piano-cover.webp",
+  cover: "/images/courses/piano-cover.webp",
 
   instructors: [
     3
@@ -356,9 +356,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/piano/gallery-01.webp",
+      "/images/courses/piano/gallery-01.webp",
 
-      "/images/instruments/piano/gallery-02.webp"
+      "/images/courses/piano/gallery-02.webp"
 
     ],
 
@@ -411,9 +411,9 @@ export const instruments = [
 
   icon: "keyboard",
 
-  image: "/images/instruments/keyboard.webp",
+  image: "/images/courses/keyboard.webp",
 
-  cover: "/images/instruments/keyboard-cover.webp",
+  cover: "/images/courses/keyboard-cover.webp",
 
   instructors: [
     3
@@ -449,9 +449,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/keyboard/gallery-01.webp",
+      "/images/courses/keyboard/gallery-01.webp",
 
-      "/images/instruments/keyboard/gallery-02.webp"
+      "/images/courses/keyboard/gallery-02.webp"
 
     ],
 
@@ -504,9 +504,9 @@ export const instruments = [
 
   icon: "tar",
 
-  image: "/images/instruments/tar.webp",
+  image: "/images/courses/tar.webp",
 
-  cover: "/images/instruments/tar-cover.webp",
+  cover: "/images/courses/tar-cover.webp",
 
   instructors: [
     4
@@ -541,9 +541,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/tar/gallery-01.webp",
+      "/images/courses/tar/gallery-01.webp",
 
-      "/images/instruments/tar/gallery-02.webp"
+      "/images/courses/tar/gallery-02.webp"
 
     ],
 
@@ -595,9 +595,9 @@ export const instruments = [
 
   icon: "setar",
 
-  image: "/images/instruments/setar.webp",
+  image: "/images/courses/setar.webp",
 
-  cover: "/images/instruments/setar-cover.webp",
+  cover: "/images/courses/setar-cover.webp",
 
   instructors: [
     4
@@ -632,9 +632,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/setar/gallery-01.webp",
+      "/images/courses/setar/gallery-01.webp",
 
-      "/images/instruments/setar/gallery-02.webp"
+      "/images/courses/setar/gallery-02.webp"
 
     ],
 
@@ -687,9 +687,9 @@ export const instruments = [
 
   icon: "santur",
 
-  image: "/images/instruments/santur.webp",
+  image: "/images/courses/santur.webp",
 
-  cover: "/images/instruments/santur-cover.webp",
+  cover: "/images/courses/santur-cover.webp",
 
   instructors: [
     5
@@ -725,9 +725,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/santur/gallery-01.webp",
+      "/images/courses/santur/gallery-01.webp",
 
-      "/images/instruments/santur/gallery-02.webp"
+      "/images/courses/santur/gallery-02.webp"
 
     ],
 
@@ -780,9 +780,9 @@ export const instruments = [
 
   icon: "daf",
 
-  image: "/images/instruments/daf.webp",
+  image: "/images/courses/daf.webp",
 
-  cover: "/images/instruments/daf-cover.webp",
+  cover: "/images/courses/daf-cover.webp",
 
   instructors: [
     6
@@ -818,9 +818,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/daf/gallery-01.webp",
+      "/images/courses/daf/gallery-01.webp",
 
-      "/images/instruments/daf/gallery-02.webp"
+      "/images/courses/daf/gallery-02.webp"
 
     ],
 
@@ -872,9 +872,9 @@ export const instruments = [
 
   icon: "tonbak",
 
-  image: "/images/instruments/tonbak.webp",
+  image: "/images/courses/tonbak.webp",
 
-  cover: "/images/instruments/tonbak-cover.webp",
+  cover: "/images/courses/tonbak-cover.webp",
 
   instructors: [
     6,
@@ -911,9 +911,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/tonbak/gallery-01.webp",
+      "/images/courses/tonbak/gallery-01.webp",
 
-      "/images/instruments/tonbak/gallery-02.webp"
+      "/images/courses/tonbak/gallery-02.webp"
 
     ],
 
@@ -968,9 +968,9 @@ export const instruments = [
 
   icon: "drum",
 
-  image: "/images/instruments/zarb-tempo.webp",
+  image: "/images/courses/zarb-tempo.webp",
 
-  cover: "/images/instruments/zarb-tempo-cover.webp",
+  cover: "/images/courses/zarb-tempo-cover.webp",
 
   instructors: [
     7
@@ -1006,7 +1006,7 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/zarb-tempo/gallery-01.webp"
+      "/images/courses/zarb-tempo/gallery-01.webp"
 
     ],
 
@@ -1059,9 +1059,9 @@ export const instruments = [
 
   icon: "wind",
 
-  image: "/images/instruments/ney-anban.webp",
+  image: "/images/courses/ney-anban.webp",
 
-  cover: "/images/instruments/ney-anban-cover.webp",
+  cover: "/images/courses/ney-anban-cover.webp",
 
   instructors: [
     8
@@ -1096,7 +1096,7 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/ney-anban/gallery-01.webp"
+      "/images/courses/ney-anban/gallery-01.webp"
 
     ],
 
@@ -1148,9 +1148,9 @@ export const instruments = [
 
   icon: "ney",
 
-  image: "/images/instruments/ney.webp",
+  image: "/images/courses/ney.webp",
 
-  cover: "/images/instruments/ney-cover.webp",
+  cover: "/images/courses/ney-cover.webp",
 
   instructors: [
     9
@@ -1185,9 +1185,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/ney/gallery-01.webp",
+      "/images/courses/ney/gallery-01.webp",
 
-      "/images/instruments/ney/gallery-02.webp"
+      "/images/courses/ney/gallery-02.webp"
 
     ],
 
@@ -1240,9 +1240,9 @@ export const instruments = [
 
   icon: "handpan",
 
-  image: "/images/instruments/hangdrum.webp",
+  image: "/images/courses/hangdrum.webp",
 
-  cover: "/images/instruments/hangdrum-cover.webp",
+  cover: "/images/courses/hangdrum-cover.webp",
 
   instructors: [
     12
@@ -1277,9 +1277,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/hangdrum/gallery-01.webp",
+      "/images/courses/hangdrum/gallery-01.webp",
 
-      "/images/instruments/hangdrum/gallery-02.webp"
+      "/images/courses/hangdrum/gallery-02.webp"
 
     ],
 
@@ -1334,9 +1334,9 @@ export const instruments = [
 
   icon: "microphone",
 
-  image: "/images/instruments/voice.webp",
+  image: "/images/courses/voice.webp",
 
-  cover: "/images/instruments/voice-cover.webp",
+  cover: "/images/courses/voice-cover.webp",
 
   instructors: [
     13,
@@ -1376,9 +1376,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/voice/gallery-01.webp",
+      "/images/courses/voice/gallery-01.webp",
 
-      "/images/instruments/voice/gallery-02.webp"
+      "/images/courses/voice/gallery-02.webp"
 
     ],
 
@@ -1436,9 +1436,9 @@ export const instruments = [
 
   icon: "children",
 
-  image: "/images/instruments/children-music.webp",
+  image: "/images/courses/children-music.webp",
 
-  cover: "/images/instruments/children-music-cover.webp",
+  cover: "/images/courses/children-music-cover.webp",
 
   instructors: [
     10
@@ -1472,9 +1472,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/children-music/gallery-01.webp",
+      "/images/courses/children-music/gallery-01.webp",
 
-      "/images/instruments/children-music/gallery-02.webp"
+      "/images/courses/children-music/gallery-02.webp"
 
     ],
 
@@ -1529,9 +1529,9 @@ export const instruments = [
 
   icon: "theory",
 
-  image: "/images/instruments/music-theory.webp",
+  image: "/images/courses/music-theory.webp",
 
-  cover: "/images/instruments/music-theory-cover.webp",
+  cover: "/images/courses/music-theory-cover.webp",
 
   instructors: [
     2
@@ -1568,9 +1568,9 @@ export const instruments = [
 
     gallery: [
 
-      "/images/instruments/music-theory/gallery-01.webp",
+      "/images/courses/music-theory/gallery-01.webp",
 
-      "/images/instruments/music-theory/gallery-02.webp"
+      "/images/courses/music-theory/gallery-02.webp"
 
     ],
 
