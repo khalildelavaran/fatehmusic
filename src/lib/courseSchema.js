@@ -37,17 +37,16 @@ export function generateCourseSchema(course) {
     },
 
 
-    "hasCourseInstance": {
+	"hasCourseInstance": {
 
-      "@type": "CourseInstance",
+	  "@type": "CourseInstance",
 
-      "courseMode": "Private",
+	  "courseMode": course.lessonInfo?.format || "حضوری",
 
-      "description":
-        `${course.lessonInfo.type} - ${course.lessonInfo.sessions}`
+	  "description":
+		`${course.lessonInfo?.type || "کلاس موسیقی"} - ${course.lessonInfo?.sessions || ""}`
 
-    }
-
+}
   };
 
 }
