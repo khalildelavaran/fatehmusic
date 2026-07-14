@@ -1,0 +1,175 @@
+---
+import { courses } from "../data/courses";
+import { instructors } from "../data/instructors";
+import { schedules } from "../data/schedule";
+
+/* -------------------------------------------------
+   Course Cards
+-------------------------------------------------- */
+
+const courseCards = courses.map((course) => {
+
+  const instructor = instructors.find(
+    (i) => i.id === course.instructor
+  );
+
+  const courseSchedules = instructor
+    ? schedules.filter(
+        (s) =>
+          s.active &&
+          s.instructorId === instructor.id
+      )
+    : [];
+
+  const days = [
+    ...new Set(
+      courseSchedules.map((s) => s.weekday)
+    )
+  ];
+
+  return {
+    ...course,
+    instructor,
+    schedules: courseSchedules,
+    days
+  };
+
+});
+---
+
+<section
+  class="courses"
+  data-reveal="fade-up"
+>
+
+  <div class="container">
+
+    <!-- ===========================
+         Section Header
+    ============================ -->
+
+    <div
+      class="section-header"
+      data-reveal-group
+    >
+
+      <span
+        class="section-badge"
+        data-reveal
+        data-reveal-delay="1"
+      >
+        دوره‌های آموزشی
+      </span>
+
+      <h2
+        data-reveal
+        data-reveal-delay="2"
+      >
+        یادگیری موسیقی با بهترین اساتید
+      </h2>
+
+      <p
+        data-reveal
+        data-reveal-delay="3"
+      >
+        دوره‌های آموزشی برای تمامی سنین، از مبتدی تا پیشرفته.
+      </p>
+
+    </div>
+
+    <!-- ===========================
+         Course Cards
+    ============================ -->
+
+    <div
+      class="courses-grid"
+      data-reveal-group
+    >
+
+      {courseCards.map((course) => (
+
+        <article class="course-card">
+
+          <div class="course-image">
+
+            <img
+              src={course.media.image}
+              alt={course.title}
+              loading="lazy"
+              decoding="async"
+            />
+
+          </div>
+
+          <div class="course-content">
+
+            <h3>
+
+              {course.title}
+
+            </h3>
+
+            <span class="course-subtitle">
+
+              {course.content.excerpt}
+
+            </span>
+            {course.instructor && (
+
+              <div class="course-instructor">
+
+                {course.instructor.name}
+
+              </div>
+
+            )}
+
+            {course.days.length > 0 && (
+
+              <div class="days-tags">
+
+                {course.days.map((day) => (
+
+                  <span
+                    class="day-tag"
+                    aria-label={`روز برگزاری ${day}`}
+                  >
+
+                    {day}
+
+                  </span>
+
+                ))}
+
+              </div>
+
+            )}
+
+
+
+            <a
+              href={`/courses/${course.slug}`}
+              class="course-link"
+            >
+
+              اطلاعات بیشتر
+
+              <span>
+
+                ←
+
+              </span>
+
+            </a>
+
+          </div>
+
+        </article>
+
+      ))}
+
+    </div>
+
+  </div>
+
+</section>

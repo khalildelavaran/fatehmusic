@@ -1,0 +1,378 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CTA from "../../components/CTA.astro";
+
+import { instructors } from "../../data/instructors";
+import { courses } from "../../data/courses";
+
+export async function getStaticPaths() {
+  return instructors.map((teacher) => ({
+    params: {
+      slug: teacher.slug
+    },
+    props: {
+      teacher
+    }
+  }));
+}
+
+const { teacher } = Astro.props;
+
+const teacherCourses = courses.filter(
+  (course) =>
+    course.instructor === teacher.id
+);
+---
+
+<MainLayout
+  title={`${teacher.name} | آموزشگاه موسیقی فاتح`}
+  description={teacher.content.biography}
+>
+
+<Header />
+
+<section class="teacher-hero">
+
+  <div class="container">
+
+    <div class="teacher-grid">
+
+      <div class="teacher-content">
+
+        <span class="section-badge">
+          مدرس آموزشگاه موسیقی فاتح
+        </span>
+
+        <h1>{teacher.name}</h1>
+
+        <h2>{teacher.position}</h2>
+
+        <p>
+          {teacher.content.biography}
+        </p>
+
+        <div class="teacher-meta">
+
+          <div class="meta-card">
+            <strong>{teacher.professional.experienceYears}</strong>
+            <span>سابقه تدریس</span>
+          </div>
+
+          <div class="meta-card">
+            <strong>{teacherCourses.length}</strong>
+            <span>دوره آموزشی</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="teacher-image">
+
+        <img
+          src={teacher.media.images.profile}
+          alt={teacher.name}
+          loading="eager"
+          decoding="async"
+        />
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+<section class="teacher-courses">
+
+  <div class="container">
+
+    <div class="section-header">
+
+      <span class="section-badge">
+        دوره‌های آموزشی
+      </span>
+
+      <h2>
+        کلاس‌های {teacher.name}
+      </h2>
+
+      <p>
+        دوره‌هایی که توسط این مدرس در آموزشگاه موسیقی فاتح برگزار می‌شود.
+      </p>
+
+    </div>
+
+    {
+      teacherCourses.length > 0 ? (
+
+        <div class="courses-grid">
+
+          {
+            teacherCourses.map((course) => (
+
+              <a
+                href={`/courses/${course.slug}`}
+                class="course-card"
+              >
+
+                <img
+                  src={course.media.image}
+                  alt={course.title}
+                  loading="lazy"
+                  decoding="async"
+                />
+
+                <div class="course-content">
+
+                  <h3>{course.title}</h3>
+
+                  <p>{course.content.excerpt}</p>
+
+                  <span class="course-link">
+                    مشاهده دوره
+                  </span>
+
+                </div>
+
+              </a>
+
+            ))
+          }
+
+        </div>
+
+      ) : (
+
+        <div class="empty-state">
+
+          <p>
+            هنوز دوره‌ای برای این مدرس ثبت نشده است.
+          </p>
+
+        </div>
+
+      )
+    }
+
+  </div>
+
+</section>
+
+<section class="teacher-about">
+
+  <div class="container">
+
+    <div class="section-header">
+
+      <span class="section-badge">
+        درباره مدرس
+      </span>
+
+      <h2>
+        آشنایی بیشتر با {teacher.name}
+      </h2>
+
+    </div>
+
+    <div class="teacher-about-box">
+
+      <p>
+        {teacher.content.biography}
+      </p>
+
+      <div class="teacher-info">
+
+        <div class="info-item">
+
+          <strong>تحصیلات</strong>
+
+          <span>{teacher.professional.education}</span>
+
+          <strong>سابقه تدریس</strong>
+
+          <span>{teacher.professional.experienceYears}</span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+  <CTA />
+
+  <Footer />
+
+</MainLayout>
+
+<style>
+.teacher-hero{
+    padding:80px 0;
+}
+
+.teacher-grid{
+    display:grid;
+    grid-template-columns:1.2fr .8fr;
+    gap:3rem;
+    align-items:center;
+}
+
+.teacher-content h1{
+    margin:.8rem 0;
+}
+
+.teacher-content h2{
+    color:var(--primary);
+    font-size:1.3rem;
+    margin-bottom:1.5rem;
+}
+
+.teacher-content p{
+    line-height:2;
+    color:var(--text-muted);
+}
+
+.teacher-image img{
+    width:100%;
+    border-radius:24px;
+    display:block;
+    box-shadow:0 20px 50px rgba(0,0,0,.15);
+}
+
+.teacher-meta{
+    display:flex;
+    gap:1rem;
+    margin-top:2rem;
+}
+
+.meta-card{
+    flex:1;
+    text-align:center;
+    padding:1.25rem;
+    border-radius:18px;
+    background:var(--surface);
+    border:1px solid var(--border);
+}
+
+.meta-card strong{
+    display:block;
+    font-size:1.5rem;
+    color:var(--primary);
+    margin-bottom:.35rem;
+}
+
+.teacher-courses,
+.teacher-about{
+    padding:80px 0;
+}
+
+.courses-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:2rem;
+    margin-top:3rem;
+}
+
+.course-card{
+    display:block;
+    overflow:hidden;
+    border-radius:22px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    text-decoration:none;
+    color:inherit;
+    transition:.3s;
+}
+
+.course-card:hover{
+    transform:translateY(-8px);
+    box-shadow:0 18px 40px rgba(0,0,0,.12);
+}
+
+.course-card img{
+    width:100%;
+    height:240px;
+    object-fit:cover;
+    display:block;
+}
+
+.course-content{
+    padding:1.5rem;
+}
+
+.course-content h3{
+    margin-bottom:.75rem;
+}
+
+.course-content p{
+    color:var(--text-muted);
+    line-height:1.9;
+    margin-bottom:1rem;
+}
+
+.course-link{
+    color:var(--primary);
+    font-weight:700;
+}
+
+.teacher-about-box{
+    max-width:900px;
+    margin:3rem auto 0;
+    padding:2rem;
+    border-radius:22px;
+    background:var(--surface);
+    border:1px solid var(--border);
+}
+
+.teacher-about-box p{
+    line-height:2.2;
+    margin-bottom:2rem;
+}
+
+.teacher-info{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:1rem;
+}
+
+.info-item{
+    padding:1rem;
+    border-radius:16px;
+    background:rgba(0,0,0,.03);
+}
+
+.info-item strong{
+    display:block;
+    margin-bottom:.5rem;
+}
+
+.empty-state{
+    margin-top:2rem;
+    text-align:center;
+    padding:3rem;
+    border-radius:20px;
+    background:var(--surface);
+    border:1px dashed var(--border);
+}
+
+@media (max-width:900px){
+
+    .teacher-grid{
+        grid-template-columns:1fr;
+    }
+
+    .teacher-image{
+        order:-1;
+    }
+
+    .teacher-meta{
+        flex-direction:column;
+    }
+
+}
+</style>

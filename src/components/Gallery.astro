@@ -1,0 +1,510 @@
+---
+const gallery = [
+  {
+    title: "کلاس گیتار",
+    subtitle: "آموزش گیتار کلاسیک، پاپ و فلامنکو",
+    image: "/images/gallery/guitar.webp",
+  },
+  {
+    title: "کلاس پیانو",
+    subtitle: "آموزش پیانو کلاسیک و پاپ",
+    image: "/images/gallery/piano.webp",
+  },
+  {
+    title: "کلاس ویولون",
+    subtitle: "آموزش ویولون ایرانی و کلاسیک",
+    image: "/images/gallery/violin.webp",
+  },
+  {
+    title: "اجرای هنرجویان",
+    subtitle: "کنسرت‌ها و اجراهای پایان دوره",
+    image: "/images/gallery/concert.webp",
+  },
+  {
+    title: "موسیقی کودک",
+    subtitle: "آموزش ویژه کودکان",
+    image: "/images/gallery/kids.webp",
+  },
+  {
+    title: "فضای آموزشگاه",
+    subtitle: "محیط آموزشی مدرن",
+    image: "/images/gallery/academy.webp",
+  },
+];
+---
+
+<section
+  id="gallery"
+  class="gallery"
+>
+
+  <div class="container">
+
+    <div
+      class="section-header"
+      data-reveal-group
+    >
+
+      <span
+        class="section-badge"
+        data-reveal
+        data-reveal-delay="1"
+      >
+        گالری آموزشگاه
+      </span>
+
+      <h2
+        data-reveal
+        data-reveal-delay="2"
+      >
+        لحظاتی از آموزش، تمرین و اجرا
+      </h2>
+
+      <p
+        data-reveal
+        data-reveal-delay="3"
+      >
+        تصاویری از کلاس‌ها، هنرجویان و فضای آموزشگاه موسیقی فاتح
+      </p>
+
+    </div>
+
+    <div
+      class="gallery-grid"
+      data-reveal-group
+    >
+
+      {
+        gallery.map((item, index) => (
+          <article
+            class="gallery-item"
+            tabindex="0"
+            role="button"
+            aria-label={`مشاهده تصویر ${item.title}`}
+            data-index={index}
+            data-image={item.image}
+            data-title={item.title}
+            data-subtitle={item.subtitle}
+            data-reveal
+            data-reveal-delay={index + 1}
+          >
+
+            <img
+              src={item.image}
+              alt={item.title}
+              loading="lazy"
+              decoding="async"
+            />
+
+            <div class="gallery-overlay">
+
+              <h3>{item.title}</h3>
+
+              <p>{item.subtitle}</p>
+
+              <span class="gallery-link">
+                مشاهده تصویر
+                <span>←</span>
+              </span>
+
+            </div>
+
+          </article>
+        ))
+      }
+
+    </div>
+
+  </div>
+
+</section>
+
+<div
+  id="lightbox"
+  class="lightbox"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+>
+
+  <button
+    class="lightbox-close"
+    type="button"
+    aria-label="بستن"
+  >
+    ✕
+  </button>
+
+  <button
+    class="lightbox-prev"
+    type="button"
+    aria-label="تصویر قبلی"
+  >
+    ❮
+  </button>
+
+  <div class="lightbox-content">
+
+    <img
+      id="lightbox-image"
+      src=""
+      alt=""
+    />
+
+    <div class="lightbox-caption">
+
+      <h3 id="lightbox-title"></h3>
+
+      <p id="lightbox-subtitle"></p>
+
+    </div>
+
+  </div>
+
+  <button
+    class="lightbox-next"
+    type="button"
+    aria-label="تصویر بعدی"
+  >
+    ❯
+  </button>
+
+</div>
+<!-- ================= LIGHTBOX ================= -->
+
+<div
+  id="lightbox"
+  class="lightbox"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+>
+  <button
+    class="lightbox-close"
+    type="button"
+    aria-label="بستن"
+  >
+    ✕
+  </button>
+
+  <button
+    class="lightbox-prev"
+    type="button"
+    aria-label="قبلی"
+  >
+    ❮
+  </button>
+
+  <div class="lightbox-content">
+    <img
+      id="lightbox-image"
+      src=""
+      alt=""
+    />
+
+    <div class="lightbox-caption">
+      <h3 id="lightbox-title"></h3>
+      <p id="lightbox-subtitle"></p>
+    </div>
+  </div>
+
+  <button
+    class="lightbox-next"
+    type="button"
+    aria-label="بعدی"
+  >
+    ❯
+  </button>
+</div>
+
+<script is:inline>
+document.addEventListener("DOMContentLoaded", () => {
+
+const galleryItems = Array.from(
+    document.querySelectorAll(".gallery-item")
+);
+
+const lightbox =
+    document.getElementById("lightbox");
+
+const img =
+    document.getElementById("lightbox-image");
+
+const title =
+    document.getElementById("lightbox-title");
+
+const subtitle =
+    document.getElementById("lightbox-subtitle");
+
+const btnClose =
+    document.querySelector(".lightbox-close");
+
+const btnPrev =
+    document.querySelector(".lightbox-prev");
+
+const btnNext =
+    document.querySelector(".lightbox-next");
+
+if (
+    !lightbox ||
+    !img ||
+    !title ||
+    !subtitle ||
+    !btnClose ||
+    !btnPrev ||
+    !btnNext
+){
+    return;
+}
+
+let current = 0;
+
+function show(index){
+
+    current = index;
+
+    const item = galleryItems[index];
+
+    if(!item) return;
+
+    img.src =
+        item.dataset.image || "";
+
+    img.alt =
+        item.dataset.title || "";
+
+    title.textContent =
+        item.dataset.title || "";
+
+    subtitle.textContent =
+        item.dataset.subtitle || "";
+}
+
+function open(index){
+
+    show(index);
+
+    lightbox.classList.add("active");
+
+    lightbox.setAttribute(
+        "aria-hidden",
+        "false"
+    );
+
+    document.body.classList.add(
+        "lightbox-open"
+    );
+}
+
+function close(){
+
+    lightbox.classList.remove("active");
+
+    lightbox.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+    document.body.classList.remove(
+        "lightbox-open"
+    );
+}
+
+function next(){
+
+    current++;
+
+    if(current>=galleryItems.length){
+
+        current=0;
+
+    }
+
+    show(current);
+}
+
+function prev(){
+
+    current--;
+
+    if(current<0){
+
+        current=galleryItems.length-1;
+
+    }
+
+    show(current);
+}
+/* =====================================================
+   Gallery Events
+===================================================== */
+
+galleryItems.forEach((item, index) => {
+
+    item.addEventListener("click", () => {
+
+        open(index);
+
+    });
+
+    item.addEventListener("keydown", (e) => {
+
+        if (e.key === "Enter" || e.key === " ") {
+
+            e.preventDefault();
+
+            open(index);
+
+        }
+
+    });
+
+});
+
+
+/* =====================================================
+   Buttons
+===================================================== */
+
+btnClose.addEventListener("click", close);
+
+btnNext.addEventListener("click", next);
+
+btnPrev.addEventListener("click", prev);
+
+
+/* =====================================================
+   Click Outside
+===================================================== */
+
+lightbox.addEventListener("click", (e) => {
+
+    if (e.target === lightbox) {
+
+        close();
+
+    }
+
+});
+
+
+/* =====================================================
+   Keyboard
+===================================================== */
+
+document.addEventListener("keydown", (e) => {
+
+    if (!lightbox.classList.contains("active")) return;
+
+    switch (e.key) {
+
+        case "Escape":
+            close();
+            break;
+
+        case "ArrowLeft":
+            next();
+            break;
+
+        case "ArrowRight":
+            prev();
+            break;
+
+        case "Home":
+            show(0);
+            break;
+
+        case "End":
+            show(galleryItems.length - 1);
+            break;
+
+    }
+
+});
+
+
+/* =====================================================
+   Swipe
+===================================================== */
+
+let touchStart = 0;
+
+lightbox.addEventListener("touchstart", (e) => {
+
+    touchStart = e.changedTouches[0].clientX;
+
+}, { passive: true });
+
+
+lightbox.addEventListener("touchend", (e) => {
+
+    const touchEnd = e.changedTouches[0].clientX;
+
+    const distance = touchEnd - touchStart;
+
+    if (Math.abs(distance) < 60) return;
+
+    if (distance > 0) {
+
+        prev();
+
+    } else {
+
+        next();
+
+    }
+
+}, { passive: true });
+
+
+/* =====================================================
+   Prevent Image Drag
+===================================================== */
+
+img.addEventListener("dragstart", (e) => {
+
+    e.preventDefault();
+
+});
+
+
+/* =====================================================
+   Focus Trap
+===================================================== */
+
+lightbox.addEventListener("keydown", (e) => {
+
+    if (e.key !== "Tab") return;
+
+    const focusable = [
+
+        btnClose,
+        btnPrev,
+        btnNext
+
+    ];
+
+    const first = focusable[0];
+
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+
+        e.preventDefault();
+
+        last.focus();
+
+    }
+
+    else if (!e.shiftKey && document.activeElement === last) {
+
+        e.preventDefault();
+
+        first.focus();
+
+    }
+
+});
+
+});
+</script>

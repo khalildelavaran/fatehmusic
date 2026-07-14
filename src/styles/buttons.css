@@ -1,0 +1,54 @@
+/* ==========================================
+   BUTTONS
+========================================== */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 12px 22px;
+
+    border-radius: 12px;
+
+    background: var(--primary);
+
+    color: #111;
+
+    font-weight: 700;
+
+    transition: .3s;
+
+    border: 1px solid transparent;
+}
+
+.btn:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/* ========================= */
+
+.secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 12px 22px;
+
+    border-radius: 12px;
+
+    background: transparent;
+
+    color: var(--text);
+
+    border: 1px solid rgba(255,255,255,.15);
+
+    transition: .3s;
+}
+
+.secondary-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-2px);
+}

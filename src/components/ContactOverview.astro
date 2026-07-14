@@ -1,0 +1,393 @@
+---
+import "../styles/ContactOverview.css";
+
+import { contact } from "../data/contact";
+
+import {
+    Smartphone,
+    MapPinned,
+    Clock3,
+    Phone,
+    Navigation,
+    Instagram,
+    MessageCircle,
+    Send
+} from "lucide-astro";
+---
+
+<section class="contact-overview section">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <span class="badge">
+
+                اطلاعات تماس
+
+            </span>
+
+            <h2>
+
+                ارتباط با آموزشگاه موسیقی فاتح
+
+            </h2>
+
+            <p>
+
+                برای دریافت مشاوره، ثبت‌نام در دوره‌های آموزشی و پاسخ به پرسش‌های
+                خود از راه‌های زیر با ما در ارتباط باشید.
+
+            </p>
+
+        </div>
+
+        <div class="contact-layout">
+
+            <!-- ستون اطلاعات -->
+
+            <article class="card contact-card">
+
+                <div class="contact-body">
+
+                    <div class="contact-item">
+
+                        <div class="contact-icon">
+
+                            <Smartphone />
+
+                        </div>
+
+                        <div class="contact-content">
+
+                            <span class="title">
+
+                                موبایل
+
+                            </span>
+
+                            <a
+                                href={"tel:+" + contact.phones.mobile.raw}
+                                class="value">
+
+                                {contact.phones.mobile.display}
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <div class="contact-item">
+
+                        <div class="contact-icon">
+
+                            <MapPinned />
+
+                        </div>
+
+                        <div class="contact-content">
+
+                            <span class="title">
+
+                                آدرس آموزشگاه
+
+                            </span>
+
+                            <p class="value">
+
+                                {contact.address.full}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                    <div class="contact-item">
+
+                        <div class="contact-icon">
+
+                            <Clock3 />
+
+                        </div>
+
+                        <div class="contact-content">
+
+                            <span class="title">
+
+                                ساعات کاری
+
+                            </span>
+
+                            <p class="value">
+
+                                <strong>{contact.workingHours[0].title}</strong>
+
+                                <br />
+
+                                {contact.workingHours[0].value}
+
+                                <br /><br />
+
+                                <strong>{contact.workingHours[1].title}</strong>
+
+                                <br />
+
+                                {contact.workingHours[1].value}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+                    <!-- شبکه‌های اجتماعی -->
+
+                    <div class="social-section">
+
+                        <h3>
+
+                            شبکه‌های اجتماعی
+
+                        </h3>
+
+                        <div class="social-grid">
+
+                            <a
+                                href={contact.social.instagram}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="social-card">
+
+                                <div class="social-icon">
+
+                                    <Instagram />
+
+                                </div>
+
+                                <div>
+
+                                    <strong>
+
+                                        Instagram
+
+                                    </strong>
+
+                                    <span>
+
+                                        دنبال کنید
+
+                                    </span>
+
+                                </div>
+
+                            </a>
+
+                            <a
+                                href={contact.social.whatsapp}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="social-card">
+
+                                <div class="social-icon">
+
+                                    <MessageCircle />
+
+                                </div>
+
+                                <div>
+
+                                    <strong>
+
+                                        WhatsApp
+
+                                    </strong>
+
+                                    <span>
+
+                                        ارسال پیام
+
+                                    </span>
+
+                                </div>
+
+                            </a>
+
+                            <a
+                                href={contact.social.telegram}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                class="social-card">
+
+                                <div class="social-icon">
+
+                                    <Send />
+
+                                </div>
+
+                                <div>
+
+                                    <strong>
+
+                                        Telegram
+
+                                    </strong>
+
+                                    <span>
+
+                                        کانال آموزشگاه
+
+                                    </span>
+
+                                </div>
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <!-- عملیات -->
+
+                    <div class="action-grid">
+
+                        <a
+                            href={"tel:+" + contact.phones.mobile.raw}
+                            class="action-card primary">
+
+                            <Phone />
+
+                            <span>
+
+                                تماس مستقیم
+
+                            </span>
+
+                        </a>
+
+                        <a
+                            href={contact.social.whatsapp}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="action-card">
+
+                            <MessageCircle />
+
+                            <span>
+
+                                واتساپ
+
+                            </span>
+
+                        </a>
+
+                        <a
+                            href={contact.map.navigation}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="action-card">
+
+                            <Navigation />
+
+                            <span>
+
+                                مسیریابی
+
+                            </span>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </article>
+
+            <!-- ستون نقشه -->
+
+            <aside class="card contact-map">
+
+                <iframe
+                    src={contact.map.iframe}
+                    title="نقشه آموزشگاه موسیقی فاتح"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+
+                <div class="map-overlay">
+
+                    <span class="badge">
+
+                        آموزشگاه موسیقی فاتح
+
+                    </span>
+
+                    <h3>
+
+                        موقعیت آموزشگاه
+
+                    </h3>
+
+                    <p>
+
+                        {contact.address.full}
+
+                    </p>
+                    <div class="map-actions">
+
+                        <a
+                            href={contact.map.google}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-primary">
+
+                            <Navigation />
+
+                            <span>
+
+                                Google Maps
+
+                            </span>
+
+                        </a>
+
+                        <a
+                            href={contact.map.balad}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-outline">
+
+                            <span>
+
+                                بلد
+
+                            </span>
+
+                        </a>
+
+                        <a
+                            href={contact.map.neshan}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-outline">
+
+                            <span>
+
+                                نشان
+
+                            </span>
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+        </div>
+
+    </div>
+
+</section>

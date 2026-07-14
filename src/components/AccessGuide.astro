@@ -1,0 +1,91 @@
+---
+import "../styles/AccessGuide.css";
+import { contact } from "../data/contact";
+---
+
+<section class="section access-guide">
+
+    <div class="container">
+
+        <div class="section-header">
+
+            <span class="badge">
+                مسیر دسترسی
+            </span>
+
+            <h2>
+                چگونه به آموزشگاه موسیقی فاتح برسید؟
+            </h2>
+
+            <p>
+                آموزشگاه موسیقی فاتح در مرکز شهر شوشتر واقع شده و دسترسی آسانی
+                از طریق خودروی شخصی، تاکسی و مسیرهای شهری دارد.
+            </p>
+
+        </div>
+
+        <div class="access-grid">
+
+            <div class="card access-card">
+
+                <h3>
+                    آدرس آموزشگاه
+                </h3>
+
+                <p>
+                    {contact.address.full}
+                </p>
+
+                <div class="access-actions">
+
+                    <a
+                        href={contact.map.google}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn btn-primary">
+
+                        Google Maps
+
+                    </a>
+
+                    <a
+                        href={contact.map.balad}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn btn-outline">
+
+                        بلد
+
+                    </a>
+
+                    <a
+                        href={contact.map.neshan}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="btn btn-outline">
+
+                        نشان
+
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="card access-map">
+
+                <iframe
+                    src={contact.map.iframe}
+                    title="موقعیت آموزشگاه موسیقی فاتح"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>

@@ -1,0 +1,346 @@
+---
+import "../styles/global.css";
+import "../styles/reveal.css";
+
+export interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+  noindex?: boolean;
+}
+
+const SITE = {
+  name: "آموزشگاه موسیقی فاتح",
+  shortName: "Fateh Music Academy",
+  url: "https://fatehmusic.ir",
+  logo: "https://fatehmusic.ir/logo.svg",
+  defaultImage: "https://fatehmusic.ir/images/og-cover.webp",
+  phone: "+989333139319",
+  email: "fateh.academy.music@gmail.com",
+  address: "خیابان امام غربی، پس از پاساژ مهتسان، محوطه دوم پارکینگ حاج سلیمان"
+};
+
+const {
+  title = "آموزشگاه موسیقی فاتح | آموزش موسیقی در شوشتر",
+  description =
+    "آموزشگاه موسیقی فاتح، آموزش تخصصی گیتار، پیانو، ویولن، آواز، تنبک، نی، نی‌انبان و سایر سازها در شوشتر.",
+  image = SITE.defaultImage,
+  canonical,
+  noindex = false
+} = Astro.props;
+
+
+const pageUrl = canonical
+  ? canonical
+  : new URL(Astro.url.pathname, SITE.url).toString();
+
+
+// ===============================
+// Local Business + Music School Schema
+// ===============================
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+
+  "@type": [
+    "LocalBusiness",
+    "MusicSchool"
+  ],
+
+  "@id": `${SITE.url}/#organization`,
+
+  "name": SITE.name,
+
+  "alternateName": SITE.shortName,
+
+  "description": description,
+
+  "url": SITE.url,
+
+  "logo": SITE.logo,
+
+  "image": image,
+
+  "telephone": SITE.phone,
+
+  "email": SITE.email,
+
+  "priceRange": "$$",
+
+  "areaServed": {
+    "@type": "City",
+    "name": "شوشتر"
+  },
+
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": SITE.address,
+    "addressLocality": "شوشتر",
+    "addressRegion": "خوزستان",
+    "addressCountry": "IR"
+  },
+
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "32.0415255",
+    "longitude": "48.8528608"
+  },
+
+  "hasMap": "https://www.google.com/maps?q=32.0415255,48.8528608",
+
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": [
+      "Saturday",
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday"
+    ],
+    "opens": "16:00",
+    "closes": "21:00"
+  },
+
+  "sameAs": [
+    "https://instagram.com/fateh.music.academy"
+  ]
+};
+
+
+// ===============================
+// Website Schema
+// ===============================
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+
+  "@type": "WebSite",
+
+  "@id": `${SITE.url}/#website`,
+
+  "url": SITE.url,
+
+  "name": SITE.name,
+
+  "inLanguage": "fa-IR",
+
+  "publisher": {
+    "@id": `${SITE.url}/#organization`
+  }
+};
+
+---
+
+<!DOCTYPE html>
+
+<html lang="fa" dir="rtl">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+
+  <title>{title}</title>
+
+
+  <meta
+    name="description"
+    content={description}
+  />
+
+
+  <meta
+    name="robots"
+    content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large"}
+  />
+
+
+  <meta
+    name="author"
+    content="آموزشگاه موسیقی فاتح"
+  />
+
+
+  <meta
+    name="theme-color"
+    content="#0f172a"
+  />
+
+
+  <meta
+    name="generator"
+    content={Astro.generator}
+  />
+
+
+  <!-- Canonical -->
+
+  <link
+    rel="canonical"
+    href={pageUrl}
+  />
+
+
+  <!-- Favicon -->
+
+  <link
+    rel="icon"
+    href="/favicon.svg"
+    type="image/svg+xml"
+  />
+
+
+  <link
+    rel="apple-touch-icon"
+    href="/logo.svg"
+  />
+
+
+  <!-- Fonts -->
+
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+  />
+
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  />
+
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
+    rel="stylesheet"
+  />
+
+
+  <!-- Open Graph -->
+
+  <meta
+    property="og:type"
+    content="website"
+  />
+
+  <meta
+    property="og:locale"
+    content="fa_IR"
+  />
+
+
+  <meta
+    property="og:site_name"
+    content={SITE.name}
+  />
+
+
+  <meta
+    property="og:title"
+    content={title}
+  />
+
+
+  <meta
+    property="og:description"
+    content={description}
+  />
+
+
+  <meta
+    property="og:url"
+    content={pageUrl}
+  />
+
+
+  <meta
+    property="og:image"
+    content={image}
+  />
+
+
+  <!-- Twitter -->
+
+  <meta
+    name="twitter:card"
+    content="summary_large_image"
+  />
+
+
+  <meta
+    name="twitter:title"
+    content={title}
+  />
+
+
+  <meta
+    name="twitter:description"
+    content={description}
+  />
+
+
+  <meta
+    name="twitter:image"
+    content={image}
+  />
+
+
+  <!-- Schema.org -->
+
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(organizationSchema)}
+  />
+
+
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(websiteSchema)}
+  />
+
+
+  <!-- Google Analytics -->
+
+  <script
+    async
+    src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"
+  ></script>
+
+
+  <script is:inline>
+
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag(){
+      dataLayer.push(arguments);
+    }
+
+    gtag("js", new Date());
+
+    gtag("config","G-YKFKP4QH45");
+
+  </script>
+
+
+</head>
+
+
+<body>
+
+  <slot />
+
+
+  <script src="../scripts/reveal.js"></script>
+
+
+</body>
+
+
+</html>

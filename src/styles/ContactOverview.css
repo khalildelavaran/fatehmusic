@@ -1,0 +1,511 @@
+/* ==========================================
+   Contact Overview
+========================================== */
+
+.contact-overview{
+
+    padding:6rem 0;
+
+}
+
+.contact-layout{
+
+    display:grid;
+
+    grid-template-columns:420px 1fr;
+
+    gap:2rem;
+
+    align-items:stretch;
+
+}
+
+/* ==========================================
+   Left Card
+========================================== */
+
+.contact-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.contact-body{
+
+    display:flex;
+
+    flex-direction:column;
+
+    height:100%;
+
+    padding:2.5rem;
+
+}
+
+.contact-card h2{
+
+    margin:1rem 0;
+
+}
+
+.intro{
+
+    margin-bottom:2rem;
+
+    color:var(--text-secondary);
+
+    line-height:2;
+
+}
+
+.contact-items{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:1.5rem;
+
+}
+
+.contact-item{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:1rem;
+
+}
+
+.contact-icon{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:54px;
+
+    height:54px;
+
+    flex-shrink:0;
+
+    border-radius:50%;
+
+    background:rgba(212,175,55,.08);
+
+    border:1px solid rgba(212,175,55,.18);
+
+    color:var(--gold);
+
+}
+
+.contact-icon svg{
+
+    width:22px;
+
+    height:22px;
+
+}
+
+.contact-content{
+
+    flex:1;
+
+}
+
+.contact-content .title{
+
+    display:block;
+
+    margin-bottom:.35rem;
+
+    color:var(--gold);
+
+    font-size:.9rem;
+
+    font-weight:600;
+
+}
+
+.contact-content .value{
+
+    color:var(--text);
+
+    line-height:2;
+
+}
+
+.contact-content a{
+
+    transition:var(--transition);
+
+}
+
+.contact-content a:hover{
+
+    color:var(--gold-light);
+
+}
+/* ==========================================
+   Social
+========================================== */
+
+.social-section{
+
+    margin-top:2.5rem;
+
+}
+
+.social-section h3{
+
+    margin-bottom:1rem;
+
+    font-size:1rem;
+
+    color:var(--text);
+
+}
+
+.social-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:1rem;
+
+}
+
+.social-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:.65rem;
+
+    padding:1.25rem;
+
+    border-radius:var(--radius);
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid var(--border);
+
+    transition:var(--transition);
+
+}
+
+.social-card:hover{
+
+    transform:translateY(-4px);
+
+    border-color:rgba(212,175,55,.35);
+
+}
+
+.social-icon{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    width:54px;
+
+    height:54px;
+
+    border-radius:50%;
+
+    background:rgba(212,175,55,.08);
+
+    color:var(--gold);
+
+}
+
+.social-icon svg{
+
+    width:22px;
+
+    height:22px;
+
+}
+
+.social-card strong{
+
+    font-size:.95rem;
+
+    color:var(--text);
+
+    font-weight:700;
+
+}
+
+.social-card span{
+
+    font-size:.82rem;
+
+    color:var(--text-secondary);
+
+}
+
+/* ==========================================
+   Actions
+========================================== */
+
+.action-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:1rem;
+
+    margin-top:2rem;
+
+}
+
+.action-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:.75rem;
+
+    min-height:120px;
+
+    border-radius:var(--radius);
+
+    border:1px solid var(--border);
+
+    background:rgba(255,255,255,.03);
+
+    transition:var(--transition);
+
+}
+
+.action-card:hover{
+
+    transform:translateY(-5px);
+
+    border-color:rgba(212,175,55,.35);
+
+}
+
+.action-card.primary{
+
+    background:rgba(212,175,55,.08);
+
+    border-color:rgba(212,175,55,.30);
+
+}
+
+.action-card svg{
+
+    width:24px;
+
+    height:24px;
+
+    color:var(--gold);
+
+}
+
+.action-card span{
+
+    font-size:.9rem;
+
+    font-weight:600;
+
+}
+/* ==========================================
+   Map
+========================================== */
+
+.contact-map{
+
+    position:relative;
+
+    overflow:hidden;
+
+    min-height:720px;
+
+}
+
+.contact-map iframe{
+
+    width:100%;
+
+    height:100%;
+
+    border:0;
+
+    display:block;
+
+    filter:grayscale(.12) contrast(1.05);
+
+}
+
+.map-overlay{
+
+    position:absolute;
+
+    right:2rem;
+
+    bottom:2rem;
+
+    width:min(360px,calc(100% - 4rem));
+
+    padding:1.75rem;
+
+    border-radius:var(--radius);
+
+    background:rgba(11,11,11,.82);
+
+    backdrop-filter:blur(14px);
+
+    border:1px solid rgba(212,175,55,.22);
+
+}
+
+.map-overlay h3{
+
+    margin:1rem 0 .75rem;
+
+    color:var(--text);
+
+    font-size:1.35rem;
+
+}
+
+.map-overlay p{
+
+    margin-bottom:1.5rem;
+
+    color:var(--text-secondary);
+
+    line-height:2;
+
+}
+
+.map-actions{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:.75rem;
+
+}
+
+.map-actions .btn{
+
+    flex:1;
+
+    min-width:110px;
+
+}
+
+/* ==========================================
+   Responsive
+========================================== */
+
+@media (max-width:1100px){
+
+    .contact-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .contact-map{
+
+        min-height:520px;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .contact-overview{
+
+        padding:4rem 0;
+
+    }
+
+    .contact-body{
+
+        padding:2rem;
+
+    }
+
+    .social-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .action-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .contact-item{
+
+        align-items:center;
+
+    }
+
+    .contact-icon{
+
+        width:48px;
+
+        height:48px;
+
+    }
+
+    .contact-map{
+
+        min-height:420px;
+
+    }
+
+    .map-overlay{
+
+        position:static;
+
+        width:auto;
+
+        margin:1rem;
+
+    }
+
+    .map-actions{
+
+        flex-direction:column;
+
+    }
+
+    .map-actions .btn{
+
+        width:100%;
+
+    }
+
+}

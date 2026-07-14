@@ -1,0 +1,28 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+
+import ContactOverview from "../components/ContactOverview.astro";
+import ContactFAQ from "../components/ContactFAQ.astro";
+---
+
+<MainLayout
+            title="تماس با آموزشگاه موسیقی فاتح"
+    description="راه‌های ارتباط با آموزشگاه موسیقی فاتح، آدرس، موقعیت، ساعات کاری و پاسخ به سوالات متداول."
+>
+
+    <Header />
+
+    <main>
+
+        <ContactOverview />
+
+        <ContactFAQ />
+
+    </main>
+
+    <Footer />
+
+</MainLayout>

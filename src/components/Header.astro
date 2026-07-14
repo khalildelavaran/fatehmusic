@@ -1,0 +1,707 @@
+---
+const menuItems = [
+
+    {
+        title: "خانه",
+        href: "/"
+    },
+
+    {
+        title: "دوره‌ها",
+        href: "/courses"
+    },
+
+    {
+        title: "اساتید",
+        href: "/instructors"
+    },
+
+    {
+        title: "گالری",
+        href: "/gallery"
+    },
+
+    {
+        title: "وبلاگ",
+        href: "/blog"
+    },
+
+    {
+        title: "تماس با ما",
+        href: "/contact"
+    }
+
+];
+
+const pathname = Astro.url.pathname;
+---
+
+<header
+    id="siteHeader"
+    class="header"
+>
+
+    <!-- Progress Bar -->
+
+    <div class="header-progress">
+
+        <div id="scrollProgress"></div>
+
+    </div>
+
+    <div class="container header-container">
+
+        <!-- =======================
+             LOGO
+        ======================== -->
+
+        <a
+
+            href="/"
+
+            class="logo"
+
+            aria-label="آموزشگاه موسیقی فاتح"
+
+        >
+
+            <img
+
+                src="/images/logo.webp"
+
+                alt="آموزشگاه موسیقی فاتح"
+
+                width="60"
+
+                height="60"
+
+                decoding="async"
+
+            >
+
+            <div class="logo-content">
+
+                <strong>
+
+                    آموزشگاه موسیقی فاتح
+
+                </strong>
+
+                <span>
+
+                    آموزش تخصصی موسیقی
+
+                </span>
+
+            </div>
+
+        </a>
+
+        <!-- =======================
+             DESKTOP MENU
+        ======================== -->
+
+        <nav
+
+            class="desktop-nav"
+
+            aria-label="منوی اصلی"
+
+        >
+
+            <ul>
+
+                {
+
+                    menuItems.map((item)=>(
+
+                        <li>
+
+                            <a
+
+                                href={item.href}
+
+                                class={
+
+                                    pathname===item.href
+
+                                    ? "active"
+
+                                    : ""
+
+                                }
+
+                            >
+
+                                {item.title}
+
+                            </a>
+
+                        </li>
+
+                    ))
+
+                }
+
+            </ul>
+
+        </nav>
+
+        <!-- =======================
+             CTA
+        ======================== -->
+
+        <div class="header-actions">
+
+            <a
+
+                href="/contact"
+
+                class="register-btn"
+
+            >
+
+                ثبت نام
+
+            </a>
+
+            <button
+
+                id="menuToggle"
+
+                class="menu-toggle"
+
+                aria-label="باز کردن منو"
+
+                aria-expanded="false"
+
+                aria-controls="mobileMenu"
+
+            >
+
+                <svg
+
+                    class="icon-menu"
+
+                    viewBox="0 0 24 24"
+
+                    fill="none"
+
+                >
+
+                    <path
+
+                        d="M3 6H21"
+
+                        stroke="currentColor"
+
+                        stroke-width="2.2"
+
+                        stroke-linecap="round"
+
+                    />
+
+                    <path
+
+                        d="M3 12H21"
+
+                        stroke="currentColor"
+
+                        stroke-width="2.2"
+
+                        stroke-linecap="round"
+
+                    />
+
+                    <path
+
+                        d="M3 18H21"
+
+                        stroke="currentColor"
+
+                        stroke-width="2.2"
+
+                        stroke-linecap="round"
+
+                    />
+
+                </svg>
+
+                <svg
+
+                    class="icon-close"
+
+                    viewBox="0 0 24 24"
+
+                    fill="none"
+
+                >
+
+                    <path
+
+                        d="M6 6L18 18"
+
+                        stroke="currentColor"
+
+                        stroke-width="2.2"
+
+                        stroke-linecap="round"
+
+                    />
+
+                    <path
+
+                        d="M18 6L6 18"
+
+                        stroke="currentColor"
+
+                        stroke-width="2.2"
+
+                        stroke-linecap="round"
+
+                    />
+
+                </svg>
+
+            </button>
+
+        </div>
+        <!-- =======================
+             MOBILE MENU
+        ======================== -->
+
+        <nav
+
+            id="mobileMenu"
+
+            class="mobile-menu"
+
+            aria-label="منوی موبایل"
+
+        >
+
+            <div class="mobile-menu-inner">
+
+                {
+
+                    menuItems.map((item)=>(
+
+                        <a
+
+                            href={item.href}
+
+                            class={
+
+                                pathname===item.href
+
+                                ? "active"
+
+                                : ""
+
+                            }
+
+                        >
+
+                            <span>
+
+                                {item.title}
+
+                            </span>
+
+                            <svg
+
+                                viewBox="0 0 24 24"
+
+                                fill="none"
+
+                            >
+
+                                <path
+
+                                    d="M9 6L15 12L9 18"
+
+                                    stroke="currentColor"
+
+                                    stroke-width="2"
+
+                                    stroke-linecap="round"
+
+                                    stroke-linejoin="round"
+
+                                />
+
+                            </svg>
+
+                        </a>
+
+                    ))
+
+                }
+
+                <a
+
+                    href="/contact"
+
+                    class="mobile-register"
+
+                >
+
+                    ثبت نام در آموزشگاه
+
+                </a>
+
+            </div>
+
+        </nav>
+
+    </div>
+
+</header>
+
+<script is:inline>
+
+(() => {
+
+    const initHeader = () => {
+
+        const header = document.getElementById(
+
+            "siteHeader"
+
+        );
+
+        const progress = document.getElementById(
+
+            "scrollProgress"
+
+        );
+
+        const toggle = document.getElementById(
+
+            "menuToggle"
+
+        );
+
+        const menu = document.getElementById(
+
+            "mobileMenu"
+
+        );
+
+        if (
+
+            !header ||
+
+            !toggle ||
+
+            !menu
+
+        ) return;
+
+        let lastScroll =
+
+            window.scrollY;
+
+        const closeMenu = () => {
+
+            toggle.classList.remove(
+
+                "active"
+
+            );
+
+            menu.classList.remove(
+
+                "open"
+
+            );
+
+            document.body.classList.remove(
+
+                "menu-open"
+
+            );
+
+            toggle.setAttribute(
+
+                "aria-expanded",
+
+                "false"
+
+            );
+
+        };
+
+        const openMenu = () => {
+
+            toggle.classList.add(
+
+                "active"
+
+            );
+
+            menu.classList.add(
+
+                "open"
+
+            );
+
+            document.body.classList.add(
+
+                "menu-open"
+
+            );
+
+            toggle.setAttribute(
+
+                "aria-expanded",
+
+                "true"
+
+            );
+
+        };
+        /* ==========================================
+           HEADER SCROLL
+        ========================================== */
+
+        const updateHeader = () => {
+
+            const current = window.scrollY;
+
+            header.classList.toggle(
+
+                "scrolled",
+
+                current > 20
+
+            );
+
+            /* Progress */
+
+            if (progress) {
+
+                const maxScroll =
+
+                    document.documentElement.scrollHeight -
+
+                    window.innerHeight;
+
+                const percent =
+
+                    maxScroll > 0
+
+                        ? (current / maxScroll) * 100
+
+                        : 0;
+
+                progress.style.width =
+
+                    percent + "%";
+
+            }
+
+/* ==========================================
+   PREMIUM AUTO HIDE
+========================================== */
+
+const hideAfter = 1000;
+
+if (current < hideAfter) {
+
+    header.classList.remove("header-hidden");
+
+}
+
+else {
+
+    if (current > lastScroll + 8) {
+
+        header.classList.add("header-hidden");
+
+    }
+
+    else if (current < lastScroll - 8) {
+
+        header.classList.remove("header-hidden");
+
+    }
+
+}
+
+lastScroll = current;
+
+        };
+
+        updateHeader();
+
+        window.addEventListener(
+
+            "scroll",
+
+            updateHeader,
+
+            {
+
+                passive: true
+
+            }
+
+        );
+
+        /* ==========================================
+           MOBILE MENU
+        ========================================== */
+
+        toggle.addEventListener(
+
+            "click",
+
+            (e) => {
+
+                e.stopPropagation();
+
+                if (
+
+                    menu.classList.contains(
+
+                        "open"
+
+                    )
+
+                ) {
+
+                    closeMenu();
+
+                }
+
+                else {
+
+                    openMenu();
+
+                }
+
+            }
+
+        );
+
+        /* Close Menu After Click */
+
+        menu.querySelectorAll("a")
+
+            .forEach((link) => {
+
+                link.addEventListener(
+
+                    "click",
+
+                    closeMenu
+
+                );
+
+            });
+
+        /* Outside Click */
+
+        document.addEventListener(
+
+            "click",
+
+            (e) => {
+
+                if (
+
+                    !menu.contains(
+
+                        e.target
+
+                    ) &&
+
+                    !toggle.contains(
+
+                        e.target
+
+                    )
+
+                ) {
+
+                    closeMenu();
+
+                }
+
+            }
+
+        );
+
+        /* ESC */
+
+        document.addEventListener(
+
+            "keydown",
+
+            (e) => {
+
+                if (
+
+                    e.key ===
+
+                    "Escape"
+
+                ) {
+
+                    closeMenu();
+
+                }
+
+            }
+
+        );
+        /* ==========================================
+           INITIALIZE
+        ========================================== */
+
+    };
+
+    if (
+
+        document.readyState === "loading"
+
+    ) {
+
+        document.addEventListener(
+
+            "DOMContentLoaded",
+
+            initHeader,
+
+            {
+
+                once:true
+
+            }
+
+        );
+
+    }
+
+    else {
+
+        initHeader();
+
+    }
+
+    /* ==========================================
+       ASTRO VIEW TRANSITIONS
+    ========================================== */
+
+    document.addEventListener(
+
+        "astro:page-load",
+
+        initHeader
+
+    );
+
+})();
+
+</script>

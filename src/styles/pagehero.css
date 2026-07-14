@@ -1,0 +1,99 @@
+/* ==========================================
+   PAGE HERO
+========================================== */
+
+.page-hero{
+
+    position:relative;
+
+    padding:170px 0 90px;
+
+    overflow:hidden;
+
+}
+
+.page-hero::before{
+
+    content:"";
+
+    position:absolute;
+
+    inset:0;
+
+    background:
+
+        radial-gradient(
+
+            circle at top right,
+
+            rgba(212,175,55,.10),
+
+            transparent 60%
+
+        );
+
+    pointer-events:none;
+
+}
+
+.page-hero-content{
+
+    position:relative;
+
+    z-index:2;
+
+    max-width:760px;
+
+    margin:auto;
+
+    text-align:center;
+
+}
+
+.page-hero h1{
+
+    margin:18px 0;
+
+    font-size:56px;
+
+    font-weight:800;
+
+    line-height:1.2;
+
+}
+
+.page-hero p{
+
+    color:var(--text-secondary);
+
+    line-height:2;
+
+    font-size:18px;
+
+    max-width:700px;
+
+    margin:auto;
+
+}
+
+@media(max-width:768px){
+
+.page-hero{
+
+padding:140px 0 70px;
+
+}
+
+.page-hero h1{
+
+font-size:38px;
+
+}
+
+.page-hero p{
+
+font-size:16px;
+
+}
+
+}

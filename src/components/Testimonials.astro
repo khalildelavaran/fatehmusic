@@ -1,0 +1,142 @@
+---
+const testimonials = [
+
+{
+name:"محمد رضایی",
+role:"هنرجوی گیتار",
+image:"/images/students/student1.webp",
+text:"فضای آموزشگاه بسیار حرفه‌ای است و شیوه تدریس استاد باعث شد در مدت کوتاهی پیشرفت چشمگیری داشته باشم.",
+rating:5
+},
+
+{
+name:"نگار احمدی",
+role:"هنرجوی پیانو",
+image:"/images/students/student2.webp",
+text:"دلسوزی اساتید و برنامه آموزشی منظم باعث شد با انگیزه بیشتری مسیر موسیقی را ادامه دهم.",
+rating:5
+},
+
+{
+name:"آرین محمدی",
+role:"هنرجوی ویولون",
+image:"/images/students/student3.webp",
+text:"هم محیط آموزشگاه و هم کیفیت کلاس‌ها فراتر از انتظار من بود. کاملاً پیشنهاد می‌کنم.",
+rating:5
+}
+
+];
+---
+
+<section
+    class="testimonials"
+    data-reveal="fade-up"
+>
+
+    <div class="container">
+
+        <!-- Section Header -->
+
+        <div
+            class="section-header"
+            data-reveal-group
+        >
+
+            <span
+                class="section-badge"
+                data-reveal
+                data-reveal-delay="1"
+            >
+
+                تجربه هنرجویان
+
+            </span>
+
+            <h2
+                data-reveal
+                data-reveal-delay="2"
+            >
+
+                هنرجویان درباره آموزشگاه چه می‌گویند؟
+
+            </h2>
+
+            <p
+                data-reveal
+                data-reveal-delay="3"
+            >
+
+                تجربه واقعی هنرجویانی که مسیر موسیقی خود را با آموزشگاه فاتح آغاز کرده‌اند.
+
+            </p>
+
+        </div>
+
+        <!-- Testimonials -->
+
+        <div
+            class="testimonial-slider"
+            data-reveal-group
+        >
+
+            {testimonials.map((item)=>(
+
+                <article class="testimonial-card">
+
+                    <span class="quote">
+
+                        “
+
+                    </span>
+
+                    <div
+                        class="stars"
+                        aria-label={`${item.rating} ستاره`}
+                    >
+
+                        {"★".repeat(item.rating)}
+
+                    </div>
+
+                    <p class="testimonial-text">
+
+                        {item.text}
+
+                    </p>
+
+                    <div class="testimonial-user">
+
+                        <img
+                            src={item.image}
+                            alt={item.name}
+                            loading="lazy"
+                            decoding="async"
+                        />
+
+                        <div>
+
+                            <h3>
+
+                                {item.name}
+
+                            </h3>
+
+                            <span>
+
+                                {item.role}
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            ))}
+
+        </div>
+
+    </div>
+
+</section>
