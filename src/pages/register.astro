@@ -5,6 +5,8 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import PageHero from "../components/PageHero.astro";
 import CTA from "../components/CTA.astro";
+
+import { contact } from "../data/contact";
 ---
 
 <MainLayout
@@ -24,20 +26,23 @@ import CTA from "../components/CTA.astro";
 
         <div class="container">
 
-            <div class="register-card">
+            <div class="card register-card">
 
                 <h2>فرم درخواست ثبت نام</h2>
 
-                <form class="register-form">
+                <form id="registerForm" class="register-form">
 
                     <div class="form-grid">
 
                         <div>
 
-                            <label>نام و نام خانوادگی</label>
+                            <label for="fullName">نام و نام خانوادگی</label>
 
                             <input
                                 type="text"
+                                id="fullName"
+                                name="fullName"
+                                autocomplete="name"
                                 required
                             />
 
@@ -45,10 +50,15 @@ import CTA from "../components/CTA.astro";
 
                         <div>
 
-                            <label>شماره موبایل</label>
+                            <label for="phone">شماره موبایل</label>
 
                             <input
                                 type="tel"
+                                id="phone"
+                                name="phone"
+                                autocomplete="tel"
+                                pattern="09[0-9]{9}"
+                                placeholder="09xxxxxxxxx"
                                 required
                             />
 
@@ -56,10 +66,12 @@ import CTA from "../components/CTA.astro";
 
                         <div>
 
-                            <label>سن</label>
+                            <label for="age">سن</label>
 
                             <input
                                 type="number"
+                                id="age"
+                                name="age"
                                 min="3"
                                 max="99"
                             />
@@ -68,9 +80,9 @@ import CTA from "../components/CTA.astro";
 
                         <div>
 
-                            <label>ساز مورد علاقه</label>
+                            <label for="instrument">ساز مورد علاقه</label>
 
-                            <select>
+                            <select id="instrument" name="instrument">
 
                                 <option>گیتار</option>
 
@@ -91,9 +103,9 @@ import CTA from "../components/CTA.astro";
                         </div>
                         <div>
 
-                            <label>سطح هنرجو</label>
+                            <label for="level">سطح هنرجو</label>
 
-                            <select>
+                            <select id="level" name="level">
 
                                 <option>مبتدی</option>
 
@@ -107,9 +119,9 @@ import CTA from "../components/CTA.astro";
 
                         <div>
 
-                            <label>روزهای ترجیحی</label>
+                            <label for="preferredDays">روزهای ترجیحی</label>
 
-                            <select>
+                            <select id="preferredDays" name="preferredDays">
 
                                 <option>شنبه و دوشنبه</option>
 
@@ -127,9 +139,11 @@ import CTA from "../components/CTA.astro";
 
                     <div class="form-group">
 
-                        <label>توضیحات</label>
+                        <label for="notes">توضیحات</label>
 
                         <textarea
+                            id="notes"
+                            name="notes"
                             rows="6"
                             placeholder="در صورت نیاز توضیحات خود را وارد کنید..."
                         ></textarea>
@@ -142,6 +156,12 @@ import CTA from "../components/CTA.astro";
                     >
                         ثبت درخواست
                     </button>
+
+                    <p
+                        id="registerStatus"
+                        class="register-status"
+                        role="status"
+                    ></p>
 
                 </form>
 
@@ -161,7 +181,7 @@ import CTA from "../components/CTA.astro";
 
 .register-page{
 
-    padding:80px 0;
+    padding:15px 0;
 
 }
 
@@ -171,13 +191,7 @@ import CTA from "../components/CTA.astro";
 
     margin:auto;
 
-    background:#fff;
-
-    border-radius:20px;
-
     padding:40px;
-
-    box-shadow:0 12px 32px rgba(0,0,0,.08);
 
 }
 
@@ -245,9 +259,13 @@ import CTA from "../components/CTA.astro";
 
     padding:14px 16px;
 
-    border:1px solid #d8d8d8;
+    border:1px solid var(--border);
 
     border-radius:12px;
+
+    background:var(--surface);
+
+    color:var(--text);
 
     font:inherit;
 
@@ -263,9 +281,9 @@ import CTA from "../components/CTA.astro";
 
     outline:none;
 
-    border-color:var(--color-primary,#b8860b);
+    border-color:var(--primary);
 
-    box-shadow:0 0 0 3px rgba(184,134,11,.15);
+    box-shadow:0 0 0 3px rgba(201,162,39,.2);
 
 }
 
@@ -278,6 +296,16 @@ import CTA from "../components/CTA.astro";
 .register-form button{
 
     align-self:flex-start;
+
+}
+
+.register-status{
+
+    font-size:.9rem;
+
+    color:var(--primary);
+
+    min-height:1.2em;
 
 }
 
@@ -304,3 +332,50 @@ import CTA from "../components/CTA.astro";
 }
 
 </style>
+
+<script define:vars={{ whatsappNumber: contact.phones.mobile.raw }}>
+    const form = document.getElementById("registerForm");
+    const status = document.getElementById("registerStatus");
+
+    form?.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!form.reportValidity()) {
+            return;
+        }
+
+        const data = new FormData(form);
+        const get = (key) => (data.get(key) || "").toString().trim();
+
+        const fullName = get("fullName");
+        const phone = get("phone");
+        const age = get("age");
+        const instrument = get("instrument");
+        const level = get("level");
+        const preferredDays = get("preferredDays");
+        const notes = get("notes");
+
+        const lines = [
+            "ثبت‌نام جدید - آموزشگاه موسیقی فاتح",
+            "",
+            `نام و نام خانوادگی: ${fullName}`,
+            `شماره موبایل: ${phone}`
+        ];
+
+        if (age) lines.push(`سن: ${age}`);
+        if (instrument) lines.push(`ساز مورد علاقه: ${instrument}`);
+        if (level) lines.push(`سطح هنرجو: ${level}`);
+        if (preferredDays) lines.push(`روزهای ترجیحی: ${preferredDays}`);
+        if (notes) lines.push(`توضیحات: ${notes}`);
+
+        const message = lines.join("\n");
+        const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+
+        if (status) {
+            status.textContent = "در حال انتقال به واتساپ برای ارسال درخواست...";
+        }
+
+        window.open(url, "_blank", "noopener,noreferrer");
+        form.reset();
+    });
+</script>

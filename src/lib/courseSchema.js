@@ -28,7 +28,9 @@ export function generateCourseSchema(course) {
     "courseMode": course.lessonInfo?.format || "حضوری",
 
 
-    "educationalLevel": course.level,
+    "educationalLevel": Array.isArray(course.level)
+      ? course.level.join("، ")
+      : course.level,
 
 
     "audience": {

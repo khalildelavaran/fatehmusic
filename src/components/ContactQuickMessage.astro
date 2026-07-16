@@ -1,0 +1,129 @@
+---
+import "../styles/ContactQuickMessage.css";
+import { contact } from "../data/contact";
+import { MessageCircle } from "lucide-astro";
+---
+
+<section class="quick-whatsapp section">
+
+    <div class="container">
+
+        <div class="card quick-whatsapp-card">
+
+            <div class="section-header">
+
+                <span class="badge">
+                    پیام سریع
+                </span>
+
+                <h2>
+                    سوالی دارید؟ همین‌جا بپرسید
+                </h2>
+
+                <p>
+                    فرم زیر را پر کنید؛ پیام شما آماده می‌شود و مستقیم در واتساپ
+                    برای آموزشگاه ارسال خواهد شد.
+                </p>
+
+            </div>
+
+            <form id="quickMessageForm" class="quick-whatsapp-form">
+
+                <div class="quick-whatsapp-grid">
+
+                    <div>
+
+                        <label for="qmName">نام شما</label>
+
+                        <input
+                            type="text"
+                            id="qmName"
+                            name="name"
+                            autocomplete="name"
+                            required
+                        />
+
+                    </div>
+
+                    <div>
+
+                        <label for="qmTopic">موضوع (اختیاری)</label>
+
+                        <input
+                            type="text"
+                            id="qmTopic"
+                            name="topic"
+                            placeholder="مثلاً دوره گیتار"
+                        />
+
+                    </div>
+
+                </div>
+
+                <div class="quick-whatsapp-group">
+
+                    <label for="qmMessage">پیام شما</label>
+
+                    <textarea
+                        id="qmMessage"
+                        name="message"
+                        rows="4"
+                        required
+                    ></textarea>
+
+                </div>
+
+                <button class="btn btn-primary" type="submit">
+                    <MessageCircle />
+                    <span>ارسال در واتساپ</span>
+                </button>
+
+                <p id="quickMessageStatus" class="quick-whatsapp-status" role="status"></p>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</section>
+
+<script define:vars={{ whatsappNumber: contact.phones.mobile.raw }}>
+    const form = document.getElementById("quickMessageForm");
+    const status = document.getElementById("quickMessageStatus");
+
+    form?.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        if (!form.reportValidity()) {
+            return;
+        }
+
+        const data = new FormData(form);
+        const get = (key) => (data.get(key) || "").toString().trim();
+
+        const name = get("name");
+        const topic = get("topic");
+        const message = get("message");
+
+        const lines = [
+            "پیام جدید از سایت - آموزشگاه موسیقی فاتح",
+            "",
+            `نام: ${name}`
+        ];
+
+        if (topic) lines.push(`موضوع: ${topic}`);
+
+        lines.push("", message);
+
+        const text = lines.join("\n");
+        const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`;
+
+        if (status) {
+            status.textContent = "در حال انتقال به واتساپ...";
+        }
+
+        window.open(url, "_blank", "noopener,noreferrer");
+        form.reset();
+    });
+</script>
