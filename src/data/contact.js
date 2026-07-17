@@ -4,12 +4,12 @@ export const contact = {
 
         mobile: {
             raw: "989333139313",
-            display: "09333139313"
+            display: "۰۹۳۳-۳۱۳-۹۳۱۹"
         },
 
         landline: {
             raw: "06136221174",
-            display: "061-36221174"
+            display: "۰۶۱-۳۶۲۲۱۱۷۴"
         }
 
     },
