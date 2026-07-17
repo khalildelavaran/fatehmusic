@@ -52,7 +52,8 @@ export const courses = [
     image:
       "/images/courses/guitar.webp",
 
-    cover: null,
+    cover:
+      "/images/courses/guitar-cover.webp",
 
     gallery: [
 
@@ -142,7 +143,8 @@ export const courses = [
     image:
       "/images/courses/violin.webp",
 
-    cover: null,
+    cover:
+      "/images/courses/violin-cover.webp",
 
     gallery: [],
 
@@ -225,7 +227,8 @@ export const courses = [
     image:
       "/images/courses/kamancheh.webp",
 
-    cover: null,
+    cover:
+      "/images/courses/kamancheh-cover.webp",
 
     gallery: [],
 
@@ -307,7 +310,7 @@ export const courses = [
 
     image: "/images/courses/piano.webp",
 
-    cover: null,
+    cover: "/images/courses/piano-cover.webp",
 
     gallery: [],
 
@@ -388,7 +391,7 @@ export const courses = [
 
     image: "/images/courses/keyboard.webp",
 
-    cover: null,
+    cover: "/images/courses/keyboard-cover.webp",
 
     gallery: [],
 
@@ -466,7 +469,7 @@ export const courses = [
 
     image: "/images/courses/tar.webp",
 
-    cover: null,
+    cover: "/images/courses/tar-cover.webp",
 
     gallery: [],
 
@@ -546,7 +549,7 @@ export const courses = [
 
     image: "/images/courses/setar.webp",
 
-    cover: null,
+    cover: "/images/courses/setar-cover.webp",
 
     gallery: [],
 
@@ -624,7 +627,7 @@ export const courses = [
 
     image: "/images/courses/santur.webp",
 
-    cover: null,
+    cover: "/images/courses/santur-cover.webp",
 
     gallery: [],
 
@@ -705,7 +708,7 @@ export const courses = [
 
     image: "/images/courses/daf.webp",
 
-    cover: null,
+    cover: "/images/courses/daf-cover.webp",
 
     gallery: [],
 
@@ -762,7 +765,10 @@ export const courses = [
 
   instrument: "tonbak",
 
-  instructor: 6,
+  instructors: [
+  6,
+  11
+  ],
 
   level: [
     "مبتدی",
@@ -786,7 +792,7 @@ export const courses = [
 
     image: "/images/courses/tonbak.webp",
 
-    cover: null,
+    cover: "/images/courses/tonbak-cover.webp",
 
     gallery: [],
 
@@ -866,7 +872,7 @@ export const courses = [
 
     image: "/images/courses/zarb-tempo.webp",
 
-    cover: null,
+    cover: "/images/courses/zarb-tempo-cover.webp",
 
     gallery: [],
 
@@ -946,7 +952,7 @@ export const courses = [
 
     image: "/images/courses/ney-anban.webp",
 
-    cover: null,
+    cover: "/images/courses/ney-anban-cover.webp",
 
     gallery: [],
 
@@ -1026,7 +1032,7 @@ export const courses = [
 
     image: "/images/courses/ney.webp",
 
-    cover: null,
+    cover: "/images/courses/ney-cover.webp",
 
     gallery: [],
 
@@ -1103,7 +1109,7 @@ export const courses = [
 
     image: "/images/courses/children-music.webp",
 
-    cover: null,
+    cover: "/images/courses/children-music-cover.webp",
 
     gallery: [],
 
@@ -1183,7 +1189,7 @@ export const courses = [
 
     image: "/images/courses/hangdrum.webp",
 
-    cover: null,
+    cover: "/images/courses/hangdrum-cover.webp",
 
     gallery: [],
 
@@ -1240,7 +1246,10 @@ export const courses = [
 
   instrument: "voice",
 
-  instructor: 13,
+  instructors: [
+  13,
+  14
+  ],
 
   level: [
     "مبتدی",
@@ -1263,7 +1272,7 @@ export const courses = [
 
     image: "/images/courses/traditional-vocal.webp",
 
-    cover: null,
+    cover: "/images/courses/traditional-vocal-cover.webp",
 
     gallery: [],
 
@@ -1341,7 +1350,7 @@ export const courses = [
 
     image: "/images/courses/bakhtiari-vocal.webp",
 
-    cover: null,
+    cover: "/images/courses/bakhtiari-vocal-cover.webp",
 
     gallery: [],
 
@@ -1421,7 +1430,7 @@ export const courses = [
 
     image: "/images/courses/pop-vocal.webp",
 
-    cover: null,
+    cover: "/images/courses/pop-vocal-cover.webp",
 
     gallery: [],
 
@@ -1478,7 +1487,10 @@ export const courses = [
 
   instrument: "voice",
 
-  instructor: 14,
+  instructors: [
+  14,
+  13
+  ],
 
   level: [
     "متوسط",
@@ -1500,7 +1512,7 @@ export const courses = [
 
     image: "/images/courses/shushtari-vocal.webp",
 
-    cover: null,
+    cover: "/images/courses/shushtari-vocal-cover.webp",
 
     gallery: [],
 
@@ -1580,7 +1592,7 @@ export const courses = [
 
     image: "/images/courses/solfege.webp",
 
-    cover: null,
+    cover: "/images/courses/solfege-cover.webp",
 
     gallery: [],
 
@@ -1659,7 +1671,7 @@ export const courses = [
 
     image: "/images/courses/rhythm-reading.webp",
 
-    cover: null,
+    cover: "/images/courses/rhythm-reading-cover.webp",
 
     gallery: [],
 
@@ -1741,7 +1753,7 @@ export const courses = [
 
     image: "/images/courses/music-theory.webp",
 
-    cover: null,
+    cover: "/images/courses/music-theory-cover.webp",
 
     gallery: [],
 
@@ -1821,7 +1833,7 @@ export const courses = [
 
     image: "/images/courses/voice-training.webp",
 
-    cover: null,
+    cover: "/images/courses/voice-training-cover.webp",
 
     gallery: [],
 

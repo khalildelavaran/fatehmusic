@@ -44,6 +44,7 @@
         transparent,
         rgba(212,175,55,.12)
     );
+	pointer-events:none;
 
     -webkit-mask:
         linear-gradient(#fff 0 0) content-box,

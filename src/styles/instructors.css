@@ -9,13 +9,18 @@
 
 }
 
+
 .instructors-grid{
 
     display:grid;
+
     grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+
     gap:32px;
 
 }
+
+
 
 /* ==========================================
    CARD
@@ -24,9 +29,16 @@
 .instructor-card{
 
     position:relative;
+
     display:flex;
+
     flex-direction:column;
+
     overflow:hidden;
+
+    color:inherit;
+
+    text-decoration:none;
 
     border-radius:28px;
 
@@ -39,6 +51,7 @@
     border:1px solid rgba(255,255,255,.08);
 
     backdrop-filter:blur(16px);
+
     -webkit-backdrop-filter:blur(16px);
 
     transition:
@@ -48,6 +61,8 @@
 
 }
 
+
+
 /* Premium Border */
 
 .instructor-card::before{
@@ -55,6 +70,7 @@
     content:"";
 
     position:absolute;
+
     inset:-1px;
 
     border-radius:inherit;
@@ -73,12 +89,16 @@
         linear-gradient(#fff 0 0);
 
     -webkit-mask-composite:xor;
+
     mask-composite:exclude;
 
     opacity:0;
+
     transition:.45s;
 
 }
+
+
 
 /* ==========================================
    IMAGE
@@ -87,16 +107,22 @@
 .instructor-image{
 
     position:relative;
+
     overflow:hidden;
+
     aspect-ratio:4/5;
 
 }
 
+
 .instructor-image img{
 
     width:100%;
+
     height:100%;
+
     object-fit:cover;
+
     display:block;
 
     transition:
@@ -105,11 +131,14 @@
 
 }
 
+
+
 .instructor-image::after{
 
     content:"";
 
     position:absolute;
+
     inset:0;
 
     background:
@@ -132,6 +161,8 @@
 
 }
 
+
+
 /* ==========================================
    BADGE
 ========================================== */
@@ -141,6 +172,7 @@
     position:absolute;
 
     top:18px;
+
     right:18px;
 
     z-index:5;
@@ -163,6 +195,8 @@
 
 }
 
+
+
 /* ==========================================
    CONTENT
 ========================================== */
@@ -170,20 +204,30 @@
 .instructor-content{
 
     display:flex;
+
     flex-direction:column;
+
     flex:1;
-    margin: 1px 20px 20px 20px;
+
+    padding: 0px 16px 0px 0px;
+
 }
+
+
 
 .instructor-content h3{
 
     font-size:28px;
+
     font-weight:700;
+
     letter-spacing:-.4px;
 
     margin-bottom:1px;
 
 }
+
+
 
 .instructor-content p{
 
@@ -195,40 +239,7 @@
 
 }
 
-/* ==========================================
-   PROFILE BUTTON
-========================================== */
 
-.profile-link{
-
-    margin-top:auto;
-
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-
-    gap:10px;
-
-    padding:15px 22px;
-
-    border-radius:18px;
-
-    background:rgba(255,255,255,.04);
-
-    border:1px solid rgba(255,255,255,.08);
-
-    transition:
-        all .35s ease;
-
-}
-
-.profile-link::after{
-
-    content:"←";
-
-    transition:.35s;
-
-}
 
 /* ==========================================
    HOVER
@@ -248,11 +259,15 @@
 
 }
 
+
+
 .instructor-card:hover::before{
 
     opacity:1;
 
 }
+
+
 
 .instructor-card:hover .instructor-image img{
 
@@ -266,33 +281,15 @@
 
 }
 
+
+
 .instructor-card:hover .instructor-image::after{
 
     opacity:1;
 
 }
 
-.instructor-card:hover .profile-link{
 
-    color:var(--primary);
-
-    background:rgba(212,175,55,.08);
-
-    border-color:rgba(212,175,55,.28);
-
-    transform:translateY(-2px);
-
-    box-shadow:
-
-        0 8px 22px rgba(212,175,55,.18);
-
-}
-
-.instructor-card:hover .profile-link::after{
-
-    transform:translateX(-6px);
-
-}
 
 /* ==========================================
    RESPONSIVE
@@ -308,6 +305,8 @@
 
 }
 
+
+
 @media (max-width:600px){
 
     .instructors-grid{
@@ -316,11 +315,13 @@
 
     }
 
+
     .instructor-content{
 
         padding:20px;
 
     }
+
 
     .instructor-content h3{
 
@@ -329,6 +330,9 @@
     }
 
 }
+
+
+
 /* ==========================================================
    Instructor Weekly Schedule Tags
 ========================================================== */
@@ -341,11 +345,13 @@
 
     gap:.45rem;
 
-    margin-top:.50rem;
+    margin-top:0;
 
-    margin-bottom:1rem;
+    margin-bottom:.4rem;
 
 }
+
+
 
 .day-tag{
 
@@ -376,6 +382,8 @@
     transition:.25s ease;
 
 }
+
+
 
 .day-tag:hover{
 

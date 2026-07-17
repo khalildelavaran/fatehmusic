@@ -36,6 +36,7 @@ const instructorCards = instructors.map((ins) => {
 
   <div class="container">
 
+
     <!-- ===========================
          Section Header
     ============================ -->
@@ -53,12 +54,14 @@ const instructorCards = instructors.map((ins) => {
         اساتید آموزشگاه
       </span>
 
+
       <h2
         data-reveal
         data-reveal-delay="2"
       >
         تیم حرفه‌ای مدرسین موسیقی
       </h2>
+
 
       <p
         data-reveal
@@ -67,22 +70,34 @@ const instructorCards = instructors.map((ins) => {
         آموزش توسط اساتید با تجربه در حوزه موسیقی کلاسیک و مدرن
       </p>
 
+
     </div>
+
+
+
 
     <!-- ===========================
          Instructor Cards
     ============================ -->
+
 
     <div
       class="instructors-grid"
       data-reveal-group
     >
 
+
       {instructorCards.map((ins) => (
 
-        <article class="instructor-card">
+
+        <a
+          href={`/instructors/${ins.slug}`}
+          class="instructor-card"
+        >
+
 
           <div class="instructor-image">
+
 
             <img
               src={ins.media.images.profile}
@@ -91,7 +106,10 @@ const instructorCards = instructors.map((ins) => {
               decoding="async"
             />
 
+
+
             {ins.id === 1 && (
+
 
               <span class="badge">
 
@@ -99,11 +117,16 @@ const instructorCards = instructors.map((ins) => {
 
               </span>
 
+
             )}
+
 
           </div>
 
+
+
           <div class="instructor-content">
+
 
             <h3>
 
@@ -111,16 +134,25 @@ const instructorCards = instructors.map((ins) => {
 
             </h3>
 
+
+
             <p>
 
               {ins.position}
 
             </p>
+
+
+
+
             {ins.days.length > 0 && (
+
 
               <div class="days-tags">
 
+
                 {ins.days.map((day) => (
+
 
                   <span
                     class="day-tag"
@@ -131,36 +163,31 @@ const instructorCards = instructors.map((ins) => {
 
                   </span>
 
+
                 ))}
 
+
               </div>
+
 
             )}
 
 
 
-            <a
-              href={`/instructors/${ins.slug}`}
-              class="profile-link"
-            >
-
-              مشاهده پروفایل
-
-              <span>
-
-                →
-
-              </span>
-
-            </a>
-
           </div>
 
-        </article>
+
+
+        </a>
+
 
       ))}
+
+
     </div>
 
+
   </div>
+
 
 </section>

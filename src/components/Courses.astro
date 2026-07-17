@@ -5,21 +5,42 @@ import { schedules } from "../data/schedule";
 
 /* -------------------------------------------------
    Course Cards
+   Multi Instructor Compatible Schema
 -------------------------------------------------- */
 
 const courseCards = courses.map((course) => {
 
-  const instructor = instructors.find(
-    (i) => i.id === course.instructor
+  /*
+    پشتیبانی از هر دو ساختار:
+
+    قدیمی:
+    instructor: "teacher-id"
+
+    جدید:
+    instructors: [
+      "teacher-id-1",
+      "teacher-id-2"
+    ]
+  */
+
+  const instructorIds = Array.isArray(course.instructors)
+    ? course.instructors
+    : course.instructor
+      ? [course.instructor]
+      : [];
+
+
+  const courseInstructors = instructors.filter(
+    (i) => instructorIds.includes(i.id)
   );
 
-  const courseSchedules = instructor
-    ? schedules.filter(
-        (s) =>
-          s.active &&
-          s.instructorId === instructor.id
-      )
-    : [];
+
+  const courseSchedules = schedules.filter(
+    (s) =>
+      s.active &&
+      instructorIds.includes(s.instructorId)
+  );
+
 
   const days = [
     ...new Set(
@@ -27,15 +48,20 @@ const courseCards = courses.map((course) => {
     )
   ];
 
+
   return {
     ...course,
-    instructor,
+
+    instructors: courseInstructors,
+
     schedules: courseSchedules,
+
     days
   };
 
 });
 ---
+
 
 <section
   class="courses"
@@ -43,6 +69,7 @@ const courseCards = courses.map((course) => {
 >
 
   <div class="container">
+
 
     <!-- ===========================
          Section Header
@@ -61,12 +88,14 @@ const courseCards = courses.map((course) => {
         دوره‌های آموزشی
       </span>
 
+
       <h2
         data-reveal
         data-reveal-delay="2"
       >
         یادگیری موسیقی با بهترین اساتید
       </h2>
+
 
       <p
         data-reveal
@@ -75,22 +104,33 @@ const courseCards = courses.map((course) => {
         دوره‌های آموزشی برای تمامی سنین، از مبتدی تا پیشرفته.
       </p>
 
+
     </div>
+
+
 
     <!-- ===========================
          Course Cards
     ============================ -->
+
 
     <div
       class="courses-grid"
       data-reveal-group
     >
 
+
       {courseCards.map((course) => (
 
-        <article class="course-card">
+
+        <a
+          href={`/courses/${course.slug}`}
+          class="course-card"
+        >
+
 
           <div class="course-image">
+
 
             <img
               src={course.media.image}
@@ -99,9 +139,13 @@ const courseCards = courses.map((course) => {
               decoding="async"
             />
 
+
           </div>
 
+
+
           <div class="course-content">
+
 
             <h3>
 
@@ -109,26 +153,65 @@ const courseCards = courses.map((course) => {
 
             </h3>
 
+
+
             <span class="course-subtitle">
 
               {course.content.excerpt}
 
             </span>
-            {course.instructor && (
 
-              <div class="course-instructor">
 
-                {course.instructor.name}
+
+
+
+            <!-- ===========================
+                 Multiple Instructors
+            ============================ -->
+
+
+            {course.instructors.length > 0 && (
+
+
+              <div class="course-instructors">
+
+
+                {course.instructors.map((instructor) => (
+
+
+                  <div class="course-instructor">
+
+                    {instructor.name}
+
+                  </div>
+
+
+                ))}
+
 
               </div>
 
+
             )}
+
+
+
+
+
+
+            <!-- ===========================
+                 Course Days
+            ============================ -->
+
 
             {course.days.length > 0 && (
 
+
               <div class="days-tags">
 
+
                 {course.days.map((day) => (
+
 
                   <span
                     class="day-tag"
@@ -139,37 +222,34 @@ const courseCards = courses.map((course) => {
 
                   </span>
 
+
                 ))}
 
+
               </div>
+
 
             )}
 
 
 
-            <a
-              href={`/courses/${course.slug}`}
-              class="course-link"
-            >
-
-              اطلاعات بیشتر
-
-              <span>
-
-                ←
-
-              </span>
-
-            </a>
-
           </div>
 
-        </article>
+
+
+        </a>
+
+
 
       ))}
 
+
     </div>
 
+
+
   </div>
+
+
 
 </section>

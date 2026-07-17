@@ -39,6 +39,13 @@
     gap:8px;
 
 }
+.quick-whatsapp,
+.quick-whatsapp *,
+.quick-whatsapp input,
+.quick-whatsapp textarea,
+.quick-whatsapp button {
+    pointer-events: auto !important;
+}
 
 .quick-whatsapp-form label{
 

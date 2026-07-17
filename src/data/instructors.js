@@ -1221,7 +1221,7 @@ export const instructors = [
 
   slug: "reza-bashir",
 
-  name: "رضا بشیرزاده متولی",
+  name: "رضا بشیرزاده",
 
   featured: true,
 
@@ -1233,7 +1233,7 @@ export const instructors = [
 
   identity: {
     firstName: "رضا",
-    lastName: "بشیرزاده متولی",
+    lastName: "بشیرزاده",
     schemaId: "instructor-reza-bashir"
   },
 
