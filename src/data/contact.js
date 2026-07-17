@@ -4,7 +4,7 @@ export const contact = {
 
         mobile: {
             raw: "989333139313",
-            display: "0933 313 9313"
+            display: "09333139313"
         },
 
         landline: {
@@ -30,12 +30,12 @@ export const contact = {
 
         {
             title: "شنبه تا پنج‌شنبه",
-            value: "16:00 تا 21:00"
+            value: "۱۶:۰۰ تا ۲۱:۰۰"
         },
 
         {
             title: "جمعه",
-            value: "13:00 تا 21:00"
+            value: "۱۳:۰۰ تا ۲۱:۰۰"
         }
 
     ],
