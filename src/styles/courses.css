@@ -3,11 +3,12 @@
 ========================================== */
 
 .courses{
-
     position:relative;
-
-    padding:1px 0;
-
+    position:relative;
+    padding:1px !important;
+    margin-top:0 !important;
+	padding-top:0 !important;
+    margin-top:0 !important;
 }
 
 
@@ -239,7 +240,7 @@
 
     .courses{
 
-        padding:45px 0;
+        padding:15px 0;
 
     }
 
