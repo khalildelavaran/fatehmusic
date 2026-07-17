@@ -1026,3 +1026,31 @@
     color:#1877F2;
 
 }
+.footer-card a[href^="tel"]{
+
+    color:inherit;
+    text-decoration:none;
+    transition:.3s;
+
+}
+
+
+.footer-card a[href^="tel"]:hover{
+
+    color:var(--primary);
+
+}
+.footer-card a[href*="maps"]{
+
+    color:inherit;
+    text-decoration:none;
+    transition:.3s;
+
+}
+
+
+.footer-card a[href*="maps"]:hover{
+
+    color:var(--primary);
+
+}

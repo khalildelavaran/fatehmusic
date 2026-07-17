@@ -32,7 +32,6 @@ export const contact = {
             title: "شنبه تا پنج‌شنبه",
             value: "۱۶:۰۰ تا ۲۱:۰۰"
         },
-
         {
             title: "جمعه",
             value: "۱۳:۰۰ تا ۲۱:۰۰"
