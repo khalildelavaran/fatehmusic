@@ -5,7 +5,13 @@ import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
 
 import { instructors } from "../../data/instructors";
-import { courses } from "../../data/courses";
+
+import {
+  resolveSite,
+  resolveInstructor,
+  buildPersonSchema,
+  buildBreadcrumbSchema
+} from "../../seo/index.js";
 
 export async function getStaticPaths() {
   return instructors.map((teacher) => ({
@@ -20,15 +26,28 @@ export async function getStaticPaths() {
 
 const { teacher } = Astro.props;
 
-const teacherCourses = courses.filter(
-  (course) =>
-    course.instructor === teacher.id
+const site = resolveSite();
+const resolvedInstructor = resolveInstructor(teacher, site);
+
+const personSchema = buildPersonSchema(resolvedInstructor, { site });
+const breadcrumbSchema = buildBreadcrumbSchema(
+  [
+    { name: "خانه", path: "/" },
+    { name: "اساتید", path: "/instructors" },
+    { name: teacher.name, path: `/instructors/${teacher.slug}` }
+  ],
+  site
 );
+
+// resolvedInstructor.courses also catches courses where this instructor
+// is listed in the plural `instructors` array, not just the singular field.
+const teacherCourses = resolvedInstructor.courses;
 ---
 
 <MainLayout
   title={`${teacher.name} | آموزشگاه موسیقی فاتح`}
   description={teacher.content.biography}
+  schema={[personSchema, breadcrumbSchema]}
 >
 
 <Header />

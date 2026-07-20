@@ -3,7 +3,7 @@ export const contact = {
     phones: {
 
         mobile: {
-            raw: "989333139313",
+            raw: "989333139319",
             display: "۰۹۳۳-۳۱۳-۹۳۱۹"
         },
 
@@ -43,7 +43,7 @@ export const contact = {
 
         instagram: "https://instagram.com/fateh.music.academy",
 
-        whatsapp: "https://wa.me/989333139313",
+        whatsapp: "https://wa.me/989333139319",
 
         telegram: "https://t.me/fatehmusic"
 

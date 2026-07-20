@@ -22,7 +22,7 @@ export const site = {
   keywords: [
     "آموزشگاه موسیقی",
     "آموزشگاه موسیقی فاتح",
-    "آموزش موسیقی شوشتر"
+    "آموزش موسیقی شوشتر",
     "آموزش گیتار",
     "آموزش دف",
     "آموزش تنبک",
@@ -90,7 +90,8 @@ export const site = {
   },
 
   openingHours: [
-    "Sa-Fr 14:00-21:00"
+    "Sa-Th 16:00-21:00",
+    "Fr 13:00-21:00"
   ],
 
   priceRange: "1,600,000",
@@ -98,7 +99,7 @@ export const site = {
   socials: {
     instagram: "https://instagram.com/fateh.music.academy",
     telegram: "https://t.me/fatehmusic",
-    whatsapp: "https://wa.me/989333139313",
+    whatsapp: "https://wa.me/989333139319",
     aparat: "",
     youtube: ""
   }

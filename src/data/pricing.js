@@ -167,6 +167,46 @@ coursePricingMap: {
     "standard",
 
 
+    "children-music-course":
+    "standard",
+
+
+    "hangdrum-course":
+    "standard",
+
+
+    "traditional-vocal-course":
+    "standard",
+
+
+    "bakhtiari-vocal-course":
+    "standard",
+
+
+    "pop-vocal-course":
+    "standard",
+
+
+    "shushtari-vocal-course":
+    "standard",
+
+
+    "solfege-course":
+    "standard",
+
+
+    "rhythm-reading-course":
+    "standard",
+
+
+    "music-theory-course":
+    "standard",
+
+
+    "voice-training-course":
+    "standard",
+
+
     "piano-course":
     "keyboard",
 

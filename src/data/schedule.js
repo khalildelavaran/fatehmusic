@@ -1,7 +1,7 @@
 /**
  * ============================================================
  * Fateh Music Academy
- * schedule.js
+ * src\data\schedule.js
  * Enterprise Edition v2.0
  * (Architecture Frozen)
  * ============================================================
@@ -107,6 +107,22 @@ export const schedules = [
     sessionDuration: 30,
 
     classroom: 2,
+
+    classMode: "private",
+
+    active: true
+},
+
+{
+    id: 19,
+
+    instructorId: 11,      // نرگس فاتح
+
+    weekday: "یکشنبه",
+
+    sessionDuration: 30,
+
+    classroom: 3,
 
     classMode: "private",
 
@@ -278,6 +294,22 @@ export const schedules = [
     sessionDuration: 30,
 
     classroom: 2,
+
+    classMode: "private",
+
+    active: true
+},
+
+{
+    id: 20,
+
+    instructorId: 11,      // نرگس فاتح
+
+    weekday: "چهارشنبه",
+
+    sessionDuration: 30,
+
+    classroom: 3,
 
     classMode: "private",
 

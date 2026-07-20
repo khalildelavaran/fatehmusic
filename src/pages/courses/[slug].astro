@@ -4,9 +4,14 @@ import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 
 import { courses } from "../../data/courses";
-import { instructors } from "../../data/instructors";
 
-import { generateCourseSchema } from "../../lib/courseSchema";
+import {
+  resolveSite,
+  resolveCourse,
+  buildCourseSchema,
+  buildFaqSchema,
+  buildBreadcrumbSchema
+} from "../../seo/index.js";
 
 
 export async function getStaticPaths() {
@@ -20,12 +25,25 @@ export async function getStaticPaths() {
 const { course } = Astro.props;
 
 
-const courseSchema = generateCourseSchema(course);
+const site = resolveSite();
+const resolvedCourse = resolveCourse(course, site);
 
-
-const teachers = instructors.filter(
-  (teacher) => teacher.id === course.instructor
+const courseSchema = buildCourseSchema(resolvedCourse, { site });
+const faqSchema = buildFaqSchema(resolvedCourse.faqs);
+const breadcrumbSchema = buildBreadcrumbSchema(
+  [
+    { name: "خانه", path: "/" },
+    { name: "دوره‌ها", path: "/courses" },
+    { name: course.title, path: `/courses/${course.slug}` }
+  ],
+  site
 );
+
+
+// resolvedCourse.instructors already merges the singular `instructor`
+// field and the `instructors` array field, so co-taught courses
+// (tonbak, traditional-vocal, shushtari-vocal) now show every teacher.
+const teachers = resolvedCourse.instructors;
 
 
 const relatedCourses = courses
@@ -39,16 +57,11 @@ const relatedCourses = courses
 ---
 
 
-<MainLayout 
-  title={course.seo.title} 
+<MainLayout
+  title={course.seo.title}
   description={course.seo.description}
+  schema={[courseSchema, faqSchema, breadcrumbSchema]}
 >
-
-
-<script
-  type="application/ld+json"
-  set:html={JSON.stringify(courseSchema)}
-/>
 
 
 <Header />

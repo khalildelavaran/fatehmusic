@@ -87,19 +87,19 @@ academy: {
 
   workingHours: {
 
-    saturday: "14:00-22:00",
+    saturday: "16:00-21:00",
 
-    sunday: "14:00-22:00",
+    sunday: "16:00-21:00",
 
-    monday: "14:00-22:00",
+    monday: "16:00-21:00",
 
-    tuesday: "14:00-22:00",
+    tuesday: "16:00-21:00",
 
-    wednesday: "14:00-22:00",
+    wednesday: "16:00-21:00",
 
-    thursday: "14:00-22:00",
+    thursday: "16:00-21:00",
 
-    friday: "تعطیل"
+    friday: "13:00-21:00"
 
   },
 
@@ -189,45 +189,45 @@ contact: {
   workingHours: {
 
     saturday: {
-      open: "14:00",
-      close: "22:00",
+      open: "16:00",
+      close: "21:00",
       active: true
     },
 
     sunday: {
-      open: "14:00",
-      close: "22:00",
+      open: "16:00",
+      close: "21:00",
       active: true
     },
 
     monday: {
-      open: "14:00",
-      close: "22:00",
+      open: "16:00",
+      close: "21:00",
       active: true
     },
 
     tuesday: {
-      open: "14:00",
-      close: "22:00",
+      open: "16:00",
+      close: "21:00",
       active: true
     },
 
     wednesday: {
-      open: "14:00",
-      close: "22:00",
+      open: "16:00",
+      close: "21:00",
       active: true
     },
 
     thursday: {
-      open: "14:00",
-      close: "22:00",
+      open: "16:00",
+      close: "21:00",
       active: true
     },
 
     friday: {
-      open: "",
-      close: "",
-      active: false
+      open: "13:00",
+      close: "21:00",
+      active: true
     }
 
   },
@@ -768,8 +768,8 @@ responses: {
 شنبه تا پنجشنبه
 16:00 الی 21:00
 
-جمعه:
-فقط با هماهنگی قبلی.`,
+جمعه
+13:00 الی 21:00`,
 
 
 

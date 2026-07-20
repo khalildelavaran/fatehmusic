@@ -11,22 +11,10 @@ import { MessageCircle } from "lucide-astro";
         <div class="card quick-whatsapp-card">
 
             <div class="section-header">
-
-                <span class="badge">
-                    پیام سریع
-                </span>
-
-                <h2>
-                    سوالی دارید؟ همین‌جا بپرسید
-                </h2>
-
-                <p>
-                    فرم زیر را پر کنید؛ پیام شما آماده می‌شود و مستقیم در واتساپ
-                    برای آموزشگاه ارسال خواهد شد.
-                </p>
-
+                <span class="badge">پیام سریع</span>
+                <h2>سوالی دارید؟ همین‌جا بپرسید</h2>
+                <p>فرم زیر را پر کنید؛ پیام شما آماده می‌شود و مستقیم در واتساپ ارسال خواهد شد.</p>
             </div>
-
 
             <form
                 id="quickMessageForm"
@@ -36,91 +24,36 @@ import { MessageCircle } from "lucide-astro";
 
                 <div class="quick-whatsapp-grid">
 
-
                     <div>
-
-                        <label for="qmName">
-                            نام شما
-                        </label>
-
-                        <input
-                            type="text"
-                            id="qmName"
-                            name="name"
-                            autocomplete="name"
-                            required
-                        />
-
+                        <label for="qmName">نام شما</label>
+                        <input type="text" id="qmName" name="name" autocomplete="name" required />
                     </div>
 
-
                     <div>
-
-                        <label for="qmTopic">
-                            موضوع (اختیاری)
-                        </label>
-
-                        <input
-                            type="text"
-                            id="qmTopic"
-                            name="topic"
-                            placeholder="مثلاً دوره گیتار"
-                        />
-
+                        <label for="qmTopic">موضوع (اختیاری)</label>
+                        <input type="text" id="qmTopic" name="topic" placeholder="مثلاً دوره گیتار" />
                     </div>
-
 
                 </div>
-
-
 
                 <div class="quick-whatsapp-group">
-
-                    <label for="qmMessage">
-                        پیام شما
-                    </label>
-
-                    <textarea
-                        id="qmMessage"
-                        name="message"
-                        rows="4"
-                        required
-                    ></textarea>
-
+                    <label for="qmMessage">پیام شما</label>
+                    <textarea id="qmMessage" name="message" rows="4" required></textarea>
                 </div>
 
-
-
-                <button
-                    class="btn btn-primary"
-                    type="submit"
-                >
-
+                <button class="btn btn-primary" type="submit">
                     <MessageCircle />
-
-                    <span>
-                        ارسال در واتساپ
-                    </span>
-
+                    <span>ارسال در واتساپ</span>
                 </button>
 
-
-
-                <p
-                    id="quickMessageStatus"
-                    class="quick-whatsapp-status"
-                    role="status"
-                ></p>
-
+                <p id="quickMessageStatus" class="quick-whatsapp-status" role="status"></p>
 
             </form>
-
 
         </div>
 
     </div>
 
 </section>
-<script type="module">
-    import "../scripts/whatsapp-form.js";
-</script>
+<script type="module" src="../src/scripts/whatsapp-form.js"></script>
+<script type="module" src="../src/scripts/popup-ui.js"></script>

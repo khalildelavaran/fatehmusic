@@ -2,136 +2,35 @@
 import "../styles/global.css";
 import "../styles/reveal.css";
 
+import { buildSEO } from "../seo/index.js";
+
 export interface Props {
   title?: string;
   description?: string;
   image?: string;
   canonical?: string;
   noindex?: boolean;
+  schema?: object[];
 }
 
-const SITE = {
-  name: "آموزشگاه موسیقی فاتح",
-  shortName: "Fateh Music Academy",
-  url: "https://fatehmusic.ir",
-  logo: "https://fatehmusic.ir/logo.svg",
-  defaultImage: "https://fatehmusic.ir/images/og-cover.webp",
-  phone: "+989333139319",
-  email: "fateh.academy.music@gmail.com",
-  address: "خیابان امام غربی، پس از پاساژ مهتسان، محوطه دوم پارکینگ حاج سلیمان"
-};
-
 const {
-  title = "آموزشگاه موسیقی فاتح | آموزش موسیقی در شوشتر",
-  description =
-    "آموزشگاه موسیقی فاتح، آموزش تخصصی گیتار، پیانو، ویولن، آواز، تنبک، نی، نی‌انبان و سایر سازها در شوشتر.",
-  image = SITE.defaultImage,
+  title,
+  description,
+  image,
   canonical,
-  noindex = false
+  noindex = false,
+  schema = []
 } = Astro.props;
 
-
-const pageUrl = canonical
-  ? canonical
-  : new URL(Astro.url.pathname, SITE.url).toString();
-
-
-// ===============================
-// Local Business + Music School Schema
-// ===============================
-
-const organizationSchema = {
-  "@context": "https://schema.org",
-
-  "@type": [
-    "LocalBusiness",
-    "MusicSchool"
-  ],
-
-  "@id": `${SITE.url}/#organization`,
-
-  "name": SITE.name,
-
-  "alternateName": SITE.shortName,
-
-  "description": description,
-
-  "url": SITE.url,
-
-  "logo": SITE.logo,
-
-  "image": image,
-
-  "telephone": SITE.phone,
-
-  "email": SITE.email,
-
-  "priceRange": "$$",
-
-  "areaServed": {
-    "@type": "City",
-    "name": "شوشتر"
-  },
-
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": SITE.address,
-    "addressLocality": "شوشتر",
-    "addressRegion": "خوزستان",
-    "addressCountry": "IR"
-  },
-
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": "32.0415255",
-    "longitude": "48.8528608"
-  },
-
-  "hasMap": "https://www.google.com/maps?q=32.0415255,48.8528608",
-
-  "openingHoursSpecification": {
-    "@type": "OpeningHoursSpecification",
-    "dayOfWeek": [
-      "Saturday",
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday"
-    ],
-    "opens": "16:00",
-    "closes": "21:00"
-  },
-
-  "sameAs": [
-    "https://instagram.com/fateh.music.academy"
-  ]
-};
-
-
-// ===============================
-// Website Schema
-// ===============================
-
-const websiteSchema = {
-  "@context": "https://schema.org",
-
-  "@type": "WebSite",
-
-  "@id": `${SITE.url}/#website`,
-
-  "url": SITE.url,
-
-  "name": SITE.name,
-
-  "inLanguage": "fa-IR",
-
-  "publisher": {
-    "@id": `${SITE.url}/#organization`
-  }
-};
-
+const seo = buildSEO({
+  path: Astro.url.pathname,
+  title,
+  description,
+  image,
+  canonical,
+  noindex,
+  extraSchema: schema
+});
 ---
 
 <!DOCTYPE html>
@@ -147,46 +46,44 @@ const websiteSchema = {
     content="width=device-width, initial-scale=1"
   />
 
-  <title>{title}</title>
-
+  <title>{seo.metadata.title}</title>
 
   <meta
     name="description"
-    content={description}
+    content={seo.metadata.description}
   />
 
+  <meta
+    name="keywords"
+    content={seo.metadata.keywords.join("، ")}
+  />
 
   <meta
     name="robots"
-    content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large"}
+    content={seo.metadata.robots}
   />
-
 
   <meta
     name="author"
-    content="آموزشگاه موسیقی فاتح"
+    content={seo.metadata.author}
   />
-
 
   <meta
     name="theme-color"
-    content="#0f172a"
+    content={seo.metadata.themeColor}
   />
-
 
   <meta
     name="generator"
     content={Astro.generator}
   />
 
-
   <!-- Canonical -->
 
   <link
     rel="canonical"
-    href={pageUrl}
+    href={seo.canonical}
   />
-
 
   <!-- Favicon -->
 
@@ -196,12 +93,10 @@ const websiteSchema = {
     type="image/svg+xml"
   />
 
-
   <link
     rel="apple-touch-icon"
     href="/logo.svg"
   />
-
 
   <!-- Fonts -->
 
@@ -216,95 +111,34 @@ const websiteSchema = {
     crossorigin
   />
 
-
   <link
     href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
     rel="stylesheet"
   />
 
-
   <!-- Open Graph -->
 
-  <meta
-    property="og:type"
-    content="website"
-  />
-
-  <meta
-    property="og:locale"
-    content="fa_IR"
-  />
-
-
-  <meta
-    property="og:site_name"
-    content={SITE.name}
-  />
-
-
-  <meta
-    property="og:title"
-    content={title}
-  />
-
-
-  <meta
-    property="og:description"
-    content={description}
-  />
-
-
-  <meta
-    property="og:url"
-    content={pageUrl}
-  />
-
-
-  <meta
-    property="og:image"
-    content={image}
-  />
-
+  <meta property="og:type" content={seo.openGraph["og:type"]} />
+  <meta property="og:locale" content={seo.openGraph["og:locale"]} />
+  <meta property="og:site_name" content={seo.openGraph["og:site_name"]} />
+  <meta property="og:title" content={seo.openGraph["og:title"]} />
+  <meta property="og:description" content={seo.openGraph["og:description"]} />
+  <meta property="og:url" content={seo.openGraph["og:url"]} />
+  <meta property="og:image" content={seo.openGraph["og:image"]} />
 
   <!-- Twitter -->
 
-  <meta
-    name="twitter:card"
-    content="summary_large_image"
-  />
+  <meta name="twitter:card" content={seo.twitter["twitter:card"]} />
+  <meta name="twitter:title" content={seo.twitter["twitter:title"]} />
+  <meta name="twitter:description" content={seo.twitter["twitter:description"]} />
+  <meta name="twitter:image" content={seo.twitter["twitter:image"]} />
 
-
-  <meta
-    name="twitter:title"
-    content={title}
-  />
-
-
-  <meta
-    name="twitter:description"
-    content={description}
-  />
-
-
-  <meta
-    name="twitter:image"
-    content={image}
-  />
-
-
-  <!-- Schema.org -->
+  <!-- Schema.org: one @graph per page (Organization + Website + whatever the page passed in) -->
 
   <script
     type="application/ld+json"
-    set:html={JSON.stringify(organizationSchema)}
+    set:html={JSON.stringify(seo.schemaGraph)}
   />
-
-
-  <script
-    type="application/ld+json"
-    set:html={JSON.stringify(websiteSchema)}
-  />
-
 
   <!-- Google Analytics -->
 
@@ -312,7 +146,6 @@ const websiteSchema = {
     async
     src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"
   ></script>
-
 
   <script is:inline>
 
@@ -328,19 +161,14 @@ const websiteSchema = {
 
   </script>
 
-
 </head>
-
 
 <body>
 
   <slot />
 
-
   <script src="../scripts/reveal.js"></script>
 
-
 </body>
-
 
 </html>
