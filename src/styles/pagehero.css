@@ -5,11 +5,9 @@
 .page-hero{
 
     position:relative;
-
-    padding:95px 0 15px;
-
+    padding:95px 0 0px;
     overflow:hidden;
-
+	margin:0px;
 }
 
 .page-hero::before{

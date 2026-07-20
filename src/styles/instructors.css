@@ -5,10 +5,8 @@
 .instructors{
 
     position:relative;
-    padding:2rem 0;
-
+    padding:0.5rem 0;
 }
-
 
 .instructors-grid{
 
@@ -19,8 +17,6 @@
     gap:32px;
 
 }
-
-
 
 /* ==========================================
    CARD
@@ -60,8 +56,6 @@
         border-color .45s ease;
 
 }
-
-
 
 /* Premium Border */
 
@@ -222,7 +216,7 @@
     font-weight:700;
 
     letter-spacing:-.4px;
-
+    margin-top:0px !important;
     margin-bottom:1px;
 
 }
@@ -234,7 +228,7 @@
     color:var(--text-secondary);
 
     line-height:1.9;
-
+    margin-top:0px !important;
     margin-bottom:1px;
 
 }
