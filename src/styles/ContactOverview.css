@@ -44,7 +44,7 @@
 
     height:100%;
 
-    padding:2.5rem;
+    padding:1rem;
 
 }
 
@@ -81,12 +81,21 @@
     align-items:flex-start;
 
     gap:1rem;
+	padding-top:8px;
+	padding-bottom:8px;
 
 }
 
 .contact-icon{
+    display:grid;
 
-    display:flex;
+    place-items:center;
+
+    align-items:center;
+
+    justify-content:center;
+	
+    width:22px;
 
     align-items:center;
 
@@ -109,7 +118,14 @@
 }
 
 .contact-icon svg{
+   display:grid;
 
+    place-items:center;
+
+    align-items:center;
+
+    justify-content:center;
+	
     width:22px;
 
     height:22px;
@@ -126,8 +142,8 @@
 
     display:block;
 
-    margin-bottom:.35rem;
-
+    margin-bottom:0rem;
+    margin-top:0rem;
     color:var(--gold);
 
     font-size:.9rem;
@@ -150,6 +166,11 @@
 
 }
 
+.contact-content p{
+
+    margin:0;
+
+}
 .contact-content a:hover{
 
     color:var(--gold-light);
@@ -161,7 +182,7 @@
 
 .social-section{
 
-    margin-top:2.5rem;
+    margin-top:0.5rem;
 
 }
 
@@ -368,13 +389,16 @@
 
     position:absolute;
 
-    right:2rem;
+    right:3rem;
 
-    bottom:2rem;
+    bottom:9rem;
 
     width:min(360px,calc(100% - 4rem));
 
-    padding:1.75rem;
+	padding-top: 0;
+	padding-right: 1rem;
+	padding-bottom: 1rem;
+	padding-left: 1rem;
 
     border-radius:var(--radius);
 
@@ -384,11 +408,24 @@
 
     border:1px solid rgba(212,175,55,.22);
 
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+}
+.map-overlay .badge {
+    position: relative;
+    left: 0;
+    right: auto;
+    margin-right: auto;
+    margin-left: 0;
 }
 
 .map-overlay h3{
 
-    margin-top:2.1rem;
+    margin-top:0;
 	margin-bottom:0;
 
     color:var(--text);
@@ -400,7 +437,6 @@
 .map-overlay p{
 
     margin-top:0;
-    margin-bottom:5px;
     margin-bottom:5px;
 
     color:var(--text-secondary);
@@ -423,7 +459,18 @@
 
     flex:1;
 
-    min-width:110px;
+    width:min(400px,calc(100% - 4rem));
+	
+	white-space: nowrap;
+
+    padding: 0.6rem 0.8rem;
+
+    font-size: 0.85rem;
+    display: flex;
+
+    flex-wrap: nowrap;
+
+    gap: .5rem;
 
 }
 
@@ -515,4 +562,24 @@
 
     }
 
+}
+.working-hours {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.working-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    padding: 1px 0;
+}
+
+.working-row strong {
+    font-weight: 700;
+}
+
+.working-row span {
+    opacity: 0.9;
 }

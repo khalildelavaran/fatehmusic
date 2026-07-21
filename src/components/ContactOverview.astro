@@ -126,32 +126,25 @@ import {
 
                             </span>
 
-                            <p class="value">
+							<div class="working-hours">
 
-                                <strong>
+								{
+									contact.workingHours.map((item) => (
+										<div class="working-row">
 
-                                    {contact.workingHours[0].title}
+											<strong>
+												{item.title}
+											</strong>
 
-                                </strong>
+											<span>
+												{item.value}
+											</span>
 
-                                <br />
+										</div>
+									))
+								}
 
-                                {contact.workingHours[0].value}
-
-                                <br /><br />
-
-                                <strong>
-
-                                    {contact.workingHours[1].title}
-
-                                </strong>
-
-                                <br />
-
-                                {contact.workingHours[1].value}
-
-                            </p>
-
+							</div>
                         </div>
 
                     </div>
