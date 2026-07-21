@@ -25,6 +25,7 @@ export function buildCourseSchema(course, { site }) {
     return pruneEmpty({
         "@type": SCHEMA_TYPES.COURSE,
         "@id": `${course.url}/#course`,
+        url: course.url,
         name: course.title,
         description: course.description,
         image: course.image,
