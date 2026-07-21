@@ -4,7 +4,7 @@
 
 .contact-overview{
 
-    padding:1rem 0;
+    padding:0.25rem 0;
 
 }
 
@@ -19,7 +19,11 @@
     align-items:stretch;
 
 }
+.section-header h2{
 
+    margin-top:0;
+
+}
 /* ==========================================
    Left Card
 ========================================== */
@@ -396,6 +400,7 @@
 .map-overlay p{
 
     margin-top:0;
+    margin-bottom:5px;
     margin-bottom:5px;
 
     color:var(--text-secondary);
