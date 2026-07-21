@@ -1,437 +1,190 @@
+---
+import { contact } from "../data/contact";
+
+import {
+    House,
+    GraduationCap,
+    Users,
+    Info,
+    Phone,
+    Smartphone,
+    MapPinned,
+    Navigation,
+    MessageSquare,
+    Instagram,
+    MessageCircle
+} from "lucide-astro";
+---
+
 <footer class="footer">
 
     <div class="container">
 
-
-        <div class="footer-top">
-
-
-            <a href="/" class="footer-logo">
-
-
-                <img
-                    src="/images/logo.webp"
-                    alt="آموزشگاه موسیقی فاتح"
-                    loading="lazy"
-                />
-
-
-                <h2>
-                    آموزشگاه موسیقی فاتح
-                </h2>
-
-
-            </a>
-
-
-
-            <p class="footer-description">
-
-                آموزش تخصصی گیتار، پیانو، ویولون، سنتور، دف، هنگ‌درام،
-                آواز و سایر سازهای ایرانی و کلاسیک، با بهره‌گیری از اساتید
-                مجرب و محیط آموزشی استاندارد.
-
-            </p>
-
-
-        </div>
-
-
-
-
-
         <div class="footer-grid">
 
+            <!-- معرفی -->
 
+            <section class="footer-about">
 
-            <!-- CONTACT -->
+                <a href="/" class="footer-logo">
 
-            <section class="footer-card">
-
-
-                <h3>
-                    اطلاعات تماس
-                </h3>
-
-
-
-                <ul>
-
-
-                    <li>
-
-                        📞
-
-                        <a href="tel:06136221174">
-
-                            ۰۶۱۳۶۲۲۱۱۷۴
-
-                        </a>
-
-                    </li>
-
-
-
-                    <li>
-
-                        📱
-
-                        <a href="tel:+989333139319">
-
-                            ۰۹۳۳۳۱۳۹۳۱۹
-
-                        </a>
-
-                    </li>
-
-
-
-                    <li>
-
-                        📍
-
-                        <a
-                            href="https://maps.google.com/maps?q=2VR3+J37"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-
-                            شوشتر، خیابان امام غربی، محوطه دوم پارکینگ حاج سلیمان،
-                            آموزشگاه موسیقی فاتح
-
-                        </a>
-
-
-                    </li>
-
-
-
-                </ul>
-
-
-            </section>
-
-
-
-
-
-
-
-            <!-- MAP -->
-
-
-            <section class="footer-card">
-
-
-                <h3>
-
-                    موقعیت آموزشگاه
-
-                </h3>
-
-
-
-                <div class="footer-map">
-
-
-                    <iframe
-
-                        src="https://maps.google.com/maps?q=2VR3+J37&output=embed"
-
+                    <img
+                        src="/images/logo.webp"
+                        alt="آموزشگاه موسیقی فاتح"
                         loading="lazy"
+                    />
 
-                        allowfullscreen
-
-                        referrerpolicy="no-referrer-when-downgrade">
-
-                    </iframe>
-
-
-                </div>
-
-
-
-
-                <a
-
-                    class="map-link"
-
-                    href="https://maps.google.com/maps?q=2VR3+J37"
-
-                    target="_blank"
-
-                    rel="noopener">
-
-                    مشاهده در Google Maps →
+                    <h2>
+                        آموزشگاه موسیقی فاتح
+                    </h2>
 
                 </a>
 
+                <p>
+
+                    آموزشگاه موسیقی فاتح، مرکز تخصصی آموزش موسیقی در شوشتر،
+                    برگزارکننده دوره‌های آموزش گیتار، پیانو، ویولن، سنتور،
+                    تار، سه‌تار، نی، نی‌انبان، دف، تنبک، آواز و سایر سازهای
+                    ایرانی و جهانی برای کودکان، نوجوانان و بزرگسالان با
+                    بهره‌گیری از اساتید مجرب و برنامه آموزشی استاندارد.
+
+                </p>
 
             </section>
 
+            <!-- دسترسی سریع -->
 
-
-
-
-
-
-            <!-- SOCIAL -->
-
-
-            <section class="footer-card">
-
+            <nav class="footer-links">
 
                 <h3>
 
-                    شبکه‌های اجتماعی
+                    دسترسی سریع
 
                 </h3>
 
+                <a href="/">
 
+                    <House />
 
+                    صفحه اصلی
 
-                <div class="footer-social">
+                </a>
 
+                <a href="/courses">
 
+                    <GraduationCap />
 
-                    <!-- Instagram -->
+                    دوره‌های آموزشی
 
+                </a>
 
-                    <a
+                <a href="/instructors">
 
-                        href="https://instagram.com/fateh.music.academy"
+                    <Users />
 
-                        target="_blank"
+                    اساتید
 
-                        rel="noopener noreferrer"
+                </a>
 
-                        class="social-card"
-                    >
+                <a href="/about">
 
+                    <Info />
 
+                    درباره ما
 
-                        <div class="social-icon instagram">
+                </a>
 
+                <a href="/contact">
 
-                            <img
+                    <Phone />
 
-                                src="/images/social/instagram.svg"
+                    تماس با ما
 
-                                alt="Instagram"
+                </a>
 
-                                loading="lazy"
+            </nav>
 
-                            />
+            <!-- ارتباط -->
 
+            <section class="footer-contact">
 
-                        </div>
+                <h3>
 
+                    ارتباط با ما
 
+                </h3>
 
+                <a
+                    href={contact.map.navigation}
+                    target="_blank"
+                    rel="noopener noreferrer">
 
-                        <div class="social-text">
+                    <MapPinned />
 
+                    <span>
 
-                            <strong>
+                        {contact.address.full}
 
-                                اینستاگرام
+                    </span>
 
-                            </strong>
+                </a>
 
+                <a href={"tel:+" + contact.phones.mobile.raw}>
 
-                            <span>
+                    <Smartphone />
 
-                                @fateh.music.academy
+                    <span>
 
-                            </span>
+                        {contact.phones.mobile.display}
 
+                    </span>
 
-                        </div>
+                </a>
 
+                <a
+                    href={contact.social.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer">
 
+                    <Instagram />
 
-                    </a>
+                    <span>
 
+                        اینستاگرام
 
+                    </span>
 
+                </a>
 
+                <a
+                    href={contact.social.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer">
 
+                    <MessageCircle />
 
+                    <span>
 
-                    <!-- WhatsApp -->
+                        واتس‌اپ
 
+                    </span>
 
-                    <a
-
-                        href="https://wa.me/989333139319"
-
-                        target="_blank"
-
-                        rel="noopener noreferrer"
-
-                        class="social-card"
-                    >
-
-
-
-                        <div class="social-icon whatsapp">
-
-
-                            <img
-
-                                src="/images/social/whatsapp.svg"
-
-                                alt="WhatsApp"
-
-                                loading="lazy"
-
-                            />
-
-
-                        </div>
-
-
-
-
-                        <div class="social-text">
-
-
-                            <strong>
-
-                                واتس‌اپ
-
-                            </strong>
-
-
-                            <span>
-
-                                0933 313 9319
-
-                            </span>
-
-
-                        </div>
-
-
-
-                    </a>
-
-
-
-
-
-
-
-                    <!-- Facebook -->
-
-
-                    <a
-
-                        href="https://facebook.com/fateh.academy.music"
-
-                        target="_blank"
-
-                        rel="noopener noreferrer"
-
-                        class="social-card"
-                    >
-
-
-
-                        <div class="social-icon facebook">
-
-
-                            <img
-
-                                src="/images/social/facebook.svg"
-
-                                alt="Facebook"
-
-                                loading="lazy"
-
-                            />
-
-
-                        </div>
-
-
-
-
-
-                        <div class="social-text">
-
-
-                            <strong>
-
-                                فیسبوک
-
-                            </strong>
-
-
-
-                            <span>
-
-                                Fateh Music Academy
-
-                            </span>
-
-
-                        </div>
-
-
-
-                    </a>
-
-
-
-                </div>
-
+                </a>
 
             </section>
 
-
-
-
         </div>
-
-
-
-
-
-
 
         <div class="footer-bottom">
 
+            <p>
 
-            <span>
+                © ۲۰۲۶ آموزشگاه موسیقی فاتح | تمامی حقوق محفوظ است.
 
-                © ۲۰۲۶ آموزشگاه موسیقی فاتح
-
-            </span>
-
+            </p>
 
         </div>
 
-
-
-
     </div>
-
-
-
-
-
-
-    <button
-
-        class="back-to-top"
-
-        aria-label="بازگشت به بالا">
-
-        ↑
-
-    </button>
-
-
 
 </footer>
