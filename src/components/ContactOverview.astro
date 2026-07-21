@@ -14,7 +14,6 @@ import {
     Send
 } from "lucide-astro";
 ---
-
 <section class="contact-overview section">
 
     <div class="container">
@@ -333,56 +332,41 @@ import {
                     </p>
 
                     <div class="map-actions">
+					<a
+						href={contact.map.google}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn btn-primary">
 
-                        <!-- Google Maps -->
+						<img src="/icons/google-maps.svg" alt="Google Maps" />
 
-                        <a
-                            href={contact.map.google}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="btn btn-primary">
+						<span>Google Maps</span>
 
-                            <Navigation />
+					</a>
 
-                            <span>
+					<a
+						href={contact.map.balad}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn btn-outline">
 
-                                Google Maps
+						<img src="/icons/balad.svg" alt="بلد" />
 
-                            </span>
+						<span>بلد</span>
 
-                        </a>
+					</a>
 
-                        <!-- بلد -->
+					<a
+						href={contact.map.neshan}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="btn btn-outline">
 
-                        <a
-                            href={contact.map.balad}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="btn btn-outline">
+						<img src="/icons/neshan.svg" alt="نشان" />
 
-                            <span>
+						<span>نشان</span>
 
-                                بلد
-
-                            </span>
-
-                        </a>
-
-                        <!-- نشان -->
-
-                        <a
-                            href={contact.map.neshan}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="btn btn-outline">
-
-                            <span>
-
-                                نشان
-
-                            </span>
-
-                        </a>
+					</a>
 
                     </div>
 
