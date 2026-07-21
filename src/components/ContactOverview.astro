@@ -50,6 +50,8 @@ import {
 
                 <div class="contact-body">
 
+                    <!-- موبایل -->
+
                     <div class="contact-item">
 
                         <div class="contact-icon">
@@ -78,6 +80,8 @@ import {
 
                     </div>
 
+                    <!-- آدرس -->
+
                     <div class="contact-item">
 
                         <div class="contact-icon">
@@ -104,6 +108,8 @@ import {
 
                     </div>
 
+                    <!-- ساعات کاری -->
+
                     <div class="contact-item">
 
                         <div class="contact-icon">
@@ -122,7 +128,11 @@ import {
 
                             <p class="value">
 
-                                <strong>{contact.workingHours[0].title}</strong>
+                                <strong>
+
+                                    {contact.workingHours[0].title}
+
+                                </strong>
 
                                 <br />
 
@@ -130,7 +140,11 @@ import {
 
                                 <br /><br />
 
-                                <strong>{contact.workingHours[1].title}</strong>
+                                <strong>
+
+                                    {contact.workingHours[1].title}
+
+                                </strong>
 
                                 <br />
 
@@ -141,7 +155,8 @@ import {
                         </div>
 
                     </div>
-                    <!-- شبکه‌های اجتماعی -->
+
+                    <!-- شبکه های اجتماعی -->
 
                     <div class="social-section">
 
@@ -152,6 +167,8 @@ import {
                         </h3>
 
                         <div class="social-grid">
+
+                            <!-- Instagram -->
 
                             <a
                                 href={contact.social.instagram}
@@ -169,19 +186,15 @@ import {
 
                                     <strong>
 
-                                        Instagram
+                                        اینستاگرام
 
                                     </strong>
-
-                                    <span>
-
-                                        دنبال کنید
-
-                                    </span>
 
                                 </div>
 
                             </a>
+
+                            <!-- WhatsApp -->
 
                             <a
                                 href={contact.social.whatsapp}
@@ -199,19 +212,15 @@ import {
 
                                     <strong>
 
-                                        WhatsApp
+                                        واتس‌آپ
 
                                     </strong>
-
-                                    <span>
-
-                                        ارسال پیام
-
-                                    </span>
 
                                 </div>
 
                             </a>
+
+                            <!-- Telegram -->
 
                             <a
                                 href={contact.social.telegram}
@@ -229,15 +238,9 @@ import {
 
                                     <strong>
 
-                                        Telegram
+                                        تلگرام
 
                                     </strong>
-
-                                    <span>
-
-                                        کانال آموزشگاه
-
-                                    </span>
 
                                 </div>
 
@@ -250,6 +253,8 @@ import {
                     <!-- عملیات -->
 
                     <div class="action-grid">
+
+                        <!-- تماس -->
 
                         <a
                             href={"tel:+" + contact.phones.mobile.raw}
@@ -265,21 +270,23 @@ import {
 
                         </a>
 
+                        <!-- پیامک -->
+
                         <a
-                            href={contact.social.whatsapp}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={contact.social.sms}
                             class="action-card">
 
-                            <MessageCircle />
+                            <Send />
 
                             <span>
 
-                                واتساپ
+                                پیامک
 
                             </span>
 
                         </a>
+
+                        <!-- مسیریابی -->
 
                         <a
                             href={contact.map.navigation}
@@ -302,7 +309,6 @@ import {
                 </div>
 
             </article>
-
             <!-- ستون نقشه -->
 
             <aside class="card contact-map">
@@ -334,7 +340,10 @@ import {
                         {contact.address.full}
 
                     </p>
+
                     <div class="map-actions">
+
+                        <!-- Google Maps -->
 
                         <a
                             href={contact.map.google}
@@ -352,6 +361,8 @@ import {
 
                         </a>
 
+                        <!-- بلد -->
+
                         <a
                             href={contact.map.balad}
                             target="_blank"
@@ -365,6 +376,8 @@ import {
                             </span>
 
                         </a>
+
+                        <!-- نشان -->
 
                         <a
                             href={contact.map.neshan}
