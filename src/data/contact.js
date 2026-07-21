@@ -14,6 +14,13 @@ export const contact = {
 
     },
 
+contact: {
+
+    sms:
+        "sms:09333139319?body=%D8%B3%D9%84%D8%A7%D9%85.%0A%D9%85%D8%A7%DB%8C%D9%84%20%D8%A8%D9%87%20%D8%AB%D8%AB%D8%AA%E2%80%8C%D9%86%D8%A7%D9%85%20%D8%AF%D8%B1%20%D8%A2%D9%85%D9%88%D8%B2%D8%B4%DA%AF%D8%A7%D9%87%20%D9%85%D9%88%D8%B3%DB%8C%D9%82%DB%8C%20%D9%81%D8%A7%D8%AA%D8%AD%20%D9%87%D8%B3%D8%AA%D9%85."
+
+},
+
     email: "fateh.academy.music@gmail.com",
 
     address: {
@@ -32,6 +39,7 @@ export const contact = {
             title: "شنبه تا پنج‌شنبه",
             value: "۱۶:۰۰ تا ۲۱:۰۰"
         },
+
         {
             title: "جمعه",
             value: "۱۳:۰۰ تا ۲۱:۰۰"

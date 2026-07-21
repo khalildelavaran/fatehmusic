@@ -4,7 +4,7 @@
 
 .contact-overview{
 
-    padding:6rem 0;
+    padding:1rem 0;
 
 }
 
@@ -384,7 +384,8 @@
 
 .map-overlay h3{
 
-    margin:1rem 0 .75rem;
+    margin-top:2.1rem;
+	margin-bottom:0;
 
     color:var(--text);
 
@@ -394,7 +395,8 @@
 
 .map-overlay p{
 
-    margin-bottom:1.5rem;
+    margin-top:0;
+    margin-bottom:5px;
 
     color:var(--text-secondary);
 
