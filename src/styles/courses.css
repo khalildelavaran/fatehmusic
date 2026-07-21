@@ -268,3 +268,11 @@ h3.course-title{
     padding:0 !important;
     margin-block:0 !important;
 }
+.section-title{
+    margin-top: 1px !important;
+    margin-bottom: 1px !important;
+}
+.section-title h2{
+    margin-top:0px !important;
+    margin-bottom:1px;
+}
