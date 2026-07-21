@@ -27,7 +27,7 @@ export const courses = [
 
   instrument: "guitar",
 
-  instructor: 2,
+  instructors: [2],
 
   level: [
     "مبتدی",
@@ -118,7 +118,7 @@ export const courses = [
 
   instrument: "violin",
 
-  instructor: 1,
+  instructors: [1],
 
   level: [
     "مبتدی",
@@ -203,7 +203,7 @@ export const courses = [
 
   instrument: "kamancheh",
 
-  instructor: 1,
+  instructors: [1],
 
   level: [
     "مبتدی",
@@ -286,7 +286,7 @@ export const courses = [
 
   instrument: "piano",
 
-  instructor: 3,
+  instructors: [3],
 
   level: [
     "مبتدی",
@@ -367,7 +367,7 @@ export const courses = [
 
   instrument: "keyboard",
 
-  instructor: 3,
+  instructors: [3],
 
   level: [
     "مبتدی",
@@ -446,7 +446,7 @@ export const courses = [
 
   instrument: "tar",
 
-  instructor: 4,
+  instructors: [4],
 
   level: [
     "مبتدی",
@@ -526,7 +526,7 @@ export const courses = [
 
   instrument: "setar",
 
-  instructor: 4,
+  instructors: [4],
 
   level: [
     "مبتدی",
@@ -603,7 +603,7 @@ export const courses = [
 
   instrument: "santur",
 
-  instructor: 5,
+  instructors: [5],
 
   level: [
     "مبتدی",
@@ -684,7 +684,7 @@ export const courses = [
 
   instrument: "daf",
 
-  instructor: 6,
+  instructors: [6],
 
   level: [
     "مبتدی",
@@ -765,10 +765,7 @@ export const courses = [
 
   instrument: "tonbak",
 
-  instructors: [
-  6,
-  11
-  ],
+  instructors: [6, 11],
 
   level: [
     "مبتدی",
@@ -848,7 +845,7 @@ export const courses = [
 
   instrument: "zarb-tempo",
 
-  instructor: 7,
+  instructors: [7],
 
   level: [
     "مبتدی",
@@ -929,7 +926,7 @@ export const courses = [
 
   instrument: "ney-anban",
 
-  instructor: 8,
+  instructors: [8],
 
   level: [
     "مبتدی",
@@ -1009,7 +1006,7 @@ export const courses = [
 
   instrument: "ney",
 
-  instructor: 9,
+  instructors: [9],
 
   level: [
     "مبتدی",
@@ -1088,7 +1085,7 @@ export const courses = [
 
   instrument: "children-music",
 
-  instructor: 10,
+  instructors: [10],
 
   level: [
     "مبتدی"
@@ -1166,7 +1163,7 @@ export const courses = [
 
   instrument: "hangdrum",
 
-  instructor: 12,
+  instructors: [12],
 
   level: [
     "مبتدی",
@@ -1246,10 +1243,7 @@ export const courses = [
 
   instrument: "voice",
 
-  instructors: [
-  13,
-  14
-  ],
+  instructors: [13, 14],
 
   level: [
     "مبتدی",
@@ -1328,7 +1322,7 @@ export const courses = [
 
   instrument: "voice",
 
-  instructor: 13,
+  instructors: [13],
 
   level: [
     "متوسط",
@@ -1407,7 +1401,7 @@ export const courses = [
 
   instrument: "voice",
 
-  instructor: 14,
+  instructors: [14],
 
   level: [
     "مبتدی",
@@ -1460,7 +1454,7 @@ export const courses = [
 
       "آموزش آواز پاپ",
 
-      "رضا بشیر"
+      "رضا بشیرزاده"
 
     ]
 
@@ -1487,10 +1481,7 @@ export const courses = [
 
   instrument: "voice",
 
-  instructors: [
-  14,
-  13
-  ],
+  instructors: [14, 13],
 
   level: [
     "متوسط",
@@ -1542,7 +1533,7 @@ export const courses = [
 
       "آواز محلی شوشتر",
 
-      "رضا بشیر"
+      "رضا بشیرزاده"
 
     ]
 
@@ -1569,7 +1560,7 @@ export const courses = [
 
   instrument: "theory",
 
-  instructor: 2,
+  instructors: [2],
 
   level: [
     "مبتدی",
@@ -1648,7 +1639,7 @@ export const courses = [
 
   instrument: "theory",
 
-  instructor: 2,
+  instructors: [2],
 
   level: [
     "مبتدی",
@@ -1730,7 +1721,7 @@ export const courses = [
 
   instrument: "theory",
 
-  instructor: 2,
+  instructors: [2],
 
   level: [
     "مبتدی",
@@ -1810,7 +1801,7 @@ export const courses = [
 
   instrument: "voice",
 
-  instructor: 2,
+  instructors: [2],
 
   level: [
     "مبتدی",

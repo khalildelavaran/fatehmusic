@@ -1,0 +1,357 @@
+---
+/*
+============================================================
+Registration Wizard
+Fateh Music Academy
+Enterprise Edition
+Version : 1.0
+============================================================
+*/
+
+import RegistrationCourseStep from "./RegistrationCourseStep.astro";
+import RegistrationScheduleStep from "./RegistrationScheduleStep.astro";
+import RegistrationStudentStep from "./RegistrationStudentStep.astro";
+import RegistrationReviewStep from "./RegistrationReviewStep.astro";
+import RegistrationSuccessStep from "./RegistrationSuccessStep.astro";
+---
+
+<section
+    id="registration-wizard"
+    class="registration-wizard">
+
+    <!-- ==========================================
+         Wizard Header
+    =========================================== -->
+
+    <header class="wizard-header">
+
+        <h2>
+
+            فرم ثبت‌نام
+
+        </h2>
+
+        <p>
+
+            مراحل ثبت‌نام را به ترتیب تکمیل نمایید.
+
+        </p>
+
+    </header>
+
+
+    <!-- ==========================================
+         Progress
+    =========================================== -->
+
+    <nav
+        class="wizard-progress"
+        aria-label="Registration Progress">
+
+        <ol>
+
+            <li
+                class="active"
+                data-step="1">
+
+                <span>
+
+                    ۱
+
+                </span>
+
+                <small>
+
+                    دوره
+
+                </small>
+
+            </li>
+
+            <li
+                data-step="2">
+
+                <span>
+
+                    ۲
+
+                </span>
+
+                <small>
+
+                    زمان کلاس
+
+                </small>
+
+            </li>
+
+            <li
+                data-step="3">
+
+                <span>
+
+                    ۳
+
+                </span>
+
+                <small>
+
+                    هنرجو
+
+                </small>
+
+            </li>
+
+            <li
+                data-step="4">
+
+                <span>
+
+                    ۴
+
+                </span>
+
+                <small>
+
+                    بررسی
+
+                </small>
+
+            </li>
+
+            <li
+                data-step="5">
+
+                <span>
+
+                    ۵
+
+                </span>
+
+                <small>
+
+                    پایان
+
+                </small>
+
+            </li>
+
+        </ol>
+
+    </nav>
+
+
+
+    <!-- ==========================================
+         Steps
+    =========================================== -->
+
+    <div class="wizard-body">
+
+        <!-- Step 1 -->
+
+        <section
+            class="wizard-step active"
+            data-step="1">
+
+            <RegistrationCourseStep />
+
+        </section>
+
+
+
+        <!-- Step 2 -->
+
+        <section
+            class="wizard-step"
+            data-step="2"
+            hidden>
+
+            <RegistrationScheduleStep />
+
+        </section>
+
+
+
+        <!-- Step 3 -->
+
+        <section
+            class="wizard-step"
+            data-step="3"
+            hidden>
+
+            <RegistrationStudentStep />
+
+        </section>
+
+
+
+        <!-- Step 4 -->
+
+        <section
+            class="wizard-step"
+            data-step="4"
+            hidden>
+
+            <RegistrationReviewStep />
+
+        </section>
+
+
+
+        <!-- Step 5 -->
+
+        <section
+            class="wizard-step"
+            data-step="5"
+            hidden>
+
+            <RegistrationSuccessStep />
+
+        </section>
+
+    </div>
+
+
+
+    <!-- ==========================================
+         Footer
+    =========================================== -->
+
+    <footer class="wizard-footer">
+
+        <button
+            id="wizard-prev"
+            class="btn btn-outline"
+            type="button"
+            disabled>
+
+            مرحله قبل
+
+        </button>
+
+        <button
+            id="wizard-next"
+            class="btn btn-primary"
+            type="button">
+
+            مرحله بعد
+
+        </button>
+
+    </footer>
+
+</section>
+
+
+
+<script is:inline>
+
+(() => {
+
+    let currentStep = 1;
+
+    const totalSteps = 5;
+
+    const sections =
+        document.querySelectorAll(".wizard-step");
+
+    const progress =
+        document.querySelectorAll(".wizard-progress li");
+
+    const btnPrev =
+        document.getElementById("wizard-prev");
+
+    const btnNext =
+        document.getElementById("wizard-next");
+
+
+
+    function render(){
+
+        sections.forEach((section) => {
+
+            const step =
+                Number(section.dataset.step);
+
+            const active =
+                step === currentStep;
+
+            section.hidden = !active;
+
+            section.classList.toggle(
+                "active",
+                active
+            );
+
+        });
+
+
+
+        progress.forEach((item) => {
+
+            const step =
+                Number(item.dataset.step);
+
+            item.classList.toggle(
+                "active",
+                step === currentStep
+            );
+
+            item.classList.toggle(
+                "completed",
+                step < currentStep
+            );
+
+        });
+
+
+
+        btnPrev.disabled =
+            currentStep === 1;
+
+
+
+        if(currentStep === totalSteps){
+
+            btnNext.disabled = true;
+
+        }else{
+
+            btnNext.disabled = false;
+
+        }
+
+    }
+
+
+
+    btnNext?.addEventListener("click", () => {
+
+        if(currentStep >= totalSteps) return;
+
+        currentStep++;
+
+        render();
+
+    });
+
+
+
+    btnPrev?.addEventListener("click", () => {
+
+        if(currentStep <= 1) return;
+
+        currentStep--;
+
+        render();
+
+    });
+
+
+
+    render();
+
+})();
+
+</script>

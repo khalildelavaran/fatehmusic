@@ -1,0 +1,279 @@
+---
+/*
+============================================================
+RegistrationCourseStep.astro
+Fateh Music Academy
+Enterprise Registration System
+Step 1 : انتخاب دوره + استاد
+============================================================
+*/
+
+import { courses } from "../../data/courses";
+import { instructors } from "../../data/instructors";
+
+/* فقط دوره‌های فعال */
+
+const activeCourses = courses.filter(
+    course => course.active !== false
+);
+---
+
+<section class="registration-step">
+
+    <header class="step-header">
+
+        <span class="step-number">
+
+            مرحله ۱
+
+        </span>
+
+        <h3>
+
+            انتخاب دوره آموزشی
+
+        </h3>
+
+        <p>
+
+            ابتدا رشته مورد نظر خود را انتخاب کنید، سپس استاد مربوط به همان دوره را انتخاب نمایید.
+
+        </p>
+
+    </header>
+
+
+
+    <!-- ======================================
+         Course
+    ======================================= -->
+
+    <div class="form-group">
+
+        <label for="registration-course">
+
+            دوره آموزشی
+
+        </label>
+
+        <select
+            id="registration-course"
+            name="course"
+            required>
+
+            <option value="">
+
+                انتخاب کنید...
+
+            </option>
+
+            {
+
+                activeCourses.map(course => (
+
+                    <option
+                        value={course.id}>
+
+                        {course.title}
+
+                    </option>
+
+                ))
+
+            }
+
+        </select>
+
+    </div>
+
+
+
+    <!-- ======================================
+         Instructor
+    ======================================= -->
+
+    <div class="form-group">
+
+        <label for="registration-instructor">
+
+            استاد
+
+        </label>
+
+        <select
+            id="registration-instructor"
+            name="instructor"
+            disabled
+            required>
+
+            <option>
+
+                ابتدا دوره را انتخاب کنید
+
+            </option>
+
+        </select>
+
+    </div>
+
+</section>
+
+
+
+<script is:inline>
+
+(() => {
+
+    const courses = JSON.parse(
+
+        document.getElementById("registration-courses-data")?.textContent || "[]"
+
+    );
+
+    const instructors = JSON.parse(
+
+        document.getElementById("registration-instructors-data")?.textContent || "[]"
+
+    );
+
+
+
+    const courseSelect =
+
+        document.getElementById("registration-course");
+
+
+
+    const instructorSelect =
+
+        document.getElementById("registration-instructor");
+
+
+
+    if(!courseSelect || !instructorSelect){
+
+        return;
+
+    }
+
+
+
+    function fillInstructors(courseId){
+
+        instructorSelect.innerHTML = "";
+
+
+
+        const course =
+
+            courses.find(
+
+                c => String(c.id) === String(courseId)
+
+            );
+
+
+
+        if(!course){
+
+            instructorSelect.disabled = true;
+
+            instructorSelect.innerHTML =
+
+                "<option>ابتدا دوره را انتخاب کنید</option>";
+
+            return;
+
+        }
+
+
+
+        const ids =
+
+            Array.isArray(course.instructors)
+
+                ? course.instructors
+
+                : [];
+
+
+
+        const list =
+
+            instructors.filter(
+
+                item => ids.includes(item.id)
+
+            );
+
+
+
+        instructorSelect.disabled = false;
+
+
+
+        instructorSelect.insertAdjacentHTML(
+
+            "beforeend",
+
+            `<option value="">انتخاب استاد...</option>`
+
+        );
+
+
+
+        list.forEach(item => {
+
+            instructorSelect.insertAdjacentHTML(
+
+                "beforeend",
+
+                `<option value="${item.id}">${item.name}</option>`
+
+            );
+
+        });
+
+    }
+
+
+
+    courseSelect.addEventListener(
+
+        "change",
+
+        e => {
+
+            fillInstructors(
+
+                e.target.value
+
+            );
+
+        }
+
+    );
+
+})();
+
+</script>
+
+
+
+<script
+    id="registration-courses-data"
+    type="application/json">
+
+{JSON.stringify(activeCourses)}
+
+</script>
+
+
+
+<script
+    id="registration-instructors-data"
+    type="application/json">
+
+{JSON.stringify(instructors)}
+
+</script>

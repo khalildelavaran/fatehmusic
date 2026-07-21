@@ -100,7 +100,7 @@ export const schedules = [
 {
     id: 6,
 
-    instructorId: 14,      // رضا بشیر
+    instructorId: 14,      // رضا بشیرزاده
 
     weekday: "یکشنبه",
 

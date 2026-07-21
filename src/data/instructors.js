@@ -1186,7 +1186,8 @@ export const instructors = [
   relations: {
     courses: [
       "traditional-vocal-course",
-      "bakhtiari-vocal-course"
+      "bakhtiari-vocal-course",
+      "shushtari-vocal-course"
     ],
     articles: [],
     faqs: [],
