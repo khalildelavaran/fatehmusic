@@ -1,0 +1,128 @@
+/*
+====================================================
+File:
+src/components/registration/steps/InstrumentStep.astro
+
+Purpose:
+Instrument / course selection step
+
+Architecture:
+- UI only
+- No state management
+- Data comes from courses.js
+- RegistrationController handles selection
+
+====================================================
+*/
+
+---
+
+import InstrumentCard from "../cards/InstrumentCard.astro";
+
+import { courses } from "../../../data/courses";
+
+
+
+const activeCourses = courses.filter(
+
+    course => course.active
+
+);
+
+---
+
+<section
+
+    class="registration-step"
+
+    data-step="instrument"
+
+    hidden
+
+>
+
+
+    <div class="step-header">
+
+
+        <span class="badge">
+
+            مرحله اول
+
+        </span>
+
+
+
+        <h2>
+
+            چه سازی دوست دارید یاد بگیرید؟
+
+        </h2>
+
+
+
+        <p>
+
+            ساز مورد علاقه خود را انتخاب کنید تا
+            استادهای مرتبط و زمان‌های مناسب را مشاهده کنید.
+
+        </p>
+
+
+    </div>
+
+
+
+
+
+
+    <div
+
+        class="registration-grid instrument-grid"
+
+    >
+
+
+
+        {
+
+            activeCourses.map(course => (
+
+
+                <InstrumentCard
+
+
+                    id={course.id}
+
+
+                    title={course.title}
+
+
+                    description={course.description}
+
+
+                    image={course.image}
+
+
+                    icon={course.icon}
+
+
+                    level={course.level}
+
+
+                />
+
+
+            ))
+
+        }
+
+
+
+    </div>
+
+
+
+
+
+</section>

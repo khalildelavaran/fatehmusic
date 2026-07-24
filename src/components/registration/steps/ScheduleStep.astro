@@ -1,0 +1,228 @@
+/*
+====================================================
+File:
+src/components/registration/steps/ScheduleStep.astro
+
+Purpose:
+Class schedule selection step
+
+Architecture:
+- UI only
+- No business logic
+- Receives schedules from controller
+- ScheduleCard handles presentation
+- RegistrationController handles selection
+
+====================================================
+*/
+
+---
+
+import ScheduleCard from "../cards/ScheduleCard.astro";
+
+
+
+interface Schedule {
+
+
+    id: string | number;
+
+
+    weekday: string;
+
+
+    startTime?: string;
+
+
+    endTime?: string;
+
+
+    classroom?: string | number;
+
+
+    duration?: number | string;
+
+
+}
+
+
+
+interface Props {
+
+
+    schedules?: Schedule[];
+
+
+}
+
+
+
+const {
+
+    schedules = []
+
+} = Astro.props;
+
+
+---
+
+
+<section
+
+    class="registration-step"
+
+    data-step="schedule"
+
+    hidden
+
+>
+
+
+    <div class="step-header">
+
+
+        <span class="badge">
+
+            مرحله سوم
+
+        </span>
+
+
+
+
+        <h2>
+
+            چه روزی برای شما مناسب است؟
+
+        </h2>
+
+
+
+
+
+        <p>
+
+            زمان‌های آزاد استاد را مشاهده کنید و
+            مناسب‌ترین زمان کلاس را انتخاب نمایید.
+
+        </p>
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <div
+
+
+        class="registration-grid schedule-grid"
+
+
+        data-schedules-container
+
+
+    >
+
+
+
+
+
+        {
+
+
+            schedules.length > 0 ? (
+
+
+
+                schedules.map(
+
+                    schedule => (
+
+
+
+                        <ScheduleCard
+
+
+
+                            id={schedule.id}
+
+
+
+                            weekday={schedule.weekday}
+
+
+
+                            startTime={schedule.startTime}
+
+
+
+                            endTime={schedule.endTime}
+
+
+
+                            classroom={schedule.classroom}
+
+
+
+                            duration={schedule.duration}
+
+
+
+                        />
+
+
+
+                    )
+
+
+
+                )
+
+
+
+            ) : (
+
+
+
+
+                <div class="registration-card empty-state">
+
+
+                    <p>
+
+
+                        پس از انتخاب استاد، زمان‌های آزاد کلاس نمایش داده می‌شود.
+
+
+                    </p>
+
+
+
+                </div>
+
+
+
+            )
+
+
+
+        }
+
+
+
+
+
+
+    </div>
+
+
+
+
+
+
+</section>

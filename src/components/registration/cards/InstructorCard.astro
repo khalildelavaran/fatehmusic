@@ -1,0 +1,225 @@
+/*
+====================================================
+File:
+src/components/registration/cards/InstructorCard.astro
+
+Purpose:
+Reusable instructor selection card
+
+Architecture:
+- UI only
+- No business logic
+- Selection handled by RegistrationController
+- Provides instructor metadata through data attributes
+
+====================================================
+*/
+
+---
+
+interface Props {
+
+
+    id: string | number;
+
+
+    name: string;
+
+
+    image?: string;
+
+
+    bio?: string;
+
+
+    specialties?: string[];
+
+
+}
+
+
+
+const {
+
+    id,
+
+    name,
+
+    image,
+
+    bio,
+
+    specialties = []
+
+} = Astro.props;
+
+---
+
+
+
+<article
+
+
+    class="registration-card instructor-card"
+
+
+    data-instructor-id={id}
+
+
+    data-instructor-name={name}
+
+
+    data-action="select-instructor"
+
+
+    tabindex="0"
+
+
+    role="button"
+
+
+>
+
+
+
+
+
+    {
+
+        image && (
+
+
+            <div class="instructor-image">
+
+
+                <img
+
+                    src={image}
+
+                    alt={name}
+
+                    loading="lazy"
+
+                />
+
+
+            </div>
+
+
+        )
+
+    }
+
+
+
+
+
+
+
+
+
+    <div class="instructor-content">
+
+
+        <h3>
+
+
+            {name}
+
+
+        </h3>
+
+
+
+
+
+
+
+        {
+
+            bio && (
+
+
+                <p>
+
+
+                    {bio}
+
+
+                </p>
+
+
+            )
+
+        }
+
+
+
+
+
+
+
+
+        {
+
+            specialties.length > 0 && (
+
+
+                <ul class="specialties">
+
+
+                    {
+
+                        specialties.map(
+
+                            item => (
+
+
+                                <li>
+
+                                    {item}
+
+                                </li>
+
+
+                            )
+
+                        )
+
+                    }
+
+
+                </ul>
+
+
+            )
+
+        }
+
+
+
+
+
+    </div>
+
+
+
+
+
+
+
+
+    <div class="select-indicator">
+
+
+        انتخاب استاد
+
+
+    </div>
+
+
+
+
+
+
+</article>

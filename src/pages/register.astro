@@ -1,33 +1,140 @@
+/*
+====================================================
+File:
+src/pages/register.astro
+
+Purpose:
+Registration Wizard Entry Page
+
+Architecture:
+- Page wrapper only
+- Loads RegistrationFlow component
+- Loads registration styles
+- Initializes registration controller
+
+Flow:
+
+User
+ |
+register.astro
+ |
+RegistrationFlow.astro
+ |
+Steps
+ |
+RegistrationController
+
+====================================================
+*/
+
 ---
+
 import MainLayout from "../layouts/MainLayout.astro";
 
-import PageHero from "../components/PageHero.astro";
+import RegistrationFlow from "../components/registration/RegistrationFlow.astro";
 
-import RegistrationWizard from "../components/registration/RegistrationWizard.astro";
+import "../components/registration/styles/registration.css";
+
 ---
 
+
+
 <MainLayout
-    title="ثبت‌نام | آموزشگاه موسیقی فاتح"
-    description="ثبت‌نام در دوره‌های آموزشگاه موسیقی فاتح">
 
-    <PageHero
+    title="ثبت نام دوره های موسیقی"
 
-        badge="ثبت‌نام"
+    description="ثبت نام آنلاین آموزشگاه موسیقی فاتح"
 
-        title="ثبت‌نام در دوره‌های آموزشی"
+>
 
-        description="دوره، استاد، زمان کلاس و اطلاعات هنرجو را انتخاب کنید."
 
-    />
+    <main class="registration-page">
 
-    <section class="section">
 
-        <div class="container">
+        <section class="registration-container">
 
-            <RegistrationWizard />
 
-        </div>
 
-    </section>
+            <div class="registration-hero">
+
+
+                <span class="badge">
+
+                    ثبت نام آنلاین
+
+                </span>
+
+
+
+                <h1>
+
+                    شروع مسیر یادگیری موسیقی
+
+                </h1>
+
+
+
+                <p>
+
+                    ساز مورد علاقه خود را انتخاب کنید،
+                    استاد مناسب را ببینید،
+                    زمان کلاس را انتخاب کنید
+                    و ثبت نام خود را کامل نمایید.
+
+                </p>
+
+
+
+            </div>
+
+
+
+
+
+            <RegistrationFlow />
+
+
+
+        </section>
+
+
+
+    </main>
+
+
 
 </MainLayout>
+
+
+
+
+
+
+<script>
+
+    import {
+
+        RegistrationController
+
+    }
+
+    from "../scripts/registration/RegistrationController";
+
+
+
+    document.addEventListener(
+
+        "DOMContentLoaded",
+
+        ()=>{
+
+
+            new RegistrationController();
+
+
+        }
+
+    );
+
+
+</script>

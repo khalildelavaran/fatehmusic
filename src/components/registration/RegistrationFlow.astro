@@ -1,0 +1,148 @@
+/*
+====================================================
+File:
+src/components/registration/RegistrationFlow.astro
+
+Purpose:
+Main Registration Wizard Container
+
+Architecture:
+- UI composition only
+- Contains all registration steps
+- Loads registration controller
+- No business logic
+- No state management
+
+Flow:
+
+Welcome
+   ↓
+Instrument
+   ↓
+Instructor
+   ↓
+Schedule
+   ↓
+Student
+   ↓
+Review
+   ↓
+Success
+
+====================================================
+*/
+
+---
+
+import WelcomeStep from "./steps/WelcomeStep.astro";
+
+import InstrumentStep from "./steps/InstrumentStep.astro";
+
+import InstructorStep from "./steps/InstructorStep.astro";
+
+import ScheduleStep from "./steps/ScheduleStep.astro";
+
+import StudentStep from "./steps/StudentStep.astro";
+
+import ReviewStep from "./steps/ReviewStep.astro";
+
+import SuccessStep from "./steps/SuccessStep.astro";
+
+---
+
+<section
+
+    class="registration-flow"
+
+    id="registration-flow"
+
+>
+
+
+
+
+
+    <div class="registration-steps">
+
+
+
+
+
+        <WelcomeStep />
+
+
+
+
+
+        <InstrumentStep />
+
+
+
+
+
+        <InstructorStep
+
+            instructors={[]}
+
+        />
+
+
+
+
+
+        <ScheduleStep
+
+            schedules={[]}
+
+        />
+
+
+
+
+
+        <StudentStep />
+
+
+
+
+
+        <ReviewStep />
+
+
+
+
+
+        <SuccessStep />
+
+
+
+
+
+    </div>
+
+
+
+
+
+</section>
+
+
+
+
+
+
+
+<script>
+
+    import {
+
+        RegistrationController
+
+    } from "../../scripts/registration/RegistrationController";
+
+
+
+    new RegistrationController();
+
+
+</script>

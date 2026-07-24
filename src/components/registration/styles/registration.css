@@ -1,0 +1,534 @@
+/*
+====================================================
+File:
+src/components/registration/styles/registration.css
+
+Purpose:
+Main styles for Registration Wizard UI
+
+Architecture:
+- Modern conversation based UI
+- No dependency on steps
+- Shared styles for all registration components
+
+Theme:
+- Fateh Music luxury style
+- Dark background
+- Gold accent
+
+====================================================
+*/
+
+
+/* ================================================
+   Root Container
+================================================ */
+
+
+.registration-flow {
+
+    width: 100%;
+
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 2rem 1rem;
+
+}
+
+
+
+.registration-container {
+
+    width: 100%;
+
+    max-width: 900px;
+
+    margin: 0 auto;
+
+}
+
+
+
+
+
+/* ================================================
+   Step Container
+================================================ */
+
+
+.registration-step {
+
+    width: 100%;
+
+    animation: registrationFade .35s ease;
+
+}
+
+
+
+.registration-step.hidden {
+
+    display: none;
+
+}
+
+
+
+.step-header {
+
+    text-align: center;
+
+    margin-bottom: 2.5rem;
+
+}
+
+
+
+.step-header h1,
+
+.step-header h2 {
+
+    margin: 0 0 1rem;
+
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+
+    font-weight: 700;
+
+    color: var(--gold);
+
+}
+
+
+
+.step-header p {
+
+    color: var(--text-muted);
+
+    font-size: 1rem;
+
+    line-height: 2;
+
+}
+
+
+
+
+
+/* ================================================
+   Card Grid
+================================================ */
+
+
+.registration-grid {
+
+    display: grid;
+
+    grid-template-columns:
+
+    repeat(auto-fit, minmax(220px, 1fr));
+
+    gap: 1.5rem;
+
+}
+
+
+
+
+
+/* ================================================
+   Selection Card
+================================================ */
+
+
+.registration-card {
+
+    position: relative;
+
+    cursor: pointer;
+
+    background:
+
+    var(--surface);
+
+    border:
+
+    1px solid rgba(255,255,255,.08);
+
+    border-radius: 1.2rem;
+
+    padding: 1.8rem 1.4rem;
+
+    transition:
+
+    transform .25s ease,
+
+    border-color .25s ease,
+
+    box-shadow .25s ease;
+
+}
+
+
+
+.registration-card:hover {
+
+    transform: translateY(-5px);
+
+    border-color: var(--gold);
+
+}
+
+
+
+.registration-card.active {
+
+    border-color: var(--gold);
+
+    box-shadow:
+
+    0 0 0 2px rgba(212,175,55,.25);
+
+}
+
+
+
+
+
+/* ================================================
+   Icons
+================================================ */
+
+
+.registration-icon {
+
+    width: 64px;
+
+    height: 64px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin: 0 auto 1rem;
+
+    font-size: 2rem;
+
+}
+
+
+
+
+
+/* ================================================
+   Buttons
+================================================ */
+
+
+.registration-button {
+
+    width: 100%;
+
+    border: none;
+
+    cursor: pointer;
+
+    border-radius: .9rem;
+
+    padding: 1rem 1.5rem;
+
+    font-size: 1rem;
+
+    font-weight: 600;
+
+    transition:
+
+    transform .2s ease,
+
+    opacity .2s ease;
+
+}
+
+
+
+.registration-button:hover {
+
+    transform: translateY(-2px);
+
+}
+
+
+
+.registration-button.primary {
+
+    background: var(--gold);
+
+    color: #111;
+
+}
+
+
+
+
+
+/* ================================================
+   Instructor Cards
+================================================ */
+
+
+.instructor-card {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 1rem;
+
+}
+
+
+
+.instructor-image {
+
+    width: 90px;
+
+    height: 90px;
+
+    border-radius: 50%;
+
+    object-fit: cover;
+
+    margin: auto;
+
+}
+
+
+
+.instructor-name {
+
+    text-align: center;
+
+    font-size: 1.2rem;
+
+    font-weight: 700;
+
+}
+
+
+
+.instructor-meta {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: .5rem;
+
+    color: var(--text-muted);
+
+    text-align: center;
+
+}
+
+
+
+
+
+/* ================================================
+   Schedule
+================================================ */
+
+
+.schedule-list {
+
+    display: grid;
+
+    grid-template-columns:
+
+    repeat(auto-fit, minmax(140px,1fr));
+
+    gap: 1rem;
+
+}
+
+
+
+.schedule-card {
+
+    padding: 1rem;
+
+    border-radius: .8rem;
+
+    background: var(--surface);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    cursor:pointer;
+
+    text-align:center;
+
+}
+
+
+
+.schedule-card.active {
+
+    border-color:var(--gold);
+
+}
+
+
+
+
+
+/* ================================================
+   Inputs
+================================================ */
+
+
+.registration-input {
+
+    width:100%;
+
+    padding:1rem;
+
+    border-radius:.8rem;
+
+    border:
+
+    1px solid rgba(255,255,255,.15);
+
+    background:
+
+    var(--surface);
+
+    color:
+
+    var(--text);
+
+    font-size:1rem;
+
+}
+
+
+
+.registration-input:focus {
+
+    outline:none;
+
+    border-color:var(--gold);
+
+}
+
+
+
+
+
+/* ================================================
+   Review Box
+================================================ */
+
+
+.review-box {
+
+    background:var(--surface);
+
+    border-radius:1.2rem;
+
+    padding:2rem;
+
+    line-height:2;
+
+}
+
+
+
+.review-row {
+
+    display:flex;
+
+    justify-content:space-between;
+
+    border-bottom:
+
+    1px solid rgba(255,255,255,.08);
+
+    padding:.8rem 0;
+
+}
+
+
+
+
+
+/* ================================================
+   Animation
+================================================ */
+
+
+@keyframes registrationFade {
+
+    from {
+
+        opacity:0;
+
+        transform:translateY(15px);
+
+    }
+
+
+    to {
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}
+
+
+
+
+
+/* ================================================
+   Mobile
+================================================ */
+
+
+@media(max-width:600px){
+
+
+.registration-flow {
+
+    padding:1rem;
+
+}
+
+
+
+.registration-card {
+
+    padding:1.3rem;
+
+}
+
+
+
+.step-header h1,
+
+.step-header h2 {
+
+    font-size:1.7rem;
+
+}
+
+
+}

@@ -1,0 +1,89 @@
+<!--
+====================================================
+File:
+src/components/registration/steps/WelcomeStep.astro
+
+Purpose:
+First screen of registration experience
+
+Architecture:
+- UI only
+- No business logic
+- RegistrationController handles transitions
+
+====================================================
+-->
+
+<section
+    class="registration-step welcome-step"
+    data-step="welcome"
+>
+
+    <div class="step-header">
+
+        <span class="badge">
+            ثبت نام آنلاین
+        </span>
+
+
+        <h1>
+
+            به آموزشگاه موسیقی فاتح خوش آمدید
+
+        </h1>
+
+
+        <p>
+
+            در کمتر از چند دقیقه، ساز مورد علاقه،
+            استاد مناسب و زمان کلاس خود را انتخاب کنید.
+
+        </p>
+
+    </div>
+
+
+    <div class="welcome-content">
+
+
+        <div class="registration-card">
+
+            <div class="registration-icon">
+
+                🎵
+
+            </div>
+
+
+            <h3>
+
+                شروع ثبت نام
+
+            </h3>
+
+
+            <p>
+
+                ابتدا به ما بگویید دوست دارید
+                کدام ساز را یاد بگیرید.
+
+            </p>
+
+
+            <button
+                class="registration-button primary"
+                data-action="start-registration"
+            >
+
+                شروع انتخاب ساز
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>

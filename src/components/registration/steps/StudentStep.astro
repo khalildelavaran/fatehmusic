@@ -1,0 +1,420 @@
+/*
+====================================================
+File:
+src/components/registration/steps/StudentStep.astro
+
+Purpose:
+Student information step
+
+Architecture:
+- UI only
+- No business logic
+- Data collected by RegistrationController
+- Compatible with:
+    RegistrationStore.updateStudent()
+    RegistrationValidation.ts
+
+Fields:
+- firstName
+- lastName
+- mobile
+- age
+- gender
+- hasInstrument
+
+====================================================
+*/
+
+---
+
+---
+
+
+<section
+
+    class="registration-step"
+
+    data-step="student"
+
+    hidden
+
+>
+
+
+    <div class="step-header">
+
+
+        <span class="badge">
+
+            مرحله چهارم
+
+        </span>
+
+
+
+        <h2>
+
+            اطلاعات هنرجو
+
+        </h2>
+
+
+
+        <p>
+
+            فقط چند اطلاعات ساده برای تکمیل ثبت‌نام نیاز داریم.
+
+        </p>
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="student-form">
+
+
+
+
+
+        <div class="form-group">
+
+
+            <label>
+
+                نام
+
+            </label>
+
+
+            <input
+
+                type="text"
+
+                data-field="firstName"
+
+                name="firstName"
+
+                placeholder="نام هنرجو"
+
+                autocomplete="given-name"
+
+            />
+
+
+        </div>
+
+
+
+
+
+
+
+        <div class="form-group">
+
+
+            <label>
+
+                نام خانوادگی
+
+            </label>
+
+
+            <input
+
+                type="text"
+
+                data-field="lastName"
+
+                name="lastName"
+
+                placeholder="نام خانوادگی"
+
+                autocomplete="family-name"
+
+            />
+
+
+        </div>
+
+
+
+
+
+
+
+        <div class="form-group">
+
+
+            <label>
+
+                شماره موبایل
+
+            </label>
+
+
+            <input
+
+                type="tel"
+
+                data-field="mobile"
+
+                name="mobile"
+
+                placeholder="09xxxxxxxxx"
+
+                autocomplete="tel"
+
+            />
+
+
+        </div>
+
+
+
+
+
+
+
+        <div class="form-group">
+
+
+            <label>
+
+                سن هنرجو
+
+            </label>
+
+
+            <input
+
+                type="number"
+
+                data-field="age"
+
+                name="age"
+
+                placeholder="سن"
+
+                min="3"
+
+                max="100"
+
+            />
+
+
+        </div>
+
+
+
+
+
+
+
+        <div class="form-group">
+
+
+            <label>
+
+                جنسیت
+
+            </label>
+
+
+
+
+            <div class="choice-grid">
+
+
+
+                <label class="choice-card">
+
+
+                    <input
+
+                        type="radio"
+
+                        name="gender"
+
+                        value="male"
+
+                        data-field="gender"
+
+                    />
+
+
+                    <span>
+
+                        آقا
+
+                    </span>
+
+
+                </label>
+
+
+
+
+
+                <label class="choice-card">
+
+
+                    <input
+
+                        type="radio"
+
+                        name="gender"
+
+                        value="female"
+
+                        data-field="gender"
+
+                    />
+
+
+                    <span>
+
+                        خانم
+
+                    </span>
+
+
+                </label>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+        <div class="form-group">
+
+
+            <label>
+
+                آیا ساز دارید؟
+
+            </label>
+
+
+
+
+            <div class="choice-grid">
+
+
+
+                <label class="choice-card">
+
+
+                    <input
+
+                        type="radio"
+
+                        name="hasInstrument"
+
+                        value="yes"
+
+                        data-field="hasInstrument"
+
+                    />
+
+
+                    <span>
+
+                        بله، ساز دارم
+
+                    </span>
+
+
+                </label>
+
+
+
+
+
+
+                <label class="choice-card">
+
+
+                    <input
+
+                        type="radio"
+
+                        name="hasInstrument"
+
+                        value="no"
+
+                        data-field="hasInstrument"
+
+                    />
+
+
+                    <span>
+
+                        خیر، نیاز به مشاوره خرید دارم
+
+                    </span>
+
+
+                </label>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="step-actions">
+
+
+        <button
+
+            class="registration-button primary"
+
+            data-action="continue-student"
+
+        >
+
+            ادامه و مشاهده خلاصه ثبت‌نام
+
+        </button>
+
+
+    </div>
+
+
+
+
+
+
+</section>

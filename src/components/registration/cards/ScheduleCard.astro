@@ -1,0 +1,208 @@
+/*
+====================================================
+File:
+src/components/registration/cards/ScheduleCard.astro
+
+Purpose:
+Reusable class schedule selection card
+
+Architecture:
+- UI only
+- No business logic
+- Selection handled by RegistrationController
+- Provides schedule metadata through data attributes
+
+====================================================
+*/
+
+---
+
+interface Props {
+
+    id: string | number;
+
+    weekday: string;
+
+    startTime?: string;
+
+    endTime?: string;
+
+    classroom?: string | number;
+
+    duration?: number | string;
+
+}
+
+
+
+const {
+
+    id,
+
+    weekday,
+
+    startTime,
+
+    endTime,
+
+    classroom,
+
+    duration
+
+} = Astro.props;
+
+---
+
+
+<article
+
+
+    class="registration-card schedule-card"
+
+
+    data-schedule-id={id}
+
+
+    data-weekday={weekday}
+
+
+    data-start-time={startTime || ""}
+
+
+    data-end-time={endTime || ""}
+
+
+    data-classroom={classroom || ""}
+
+
+    data-action="select-schedule"
+
+
+    tabindex="0"
+
+
+    role="button"
+
+
+>
+
+
+
+
+
+    <div class="schedule-day">
+
+
+        <h3>
+
+            {weekday}
+
+        </h3>
+
+
+    </div>
+
+
+
+
+
+
+
+    {
+
+        startTime && endTime && (
+
+            <div class="schedule-time">
+
+
+                🕒
+
+                {startTime}
+
+                -
+
+                {endTime}
+
+
+            </div>
+
+        )
+
+    }
+
+
+
+
+
+
+
+
+
+    {
+
+        classroom && (
+
+            <div class="schedule-classroom">
+
+
+                🏫
+
+                کلاس {classroom}
+
+
+            </div>
+
+        )
+
+    }
+
+
+
+
+
+
+
+
+
+    {
+
+        duration && (
+
+            <div class="schedule-duration">
+
+
+                ⏱
+
+                {duration}
+
+                دقیقه
+
+
+            </div>
+
+        )
+
+    }
+
+
+
+
+
+
+
+
+
+    <div class="select-indicator">
+
+
+        انتخاب این زمان
+
+
+    </div>
+
+
+
+
+
+
+</article>

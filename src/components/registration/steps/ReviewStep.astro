@@ -1,0 +1,419 @@
+/*
+====================================================
+File:
+src/components/registration/steps/ReviewStep.astro
+
+Purpose:
+Final review before registration submission
+
+Architecture:
+- UI only
+- No business logic
+- Data injected by RegistrationRenderer
+- Submit handled by RegistrationController
+
+Data sources:
+RegistrationStore
+        ↓
+RegistrationRenderer.updateReview()
+        ↓
+data-review attributes
+
+====================================================
+*/
+
+---
+
+---
+
+
+<section
+
+    class="registration-step"
+
+    data-step="review"
+
+    hidden
+
+>
+
+
+    <div class="step-header">
+
+
+        <span class="badge">
+
+            مرحله پنجم
+
+        </span>
+
+
+
+        <h2>
+
+            بررسی نهایی ثبت‌نام
+
+        </h2>
+
+
+
+        <p>
+
+            اطلاعات زیر را بررسی کنید و در صورت تأیید ثبت‌نام را نهایی نمایید.
+
+        </p>
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+    <div class="review-container">
+
+
+
+
+
+
+
+        <!-- Course Info -->
+
+        <div class="review-card registration-card">
+
+
+            <h3>
+
+                اطلاعات دوره
+
+            </h3>
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    🎵 ساز
+
+                </span>
+
+
+                <strong
+
+                    data-review="instrument"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    👨‍🏫 استاد
+
+                </span>
+
+
+                <strong
+
+                    data-review="instructor"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    🕒 زمان کلاس
+
+                </span>
+
+
+                <strong
+
+                    data-review="schedule"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+
+
+        <!-- Student Info -->
+
+        <div class="review-card registration-card">
+
+
+            <h3>
+
+                اطلاعات هنرجو
+
+            </h3>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    نام و نام خانوادگی
+
+                </span>
+
+
+                <strong
+
+                    data-review="student"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    موبایل
+
+                </span>
+
+
+                <strong
+
+                    data-review="mobile"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    سن
+
+                </span>
+
+
+                <strong
+
+                    data-review="age"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    جنسیت
+
+                </span>
+
+
+                <strong
+
+                    data-review="gender"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+
+
+            <div class="review-item">
+
+
+                <span>
+
+                    وضعیت ساز
+
+                </span>
+
+
+                <strong
+
+                    data-review="hasInstrument"
+
+                >
+
+                    -
+
+                </strong>
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+
+
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+    <!-- Confirmation -->
+
+    <div class="confirmation-box registration-card">
+
+
+        <p>
+
+            با تأیید ثبت‌نام، اطلاعات شما برای هماهنگی شروع کلاس
+            به آموزشگاه ارسال خواهد شد.
+
+        </p>
+
+
+
+    </div>
+
+
+
+
+
+
+
+
+
+    <div class="step-actions">
+
+
+
+        <button
+
+            class="registration-button"
+
+            data-action="back-to-student"
+
+        >
+
+            ویرایش اطلاعات
+
+        </button>
+
+
+
+
+
+        <button
+
+            class="registration-button primary"
+
+            data-action="submit-registration"
+
+        >
+
+            تأیید و ثبت نهایی
+
+        </button>
+
+
+
+    </div>
+
+
+
+
+
+
+</section>

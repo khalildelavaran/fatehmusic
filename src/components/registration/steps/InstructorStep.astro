@@ -1,0 +1,180 @@
+/*
+====================================================
+File:
+src/components/registration/steps/InstructorStep.astro
+
+Purpose:
+Instructor selection step
+
+Architecture:
+- UI only
+- No filtering logic
+- Receives instructors from parent/controller
+- InstructorCard handles presentation
+
+====================================================
+*/
+
+---
+
+import InstructorCard from "../cards/InstructorCard.astro";
+
+
+interface Instructor {
+
+
+    id: string | number;
+
+
+    name: string;
+
+
+    image?: string;
+
+
+    bio?: string;
+
+
+    specialties?: string[];
+
+
+}
+
+
+
+interface Props {
+
+
+    instructors?: Instructor[];
+
+
+}
+
+
+
+const {
+
+    instructors = []
+
+} = Astro.props;
+
+---
+
+
+<section
+
+    class="registration-step"
+
+    data-step="instructor"
+
+    hidden
+
+>
+
+
+    <div class="step-header">
+
+
+        <span class="badge">
+
+            مرحله دوم
+
+        </span>
+
+
+        <h2>
+
+            استاد مناسب خود را انتخاب کنید
+
+        </h2>
+
+
+        <p>
+
+            استادهای مرتبط با ساز انتخابی را مشاهده کنید و زمان مناسب کلاس را انتخاب نمایید.
+
+        </p>
+
+
+    </div>
+
+
+
+
+
+    <div
+
+        class="registration-grid instructor-grid"
+
+        data-instructors-container
+
+    >
+
+
+
+        {
+
+            instructors.length > 0 ? (
+
+
+                instructors.map(
+
+                    instructor => (
+
+
+                        <InstructorCard
+
+
+                            id={instructor.id}
+
+
+                            name={instructor.name}
+
+
+                            image={instructor.image}
+
+
+                            bio={instructor.bio}
+
+
+                            specialties={instructor.specialties}
+
+
+                        />
+
+
+                    )
+
+                )
+
+
+            ) : (
+
+
+                <div
+
+                    class="registration-card empty-state"
+
+                >
+
+
+                    <p>
+
+                        پس از انتخاب ساز، استادهای مرتبط نمایش داده می‌شوند.
+
+                    </p>
+
+
+                </div>
+
+
+            )
+
+        }
+
+
+    </div>
+
+
+
+</section>
