@@ -75,19 +75,19 @@ function categoryHeading(category) {
 
         {categoryGroups.map((group) => (
 
-            <div
-                class="course-category"
-                data-reveal-group
-            >
+            <div class="course-category">
 
                 <h3
                     class="category-heading"
-                    data-reveal
+                    data-reveal="fade-up"
                 >
                     {categoryHeading(group.category)}
                 </h3>
 
-                <div class="courses-grid about-courses-grid">
+                <div
+                    class="courses-grid about-courses-grid"
+                    data-reveal-group
+                >
 
                     {group.courses.map((course) => (
 
