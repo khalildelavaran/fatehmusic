@@ -39,8 +39,7 @@
    showcase cards used on the homepage teaser */
 
 .about-courses-grid{
-    grid-template-columns:repeat(auto-fill,210px);
-    justify-content:start;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
     gap:18px;
 }
 

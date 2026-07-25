@@ -55,12 +55,13 @@ export interface RegistrationStudent {
 }
 
 
-
 export interface RegistrationSelection {
 
     course: {
 
-        id: string | null;
+        id: string | number | null;
+
+        slug: string | null;
 
         title: string | null;
 
@@ -122,8 +123,6 @@ export interface RegistrationState {
 
 }
 
-
-
 const initialState: RegistrationState = {
 
     currentStep: "welcome",
@@ -133,6 +132,8 @@ const initialState: RegistrationState = {
         course: {
 
             id: null,
+
+            slug: null,
 
             title: null
 
@@ -185,7 +186,6 @@ const initialState: RegistrationState = {
 };
 
 
-
 class RegistrationStore {
 
     private state: RegistrationState;
@@ -220,50 +220,49 @@ class RegistrationStore {
 
     selectCourse(
 
-        id: string,
+    id: string | number,
 
-        title: string
+    slug: string,
 
-    ) {
+    title: string
 
-        this.state.selection.course = {
+) {
 
-            id,
+    this.state.selection.course = {
 
-            title
+        id,
 
-        };
+        slug,
 
+        title
 
+    };
 
-        // Reset downstream selections
+    // Reset downstream selections
 
-        this.state.selection.instructor = {
+    this.state.selection.instructor = {
 
-            id: null,
+        id: null,
 
-            name: null
+        name: null
 
-        };
+    };
 
+    this.state.selection.schedule = {
 
+        id: null,
 
-        this.state.selection.schedule = {
+        weekday: null,
 
-            id: null,
+        startTime: null,
 
-            weekday: null,
+        endTime: null,
 
-            startTime: null,
+        classroom: null
 
-            endTime: null,
+    };
 
-            classroom: null
-
-        };
-
-    }
-
+}
 
 
     selectInstructor(
