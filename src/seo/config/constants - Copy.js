@@ -31,8 +31,7 @@ export const SCHEMA_TYPES = Object.freeze({
     LIST_ITEM: "ListItem",
     POSTAL_ADDRESS: "PostalAddress",
     GEO_COORDINATES: "GeoCoordinates",
-    OPENING_HOURS_SPEC: "OpeningHoursSpecification",
-    ABOUT_PAGE: "AboutPage"
+    OPENING_HOURS_SPEC: "OpeningHoursSpecification"
 });
 
 // Saturday-first week order, matching the Iranian calendar,

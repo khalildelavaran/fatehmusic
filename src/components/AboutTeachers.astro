@@ -1,0 +1,104 @@
+---
+import "../styles/AboutTeachers.css";
+import { instructors } from "../data/instructors.js";
+
+const activeInstructors = instructors
+    .filter((instructor) => instructor.active)
+    .sort((a, b) => a.priority - b.priority);
+---
+
+<section
+    class="about-teachers"
+    data-reveal="fade-up"
+>
+
+    <div class="container">
+
+        <div
+            class="section-header"
+            data-reveal-group
+        >
+
+            <span
+                class="section-badge"
+                data-reveal
+                data-reveal-delay="1"
+            >
+                اساتید آموزشگاه
+            </span>
+
+            <h2
+                data-reveal
+                data-reveal-delay="2"
+            >
+                چه کسانی در آموزشگاه موسیقی فاتح تدریس می‌کنند؟
+            </h2>
+
+            <p
+                data-reveal
+                data-reveal-delay="3"
+            >
+                در حال حاضر {activeInstructors.length} مدرس در آموزشگاه
+                موسیقی فاتح فعالیت می‌کنند که هرکدام مسئول آموزش یک یا چند
+                ساز، یا یک حوزه مشخص از آواز، هستند. مدیریت آموزشگاه را
+                رضا فاتح بر عهده دارد و در کنار او، اساتیدی مانند خلیل
+                دلاوران (مدرس گیتار و دروس پایه موسیقی) و محمدعلی زعفرانی
+                (مدرس پیانو، ارگ و کیبورد) بخشی از تیم آموزشی این مجموعه‌اند.
+            </p>
+
+        </div>
+
+        <div
+            class="instructors-grid about-instructors-grid"
+            data-reveal-group
+        >
+
+            {activeInstructors.map((instructor) => (
+
+                <a
+                    href={`/instructors/${instructor.slug}`}
+                    class="instructor-card"
+                >
+
+                    <div class="instructor-image">
+
+                        <img
+                            src={instructor.media.images.profile}
+                            alt={instructor.name}
+                            loading="lazy"
+                            decoding="async"
+                        />
+
+                        {instructor.id === 1 && (
+                            <span class="badge">مدیر آموزشگاه</span>
+                        )}
+
+                    </div>
+
+                    <div class="instructor-content">
+
+                        <h3>{instructor.name}</h3>
+
+                        <p>{instructor.position}</p>
+
+                    </div>
+
+                </a>
+
+            ))}
+
+        </div>
+
+        <div
+            class="about-section-cta"
+            data-reveal
+            data-reveal-delay="4"
+        >
+            <a href="/instructors" class="secondary-btn">
+                مشاهده همه اساتید
+            </a>
+        </div>
+
+    </div>
+
+</section>

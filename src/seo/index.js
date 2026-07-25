@@ -79,3 +79,4 @@ export { buildCourseSchema } from "./schema/course.js";
 export { buildPersonSchema } from "./schema/person.js";
 export { buildFaqSchema } from "./schema/faq.js";
 export { buildBreadcrumbSchema } from "./schema/breadcrumb.js";
+export { buildAboutPageSchema } from "./schema/aboutpage.js";

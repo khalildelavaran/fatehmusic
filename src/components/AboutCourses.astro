@@ -1,0 +1,143 @@
+---
+import "../styles/AboutCourses.css";
+import { courses } from "../data/courses.js";
+
+/**
+ * Group active courses by their real `category` field, preserving
+ * first-appearance order from courses.js — no hand-typed category
+ * strings here, so there's no risk of a stray character mismatch
+ * silently dropping a whole group.
+ */
+const categoryGroups = courses
+    .filter((course) => course.active)
+    .reduce((groups, course) => {
+        let group = groups.find((g) => g.category === course.category);
+
+        if (!group) {
+            group = { category: course.category, courses: [] };
+            groups.push(group);
+        }
+
+        group.courses.push(course);
+        return groups;
+    }, []);
+
+const totalCourses = courses.filter((course) => course.active).length;
+
+function categoryHeading(category) {
+    if (category.startsWith("آموزش") || category.startsWith("دروس")) {
+        return category;
+    }
+    return `دوره‌های ${category}`;
+}
+---
+
+<section
+    class="about-courses"
+    data-reveal="fade-up"
+>
+
+    <div class="container">
+
+        <div
+            class="section-header"
+            data-reveal-group
+        >
+
+            <span
+                class="section-badge"
+                data-reveal
+                data-reveal-delay="1"
+            >
+                دوره‌های آموزشی
+            </span>
+
+            <h2
+                data-reveal
+                data-reveal-delay="2"
+            >
+                دوره‌های آموزشی آموزشگاه موسیقی فاتح
+            </h2>
+
+            <p
+                data-reveal
+                data-reveal-delay="3"
+            >
+                در آموزشگاه موسیقی فاتح {totalCourses} دوره آموزشی، از
+                سازهای زهی و آرشه‌ای گرفته تا سازهای کلاویه‌ای، کوبه‌ای و
+                بادی، آواز و دروس پایه موسیقی، به‌صورت جداگانه تدریس
+                می‌شوند. هر دوره صفحه اختصاصی خودش را دارد که در آن جزئیات
+                ساز، سطح آموزشی، استاد یا اساتید مربوطه و نحوه ثبت‌نام
+                آورده شده است.
+            </p>
+
+        </div>
+
+        {categoryGroups.map((group) => (
+
+            <div
+                class="course-category"
+                data-reveal-group
+            >
+
+                <h3
+                    class="category-heading"
+                    data-reveal
+                >
+                    {categoryHeading(group.category)}
+                </h3>
+
+                <div class="courses-grid about-courses-grid">
+
+                    {group.courses.map((course) => (
+
+                        <a
+                            href={`/courses/${course.slug}`}
+                            class="course-card"
+                            data-reveal="fade-up"
+                        >
+
+                            <div class="course-image">
+                                <img
+                                    src={course.media.image}
+                                    alt={course.title}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </div>
+
+                            <div class="course-content">
+
+                                <h4 class="course-title">
+                                    {course.title}
+                                </h4>
+
+                                <span class="course-subtitle">
+                                    {course.content.excerpt}
+                                </span>
+
+                            </div>
+
+                        </a>
+
+                    ))}
+
+                </div>
+
+            </div>
+
+        ))}
+
+        <div
+            class="about-section-cta"
+            data-reveal
+            data-reveal-delay="4"
+        >
+            <a href="/courses" class="secondary-btn">
+                مشاهده همه دوره‌ها
+            </a>
+        </div>
+
+    </div>
+
+</section>

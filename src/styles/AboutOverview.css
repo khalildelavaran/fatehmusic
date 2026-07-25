@@ -1,0 +1,80 @@
+/* ==========================================
+   ABOUT — OVERVIEW
+========================================== */
+
+.about-overview{
+    position:relative;
+}
+
+.about-block{
+    max-width:820px;
+    margin:0 auto;
+    padding:28px 0;
+}
+
+.about-block p{
+    color:var(--text-secondary);
+    line-height:2;
+    font-size:17px;
+    margin-bottom:18px;
+}
+
+.about-block p:last-child{
+    margin-bottom:0;
+}
+
+.about-block a{
+    color:var(--primary);
+    border-bottom:1px solid rgba(212,175,55,.4);
+    transition:border-color .3s ease, color .3s ease;
+}
+
+.about-block a:hover{
+    border-color:var(--primary);
+}
+
+/* First block reads like the hero's continuation: centered intro */
+
+.about-block:first-child{
+    text-align:center;
+}
+
+.about-block:first-child .section-badge{
+    margin-inline:auto;
+}
+
+.about-block:first-child p{
+    max-width:700px;
+    margin-inline:auto;
+    margin-bottom:18px;
+}
+
+/* Second block: the "why us" argument, set apart as a highlighted panel */
+
+.about-block + .about-block{
+    margin-top:20px;
+    padding:32px;
+    border-inline-start:3px solid var(--primary);
+    background:linear-gradient(
+        180deg,
+        rgba(255,255,255,.035),
+        rgba(255,255,255,.01)
+    );
+    border-radius:4px 20px 20px 4px;
+}
+
+@media (max-width:768px){
+
+    .about-block{
+        padding:20px 0;
+    }
+
+    .about-block p{
+        font-size:16px;
+    }
+
+    .about-block + .about-block{
+        padding:24px 18px;
+    }
+
+}

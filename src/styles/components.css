@@ -102,6 +102,36 @@
 
 }
 
+/* ---------- Section Badge (eyebrow label above H1/H2) ---------- */
+
+.section-badge{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    padding:8px 18px;
+
+    border-radius:999px;
+
+    background:rgba(212,175,55,.10);
+
+    border:1px solid rgba(212,175,55,.22);
+
+    color:var(--primary);
+
+    font-size:13px;
+
+    font-weight:600;
+
+    letter-spacing:.2px;
+
+    margin-bottom:16px;
+
+}
+
 /* ---------- Tag ---------- */
 
 .tag{

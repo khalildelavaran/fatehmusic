@@ -1,0 +1,86 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import PageHero from "../components/PageHero.astro";
+import CTA from "../components/CTA.astro";
+
+import AboutOverview from "../components/AboutOverview.astro";
+import AboutMission from "../components/AboutMission.astro";
+import AboutTeachers from "../components/AboutTeachers.astro";
+import AboutCourses from "../components/AboutCourses.astro";
+import AboutFacilities from "../components/AboutFacilities.astro";
+import AboutFAQ, { faqs } from "../components/AboutFAQ.astro";
+
+import {
+    resolveSite,
+    resolveInstructor,
+    buildPersonSchema,
+    buildFaqSchema,
+    buildBreadcrumbSchema,
+    buildAboutPageSchema
+} from "../seo/index.js";
+import { instructors } from "../data/instructors.js";
+
+const title = "درباره آموزشگاه موسیقی فاتح";
+
+const description =
+    "آموزشگاه موسیقی فاتح در شوشتر، مرکز آموزش خصوصی گیتار، پیانو، ویولن، سنتور، تار، دف، آواز و ۲۳ رشته موسیقی با ۱۴ مدرس متخصص، برای همه سنین و سطوح.";
+
+const site = resolveSite();
+
+const instructorSchemas = instructors
+    .filter((instructor) => instructor.active)
+    .map((instructor) =>
+        buildPersonSchema(resolveInstructor(instructor, site), { site })
+    );
+
+const schema = [
+    buildAboutPageSchema({ title, description, site }),
+    buildBreadcrumbSchema(
+        [
+            { name: "خانه", path: "/" },
+            { name: "درباره ما", path: "/about" }
+        ],
+        site
+    ),
+    buildFaqSchema(faqs),
+    ...instructorSchemas
+];
+---
+
+<MainLayout
+    title={title}
+    description={description}
+    schema={schema}
+>
+
+    <Header />
+
+    <PageHero
+        badge="درباره ما"
+        title="درباره آموزشگاه موسیقی فاتح"
+        description="آشنایی با آموزشگاه موسیقی فاتح؛ فلسفه آموزشی، اساتید و دوره‌های این مجموعه در شوشتر."
+    />
+
+    <main>
+
+        <AboutOverview />
+
+        <AboutMission />
+
+        <AboutTeachers />
+
+        <AboutCourses />
+
+        <AboutFacilities />
+
+        <AboutFAQ />
+
+    </main>
+
+    <CTA />
+
+    <Footer />
+
+</MainLayout>

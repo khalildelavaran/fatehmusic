@@ -1,0 +1,75 @@
+/* ==========================================
+   ABOUT — COURSES (grouped catalog)
+========================================== */
+
+.about-courses{
+    position:relative;
+}
+
+.course-category{
+    margin-top:44px;
+}
+
+.course-category:first-of-type{
+    margin-top:32px;
+}
+
+.category-heading{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    font-size:19px;
+    font-weight:700;
+    color:var(--primary);
+    margin-bottom:18px;
+}
+
+.category-heading::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:linear-gradient(
+        to left,
+        rgba(212,175,55,.35),
+        transparent
+    );
+}
+
+/* Denser, catalog-style cards — distinct from the larger
+   showcase cards used on the homepage teaser */
+
+.about-courses-grid{
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:18px;
+}
+
+.about-courses-grid .course-image{
+    aspect-ratio:4/3;
+}
+
+.about-courses-grid .course-title{
+    font-size:18px;
+}
+
+.about-courses-grid .course-content{
+    padding:0 12px 14px;
+    gap:6px;
+}
+
+.about-courses-grid .course-subtitle{
+    font-size:14px;
+    line-height:1.7;
+}
+
+@media (max-width:600px){
+
+    .about-courses-grid{
+        grid-template-columns:repeat(2,1fr);
+        gap:12px;
+    }
+
+    .category-heading{
+        font-size:17px;
+    }
+
+}

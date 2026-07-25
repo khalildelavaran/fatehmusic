@@ -1,0 +1,76 @@
+/* ==========================================
+   ABOUT — MISSION, VALUES & METHOD
+========================================== */
+
+.about-mission{
+    position:relative;
+}
+
+.about-mission .values-header{
+    margin-top:56px;
+}
+
+/* ---------- Mission / Vision ---------- */
+
+.mission-vision-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:24px;
+}
+
+.mv-card{
+    padding:32px;
+}
+
+.mv-card h3{
+    color:var(--primary);
+    font-size:20px;
+    font-weight:700;
+    margin-bottom:12px;
+}
+
+.mv-card p{
+    color:var(--text-secondary);
+    line-height:1.95;
+    font-size:16px;
+    margin:0;
+}
+
+/* ---------- Values / Method ---------- */
+
+.principles-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:24px;
+}
+
+.principle-card{
+    padding:28px;
+}
+
+.principle-card h3{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:10px;
+    line-height:1.5;
+}
+
+.principle-card p{
+    color:var(--text-secondary);
+    line-height:1.95;
+    font-size:15.5px;
+    margin:0;
+}
+
+@media (max-width:768px){
+
+    .about-mission .values-header{
+        margin-top:40px;
+    }
+
+    .mv-card,
+    .principle-card{
+        padding:22px;
+    }
+
+}
