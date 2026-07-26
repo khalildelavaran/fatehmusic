@@ -1,4 +1,13 @@
 /* ============================================================
+   FAQ Bot Knowledge Base
+   Sections 1-5 below are grouped into a single object so this
+   file is valid, importable JavaScript. (They previously had no
+   wrapping declaration, which made the module fail to parse.)
+============================================================ */
+
+const faqKnowledge = {
+
+/* ============================================================
    SECTION 1
    Academy Information
 ============================================================ */
@@ -506,6 +515,18 @@ courses: [
   }
 
 ],
+
+/* ============================================================
+   Instructors
+   Not tracked in this lightweight FAQ knowledge base - each
+   course above only references an instructorId. Full instructor
+   records live in src/data/instructors.js. Kept here as an
+   explicit empty array so getInstructors()/searchInstructor()
+   return [] instead of throwing on undefined.
+============================================================ */
+
+instructors: [],
+
 /* ============================================================
    SECTION 4
    FAQ Intents (Enterprise v2.0)
@@ -820,7 +841,12 @@ responses: {
   certificate:
 `در پایان دوره و در صورت فعال شدن سامانه آموزشی آموزشگاه، امکان صدور گواهی پایان دوره فراهم خواهد شد.`
 
-},
+}
+
+}; // close faqKnowledge
+
+const { courses, instructors, intents, responses } = faqKnowledge;
+
 /* ============================================================
    SECTION 6
    normalizeText()
@@ -1303,39 +1329,6 @@ export function popup(question = "") {
 
 
 /* ============================================================
-   Default Export
-============================================================ */
-
-export default {
-
-  normalizeText,
-
-  detectIntent,
-
-  searchCourse,
-
-  searchInstructor,
-
-  search,
-
-  ask,
-
-  liveSearch,
-
-  popup,
-
-  autoComplete,
-
-  quickSuggest,
-
-  hasSuggestion,
-
-  buildSuggestion,
-
-  getResponse
-
-};
-/* ============================================================
    SECTION 10
    Public API
    Enterprise v2.0
@@ -1386,7 +1379,7 @@ export function getInstructors() {
  */
 export function getFaq() {
 
-  return faqKnowledge.faq;
+  return faqKnowledge.responses;
 
 }
 

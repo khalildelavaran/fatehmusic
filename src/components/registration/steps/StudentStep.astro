@@ -1,420 +1,91 @@
+---
 /*
 ====================================================
-File:
-src/components/registration/steps/StudentStep.astro
+File: src/components/registration/steps/StudentStep.astro
 
-Purpose:
-Student information step
-
-Architecture:
-- UI only
-- No business logic
-- Data collected by RegistrationController
-- Compatible with:
-    RegistrationStore.updateStudent()
-    RegistrationValidation.ts
-
-Fields:
-- firstName
-- lastName
-- mobile
-- age
-- gender
-- hasInstrument
-
+Purpose: Step 4 - student information form.
 ====================================================
 */
-
 ---
 
----
+<section class="registration-step" data-step="student" hidden>
+  <header class="step-header">
+    <button type="button" class="step-back" data-action="back-to-schedule">
+      &rarr; بازگشت به انتخاب زمان
+    </button>
+    <span class="section-badge">مرحله ۴ از ۵</span>
+    <h2>مشخصات هنرجو</h2>
+    <p>این اطلاعات برای تکمیل پرونده آموزشی هنرجو استفاده می‌شود.</p>
+  </header>
 
+  <ul class="form-errors" data-form-errors hidden></ul>
 
-<section
-
-    class="registration-step"
-
-    data-step="student"
-
-    hidden
-
->
-
-
-    <div class="step-header">
-
-
-        <span class="badge">
-
-            مرحله چهارم
-
-        </span>
-
-
-
-        <h2>
-
-            اطلاعات هنرجو
-
-        </h2>
-
-
-
-        <p>
-
-            فقط چند اطلاعات ساده برای تکمیل ثبت‌نام نیاز داریم.
-
-        </p>
-
-
+  <form class="student-form" onsubmit="return false">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="student-first-name">نام</label>
+        <input id="student-first-name" type="text" data-field="firstName" autocomplete="given-name" />
+      </div>
+      <div class="form-group">
+        <label for="student-last-name">نام خانوادگی</label>
+        <input id="student-last-name" type="text" data-field="lastName" autocomplete="family-name" />
+      </div>
     </div>
 
-
-
-
-
-
-
-    <div class="student-form">
-
-
-
-
-
-        <div class="form-group">
-
-
-            <label>
-
-                نام
-
-            </label>
-
-
-            <input
-
-                type="text"
-
-                data-field="firstName"
-
-                name="firstName"
-
-                placeholder="نام هنرجو"
-
-                autocomplete="given-name"
-
-            />
-
-
-        </div>
-
-
-
-
-
-
-
-        <div class="form-group">
-
-
-            <label>
-
-                نام خانوادگی
-
-            </label>
-
-
-            <input
-
-                type="text"
-
-                data-field="lastName"
-
-                name="lastName"
-
-                placeholder="نام خانوادگی"
-
-                autocomplete="family-name"
-
-            />
-
-
-        </div>
-
-
-
-
-
-
-
-        <div class="form-group">
-
-
-            <label>
-
-                شماره موبایل
-
-            </label>
-
-
-            <input
-
-                type="tel"
-
-                data-field="mobile"
-
-                name="mobile"
-
-                placeholder="09xxxxxxxxx"
-
-                autocomplete="tel"
-
-            />
-
-
-        </div>
-
-
-
-
-
-
-
-        <div class="form-group">
-
-
-            <label>
-
-                سن هنرجو
-
-            </label>
-
-
-            <input
-
-                type="number"
-
-                data-field="age"
-
-                name="age"
-
-                placeholder="سن"
-
-                min="3"
-
-                max="100"
-
-            />
-
-
-        </div>
-
-
-
-
-
-
-
-        <div class="form-group">
-
-
-            <label>
-
-                جنسیت
-
-            </label>
-
-
-
-
-            <div class="choice-grid">
-
-
-
-                <label class="choice-card">
-
-
-                    <input
-
-                        type="radio"
-
-                        name="gender"
-
-                        value="male"
-
-                        data-field="gender"
-
-                    />
-
-
-                    <span>
-
-                        آقا
-
-                    </span>
-
-
-                </label>
-
-
-
-
-
-                <label class="choice-card">
-
-
-                    <input
-
-                        type="radio"
-
-                        name="gender"
-
-                        value="female"
-
-                        data-field="gender"
-
-                    />
-
-
-                    <span>
-
-                        خانم
-
-                    </span>
-
-
-                </label>
-
-
-
-            </div>
-
-
-
-        </div>
-
-
-
-
-
-
-
-
-        <div class="form-group">
-
-
-            <label>
-
-                آیا ساز دارید؟
-
-            </label>
-
-
-
-
-            <div class="choice-grid">
-
-
-
-                <label class="choice-card">
-
-
-                    <input
-
-                        type="radio"
-
-                        name="hasInstrument"
-
-                        value="yes"
-
-                        data-field="hasInstrument"
-
-                    />
-
-
-                    <span>
-
-                        بله، ساز دارم
-
-                    </span>
-
-
-                </label>
-
-
-
-
-
-
-                <label class="choice-card">
-
-
-                    <input
-
-                        type="radio"
-
-                        name="hasInstrument"
-
-                        value="no"
-
-                        data-field="hasInstrument"
-
-                    />
-
-
-                    <span>
-
-                        خیر، نیاز به مشاوره خرید دارم
-
-                    </span>
-
-
-                </label>
-
-
-
-            </div>
-
-
-
-        </div>
-
-
-
-
-
-
-
-
+    <div class="form-row">
+      <div class="form-group">
+        <label for="student-mobile">شماره موبایل</label>
+        <input
+          id="student-mobile"
+          type="tel"
+          inputmode="numeric"
+          placeholder="09xxxxxxxxx"
+          data-field="mobile"
+          autocomplete="tel"
+        />
+      </div>
+      <div class="form-group">
+        <label for="student-age">سن</label>
+        <input id="student-age" type="number" min="3" max="100" data-field="age" />
+      </div>
     </div>
 
+    <fieldset class="form-group">
+      <legend>جنسیت</legend>
+      <div class="choice-grid">
+        <input type="radio" id="gender-male" name="gender" value="male" data-field="gender" class="choice-input" />
+        <label for="gender-male" class="choice-card">آقا</label>
 
+        <input type="radio" id="gender-female" name="gender" value="female" data-field="gender" class="choice-input" />
+        <label for="gender-female" class="choice-card">خانم</label>
+      </div>
+    </fieldset>
 
+    <fieldset class="form-group">
+      <legend>آیا ساز مخصوص به خود را دارید؟</legend>
+      <div class="choice-grid">
+        <input
+          type="radio"
+          id="has-instrument-yes"
+          name="hasInstrument"
+          value="yes"
+          data-field="hasInstrument"
+          class="choice-input"
+        />
+        <label for="has-instrument-yes" class="choice-card">بله، دارم</label>
 
+        <input
+          type="radio"
+          id="has-instrument-no"
+          name="hasInstrument"
+          value="no"
+          data-field="hasInstrument"
+          class="choice-input"
+        />
+        <label for="has-instrument-no" class="choice-card">خیر، نیاز به راهنمایی دارم</label>
+      </div>
+    </fieldset>
 
-
-
-    <div class="step-actions">
-
-
-        <button
-
-            class="registration-button primary"
-
-            data-action="continue-student"
-
-        >
-
-            ادامه و مشاهده خلاصه ثبت‌نام
-
-        </button>
-
-
-    </div>
-
-
-
-
-
-
+    <button type="button" class="btn" data-action="continue-student">ادامه و بررسی نهایی</button>
+  </form>
 </section>

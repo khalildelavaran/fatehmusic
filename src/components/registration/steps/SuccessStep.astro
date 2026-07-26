@@ -1,398 +1,54 @@
+---
 /*
 ====================================================
-File:
-src/components/registration/steps/SuccessStep.astro
+File: src/components/registration/steps/SuccessStep.astro
 
-Purpose:
-Final registration success screen
-
-Features:
-- Registration confirmation
-- Tracking code display
-- Class summary
-- Welcome Kit
-- Required materials
-- Optional materials
-- Store recommendation
-
-Architecture:
-- UI only
-- Dynamic data injected by RegistrationRenderer
-- No business logic
-
+Purpose: Final step - confirmation, tracking code, and next steps.
+Values are filled in by RegistrationRenderer.updateSuccess().
 ====================================================
 */
-
 ---
 
----
+<section class="registration-step success-step" data-step="success" hidden>
+  <div class="success-mark">&#10003;</div>
+  <h2>ثبت نام شما با موفقیت انجام شد</h2>
+  <p>کارشناسان آموزشگاه برای هماهنگی نهایی با شما تماس خواهند گرفت.</p>
 
-<section
+  <div class="tracking-card">
+    <span>کد پیگیری</span>
+    <strong data-field-out="success-tracking-code">-</strong>
+  </div>
 
-    class="registration-step success-step"
-
-    data-step="success"
-
-    hidden
-
->
-
-
-    <div class="step-header success-header">
-
-
-        <div class="success-mark">
-
-            ✓
-
-        </div>
-
-
-
-        <span class="badge">
-
-            ثبت موفق
-
-        </span>
-
-
-
-        <h2>
-
-            ثبت‌نام شما با موفقیت انجام شد
-
-        </h2>
-
-
-
-        <p>
-
-            از اعتماد شما به آموزشگاه موسیقی فاتح سپاسگزاریم.
-            اطلاعات کلاس شما ثبت شد.
-
-        </p>
-
-
+  <div class="review-card">
+    <h3>خلاصه ثبت نام</h3>
+    <div class="review-row">
+      <span class="review-label">ساز</span>
+      <span class="review-value" data-field-out="success-instrument">-</span>
     </div>
-
-
-
-
-
-    <!-- Tracking Code -->
-
-    <div class="tracking-card registration-card">
-
-
-        <span>
-
-            شماره پیگیری ثبت‌نام
-
-        </span>
-
-
-        <strong
-
-            data-success="tracking-code"
-
-        >
-
-            -
-
-        </strong>
-
-
-
+    <div class="review-row">
+      <span class="review-label">استاد</span>
+      <span class="review-value" data-field-out="success-instructor">-</span>
     </div>
-
-
-
-
-
-
-
-    <!-- Class Summary -->
-
-    <div class="success-summary registration-card">
-
-
-        <h3>
-
-            خلاصه کلاس
-
-        </h3>
-
-
-
-
-        <div class="summary-item">
-
-
-            <span>
-
-                🎵 ساز
-
-            </span>
-
-
-            <strong
-
-                data-success="instrument"
-
-            >
-
-                -
-
-            </strong>
-
-
-        </div>
-
-
-
-
-
-        <div class="summary-item">
-
-
-            <span>
-
-                👨‍🏫 استاد
-
-            </span>
-
-
-            <strong
-
-                data-success="instructor"
-
-            >
-
-                -
-
-            </strong>
-
-
-        </div>
-
-
-
-
-
-        <div class="summary-item">
-
-
-            <span>
-
-                🕒 زمان کلاس
-
-            </span>
-
-
-            <strong
-
-                data-success="schedule"
-
-            >
-
-                -
-
-            </strong>
-
-
-        </div>
-
-
-
+    <div class="review-row">
+      <span class="review-label">روز و زمان کلاس</span>
+      <span class="review-value" data-field-out="success-schedule">-</span>
     </div>
-
-
-
-
-
-
-
-
-    <!-- Welcome Kit -->
-
-    <div class="welcome-kit">
-
-
-
-        <div class="kit-header">
-
-
-            <h3>
-
-                وسایل مورد نیاز شروع کلاس
-
-            </h3>
-
-
-
-            <p>
-
-                لطفاً قبل از اولین جلسه موارد زیر را تهیه نمایید.
-
-            </p>
-
-
-        </div>
-
-
-
-
-
-        <div
-
-            class="materials-container"
-
-            data-materials-container
-
-        >
-
-
-
-            <!-- Dynamic Materials -->
-
-
-        </div>
-
-
-
-    </div>
-
-
-
-
-
-
-
-
-
-    <!-- Store -->
-
-    <div class="store-card registration-card">
-
-
-
-        <div class="store-icon">
-
-            🛒
-
-        </div>
-
-
-
-        <h3>
-
-            نیاز به خرید ساز دارید؟
-
-        </h3>
-
-
-
-        <p>
-
-            اگر ساز ندارید، کارشناسان فروشگاه معرفی‌شده
-            آموزشگاه برای انتخاب ساز مناسب شما را راهنمایی می‌کنند.
-
-        </p>
-
-
-
-
-
-        <div class="store-actions">
-
-
-
-            <a
-
-                href="#"
-
-                class="registration-button primary"
-
-                data-action="store-navigation"
-
-            >
-
-                📍 مسیر فروشگاه
-
-            </a>
-
-
-
-
-            <a
-
-                href="#"
-
-                class="registration-button"
-
-                data-action="store-call"
-
-            >
-
-                📞 مشاوره خرید ساز
-
-            </a>
-
-
-
-        </div>
-
-
-
-    </div>
-
-
-
-
-
-
-
-
-    <!-- Final Actions -->
-
-    <div class="success-actions">
-
-
-
-        <button
-
-            class="registration-button primary"
-
-            data-action="download-contract"
-
-        >
-
-            دانلود قرارداد
-
-        </button>
-
-
-
-
-
-        <button
-
-            class="registration-button"
-
-            data-action="back-home"
-
-        >
-
-            بازگشت به سایت
-
-        </button>
-
-
-
-    </div>
-
-
-
-
-
+  </div>
+
+  <div class="materials-card" data-materials-container></div>
+
+  <div class="contact-card">
+    <h3>نیاز به مشاوره خرید ساز دارید؟</h3>
+    <p>کارشناسان آموزشگاه فاتح شما را در انتخاب ساز مناسب راهنمایی می‌کنند.</p>
+    <div class="contact-links" data-contact-links></div>
+  </div>
+
+  <div class="success-actions">
+    <button type="button" class="secondary-btn" data-action="print-receipt">
+      چاپ رسید ثبت نام
+    </button>
+    <button type="button" class="btn" data-action="back-home">
+      بازگشت به صفحه اصلی
+    </button>
+  </div>
 </section>

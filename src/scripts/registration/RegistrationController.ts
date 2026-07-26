@@ -1,1313 +1,310 @@
 /*
 ====================================================
-File:
-src/scripts/registration/RegistrationController.ts
+File: src/scripts/registration/RegistrationController.ts
 
 Purpose:
-Main controller for Registration Wizard
+Main controller for the Registration Wizard.
 
 Architecture:
-- Controls wizard flow
-- Updates RegistrationStore
-- Handles user actions
-- Triggers validation and API
-- No business logic in UI components
-- No Renderer responsibility except Review/Success/WelcomeKit
-
-Responsibilities:
-- Step navigation
-- Instrument selection
-- Instructor loading
-- Schedule loading
-- Student data collection
-- Review preparation
-- Registration submission
-
+- Binds user actions (clicks, form input)
+- Reads the real data files (courses / instructors / schedule)
+  and filters them for the current selection
+- Updates RegistrationStore, then asks RegistrationRenderer to
+  reflect the new state in the DOM
+- Runs validation and talks to RegistrationApi at submit time
 ====================================================
 */
 
-
-import {
-
-    registrationStore
-
-} from "./RegistrationStore";
-
-
-
-import {
-
-    RegistrationRenderer
-
-} from "./RegistrationRenderer";
-
-
-
-import {
-
-    registrationValidation
-
-} from "./RegistrationValidation";
-
-
-
-import {
-
-    registrationApi
-
-} from "./RegistrationApi";
-
-
-
-import {
-
-    instructors
-
-} from "../../data/instructors";
-
-
-
-import {
-
-    schedules
-
-} from "../../data/schedule";
-
-
-
-
-
-
+import { registrationStore } from "./RegistrationStore";
+import type { RegistrationStep } from "./RegistrationStore";
+import { RegistrationRenderer } from "./RegistrationRenderer";
+import { registrationValidation } from "./RegistrationValidation";
+import { registrationApi } from "./RegistrationApi";
+import { courses } from "../../data/courses";
+import { instructors } from "../../data/instructors";
+import { schedules } from "../../data/schedule";
+import { normalizeMobile, isValidMobile } from "./RegistrationUtils";
 
 class RegistrationController {
+  private renderer: RegistrationRenderer;
 
+  constructor() {
+    this.renderer = new RegistrationRenderer();
+    this.initialize();
+  }
 
+  private initialize() {
+    this.bindEvents();
+    this.showStep("welcome");
+  }
 
+  /* ==================================================
+     Event binding
+  ================================================== */
 
-    private renderer: RegistrationRenderer;
+  private bindEvents() {
+    document.addEventListener("click", (event) => {
+      const element = (event.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
+      if (!element) return;
 
+      const action = element.dataset.action;
 
+      switch (action) {
+        case "start-registration":
+          this.goToStep("instrument");
+          break;
 
+        case "select-instrument":
+          this.selectInstrument(element);
+          break;
 
+        case "back-to-instrument":
+          this.goToStep("instrument");
+          break;
 
-    constructor(){
+        case "select-instructor":
+          this.selectInstructor(element);
+          break;
 
+        case "back-to-instructor":
+          this.goToStep("instructor");
+          break;
 
+        case "select-schedule":
+          this.selectSchedule(element);
+          break;
 
-        this.renderer =
+        case "back-to-schedule":
+          this.goToStep("schedule");
+          break;
 
-            new RegistrationRenderer();
+        case "continue-student":
+          this.continueFromStudent();
+          break;
 
+        case "back-to-student":
+        case "edit-student":
+          this.goToStep("student");
+          break;
 
+        case "edit-instrument":
+          this.goToStep("instrument");
+          break;
 
-        this.initialize();
+        case "edit-instructor":
+          this.goToStep("instructor");
+          break;
 
+        case "edit-schedule":
+          this.goToStep("schedule");
+          break;
 
+        case "submit-registration":
+          this.submitRegistration();
+          break;
 
+        case "print-receipt":
+          window.print();
+          break;
+
+        case "back-home":
+          window.location.href = "/";
+          break;
+      }
+    });
+
+    document.addEventListener("input", (event) => {
+      const input = event.target as HTMLInputElement;
+      if (input?.dataset?.field === "mobile") {
+        this.reflectMobileValidity(input);
+      }
+    });
+  }
+
+  /* ==================================================
+     Instrument -> Instructor
+  ================================================== */
+
+  private selectInstrument(element: HTMLElement) {
+    const id = Number(element.dataset.instrumentId);
+    const course = courses.find((item) => item.id === id);
+    if (!course) return;
+
+    registrationStore.selectInstrument({
+      id: course.id,
+      slug: course.slug,
+      title: course.title,
+      type: course.instrument
+    });
+
+    const available = instructors.filter(
+      (instructor) => instructor.active && (course.instructors ?? []).includes(instructor.id)
+    );
+
+    this.renderer.renderInstructors(available);
+    this.goToStep("instructor");
+  }
+
+  /* ==================================================
+     Instructor -> Schedule
+  ================================================== */
+
+  private selectInstructor(element: HTMLElement) {
+    const id = Number(element.dataset.instructorId);
+    const instructor = instructors.find((item) => item.id === id);
+    if (!instructor) return;
+
+    registrationStore.selectInstructor({
+      id: instructor.id,
+      name: instructor.name
+    });
+
+    const available = schedules.filter((schedule) => schedule.active && schedule.instructorId === instructor.id);
+
+    this.renderer.renderSchedules(available);
+    this.goToStep("schedule");
+  }
+
+  /* ==================================================
+     Schedule -> Student
+  ================================================== */
+
+  private selectSchedule(element: HTMLElement) {
+    const id = Number(element.dataset.scheduleId);
+    const schedule = schedules.find((item) => item.id === id);
+    if (!schedule) return;
+
+    registrationStore.selectSchedule({
+      id: schedule.id,
+      weekday: schedule.weekday,
+      sessionDuration: schedule.sessionDuration ?? null,
+      classroom: schedule.classroom ?? null,
+      classMode: schedule.classMode ?? null
+    });
+
+    this.goToStep("student");
+  }
+
+  /* ==================================================
+     Student -> Review
+  ================================================== */
+
+  private continueFromStudent() {
+    const student = this.collectStudent();
+    registrationStore.updateStudent(student);
+
+    const { valid, errors } = registrationValidation.validateStudent(registrationStore.getState().student);
+    this.showStudentErrors(errors);
+    if (!valid) return;
+
+    this.renderer.updateReview(registrationStore.getState());
+    this.goToStep("review");
+  }
+
+  private collectStudent() {
+    const scope = document.querySelector('[data-step="student"]');
+    const student: Record<string, string | number> = {};
+
+    scope?.querySelectorAll<HTMLInputElement>("[data-field]").forEach((input) => {
+      const key = input.dataset.field;
+      if (!key) return;
+
+      if (input.type === "radio") {
+        if (input.checked) student[key] = input.value;
+        return;
+      }
+
+      if (key === "mobile") {
+        student[key] = normalizeMobile(input.value);
+        return;
+      }
+
+      student[key] = input.value;
+    });
+
+    if (student.age) student.age = Number(student.age);
+
+    return student;
+  }
+
+  private showStudentErrors(errors: string[]) {
+    const box = document.querySelector<HTMLElement>('[data-step="student"] [data-form-errors]');
+    if (!box) return;
+
+    if (!errors.length) {
+      box.hidden = true;
+      box.innerHTML = "";
+      return;
     }
 
+    box.hidden = false;
+    box.innerHTML = errors.map((message) => `<li>${message}</li>`).join("");
+  }
 
+  private reflectMobileValidity(input: HTMLInputElement) {
+    const group = input.closest(".form-group");
+    if (!group) return;
 
-
-
-
-
-
-    private initialize(){
-
-
-
-        this.bindEvents();
-
-
-
-        this.showStep(
-
-            "welcome"
-
-        );
-
-
-
+    if (!input.value.trim()) {
+      group.classList.remove("is-valid", "is-invalid");
+      return;
     }
 
-
-
-
-
-
-
-
-
-    private bindEvents(){
-
-
-
-        document.addEventListener(
-
-            "click",
-
-            (event)=>{
-
-
-
-                const element =
-
-                    (
-
-                        event.target as HTMLElement
-
-                    )
-
-                    .closest(
-
-                        "[data-action]"
-
-                    ) as HTMLElement;
-
-
-
-
-                if(!element)
-
-                    return;
-
-
-
-
-
-                const action =
-
-                    element.dataset.action;
-
-
-
-
-
-                switch(action){
-
-
-
-                    case "start-registration":
-
-
-
-                        this.goToStep(
-
-                            "instrument"
-
-                        );
-
-
-
-                    break;
-
-
-
-
-
-                    case "select-instrument":
-
-
-
-                        this.selectInstrument(
-
-                            element
-
-                        );
-
-
-
-                    break;
-
-
-
-
-
-                    case "select-instructor":
-
-
-
-                        this.selectInstructor(
-
-                            element
-
-                        );
-
-
-
-                    break;
-
-
-
-
-
-                    case "select-schedule":
-
-
-
-                        this.selectSchedule(
-
-                            element
-
-                        );
-
-
-
-                    break;
-
-
-
-
-
-                    case "continue-student":
-
-
-
-                        this.collectStudent();
-
-
-
-                        this.prepareReview();
-
-
-
-                        this.goToStep(
-
-                            "review"
-
-                        );
-
-
-
-                    break;
-
-
-
-
-
-                    case "submit-registration":
-
-
-
-                        this.submitRegistration();
-
-
-
-                    break;
-
-
-
-                }
-
-
-
-            }
-
-        );
-
-
-
+    const valid = isValidMobile(input.value);
+    group.classList.toggle("is-valid", valid);
+    group.classList.toggle("is-invalid", !valid);
+  }
+
+  /* ==================================================
+     Submit
+  ================================================== */
+
+  private async submitRegistration() {
+    const state = registrationStore.getState();
+    const validation = registrationValidation.validate(state);
+
+    if (!validation.valid) {
+      const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
+      if (box) {
+        box.hidden = false;
+        box.innerHTML = validation.errors.map((message) => `<li>${message}</li>`).join("");
+      }
+      return;
     }
 
+    const submitButton = document.querySelector<HTMLButtonElement>('[data-action="submit-registration"]');
+    submitButton?.setAttribute("disabled", "true");
 
+    try {
+      const response = await registrationApi.submit(state);
 
-
-
-
-
-
-
-    private selectInstrument(
-
-        element:HTMLElement
-
-    ){
-
-
-
-        const id =
-
-            element.dataset.instrumentId;
-
-
-
-
-        if(!id)
-
-            return;
-
-
-
-
-
-        const title =
-
-            element.dataset.instrumentTitle
-
-            ||
-
-            element.querySelector("h3")
-
-            ?.textContent
-
-            ?.trim()
-
-            ||
-
-            "";
-
-
-
-
-
-        registrationStore.selectInstrument(
-
-            id,
-
-            title
-
-        );
-
-
-
-
-
-        this.loadInstructors(
-
-            id
-
-        );
-
-
-
-
-
-        this.goToStep(
-
-            "instructor"
-
-        );
-
-
-
+      if (response.success) {
+        registrationStore.setTrackingCode(response.trackingCode || "");
+        registrationStore.complete();
+        this.renderer.updateSuccess(registrationStore.getState());
+        this.goToStep("success");
+      }
+    } finally {
+      submitButton?.removeAttribute("disabled");
     }
-
-
-
-
-
-
-
-
-
-    private loadInstructors(
-
-        instrumentId:string
-
-    ){
-
-
-
-        const container =
-
-            document.querySelector(
-
-                "[data-instructors-container]"
-
-            );
-
-
-
-
-
-        if(!container)
-
-            return;
-
-
-
-
-
-
-        const available =
-
-            instructors.filter(
-
-                instructor =>
-
-                    instructor.active &&
-
-                    instructor.instruments?.includes(
-
-                        Number(instrumentId)
-
-                    )
-
-            );
-
-
-
-
-
-
-
-        if(!available.length){
-
-
-
-            container.innerHTML = `
-
-
-                <div class="registration-card empty-state">
-
-
-                    <p>
-
-                        استادی برای این ساز موجود نیست.
-
-                    </p>
-
-
-                </div>
-
-
-            `;
-
-
-
-            return;
-
-
-
-        }
-
-
-
-
-
-
-
-
-        container.innerHTML =
-
-
-
-            available.map(
-
-                instructor => `
-
-
-
-                <article
-
-
-                    class="registration-card instructor-card"
-
-
-                    data-action="select-instructor"
-
-
-                    data-instructor-id="${instructor.id}"
-
-
-                    data-instructor-name="${instructor.name}"
-
-
-                >
-
-
-
-                    ${
-
-                        instructor.image
-
-                        ?
-
-                        `
-
-                        <div class="instructor-image">
-
-                            <img
-
-                                src="${instructor.image}"
-
-                                alt="${instructor.name}"
-
-                                loading="lazy"
-
-                            />
-
-                        </div>
-
-                        `
-
-                        :
-
-                        ""
-
-                    }
-
-
-
-
-
-                    <h3>
-
-                        ${instructor.name}
-
-                    </h3>
-
-
-
-
-                    <p>
-
-                        ${instructor.bio || ""}
-
-                    </p>
-
-
-
-
-                    <span>
-
-                        انتخاب استاد
-
-                    </span>
-
-
-
-                </article>
-
-
-                `
-
-            )
-
-            .join("");
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private selectInstructor(
-
-        element:HTMLElement
-
-    ){
-
-
-
-        const id =
-
-            element.dataset.instructorId;
-
-
-
-
-
-        if(!id)
-
-            return;
-
-
-
-
-
-        const name =
-
-            element.dataset.instructorName
-
-            ||
-
-            "";
-
-
-
-
-
-
-        registrationStore.selectInstructor(
-
-            id,
-
-            name
-
-        );
-
-
-
-
-
-
-        this.loadSchedules(
-
-            id
-
-        );
-
-
-
-
-
-        this.goToStep(
-
-            "schedule"
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private loadSchedules(
-
-        instructorId:string
-
-    ){
-
-
-
-        const container =
-
-            document.querySelector(
-
-                "[data-schedules-container]"
-
-            );
-
-
-
-
-
-        if(!container)
-
-            return;
-
-
-
-
-
-
-
-        const available =
-
-            schedules.filter(
-
-                schedule =>
-
-                    schedule.active &&
-
-                    schedule.instructorId === Number(instructorId)
-
-            );
-
-
-
-
-
-
-        if(!available.length){
-
-
-
-            container.innerHTML = `
-
-
-                <div class="registration-card empty-state">
-
-
-                    <p>
-
-                        زمان آزادی برای این استاد وجود ندارد.
-
-                    </p>
-
-
-                </div>
-
-
-            `;
-
-
-
-            return;
-
-
-
-        }
-
-
-
-
-
-
-        container.innerHTML =
-
-
-
-            available.map(
-
-                schedule => `
-
-
-
-                <article
-
-
-                    class="registration-card schedule-card"
-
-
-                    data-action="select-schedule"
-
-
-                    data-schedule-id="${schedule.id}"
-
-
-                    data-weekday="${schedule.weekday}"
-
-
-                    data-start-time="${schedule.startTime || ""}"
-
-
-                    data-end-time="${schedule.endTime || ""}"
-
-
-                    data-classroom="${schedule.classroom || ""}"
-
-
-                >
-
-
-
-                    <h3>
-
-                        ${schedule.weekday}
-
-                    </h3>
-
-
-
-
-
-                    <p>
-
-                        🕒
-
-                        ${schedule.startTime}
-
-                        -
-
-                        ${schedule.endTime}
-
-                    </p>
-
-
-
-
-
-                    ${
-
-                        schedule.classroom
-
-                        ?
-
-                        `<p>
-
-                            🏫 کلاس ${schedule.classroom}
-
-                        </p>`
-
-                        :
-
-                        ""
-
-                    }
-
-
-
-
-
-                    <span>
-
-                        انتخاب زمان
-
-                    </span>
-
-
-
-
-                </article>
-
-
-                `
-
-            )
-
-            .join("");
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private selectSchedule(
-
-        element:HTMLElement
-
-    ){
-
-
-
-        const id =
-
-            element.dataset.scheduleId;
-
-
-
-
-
-        if(!id)
-
-            return;
-
-
-
-
-
-
-        registrationStore.selectSchedule({
-
-
-
-            id,
-
-            weekday:
-
-                element.dataset.weekday || "",
-
-
-
-            startTime:
-
-                element.dataset.startTime || "",
-
-
-
-            endTime:
-
-                element.dataset.endTime || "",
-
-
-
-            classroom:
-
-                element.dataset.classroom || null
-
-
-
-        });
-
-
-
-
-
-
-
-        this.goToStep(
-
-            "student"
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private collectStudent(){
-
-
-
-        const student:any = {};
-
-
-
-
-
-
-        document
-
-        .querySelectorAll(
-
-            "[data-field]"
-
-        )
-
-        .forEach(
-
-            field=>{
-
-
-
-                const input =
-
-                    field as HTMLInputElement;
-
-
-
-                const key =
-
-                    input.dataset.field;
-
-
-
-                if(!key)
-
-                    return;
-
-
-
-
-
-                if(
-
-                    input.type === "radio"
-
-                ){
-
-
-
-                    if(input.checked)
-
-                        student[key] = input.value;
-
-
-
-                    return;
-
-                }
-
-
-
-
-
-
-                student[key] = input.value;
-
-
-
-            }
-
-        );
-
-
-
-
-
-
-        if(student.age){
-
-
-
-            student.age =
-
-                Number(
-
-                    student.age
-
-                );
-
-
-
-        }
-
-
-
-
-
-
-        registrationStore.updateStudent(
-
-            student
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private prepareReview(){
-
-
-
-        this.renderer.updateReview(
-
-            registrationStore.getState()
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private async submitRegistration(){
-
-
-
-        const state =
-
-            registrationStore.getState();
-
-
-
-
-
-
-        const validation =
-
-            registrationValidation.validate(
-
-                state
-
-            );
-
-
-
-
-
-
-        if(!validation.valid){
-
-
-
-            alert(
-
-                validation.errors.join("\n")
-
-            );
-
-
-
-            return;
-
-
-
-        }
-
-
-
-
-
-
-        const response =
-
-            await registrationApi.submit(
-
-                state
-
-            );
-
-
-
-
-
-
-
-        if(response.success){
-
-
-
-            registrationStore.setTrackingCode(
-
-                response.trackingCode || ""
-
-            );
-
-
-
-
-
-            registrationStore.complete();
-
-
-
-
-
-
-            this.renderer.updateSuccess(
-
-                registrationStore.getState()
-
-            );
-
-
-
-
-
-
-            this.goToStep(
-
-                "success"
-
-            );
-
-
-
-        }
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private goToStep(
-
-        step:any
-
-    ){
-
-
-
-        registrationStore.setStep(
-
-            step
-
-        );
-
-
-
-        this.showStep(
-
-            step
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    private showStep(
-
-        step:string
-
-    ){
-
-
-
-        document
-
-        .querySelectorAll(
-
-            "[data-step]"
-
-        )
-
-        .forEach(
-
-            section=>{
-
-
-
-                const item =
-
-                    section as HTMLElement;
-
-
-
-
-                item.hidden =
-
-                    item.dataset.step !== step;
-
-
-
-            }
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-
+  }
+
+  /* ==================================================
+     Step navigation
+  ================================================== */
+
+  private goToStep(step: RegistrationStep) {
+    registrationStore.setStep(step);
+    this.showStep(step);
+    this.renderer.updateProgress(step);
+    document.querySelector(".registration-container")?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  private showStep(step: string) {
+    document.querySelectorAll<HTMLElement>("[data-step]").forEach((section) => {
+      section.hidden = section.dataset.step !== step;
+    });
+  }
 }
 
-
-
-
-
-
-
-export {
-
-    RegistrationController
-
-};
+export { RegistrationController };

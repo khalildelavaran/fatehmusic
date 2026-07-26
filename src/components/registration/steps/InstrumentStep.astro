@@ -1,128 +1,52 @@
+---
 /*
 ====================================================
-File:
-src/components/registration/steps/InstrumentStep.astro
+File: src/components/registration/steps/InstrumentStep.astro
 
-Purpose:
-Instrument / course selection step
-
-Architecture:
-- UI only
-- No state management
-- Data comes from courses.js
-- RegistrationController handles selection
-
+Purpose: Step 1 - instrument selection, grouped by category.
 ====================================================
 */
 
----
-
+import { courses } from "../../../data/courses";
 import InstrumentCard from "../cards/InstrumentCard.astro";
 
-import { courses } from "../../../data/courses";
+const activeCourses = courses.filter((course) => course.active).sort((a, b) => a.priority - b.priority);
 
-
-
-const activeCourses = courses.filter(
-
-    course => course.active
-
-);
-
+const categories: { name: string; items: typeof activeCourses }[] = [];
+for (const course of activeCourses) {
+  let group = categories.find((entry) => entry.name === course.category);
+  if (!group) {
+    group = { name: course.category, items: [] };
+    categories.push(group);
+  }
+  group.items.push(course);
+}
 ---
 
-<section
+<section class="registration-step" data-step="instrument">
+  <header class="step-header">
+    <span class="section-badge">مرحله ۱ از ۵</span>
+    <h2>ساز مورد نظر خود را انتخاب کنید</h2>
+    <p>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
+  </header>
 
-    class="registration-step"
-
-    data-step="instrument"
-
-    hidden
-
->
-
-
-    <div class="step-header">
-
-
-        <span class="badge">
-
-            مرحله اول
-
-        </span>
-
-
-
-        <h2>
-
-            چه سازی دوست دارید یاد بگیرید؟
-
-        </h2>
-
-
-
-        <p>
-
-            ساز مورد علاقه خود را انتخاب کنید تا
-            استادهای مرتبط و زمان‌های مناسب را مشاهده کنید.
-
-        </p>
-
-
-    </div>
-
-
-
-
-
-
-    <div
-
-        class="registration-grid instrument-grid"
-
-    >
-
-
-
-        {
-
-            activeCourses.map(course => (
-
-
-                <InstrumentCard
-
-
-                    id={course.id}
-
-
-                    title={course.title}
-
-
-                    description={course.description}
-
-
-                    image={course.image}
-
-
-                    icon={course.icon}
-
-
-                    level={course.level}
-
-
-                />
-
-
-            ))
-
-        }
-
-
-
-    </div>
-
-
-
-
-
+  {
+    categories.map((group) => (
+      <div class="instrument-category">
+        <h3 class="category-title">{group.name}</h3>
+        <div class="registration-grid instrument-grid">
+          {group.items.map((course) => (
+            <InstrumentCard
+              id={course.id}
+              slug={course.slug}
+              title={course.title}
+              excerpt={course.content?.excerpt}
+              image={course.media?.image}
+              level={course.level}
+            />
+          ))}
+        </div>
+      </div>
+    ))
+  }
 </section>

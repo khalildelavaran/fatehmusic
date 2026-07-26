@@ -1,89 +1,45 @@
-<!--
+---
+/*
 ====================================================
-File:
-src/components/registration/steps/WelcomeStep.astro
+File: src/components/registration/steps/WelcomeStep.astro
 
-Purpose:
-First screen of registration experience
-
-Architecture:
-- UI only
-- No business logic
-- RegistrationController handles transitions
-
+Purpose: Wizard intro / entry point (Step 0)
 ====================================================
--->
+*/
 
-<section
-    class="registration-step welcome-step"
-    data-step="welcome"
->
+const journey = [
+  { label: "ساز", detail: "ساز مورد علاقه‌تان را انتخاب کنید" },
+  { label: "استاد", detail: "استاد متناسب با ساز شما معرفی می‌شود" },
+  { label: "زمان", detail: "روز و ساعت کلاس را مشخص کنید" }
+];
+---
 
-    <div class="step-header">
+<section class="registration-step welcome-step" data-step="welcome">
+  <div class="welcome-content">
+    <span class="section-badge">مرحله اول</span>
+    <h2>ثبت نام در آموزشگاه موسیقی فاتح</h2>
+    <p>
+      تکمیل این فرم حدود دو دقیقه زمان می‌برد. در پایان یک کد پیگیری
+      دریافت می‌کنید و کارشناسان آموزشگاه برای هماهنگی نهایی با شما تماس
+      خواهند گرفت.
+    </p>
 
-        <span class="badge">
-            ثبت نام آنلاین
-        </span>
-
-
-        <h1>
-
-            به آموزشگاه موسیقی فاتح خوش آمدید
-
-        </h1>
-
-
-        <p>
-
-            در کمتر از چند دقیقه، ساز مورد علاقه،
-            استاد مناسب و زمان کلاس خود را انتخاب کنید.
-
-        </p>
-
-    </div>
-
-
-    <div class="welcome-content">
-
-
-        <div class="registration-card">
-
-            <div class="registration-icon">
-
-                🎵
-
+    <ul class="welcome-journey">
+      {
+        journey.map((item, index) => (
+          <li>
+            <span class="welcome-journey-index">{index + 1}</span>
+            <div>
+              <strong>{item.label}</strong>
+              <span>{item.detail}</span>
             </div>
+          </li>
+        ))
+      }
+    </ul>
 
-
-            <h3>
-
-                شروع ثبت نام
-
-            </h3>
-
-
-            <p>
-
-                ابتدا به ما بگویید دوست دارید
-                کدام ساز را یاد بگیرید.
-
-            </p>
-
-
-            <button
-                class="registration-button primary"
-                data-action="start-registration"
-            >
-
-                شروع انتخاب ساز
-
-            </button>
-
-
-        </div>
-
-
-    </div>
-
-
+    <button type="button" class="btn" data-action="start-registration">
+      شروع ثبت نام
+    </button>
+  </div>
 </section>

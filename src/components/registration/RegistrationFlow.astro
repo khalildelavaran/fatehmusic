@@ -1,148 +1,57 @@
+---
 /*
 ====================================================
-File:
-src/components/registration/RegistrationFlow.astro
+File: src/components/registration/RegistrationFlow.astro
 
 Purpose:
-Main Registration Wizard Container
-
-Architecture:
-- UI composition only
-- Contains all registration steps
-- Loads registration controller
-- No business logic
-- No state management
-
-Flow:
-
-Welcome
-   ↓
-Instrument
-   ↓
-Instructor
-   ↓
-Schedule
-   ↓
-Student
-   ↓
-Review
-   ↓
-Success
-
+Composes the registration wizard: the progress stepper and all
+seven steps. Owns the single RegistrationController instance for
+the whole page (previously this was instantiated a second time
+in register.astro, which double-bound every click handler).
 ====================================================
 */
 
----
-
 import WelcomeStep from "./steps/WelcomeStep.astro";
-
 import InstrumentStep from "./steps/InstrumentStep.astro";
-
 import InstructorStep from "./steps/InstructorStep.astro";
-
 import ScheduleStep from "./steps/ScheduleStep.astro";
-
 import StudentStep from "./steps/StudentStep.astro";
-
 import ReviewStep from "./steps/ReviewStep.astro";
-
 import SuccessStep from "./steps/SuccessStep.astro";
 
+const progressSteps = [
+  { key: "instrument", label: "ساز", index: "۱" },
+  { key: "instructor", label: "استاد", index: "۲" },
+  { key: "schedule", label: "زمان", index: "۳" },
+  { key: "student", label: "مشخصات", index: "۴" },
+  { key: "review", label: "تأیید", index: "۵" }
+];
 ---
 
-<section
+<div class="registration-wizard">
+  <ol class="registration-progress" data-progress hidden>
+    <div class="progress-track"></div>
+    <div class="progress-fill"></div>
+    {
+      progressSteps.map((step) => (
+        <li data-progress-step={step.key}>
+          <span class="progress-index">{step.index}</span>
+          <span class="progress-label">{step.label}</span>
+        </li>
+      ))
+    }
+  </ol>
 
-    class="registration-flow"
-
-    id="registration-flow"
-
->
-
-
-
-
-
-    <div class="registration-steps">
-
-
-
-
-
-        <WelcomeStep />
-
-
-
-
-
-        <InstrumentStep />
-
-
-
-
-
-        <InstructorStep
-
-            instructors={[]}
-
-        />
-
-
-
-
-
-        <ScheduleStep
-
-            schedules={[]}
-
-        />
-
-
-
-
-
-        <StudentStep />
-
-
-
-
-
-        <ReviewStep />
-
-
-
-
-
-        <SuccessStep />
-
-
-
-
-
-    </div>
-
-
-
-
-
-</section>
-
-
-
-
-
-
+  <WelcomeStep />
+  <InstrumentStep />
+  <InstructorStep />
+  <ScheduleStep />
+  <StudentStep />
+  <ReviewStep />
+  <SuccessStep />
+</div>
 
 <script>
-
-    import {
-
-        RegistrationController
-
-    } from "../../scripts/registration/RegistrationController";
-
-
-
-    new RegistrationController();
-
-
+  import { RegistrationController } from "../../scripts/registration/RegistrationController";
+  new RegistrationController();
 </script>

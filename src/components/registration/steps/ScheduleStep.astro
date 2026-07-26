@@ -1,228 +1,28 @@
+---
 /*
 ====================================================
-File:
-src/components/registration/steps/ScheduleStep.astro
+File: src/components/registration/steps/ScheduleStep.astro
 
-Purpose:
-Class schedule selection step
-
-Architecture:
-- UI only
-- No business logic
-- Receives schedules from controller
-- ScheduleCard handles presentation
-- RegistrationController handles selection
-
+Purpose: Step 3 - schedule selection.
+Populated client-side by RegistrationRenderer once an instructor
+is chosen, since the list depends entirely on that choice.
 ====================================================
 */
-
 ---
 
-import ScheduleCard from "../cards/ScheduleCard.astro";
+<section class="registration-step" data-step="schedule" hidden>
+  <header class="step-header">
+    <button type="button" class="step-back" data-action="back-to-instructor">
+      &rarr; بازگشت به انتخاب استاد
+    </button>
+    <span class="section-badge">مرحله ۳ از ۵</span>
+    <h2>روز و ساعت کلاس را انتخاب کنید</h2>
+    <p>زمان‌های زیر بر اساس استاد انتخابی شما نمایش داده شده‌اند.</p>
+  </header>
 
-
-
-interface Schedule {
-
-
-    id: string | number;
-
-
-    weekday: string;
-
-
-    startTime?: string;
-
-
-    endTime?: string;
-
-
-    classroom?: string | number;
-
-
-    duration?: number | string;
-
-
-}
-
-
-
-interface Props {
-
-
-    schedules?: Schedule[];
-
-
-}
-
-
-
-const {
-
-    schedules = []
-
-} = Astro.props;
-
-
----
-
-
-<section
-
-    class="registration-step"
-
-    data-step="schedule"
-
-    hidden
-
->
-
-
-    <div class="step-header">
-
-
-        <span class="badge">
-
-            مرحله سوم
-
-        </span>
-
-
-
-
-        <h2>
-
-            چه روزی برای شما مناسب است؟
-
-        </h2>
-
-
-
-
-
-        <p>
-
-            زمان‌های آزاد استاد را مشاهده کنید و
-            مناسب‌ترین زمان کلاس را انتخاب نمایید.
-
-        </p>
-
-
-
+  <div class="registration-grid schedule-grid" data-schedules-container>
+    <div class="registration-card empty-state">
+      <p>ابتدا استاد مورد نظر خود را انتخاب کنید.</p>
     </div>
-
-
-
-
-
-
-
-    <div
-
-
-        class="registration-grid schedule-grid"
-
-
-        data-schedules-container
-
-
-    >
-
-
-
-
-
-        {
-
-
-            schedules.length > 0 ? (
-
-
-
-                schedules.map(
-
-                    schedule => (
-
-
-
-                        <ScheduleCard
-
-
-
-                            id={schedule.id}
-
-
-
-                            weekday={schedule.weekday}
-
-
-
-                            startTime={schedule.startTime}
-
-
-
-                            endTime={schedule.endTime}
-
-
-
-                            classroom={schedule.classroom}
-
-
-
-                            duration={schedule.duration}
-
-
-
-                        />
-
-
-
-                    )
-
-
-
-                )
-
-
-
-            ) : (
-
-
-
-
-                <div class="registration-card empty-state">
-
-
-                    <p>
-
-
-                        پس از انتخاب استاد، زمان‌های آزاد کلاس نمایش داده می‌شود.
-
-
-                    </p>
-
-
-
-                </div>
-
-
-
-            )
-
-
-
-        }
-
-
-
-
-
-
-    </div>
-
-
-
-
-
-
+  </div>
 </section>

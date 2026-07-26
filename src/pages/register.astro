@@ -1,140 +1,43 @@
+---
 /*
 ====================================================
-File:
-src/pages/register.astro
+File: src/pages/register.astro
 
 Purpose:
-Registration Wizard Entry Page
-
-Architecture:
-- Page wrapper only
-- Loads RegistrationFlow component
-- Loads registration styles
-- Initializes registration controller
+Registration Wizard entry page.
 
 Flow:
-
-User
- |
-register.astro
- |
-RegistrationFlow.astro
- |
-Steps
- |
-RegistrationController
-
+register.astro -> RegistrationFlow.astro -> Steps -> RegistrationController
+(the controller is instantiated once, inside RegistrationFlow.astro)
 ====================================================
 */
 
----
-
 import MainLayout from "../layouts/MainLayout.astro";
-
 import RegistrationFlow from "../components/registration/RegistrationFlow.astro";
-
 import "../components/registration/styles/registration.css";
-
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 ---
-
-
 
 <MainLayout
-
-    title="ثبت نام دوره های موسیقی"
-
-    description="ثبت نام آنلاین آموزشگاه موسیقی فاتح"
-
+  title="ثبت نام دوره های موسیقی"
+  description="ثبت نام آنلاین آموزشگاه موسیقی فاتح"
 >
+ <Header />
+  <main class="registration-page">
+    <section class="registration-container">
+      <div class="registration-hero">
+        <span class="badge">ثبت نام آنلاین</span>
+        <h1>شروع مسیر یادگیری موسیقی</h1>
+        <p>
+          ساز مورد علاقه خود را انتخاب کنید، استاد مناسب را ببینید، زمان کلاس
+          را مشخص کنید و ثبت نام خود را کامل نمایید.
+        </p>
+      </div>
 
+      <RegistrationFlow />
+    </section>  
 
-    <main class="registration-page">
-
-
-        <section class="registration-container">
-
-
-
-            <div class="registration-hero">
-
-
-                <span class="badge">
-
-                    ثبت نام آنلاین
-
-                </span>
-
-
-
-                <h1>
-
-                    شروع مسیر یادگیری موسیقی
-
-                </h1>
-
-
-
-                <p>
-
-                    ساز مورد علاقه خود را انتخاب کنید،
-                    استاد مناسب را ببینید،
-                    زمان کلاس را انتخاب کنید
-                    و ثبت نام خود را کامل نمایید.
-
-                </p>
-
-
-
-            </div>
-
-
-
-
-
-            <RegistrationFlow />
-
-
-
-        </section>
-
-
-
-    </main>
-
-
-
+  </main>
+ <Footer />
 </MainLayout>
-
-
-
-
-
-
-<script>
-
-    import {
-
-        RegistrationController
-
-    }
-
-    from "../scripts/registration/RegistrationController";
-
-
-
-    document.addEventListener(
-
-        "DOMContentLoaded",
-
-        ()=>{
-
-
-            new RegistrationController();
-
-
-        }
-
-    );
-
-
-</script>

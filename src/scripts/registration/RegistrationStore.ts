@@ -1,388 +1,156 @@
 /*
 ====================================================
-File:
-src/scripts/registration/RegistrationStore.ts
+File: src/scripts/registration/RegistrationStore.ts
 
 Purpose:
-Central state management for Registration Wizard
+Central state management for the Registration Wizard.
 
-Architecture (Frozen Enterprise v1.0)
-
-Course
-    ↓
-Instructor
-    ↓
-Schedule
-    ↓
-Student
-    ↓
-Review
-    ↓
-Registration
+Architecture:
+Instrument -> Instructor -> Schedule -> Student -> Review -> Success
 
 Responsibilities:
-- Single Source of Truth
-- No UI logic
+- Single source of truth for wizard state
 - No DOM manipulation
-- Shared state across all registration steps
-
+- No filtering/business logic (the Controller reads the real
+  data files directly and hands finished selections to the store)
 ====================================================
 */
 
+export interface RegistrationInstrument {
+  id: number | null;
+  slug: string | null;
+  title: string | null;
+  /** matches course.instrument in data/courses.js, e.g. "guitar" */
+  type: string | null;
+}
+
+export interface RegistrationInstructor {
+  id: number | null;
+  name: string | null;
+}
+
+export interface RegistrationSchedule {
+  id: number | null;
+  weekday: string | null;
+  sessionDuration: number | null;
+  classroom: string | number | null;
+  classMode: string | null;
+}
 
 export interface RegistrationStudent {
-
-    firstName: string;
-
-    lastName: string;
-
-    mobile: string;
-
-    age: number | null;
-
-    gender: "male" | "female" | null;
-
-    hasInstrument: "yes" | "no" | null;
-
-    parent?: {
-
-        name: string;
-
-        mobile: string;
-
-    };
-
+  firstName: string;
+  lastName: string;
+  mobile: string;
+  age: number | null;
+  gender: "male" | "female" | null;
+  hasInstrument: "yes" | "no" | null;
 }
-
 
 export interface RegistrationSelection {
-
-    course: {
-
-        id: string | number | null;
-
-        slug: string | null;
-
-        title: string | null;
-
-    };
-
-    instructor: {
-
-        id: string | number | null;
-
-        name: string | null;
-
-    };
-
-    schedule: {
-
-        id: string | number | null;
-
-        weekday: string | null;
-
-        startTime: string | null;
-
-        endTime: string | null;
-
-        classroom: string | number | null;
-
-    };
-
+  instrument: RegistrationInstrument;
+  instructor: RegistrationInstructor;
+  schedule: RegistrationSchedule;
 }
 
-
+export type RegistrationStep =
+  | "welcome"
+  | "instrument"
+  | "instructor"
+  | "schedule"
+  | "student"
+  | "review"
+  | "success";
 
 export interface RegistrationState {
-
-    currentStep:
-
-        | "welcome"
-
-        | "course"
-
-        | "instructor"
-
-        | "schedule"
-
-        | "student"
-
-        | "review"
-
-        | "success";
-
-
-
-    selection: RegistrationSelection;
-
-    student: RegistrationStudent;
-
-    trackingCode: string | null;
-
-    completed: boolean;
-
+  currentStep: RegistrationStep;
+  selection: RegistrationSelection;
+  student: RegistrationStudent;
+  trackingCode: string | null;
+  completed: boolean;
 }
 
-const initialState: RegistrationState = {
+const emptyInstrument = (): RegistrationInstrument => ({
+  id: null,
+  slug: null,
+  title: null,
+  type: null
+});
 
-    currentStep: "welcome",
+const emptyInstructor = (): RegistrationInstructor => ({
+  id: null,
+  name: null
+});
 
-    selection: {
+const emptySchedule = (): RegistrationSchedule => ({
+  id: null,
+  weekday: null,
+  sessionDuration: null,
+  classroom: null,
+  classMode: null
+});
 
-        course: {
-
-            id: null,
-
-            slug: null,
-
-            title: null
-
-        },
-
-        instructor: {
-
-            id: null,
-
-            name: null
-
-        },
-
-        schedule: {
-
-            id: null,
-
-            weekday: null,
-
-            startTime: null,
-
-            endTime: null,
-
-            classroom: null
-
-        }
-
-    },
-
-    student: {
-
-        firstName: "",
-
-        lastName: "",
-
-        mobile: "",
-
-        age: null,
-
-        gender: null,
-
-        hasInstrument: null
-
-    },
-
-    trackingCode: null,
-
-    completed: false
-
-};
-
+const createInitialState = (): RegistrationState => ({
+  currentStep: "welcome",
+  selection: {
+    instrument: emptyInstrument(),
+    instructor: emptyInstructor(),
+    schedule: emptySchedule()
+  },
+  student: {
+    firstName: "",
+    lastName: "",
+    mobile: "",
+    age: null,
+    gender: null,
+    hasInstrument: null
+  },
+  trackingCode: null,
+  completed: false
+});
 
 class RegistrationStore {
+  private state: RegistrationState = createInitialState();
 
-    private state: RegistrationState;
+  getState(): RegistrationState {
+    return this.state;
+  }
 
-    constructor() {
+  setStep(step: RegistrationStep) {
+    this.state.currentStep = step;
+  }
 
-        this.state = structuredClone(initialState);
+  selectInstrument(instrument: RegistrationInstrument) {
+    this.state.selection.instrument = instrument;
+    // Reset everything downstream of this choice
+    this.state.selection.instructor = emptyInstructor();
+    this.state.selection.schedule = emptySchedule();
+  }
 
-    }
+  selectInstructor(instructor: RegistrationInstructor) {
+    this.state.selection.instructor = instructor;
+    this.state.selection.schedule = emptySchedule();
+  }
 
+  selectSchedule(schedule: RegistrationSchedule) {
+    this.state.selection.schedule = schedule;
+  }
 
+  updateStudent(data: Partial<RegistrationStudent>) {
+    this.state.student = { ...this.state.student, ...data };
+  }
 
-    getState(): RegistrationState {
+  setTrackingCode(code: string) {
+    this.state.trackingCode = code;
+  }
 
-        return this.state;
+  complete() {
+    this.state.completed = true;
+    this.state.currentStep = "success";
+  }
 
-    }
-
-
-
-    setStep(
-
-        step: RegistrationState["currentStep"]
-
-    ) {
-
-        this.state.currentStep = step;
-
-    }
-
-
-
-    selectCourse(
-
-    id: string | number,
-
-    slug: string,
-
-    title: string
-
-) {
-
-    this.state.selection.course = {
-
-        id,
-
-        slug,
-
-        title
-
-    };
-
-    // Reset downstream selections
-
-    this.state.selection.instructor = {
-
-        id: null,
-
-        name: null
-
-    };
-
-    this.state.selection.schedule = {
-
-        id: null,
-
-        weekday: null,
-
-        startTime: null,
-
-        endTime: null,
-
-        classroom: null
-
-    };
-
+  reset() {
+    this.state = createInitialState();
+  }
 }
-
-
-    selectInstructor(
-
-        id: string | number,
-
-        name: string
-
-    ) {
-
-        this.state.selection.instructor = {
-
-            id,
-
-            name
-
-        };
-
-
-
-        // Reset schedule
-
-        this.state.selection.schedule = {
-
-            id: null,
-
-            weekday: null,
-
-            startTime: null,
-
-            endTime: null,
-
-            classroom: null
-
-        };
-
-    }
-
-
-
-    selectSchedule(data: {
-
-        id: string | number;
-
-        weekday: string;
-
-        startTime?: string;
-
-        endTime?: string;
-
-        classroom?: string | number;
-
-    }) {
-
-        this.state.selection.schedule = {
-
-            id: data.id,
-
-            weekday: data.weekday,
-
-            startTime: data.startTime ?? null,
-
-            endTime: data.endTime ?? null,
-
-            classroom: data.classroom ?? null
-
-        };
-
-    }
-
-
-
-    updateStudent(
-
-        data: Partial<RegistrationStudent>
-
-    ) {
-
-        this.state.student = {
-
-            ...this.state.student,
-
-            ...data
-
-        };
-
-    }
-
-
-
-    setTrackingCode(
-
-        code: string
-
-    ) {
-
-        this.state.trackingCode = code;
-
-    }
-
-
-
-    complete() {
-
-        this.state.completed = true;
-
-        this.state.currentStep = "success";
-
-    }
-
-
-
-    reset() {
-
-        this.state = structuredClone(initialState);
-
-    }
-
-}
-
-
 
 export const registrationStore = new RegistrationStore();

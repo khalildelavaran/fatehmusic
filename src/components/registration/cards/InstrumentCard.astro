@@ -1,217 +1,68 @@
+---
 /*
 ====================================================
-File:
-src/components/registration/cards/InstrumentCard.astro
+File: src/components/registration/cards/InstrumentCard.astro
 
-Purpose:
-Reusable instrument selection card
-
-Architecture:
-- UI only
-- No business logic
-- Selection handled by RegistrationController
-- Provides instrument metadata through data attributes
-
-Controller compatibility:
-- data-instrument-id
-- data-instrument-title
-- data-action="select-instrument"
-
+Purpose: A single selectable instrument/course card for Step 1.
 ====================================================
 */
 
----
+import { formatToman, getPricingPlan } from "../../../scripts/registration/RegistrationUtils";
 
 interface Props {
-
-
-    id: string | number;
-
-
-    title: string;
-
-
-    image?: string;
-
-
-    description?: string;
-
-
-    level?: string;
-
-
+  id: number;
+  slug: string;
+  title: string;
+  excerpt?: string;
+  image?: string;
+  level?: string[];
 }
 
+const { id, slug, title, excerpt, image, level = [] } = Astro.props;
 
-
-const {
-
-    id,
-
-    title,
-
-    image,
-
-    description,
-
-    level
-
-} = Astro.props;
-
-
+const plan = getPricingPlan(slug);
+const monthlyPrice = plan?.paymentOptions?.halfTerm?.amount;
 ---
 
-
-
 <article
-
-
-    class="registration-card instrument-card"
-
-
-    data-instrument-id={id}
-
-
-    data-instrument-title={title}
-
-
-    data-action="select-instrument"
-
-
-    tabindex="0"
-
-
-    role="button"
-
-
+  class="registration-card instrument-card"
+  data-action="select-instrument"
+  data-instrument-id={id}
+  data-instrument-title={title}
+  tabindex="0"
+  role="button"
 >
-
-
-
-
-
-
+  <div class="instrument-media">
     {
-
-        image && (
-
-
-            <div class="instrument-image">
-
-
-                <img
-
-                    src={image}
-
-                    alt={title}
-
-                    loading="lazy"
-
-                />
-
-
-            </div>
-
-
-        )
-
+      image && (
+        <img
+          src={image}
+          alt={title}
+          loading="lazy"
+          onerror="this.remove()"
+        />
+      )
     }
-
-
-
-
-
-
-
-
-    <div class="instrument-content">
-
-
-
-
-
-        <h3>
-
-
-            {title}
-
-
-        </h3>
-
-
-
-
-
-
-
-        {
-
-            description && (
-
-
-                <p class="instrument-description">
-
-
-                    {description}
-
-
-                </p>
-
-
-            )
-
-        }
-
-
-
-
-
-
-
-        {
-
-            level && (
-
-
-                <span class="instrument-level">
-
-
-                    {level}
-
-
-                </span>
-
-
-            )
-
-        }
-
-
-
-
-
-    </div>
-
-
-
-
-
-
-
-
-
-    <div class="select-indicator">
-
-
-        انتخاب این ساز
-
-
-    </div>
-
-
-
-
-
-
-
+  </div>
+  <div class="instrument-content">
+    <h3>{title}</h3>
+    {excerpt && <p class="instrument-excerpt">{excerpt}</p>}
+    {
+      level.length > 0 && (
+        <div class="tag-row">
+          {level.map((item) => <span class="mini-tag">{item}</span>)}
+        </div>
+      )
+    }
+  </div>
+  {
+    monthlyPrice && (
+      <div class="instrument-price">
+        <span>شروع از</span>
+        <strong>{formatToman(monthlyPrice)}</strong>
+        <span>در ماه</span>
+      </div>
+    )
+  }
+  <div class="select-indicator">انتخاب این ساز</div>
 </article>
