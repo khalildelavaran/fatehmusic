@@ -11,7 +11,8 @@ register.astro -> RegistrationFlow.astro -> Steps -> RegistrationController
 (the controller is instantiated once, inside RegistrationFlow.astro)
 ====================================================
 */
-
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 import MainLayout from "../layouts/MainLayout.astro";
 import RegistrationFlow from "../components/registration/RegistrationFlow.astro";
 import "../components/registration/styles/registration.css";
@@ -21,6 +22,7 @@ import "../components/registration/styles/registration.css";
   title="ثبت نام دوره های موسیقی"
   description="ثبت نام آنلاین آموزشگاه موسیقی فاتح"
 >
+ <Header />
   <main class="registration-page">
     <section class="registration-container">
       <div class="registration-hero">
@@ -35,4 +37,5 @@ import "../components/registration/styles/registration.css";
       <RegistrationFlow />
     </section>
   </main>
+ <Footer />
 </MainLayout>
