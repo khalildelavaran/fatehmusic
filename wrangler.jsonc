@@ -1,15 +1,11 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-
-  "name": "fatehmusic",
-
-  "main": "@astrojs/cloudflare/entrypoints/server",
-
   "compatibility_date": "2026-07-08",
-
   "compatibility_flags": [
     "global_fetch_strictly_public"
   ],
+  "name": "fatehmusic",
+  "main": "@astrojs/cloudflare/entrypoints/server",
 
   "assets": {
     "directory": "./dist",
@@ -27,6 +23,4 @@
       "database_id": "b03d1f36-cb20-42ae-9048-99ab8af208c9"
     }
   ]
-
-  // در آینده این بخش‌ها اضافه خواهند شد.
 }
