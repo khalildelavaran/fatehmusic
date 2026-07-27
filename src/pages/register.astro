@@ -15,15 +15,12 @@ register.astro -> RegistrationFlow.astro -> Steps -> RegistrationController
 import MainLayout from "../layouts/MainLayout.astro";
 import RegistrationFlow from "../components/registration/RegistrationFlow.astro";
 import "../components/registration/styles/registration.css";
-import Header from "../components/Header.astro";
-import Footer from "../components/Footer.astro";
 ---
 
 <MainLayout
   title="ثبت نام دوره های موسیقی"
   description="ثبت نام آنلاین آموزشگاه موسیقی فاتح"
 >
- <Header />
   <main class="registration-page">
     <section class="registration-container">
       <div class="registration-hero">
@@ -36,8 +33,6 @@ import Footer from "../components/Footer.astro";
       </div>
 
       <RegistrationFlow />
-    </section>  
-
+    </section>
   </main>
- <Footer />
 </MainLayout>
