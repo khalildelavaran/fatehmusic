@@ -3,12 +3,10 @@
 File: src/scripts/registration/RegistrationApi.ts
 
 Purpose:
-Registration communication layer.
-
-Architecture:
-- No UI logic, no DOM manipulation, no validation logic
-- Mock implementation today; the shape is ready for a real
-  backend endpoint later (see submit() below)
+Registration communication layer. Sends the finished
+registration to the server, which validates it again, stores it
+in Cloudflare D1, and notifies academy staff.
+See: src/pages/api/register.ts, src/server/notifications.ts
 ====================================================
 */
 
@@ -20,40 +18,43 @@ export interface RegistrationResponse {
   message: string;
 }
 
+interface RawApiResponse {
+  success: boolean;
+  trackingCode?: string;
+  message?: string;
+  errors?: string[];
+}
+
 class RegistrationApi {
   async submit(state: RegistrationState): Promise<RegistrationResponse> {
-    /*
-    ==========================================
-    Temporary mock API. Replace with:
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state)
+      });
 
-    const res = await fetch("/api/registration", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(state)
-    });
-    return res.json();
-    ==========================================
-    */
+      const data = (await res.json()) as RawApiResponse;
 
-    console.log("Registration Data:", state);
+      if (!res.ok || !data.success) {
+        return {
+          success: false,
+          message: Array.isArray(data.errors) ? data.errors.join(" ") : "ثبت نام انجام نشد. لطفاً دوباره تلاش کنید."
+        };
+      }
 
-    await this.delay(500);
-
-    return {
-      success: true,
-      trackingCode: this.generateTrackingCode(),
-      message: "ثبت نام با موفقیت انجام شد."
-    };
-  }
-
-  private generateTrackingCode(): string {
-    const year = new Date().getFullYear();
-    const random = Math.floor(100000 + Math.random() * 900000);
-    return `FM-${year}-${random}`;
-  }
-
-  private delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+      return {
+        success: true,
+        trackingCode: data.trackingCode,
+        message: data.message ?? "ثبت نام با موفقیت انجام شد."
+      };
+    } catch (err) {
+      console.error("Registration request failed:", err);
+      return {
+        success: false,
+        message: "ارتباط با سرور برقرار نشد. اتصال اینترنت خود را بررسی کنید."
+      };
+    }
   }
 }
 

@@ -283,6 +283,12 @@ class RegistrationController {
         registrationStore.complete();
         this.renderer.updateSuccess(registrationStore.getState());
         this.goToStep("success");
+      } else {
+        const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
+        if (box) {
+          box.hidden = false;
+          box.innerHTML = `<li>${response.message}</li>`;
+        }
       }
     } finally {
       submitButton?.removeAttribute("disabled");

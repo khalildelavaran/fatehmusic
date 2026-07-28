@@ -1,26 +1,21 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "compatibility_date": "2026-07-08",
-  "compatibility_flags": [
-    "global_fetch_strictly_public"
-  ],
+  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "fatehmusic",
-  "main": "@astrojs/cloudflare/entrypoints/server",
-
+  "main": "./node_modules/@astrojs/cloudflare/dist/entrypoints/server.js",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS"
   },
-
   "observability": {
     "enabled": true
   },
-
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "fatehmusic-db",
-      "database_id": "b03d1f36-cb20-42ae-9048-99ab8af208c9"
+      "database_id": "REPLACE_WITH_YOUR_DATABASE_ID"
     }
   ]
 }

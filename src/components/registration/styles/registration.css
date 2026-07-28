@@ -5,9 +5,11 @@
    new hues are introduced so this page reads as part of the same
    site as About/Contact/Courses.
 ========================================== */
-
+section {
+    padding: 1px 0;
+}
 .registration-page {
-  padding: 140px 24px 100px;
+  padding: 90px 24px 100px;
 }
 
 .registration-container {
@@ -23,7 +25,7 @@
 }
 
 .registration-hero h1 {
-  margin: 18px 0 1px;
+  margin: 8px 0 1px;
 }
 
 .registration-hero p {
@@ -134,7 +136,6 @@
 
 .registration-step {
   animation: stepEnter 0.45s ease;
-  padding-top:0;
 }
 
 .registration-step[hidden] {
@@ -153,7 +154,6 @@
 }
 
 .step-header {
-	
   text-align: center;
   max-width: 640px;
   margin: 0 auto 40px;
@@ -197,32 +197,64 @@
 }
 
 .welcome-content h2 {
-  margin: 18px 0 16px;
+  margin: 1px 0 1px;
 }
 
 .welcome-content > p {
   color: var(--text-secondary);
   line-height: 2;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .welcome-journey {
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 0 0 36px;
-  text-align: right;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 0;
 }
 
 .welcome-journey li {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
   border-radius: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
+  text-align: center;
+  align-items: center;
+}
+
+.welcome-journey-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.welcome-journey-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold-light);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.welcome-journey-header strong {
+  color: var(--text);
+  font-size: 17px;
+}
+
+.welcome-journey-detail {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.8;
 }
 
 .welcome-journey-index {
@@ -240,8 +272,9 @@
 
 .welcome-journey li div {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
 }
 
 .welcome-journey li strong {

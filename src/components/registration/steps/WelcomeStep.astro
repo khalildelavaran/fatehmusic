@@ -24,19 +24,22 @@ const journey = [
       خواهند گرفت.
     </p>
 
-    <ul class="welcome-journey">
-      {
-        journey.map((item, index) => (
-          <li>
-            <span class="welcome-journey-index">{index + 1}</span>
-            <div>
-              <strong>{item.label}</strong>
-              <span>{item.detail}</span>
-            </div>
-          </li>
-        ))
-      }
-    </ul>
+	<ul class="welcome-journey">
+	  {
+		journey.map((item, index) => (
+		  <li>
+			<div class="welcome-journey-header">
+			  <span class="welcome-journey-index">{index + 1}</span>
+			  <strong>{item.label}</strong>
+			</div>
+
+			<span class="welcome-journey-detail">
+			  {item.detail}
+			</span>
+		  </li>
+		))
+	  }
+	</ul>
 
     <button type="button" class="btn" data-action="start-registration">
       شروع ثبت نام
