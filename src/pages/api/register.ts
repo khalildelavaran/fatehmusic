@@ -89,13 +89,28 @@ export const POST: APIRoute = async ({ request }) => {
 
       inserted = true;
     } catch (err: any) {
-      // SQLite/D1 raises a constraint error for the UNIQUE tracking_code -
-      // loop again with a freshly generated code. Any other error is real.
-      const isUniqueViolation = String(err?.message ?? "").includes("UNIQUE");
-      if (!isUniqueViolation) {
-        console.error("D1 insert failed:", err);
-        return json({ success: false, errors: ["ذخیره‌سازی ثبت‌نام با خطا مواجه شد."] }, 500);
+      const message = String(err?.message ?? "");
+      const isUniqueViolation = message.includes("UNIQUE");
+
+      if (isUniqueViolation) {
+        continue; // try again with a freshly generated tracking code
       }
+
+      console.error("D1 insert failed:", err);
+
+      if (message.includes("no such table")) {
+        return json(
+          {
+            success: false,
+            errors: [
+              "جدول دیتابیس روی سرور ساخته نشده است. migration را روی remote اجرا کنید: npm run db:migrate:remote"
+            ]
+          },
+          500
+        );
+      }
+
+      return json({ success: false, errors: [`ذخیره‌سازی ثبت‌نام با خطا مواجه شد: ${message.slice(0, 200)}`] }, 500);
     }
   }
 
