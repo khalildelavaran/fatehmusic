@@ -1,0 +1,2218 @@
+diff --git a/astro.config.mjs b/astro.config.mjs
+index 3246567..26eb7ea 100644
+--- a/astro.config.mjs
++++ b/astro.config.mjs
+@@ -1,5 +1,6 @@
+ import { defineConfig } from "astro/config";
+ import cloudflare from "@astrojs/cloudflare";
++import sitemap from "@astrojs/sitemap";
+ 
+ // ====================================================================
+ // IMPORTANT - read this before merging into your real project
+@@ -15,6 +16,10 @@ import cloudflare from "@astrojs/cloudflare";
+ // ====================================================================
+ 
+ export default defineConfig({
++  // Matches data/site.js's `url` field (src/seo/resolvers/site.js) — the
++  // custom SEO engine and Astro's own sitemap/canonical machinery should
++  // never disagree about the domain.
++  site: "https://fatehmusic.ir",
+   output: "server",
+   adapter: cloudflare({
+     // Lets `astro dev` talk to a local D1/KV/etc. simulation instead of
+@@ -22,5 +27,11 @@ export default defineConfig({
+     platformProxy: {
+       enabled: true
+     }
+-  })
++  }),
++  integrations: [
++    // robots.txt already advertises /sitemap-index.xml; this is what
++    // actually generates it. Only prerendered (static) routes are
++    // included, which as of this change is every page except /api/register.
++    sitemap()
++  ]
+ });
+diff --git a/package-lock.json b/package-lock.json
+index f77a033..a4a47ff 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -9,6 +9,7 @@
+       "version": "1.0.0",
+       "dependencies": {
+         "@astrojs/cloudflare": "^14.1.1",
++        "@astrojs/sitemap": "^3.7.3",
+         "astro": "^7.0.6",
+         "lucide-astro": "^0.556.0"
+       },
+@@ -94,9 +95,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -113,9 +111,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -132,9 +127,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -151,9 +143,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -264,6 +253,17 @@
+         "node": ">=22.12.0"
+       }
+     },
++    "node_modules/@astrojs/sitemap": {
++      "version": "3.7.3",
++      "resolved": "https://registry.npmjs.org/@astrojs/sitemap/-/sitemap-3.7.3.tgz",
++      "integrity": "sha512-f8euLVsyeAmAkSm/1M2Kb8sL8byQmfgbvBNaHFItCheTj/IpiJYSEWVcqDHZ/yEHxiS7+w87mQkzwZaPHmk5GA==",
++      "license": "MIT",
++      "dependencies": {
++        "sitemap": "^9.0.0",
++        "stream-replace-string": "^2.0.0",
++        "zod": "^4.3.6"
++      }
++    },
+     "node_modules/@astrojs/telemetry": {
+       "version": "3.3.3",
+       "resolved": "https://registry.npmjs.org/@astrojs/telemetry/-/telemetry-3.3.3.tgz",
+@@ -364,9 +364,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -380,9 +377,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -396,9 +390,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -412,9 +403,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1234,9 +1222,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1253,9 +1238,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1272,9 +1254,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1291,9 +1270,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1310,9 +1286,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1329,9 +1302,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1348,9 +1318,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1367,9 +1334,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -1386,9 +1350,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1411,9 +1372,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1436,9 +1394,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1461,9 +1416,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1486,9 +1438,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1511,9 +1460,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1536,9 +1482,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1561,9 +1504,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -1855,9 +1795,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1874,9 +1811,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1893,9 +1827,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1912,9 +1843,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1931,9 +1859,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -1950,9 +1875,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MIT",
+       "optional": true,
+       "os": [
+@@ -2261,12 +2183,20 @@
+       "version": "22.20.1",
+       "resolved": "https://registry.npmjs.org/@types/node/-/node-22.20.1.tgz",
+       "integrity": "sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==",
+-      "devOptional": true,
+       "license": "MIT",
+       "dependencies": {
+         "undici-types": "~6.21.0"
+       }
+     },
++    "node_modules/@types/sax": {
++      "version": "1.2.7",
++      "resolved": "https://registry.npmjs.org/@types/sax/-/sax-1.2.7.tgz",
++      "integrity": "sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/node": "*"
++      }
++    },
+     "node_modules/@types/unist": {
+       "version": "3.0.3",
+       "resolved": "https://registry.npmjs.org/@types/unist/-/unist-3.0.3.tgz",
+@@ -2316,6 +2246,12 @@
+         "url": "https://github.com/sponsors/jonschlinkert"
+       }
+     },
++    "node_modules/arg": {
++      "version": "5.0.2",
++      "resolved": "https://registry.npmjs.org/arg/-/arg-5.0.2.tgz",
++      "integrity": "sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==",
++      "license": "MIT"
++    },
+     "node_modules/argparse": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz",
+@@ -3323,9 +3259,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3346,9 +3279,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3369,9 +3299,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3392,9 +3319,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "MPL-2.0",
+       "optional": true,
+       "os": [
+@@ -3735,9 +3659,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3754,9 +3675,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3773,9 +3691,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3792,9 +3707,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3811,9 +3723,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3830,9 +3739,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3849,9 +3755,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3868,9 +3771,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "LGPL-3.0-or-later",
+       "optional": true,
+       "os": [
+@@ -3887,9 +3787,6 @@
+       "cpu": [
+         "arm"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -3912,9 +3809,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -3937,9 +3831,6 @@
+       "cpu": [
+         "ppc64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -3962,9 +3853,6 @@
+       "cpu": [
+         "riscv64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -3987,9 +3875,6 @@
+       "cpu": [
+         "s390x"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -4012,9 +3897,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "glibc"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -4037,9 +3919,6 @@
+       "cpu": [
+         "arm64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -4062,9 +3941,6 @@
+       "cpu": [
+         "x64"
+       ],
+-      "libc": [
+-        "musl"
+-      ],
+       "license": "Apache-2.0",
+       "optional": true,
+       "os": [
+@@ -4717,6 +4593,40 @@
+       "integrity": "sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==",
+       "license": "MIT"
+     },
++    "node_modules/sitemap": {
++      "version": "9.0.1",
++      "resolved": "https://registry.npmjs.org/sitemap/-/sitemap-9.0.1.tgz",
++      "integrity": "sha512-S6hzjGJSG3d6if0YoF5kTyeRJvia6FSTBroE5fQ0bu1QNxyJqhhinfUsXi9fH3MgtXODWvwo2BDyQSnhPQ88uQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@types/node": "^24.9.2",
++        "@types/sax": "^1.2.1",
++        "arg": "^5.0.0",
++        "sax": "^1.4.1"
++      },
++      "bin": {
++        "sitemap": "dist/esm/cli.js"
++      },
++      "engines": {
++        "node": ">=20.19.5",
++        "npm": ">=10.8.2"
++      }
++    },
++    "node_modules/sitemap/node_modules/@types/node": {
++      "version": "24.13.3",
++      "resolved": "https://registry.npmjs.org/@types/node/-/node-24.13.3.tgz",
++      "integrity": "sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==",
++      "license": "MIT",
++      "dependencies": {
++        "undici-types": "~7.18.0"
++      }
++    },
++    "node_modules/sitemap/node_modules/undici-types": {
++      "version": "7.18.2",
++      "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-7.18.2.tgz",
++      "integrity": "sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==",
++      "license": "MIT"
++    },
+     "node_modules/smol-toml": {
+       "version": "1.7.1",
+       "resolved": "https://registry.npmjs.org/smol-toml/-/smol-toml-1.7.1.tgz",
+@@ -4748,6 +4658,12 @@
+         "url": "https://github.com/sponsors/wooorm"
+       }
+     },
++    "node_modules/stream-replace-string": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/stream-replace-string/-/stream-replace-string-2.0.0.tgz",
++      "integrity": "sha512-TlnjJ1C0QrmxRNrON00JvaFFlNh5TTG00APw23j74ET7gkQpTASi6/L2fuiav8pzK715HXtUeClpBTw2NPSn6w==",
++      "license": "MIT"
++    },
+     "node_modules/stringify-entities": {
+       "version": "4.0.4",
+       "resolved": "https://registry.npmjs.org/stringify-entities/-/stringify-entities-4.0.4.tgz",
+@@ -4911,7 +4827,6 @@
+       "version": "6.21.0",
+       "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
+       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+-      "devOptional": true,
+       "license": "MIT"
+     },
+     "node_modules/unenv": {
+diff --git a/package.json b/package.json
+index 7d73ae1..84d84d3 100644
+--- a/package.json
++++ b/package.json
+@@ -12,13 +12,14 @@
+     "db:migrate:remote": "wrangler d1 migrations apply fatehmusic-db --remote"
+   },
+   "dependencies": {
+-    "astro": "^7.0.6",
+     "@astrojs/cloudflare": "^14.1.1",
++    "@astrojs/sitemap": "^3.7.3",
++    "astro": "^7.0.6",
+     "lucide-astro": "^0.556.0"
+   },
+   "devDependencies": {
+-    "wrangler": "^4.0.0",
++    "@types/node": "^22.0.0",
+     "typescript": "^5.7.0",
+-    "@types/node": "^22.0.0"
++    "wrangler": "^4.0.0"
+   }
+ }
+diff --git a/src/components/CourseSeoContent.astro b/src/components/CourseSeoContent.astro
+new file mode 100644
+index 0000000..34b4d26
+--- /dev/null
++++ b/src/components/CourseSeoContent.astro
+@@ -0,0 +1,380 @@
++---
++/**
++ * --------------------------------------------------------
++ * Fateh Music Academy
++ * Component: CourseSeoContent
++ * Description: Renders the long-form seoContent block that
++ * src/seo/resolvers/course.js merges in from
++ * src/data/course-content.js. Renders nothing at all when a
++ * course has no entry there yet (`seoContent === null`), so
++ * rolling this content out one course at a time never breaks
++ * the courses that don't have it yet.
++ * --------------------------------------------------------
++ */
++
++export interface Props {
++  courseTitle: string;
++  seoContent: {
++    quickSummary: string;
++    overview: string[];
++    whoIsItFor: string[];
++    whoIsItNotFor: string[];
++    prerequisites: string;
++    learningPath: { stage: string; description: string }[];
++    curriculum: { title: string; description: string }[];
++    teachingMethod: string[];
++    practicePlan: string[];
++    commonMistakes: { mistake: string; fix: string }[];
++    skillsGained: string[];
++    benefits: string[];
++    localContext: string[];
++  } | null;
++}
++
++const { courseTitle, seoContent } = Astro.props;
++---
++
++{seoContent && (
++
++  <Fragment>
++
++    <section class="course-page__section course-page__quick-summary">
++      <div class="container">
++        <span class="section-badge">خلاصه این صفحه</span>
++        <p>{seoContent.quickSummary}</p>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">معرفی دوره</span>
++          <h2>{courseTitle} چیست و چه ویژگی‌هایی دارد؟</h2>
++        </div>
++        {seoContent.overview.map((paragraph) => <p class="course-page__prose">{paragraph}</p>)}
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="course-page__two-col">
++
++          <div>
++            <h3>این دوره برای چه کسانی مناسب است؟</h3>
++            <ul class="course-page__list">
++              {seoContent.whoIsItFor.map((item) => <li>{item}</li>)}
++            </ul>
++          </div>
++
++          {seoContent.whoIsItNotFor.length > 0 && (
++            <div>
++              <h3>این دوره برای چه کسانی مناسب نیست؟</h3>
++              <ul class="course-page__list course-page__list--muted">
++                {seoContent.whoIsItNotFor.map((item) => <li>{item}</li>)}
++              </ul>
++            </div>
++          )}
++
++        </div>
++
++        <div class="course-page__note-box">
++          <strong>پیش‌نیازها</strong>
++          <p>{seoContent.prerequisites}</p>
++        </div>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">مسیر یادگیری</span>
++          <h2>مراحل پیشرفت در دوره {courseTitle}</h2>
++        </div>
++
++        <ol class="course-page__path">
++          {seoContent.learningPath.map((step) => (
++            <li>
++              <strong>{step.stage}</strong>
++              <p>{step.description}</p>
++            </li>
++          ))}
++        </ol>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">سرفصل‌های آموزشی</span>
++          <h2>در این دوره چه مباحثی تدریس می‌شود؟</h2>
++        </div>
++
++        <div class="course-page__curriculum-grid">
++          {seoContent.curriculum.map((topic) => (
++            <div class="card course-page__curriculum-card">
++              <h3>{topic.title}</h3>
++              <p>{topic.description}</p>
++            </div>
++          ))}
++        </div>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="course-page__two-col">
++          <div>
++            <h3>روش تدریس</h3>
++            {seoContent.teachingMethod.map((paragraph) => <p>{paragraph}</p>)}
++          </div>
++          <div>
++            <h3>برنامه تمرین پیشنهادی</h3>
++            {seoContent.practicePlan.map((paragraph) => <p>{paragraph}</p>)}
++          </div>
++        </div>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">اشتباهات رایج</span>
++          <h2>اشتباهات رایج هنرجویان مبتدی</h2>
++        </div>
++
++        <div class="course-page__mistakes-grid">
++          {seoContent.commonMistakes.map((item) => (
++            <div class="card course-page__mistake-card">
++              <p class="course-page__mistake"><strong>اشتباه رایج:</strong> {item.mistake}</p>
++              <p class="course-page__fix"><strong>راه‌حل:</strong> {item.fix}</p>
++            </div>
++          ))}
++        </div>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="course-page__two-col">
++          <div>
++            <h3>مهارت‌هایی که کسب می‌کنید</h3>
++            <ul class="course-page__list">
++              {seoContent.skillsGained.map((item) => <li>{item}</li>)}
++            </ul>
++          </div>
++          <div>
++            <h3>مزایای یادگیری این ساز</h3>
++            <ul class="course-page__list">
++              {seoContent.benefits.map((item) => <li>{item}</li>)}
++            </ul>
++          </div>
++        </div>
++      </div>
++    </section>
++
++    <section class="course-page__section">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">در شوشتر</span>
++          <h2>این دوره در آموزشگاه موسیقی فاتح</h2>
++        </div>
++        {seoContent.localContext.map((paragraph) => <p class="course-page__prose">{paragraph}</p>)}
++      </div>
++    </section>
++
++  </Fragment>
++
++)}
++
++<style>
++.course-page__quick-summary{
++    padding-top:0;
++}
++
++.course-page__quick-summary p{
++    max-width:900px;
++    line-height:2;
++    color:var(--text-secondary);
++    margin-top:1rem;
++}
++
++.course-page__prose{
++    max-width:900px;
++    line-height:2;
++    color:var(--text-secondary);
++    margin-bottom:1.25rem;
++}
++
++.course-page__two-col{
++    display:grid;
++    grid-template-columns:1fr 1fr;
++    gap:2.5rem;
++}
++
++.course-page__two-col h3{
++    margin-bottom:1rem;
++}
++
++.course-page__two-col p{
++    line-height:2;
++    color:var(--text-secondary);
++    margin-bottom:1rem;
++}
++
++.course-page__list{
++    list-style:none;
++    display:flex;
++    flex-direction:column;
++    gap:.85rem;
++}
++
++.course-page__list li{
++    position:relative;
++    padding-inline-start:1.6rem;
++    line-height:1.9;
++    color:var(--text-secondary);
++}
++
++.course-page__list li::before{
++    content:"";
++    position:absolute;
++    inset-inline-start:0;
++    top:.6em;
++    width:8px;
++    height:8px;
++    border-radius:50%;
++    background:var(--gold);
++}
++
++.course-page__list--muted li::before{
++    background:var(--text-secondary);
++    opacity:.5;
++}
++
++.course-page__note-box{
++    margin-top:2rem;
++    padding:1.5rem 1.75rem;
++    border-radius:18px;
++    background:rgba(212,175,55,.06);
++    border:1px solid rgba(212,175,55,.18);
++}
++
++.course-page__note-box strong{
++    display:block;
++    color:var(--primary);
++    margin-bottom:.5rem;
++}
++
++.course-page__note-box p{
++    color:var(--text-secondary);
++    line-height:1.9;
++}
++
++.course-page__path{
++    list-style:none;
++    counter-reset:step;
++    display:flex;
++    flex-direction:column;
++    gap:1.25rem;
++    margin-top:2rem;
++}
++
++.course-page__path li{
++    counter-increment:step;
++    position:relative;
++    padding:1.5rem 1.75rem 1.5rem 1.75rem;
++    padding-inline-start:4.5rem;
++    border-radius:18px;
++    background:var(--surface);
++    border:1px solid var(--border);
++}
++
++.course-page__path li::before{
++    content:counter(step);
++    position:absolute;
++    inset-inline-start:1.5rem;
++    top:50%;
++    transform:translateY(-50%);
++    width:2.25rem;
++    height:2.25rem;
++    border-radius:50%;
++    background:rgba(212,175,55,.12);
++    border:1px solid rgba(212,175,55,.3);
++    color:var(--primary);
++    display:flex;
++    align-items:center;
++    justify-content:center;
++    font-weight:700;
++}
++
++.course-page__path strong{
++    display:block;
++    margin-bottom:.5rem;
++}
++
++.course-page__path p{
++    color:var(--text-secondary);
++    line-height:1.9;
++}
++
++.course-page__curriculum-grid{
++    display:grid;
++    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
++    gap:1.5rem;
++    margin-top:2rem;
++}
++
++.course-page__curriculum-card{
++    padding:1.5rem;
++}
++
++.course-page__curriculum-card h3{
++    margin-bottom:.75rem;
++    font-size:1.05rem;
++}
++
++.course-page__curriculum-card p{
++    color:var(--text-secondary);
++    line-height:1.8;
++    font-size:.95rem;
++}
++
++.course-page__mistakes-grid{
++    display:grid;
++    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
++    gap:1.5rem;
++    margin-top:2rem;
++}
++
++.course-page__mistake-card{
++    padding:1.5rem;
++}
++
++.course-page__mistake{
++    color:var(--text-secondary);
++    line-height:1.8;
++    margin-bottom:.85rem;
++}
++
++.course-page__mistake strong{
++    color:var(--text);
++}
++
++.course-page__fix{
++    color:var(--text-secondary);
++    line-height:1.8;
++}
++
++.course-page__fix strong{
++    color:var(--primary);
++}
++
++@media (max-width:900px){
++
++    .course-page__two-col{
++        grid-template-columns:1fr;
++        gap:1.5rem;
++    }
++
++}
++</style>
+diff --git a/src/components/FAQSection.astro b/src/components/FAQSection.astro
+new file mode 100644
+index 0000000..8dcea53
+--- /dev/null
++++ b/src/components/FAQSection.astro
+@@ -0,0 +1,151 @@
++---
++/**
++ * --------------------------------------------------------
++ * Fateh Music Academy
++ * Component: FAQSection (generic, reusable)
++ * Description: Visible accordion for any {question, answer}[]
++ * list. Visual language matches AboutFAQ.astro exactly (same
++ * class names, scoped separately by Astro so there's no
++ * collision) so FAQs look identical everywhere on the site,
++ * whether it's About, Contact, a course, or an instructor page.
++ *
++ * Why this exists: course/instructor pages already build
++ * FAQPage JSON-LD (buildFaqSchema) from resolvedCourse.faqs /
++ * resolvedInstructor.faqs, but neither page actually rendered
++ * that FAQ list as visible content. Structured data that doesn't
++ * match what's on the page is a real risk for FAQ rich results,
++ * not just a missed content opportunity — this component closes
++ * that gap.
++ * --------------------------------------------------------
++ */
++
++export interface Props {
++  title: string;
++  subtitle?: string;
++  items: { question: string; answer: string }[];
++}
++
++const { title, subtitle, items = [] } = Astro.props;
++---
++
++{items.length > 0 && (
++
++  <section class="faq-section">
++
++    <div class="container">
++
++      <div class="section-header">
++
++        <span class="section-badge">
++          سوالات متداول
++        </span>
++
++        <h2>{title}</h2>
++
++        {subtitle && <p>{subtitle}</p>}
++
++      </div>
++
++      <div class="faq-list">
++
++        {items.map((item) => (
++
++          <details class="card faq-item">
++
++            <summary>{item.question}</summary>
++
++            <p>{item.answer}</p>
++
++          </details>
++
++        ))}
++
++      </div>
++
++    </div>
++
++  </section>
++
++)}
++
++<style>
++.faq-section{
++    padding:80px 0;
++}
++
++.faq-list{
++    display:flex;
++    flex-direction:column;
++    gap:1rem;
++    margin-top:2.5rem;
++}
++
++.faq-item{
++    padding:1.6rem 2rem;
++    transition:var(--transition);
++}
++
++.faq-item:hover{
++    transform:translateY(-2px);
++}
++
++.faq-item summary{
++    display:flex;
++    align-items:center;
++    justify-content:space-between;
++    gap:1rem;
++    cursor:pointer;
++    list-style:none;
++    color:var(--text);
++    font-size:1.08rem;
++    font-weight:700;
++    user-select:none;
++}
++
++.faq-item summary::-webkit-details-marker{
++    display:none;
++}
++
++.faq-item summary::after{
++    content:"+";
++    width:34px;
++    height:34px;
++    display:flex;
++    align-items:center;
++    justify-content:center;
++    border-radius:50%;
++    background:rgba(212,175,55,.08);
++    border:1px solid rgba(212,175,55,.20);
++    color:var(--gold);
++    font-size:1.4rem;
++    font-weight:400;
++    transition:.35s;
++    flex-shrink:0;
++}
++
++.faq-item[open] summary::after{
++    content:"−";
++    background:rgba(212,175,55,.16);
++}
++
++.faq-item p{
++    margin-top:1.25rem;
++    padding-top:1.25rem;
++    border-top:1px solid var(--border);
++    color:var(--text-secondary);
++    line-height:2;
++}
++
++@media (max-width:768px){
++
++    .faq-item{
++        padding:1.35rem 1.5rem;
++    }
++
++    .faq-item summary{
++        font-size:1rem;
++        line-height:1.8;
++    }
++
++}
++</style>
+diff --git a/src/components/InstructorSeoContent.astro b/src/components/InstructorSeoContent.astro
+new file mode 100644
+index 0000000..8b1c6e9
+--- /dev/null
++++ b/src/components/InstructorSeoContent.astro
+@@ -0,0 +1,249 @@
++---
++/**
++ * --------------------------------------------------------
++ * Fateh Music Academy
++ * Component: InstructorSeoContent
++ * Description: Renders the long-form seoContent block that
++ * src/seo/resolvers/instructor.js merges in from
++ * src/data/instructor-content.js. Renders nothing when an
++ * instructor has no entry yet (`seoContent === null`), so this
++ * rolls out one instructor at a time without breaking the rest.
++ * Class names use the existing "teacher-" prefix already
++ * established (and styled) in src/pages/instructors/[slug].astro,
++ * for visual consistency with the hero/courses/about sections.
++ * --------------------------------------------------------
++ */
++
++export interface Props {
++  instructorName: string;
++  seoContent: {
++    quickSummary: string;
++    teachingPhilosophy: string[];
++    methodBySubject: { subject: string; description: string }[];
++    whoShouldStudyWithThem: string[];
++    typicalProgression: string[];
++    commonStudentMistakes: { mistake: string; fix: string }[];
++    whyStudentsChooseThem: string[];
++  } | null;
++}
++
++const { instructorName, seoContent } = Astro.props;
++---
++
++{seoContent && (
++
++  <Fragment>
++
++    <section class="teacher-quick-summary">
++      <div class="container">
++        <span class="section-badge">خلاصه این صفحه</span>
++        <p>{seoContent.quickSummary}</p>
++      </div>
++    </section>
++
++    <section class="teacher-philosophy">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">روش تدریس</span>
++          <h2>فلسفه آموزشی {instructorName}</h2>
++        </div>
++        {seoContent.teachingPhilosophy.map((paragraph) => <p class="teacher-prose">{paragraph}</p>)}
++      </div>
++    </section>
++
++    {seoContent.methodBySubject.length > 0 && (
++      <section class="teacher-subjects">
++        <div class="container">
++          <div class="section-header">
++            <span class="section-badge">حوزه‌های تدریس</span>
++            <h2>روش تدریس {instructorName} در هر حوزه</h2>
++          </div>
++
++          <div class="teacher-subjects-grid">
++            {seoContent.methodBySubject.map((item) => (
++              <div class="card teacher-subject-card">
++                <h3>{item.subject}</h3>
++                <p>{item.description}</p>
++              </div>
++            ))}
++          </div>
++        </div>
++      </section>
++    )}
++
++    <section class="teacher-fit">
++      <div class="container">
++        <div class="teacher-two-col">
++
++          <div>
++            <h3>چه هنرجویانی مناسب این مدرس هستند؟</h3>
++            <ul class="teacher-list">
++              {seoContent.whoShouldStudyWithThem.map((item) => <li>{item}</li>)}
++            </ul>
++          </div>
++
++          <div>
++            <h3>مسیر معمول پیشرفت هنرجویان</h3>
++            {seoContent.typicalProgression.map((paragraph) => <p>{paragraph}</p>)}
++          </div>
++
++        </div>
++      </div>
++    </section>
++
++    {seoContent.commonStudentMistakes.length > 0 && (
++      <section class="teacher-mistakes">
++        <div class="container">
++          <div class="section-header">
++            <span class="section-badge">نکات مهم</span>
++            <h2>اشتباهات رایج هنرجویان</h2>
++          </div>
++
++          <div class="teacher-mistakes-grid">
++            {seoContent.commonStudentMistakes.map((item) => (
++              <div class="card teacher-mistake-card">
++                <p><strong>اشتباه رایج:</strong> {item.mistake}</p>
++                <p><strong>راهکار:</strong> {item.fix}</p>
++              </div>
++            ))}
++          </div>
++        </div>
++      </section>
++    )}
++
++    <section class="teacher-why">
++      <div class="container">
++        <div class="section-header">
++          <span class="section-badge">چرا این مدرس؟</span>
++          <h2>چرا هنرجویان {instructorName} را انتخاب می‌کنند؟</h2>
++        </div>
++        {seoContent.whyStudentsChooseThem.map((paragraph) => <p class="teacher-prose">{paragraph}</p>)}
++      </div>
++    </section>
++
++  </Fragment>
++
++)}
++
++<style>
++.teacher-quick-summary,
++.teacher-philosophy,
++.teacher-subjects,
++.teacher-fit,
++.teacher-mistakes,
++.teacher-why{
++    padding:60px 0;
++}
++
++.teacher-quick-summary p{
++    max-width:900px;
++    line-height:2;
++    color:var(--text-secondary);
++    margin-top:1rem;
++}
++
++.teacher-prose{
++    max-width:900px;
++    line-height:2;
++    color:var(--text-secondary);
++    margin-bottom:1.25rem;
++}
++
++.teacher-subjects-grid{
++    display:grid;
++    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
++    gap:1.5rem;
++    margin-top:2rem;
++}
++
++.teacher-subject-card{
++    padding:1.5rem;
++}
++
++.teacher-subject-card h3{
++    color:var(--primary);
++    margin-bottom:.75rem;
++    font-size:1.05rem;
++}
++
++.teacher-subject-card p{
++    color:var(--text-secondary);
++    line-height:1.8;
++    font-size:.95rem;
++}
++
++.teacher-two-col{
++    display:grid;
++    grid-template-columns:1fr 1fr;
++    gap:2.5rem;
++}
++
++.teacher-two-col h3{
++    margin-bottom:1rem;
++}
++
++.teacher-two-col p{
++    line-height:2;
++    color:var(--text-secondary);
++    margin-bottom:1rem;
++}
++
++.teacher-list{
++    list-style:none;
++    display:flex;
++    flex-direction:column;
++    gap:.85rem;
++}
++
++.teacher-list li{
++    position:relative;
++    padding-inline-start:1.6rem;
++    line-height:1.9;
++    color:var(--text-secondary);
++}
++
++.teacher-list li::before{
++    content:"";
++    position:absolute;
++    inset-inline-start:0;
++    top:.6em;
++    width:8px;
++    height:8px;
++    border-radius:50%;
++    background:var(--gold);
++}
++
++.teacher-mistakes-grid{
++    display:grid;
++    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
++    gap:1.5rem;
++    margin-top:2rem;
++}
++
++.teacher-mistake-card{
++    padding:1.5rem;
++}
++
++.teacher-mistake-card p{
++    color:var(--text-secondary);
++    line-height:1.8;
++    margin-bottom:.75rem;
++}
++
++.teacher-mistake-card p:last-child{
++    margin-bottom:0;
++}
++
++.teacher-mistake-card strong{
++    color:var(--text);
++}
++
++@media (max-width:900px){
++
++    .teacher-two-col{
++        grid-template-columns:1fr;
++        gap:1.5rem;
++    }
++
++}
++</style>
+diff --git a/src/data/course-content.js b/src/data/course-content.js
+new file mode 100644
+index 0000000..a56f226
+--- /dev/null
++++ b/src/data/course-content.js
+@@ -0,0 +1,177 @@
++/**
++ * ============================================================
++ * Fateh Music Academy
++ * course-content.js
++ * Long-form SEO / GEO content, keyed by course slug.
++ *
++ * Why this file exists (and why it's separate from courses.js):
++ * courses.js is marked "Architecture: FROZEN v1.0" — its shape
++ * (id/slug/media/content.excerpt/seo) is not to be changed.
++ * This file is purely additive: src/seo/resolvers/course.js looks
++ * up an entry here by `course.slug` and merges it in as an
++ * optional `seoContent` field. Every course NOT listed here simply
++ * resolves `seoContent: null`, and the page/components render
++ * without that section — so filling this in one course at a time
++ * is always safe and never breaks the other course pages.
++ *
++ * Content rules (see doc/CONTENT_ENGINE_SPECIFICATION.md and
++ * AGENTS.md "TRUST" section):
++ * - Never invent instructor/academy achievements, awards, student
++ *   counts, or statistics. Only use facts already present in
++ *   courses.js / instructors.js, or generic, well-established
++ *   music-pedagogy knowledge that isn't specific to this school.
++ * - Paragraph fields are arrays of paragraphs (not \n-joined
++ *   strings) so components can render each one independently —
++ *   this also keeps individual passages short and self-contained,
++ *   which is what actually makes a page easy for AI answer engines
++ *   to extract and quote (the doc's "GEO" goal), not any special
++ *   markup trick.
++ *
++ * Shape per entry:
++ * {
++ *   quickSummary: string,
++ *   overview: string[],
++ *   whoIsItFor: string[],
++ *   whoIsItNotFor: string[],
++ *   prerequisites: string,
++ *   learningPath: { stage, description }[],
++ *   curriculum: { title, description }[],
++ *   teachingMethod: string[],
++ *   practicePlan: string[],
++ *   commonMistakes: { mistake, fix }[],
++ *   skillsGained: string[],
++ *   benefits: string[],
++ *   localContext: string[],
++ *   faqAdditions: { question, answer }[],
++ *   summary: string[]
++ * }
++ * ============================================================
++ */
++
++export const courseContent = {
++
++  /* ======================================================================
++     guitar-course — fully worked template.
++     Remaining 22 courses intentionally left unset for now; see the
++     chat response for the phased plan to fill these in.
++  ====================================================================== */
++  "guitar-course": {
++
++    quickSummary:
++      "دوره آموزش گیتار در آموزشگاه موسیقی فاتح برای سه گروه سنی طراحی شده: کودکانی که برای نخستین‌بار با یک ساز آشنا می‌شوند، نوجوانانی که می‌خواهند نواختن را جدی دنبال کنند، و بزرگسالانی که چه برای اولین‌بار و چه پس از سال‌ها وقفه دوباره سراغ گیتار می‌آیند. کلاس‌ها خصوصی و یک‌نفره برگزار می‌شود و مدرس آن، خلیل دلاوران، علاوه بر گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی و صداسازی را هم تدریس می‌کند؛ به همین دلیل این مهارت‌ها از همان جلسات نخست در دل تمرین گیتار جای می‌گیرند، نه به‌صورت درس‌های جدا. مسیر آموزشی از کوک، وضعیت نشستن و اولین آکوردها آغاز می‌شود، به استرام و ریتم می‌رسد، سپس باره و فینگراستایل را می‌پوشاند و در نهایت هنرجو را به سمت یکی از سه شاخه گیتار کلاسیک، پاپ یا فلامنکو هدایت می‌کند. در ادامه همین صفحه، سن مناسب شروع، تفاوت گیتار کلاسیک و آکوستیک، اشتباهات رایج مبتدیان و یک برنامه تمرین پیشنهادی نیز آمده است.",
++
++    overview: [
++      "گیتار از معدود سازهایی است که هم به‌تنهایی قابل اجراست و هم همراهی‌کننده خوبی برای صدای خواننده به شمار می‌رود؛ همین دوگانگی آن را به یکی از پرطرفدارترین انتخاب‌ها برای شروع آموزش موسیقی تبدیل کرده است. برخلاف بسیاری از سازهای زهی که تولید صدای قابل‌قبول در همان هفته‌های نخست دشوار است، گیتار از همان ابتدا بازخورد سریع‌تری به هنرجو می‌دهد و همین موضوع انگیزه ادامه‌دادن را در مبتدیان تقویت می‌کند.",
++      "در آموزشگاه موسیقی فاتح، دوره گیتار حول سه شاخه اصلی شکل گرفته است: گیتار کلاسیک، گیتار پاپ و گیتار فلامنکو. گیتار کلاسیک بر انگشت‌گذاری دقیق دست راست (فینگراستایل)، اجرای قطعات نوشته‌شده و نت‌خوانی تمرکز دارد و پایه‌ای محکم برای هر مسیر دیگری در گیتار می‌سازد. گیتار پاپ بیشتر حول استرام، آکوردهای باز و باره، و همراهی با آواز شکل می‌گیرد؛ مسیر کوتاه‌تری برای کسی که می‌خواهد زودتر آهنگ‌های آشنا بنوازد. گیتار فلامنکو تکنیک‌های ریتمیک و ضربی مخصوص به خود را دارد و معمولاً پس از تسلط بر مبانی مشترک گیتار دنبال می‌شود.",
++      "نکته‌ای که این دوره را از یک کلاس معمولی گیتار متمایز می‌کند، حضور مدرسی است که هم‌زمان سلفژ، تئوری موسیقی و ریتم و وزن‌خوانی را نیز تدریس می‌کند. وقتی هنرجو با یک الگوی ریتمیک تازه در گیتار روبه‌رو می‌شود، به‌جای حفظ مکانیکی حرکت دست، همان لحظه با منطق تئوریک آن ریتم هم آشنا می‌شود؛ رویکردی که یادگیری را پایدارتر می‌کند."
++    ],
++
++    whoIsItFor: [
++      "کودکانی که در سنین آغاز آموزش موسیقی، با همراهی خانواده در کلاس شرکت می‌کنند",
++      "نوجوانانی که می‌خواهند اصولی گیتار بنوازند تا بتوانند آهنگ‌های مورد علاقه‌شان را اجرا کنند",
++      "بزرگسالان مبتدی که تا امروز سابقه نواختن هیچ سازی را نداشته‌اند",
++      "بزرگسالانی که پیش‌تر گیتار زده‌اند و می‌خواهند مبانی را از نو و به‌صورت اصولی مرور کنند",
++      "علاقه‌مندانی که می‌خواهند هم‌زمان با نواختن، تئوری موسیقی و سلفژ را هم یاد بگیرند",
++      "خوانندگانی که می‌خواهند بتوانند خودشان را با گیتار همراهی کنند"
++    ],
++
++    whoIsItNotFor: [
++      "کسانی که فقط دنبال آموزش تئوری موسیقی هستند و قصد نواختن ساز را ندارند؛ برای این گروه دوره تئوری موسیقی یا سلفژ به‌تنهایی مناسب‌تر است",
++      "افرادی که انتظار دارند بدون تمرین منظم بین جلسات، در بازه‌ای کوتاه به سطح اجرای حرفه‌ای برسند",
++      "کسانی که فقط به دنبال یادگیری یک قطعه خاص برای یک اجرای مقطعی هستند، بدون علاقه به یک مسیر آموزشی پیوسته"
++    ],
++
++    prerequisites:
++      "برای ثبت‌نام در این دوره هیچ پیش‌نیاز یا آشنایی قبلی با نت و ساز لازم نیست. مسیر آموزشی از سطح کاملاً مبتدی طراحی شده و مدرس بر اساس سن، هدف و سرعت یادگیری هر هنرجو برنامه را تنظیم می‌کند. تنها پیش‌نیاز عملی، در دسترس داشتن یک گیتار برای تمرین در خانه میان جلسات است؛ برای راهنمایی درباره انتخاب اولین ساز نیز می‌توان پیش از خرید با آموزشگاه مشورت کرد.",
++
++    learningPath: [
++      { stage: "گام اول: آشنایی و پایه", description: "آشنایی با اجزای گیتار، کوک‌کردن، وضعیت درست نشستن و قرارگیری دست‌ها، و یادگیری نخستین آکوردهای باز مانند Am، Em، C و G در کنار تمرین‌های ساده انگشت‌گذاری." },
++      { stage: "گام دوم: ریتم و همراهی", description: "تسلط بر الگوهای رایج استرام، هماهنگی دست راست و چپ هنگام تعویض آکورد، و همراهی با آهنگ‌های ساده. در همین مرحله، مبانی ریتم و وزن‌خوانی وارد تمرین‌ها می‌شود." },
++      { stage: "گام سوم: باره و فینگراستایل", description: "ورود به آکوردهای باره که به استقامت بیشتر دست چپ نیاز دارند، و آغاز تمرین‌های فینگراستایل برای نواختن هم‌زمان ملودی و همراهی." },
++      { stage: "گام چهارم: تخصصی‌سازی سبک", description: "بر اساس علاقه هنرجو، مسیر به سمت یکی از سبک‌های کلاسیک (تمرکز بر قطعات نوشته‌شده و تکنیک ناخن)، پاپ (تمرکز بر همراهی آواز) یا فلامنکو (تکنیک‌های ریتمیک ضربی) هدایت می‌شود." }
++    ],
++
++    curriculum: [
++      { title: "آکوردهای باز و تعویض آکورد", description: "یادگیری پرکاربردترین آکوردهای باز و تمرین‌های روان‌سازی تعویض بین آن‌ها، پیش‌نیاز نواختن هر آهنگ ساده‌ای است." },
++      { title: "الگوهای استرام و ریتم دست راست", description: "تمرکز روی حرکت یکنواخت دست راست و الگوهای ریتمیک متداول در سبک پاپ و همراهی آواز." },
++      { title: "باره (Barre Chords)", description: "تکنیک نگه‌داشتن یک انگشت روی چند سیم هم‌زمان؛ گامی که معمولاً چالش‌برانگیزترین مرحله برای مبتدیان است." },
++      { title: "فینگراستایل و ناخن‌زنی", description: "نواختن هم‌زمان خط ملودی و همراهی با انگشتان دست راست، پایه اصلی گیتار کلاسیک و بخشی از رپرتوار پاپ آرام." },
++      { title: "گام‌ها و آرپژ", description: "تمرین‌های فنی برای افزایش دقت و سرعت انگشتان دست چپ، و آشنایی با ساختار گام‌های ماژور و مینور." },
++      { title: "نت‌خوانی روی دسته گیتار", description: "خواندن نت به‌جای تکیه صرف بر تبلچر، مهارتی که مسیر یادگیری قطعات جدید را در بلندمدت سریع‌تر می‌کند." },
++      { title: "هارمونی کاربردی برای همراهی", description: "شناخت رابطه آکوردها با یکدیگر در یک قطعه، برای کسی که می‌خواهد به‌جای حفظ آکورد آهنگ‌ها، منطق پشت آن را بفهمد." },
++      { title: "آشنایی مقدماتی با بداهه‌نوازی", description: "تمرین‌های ساده بداهه‌نوازی بر پایه گام‌های پنتاتونیک، برای هنرجویانی که به مراحل پیشرفته‌تر رسیده‌اند." }
++    ],
++
++    teachingMethod: [
++      "کلاس‌ها به‌صورت خصوصی و یک‌نفره برگزار می‌شود؛ یعنی سرعت پیشرفت، انتخاب رپرتوار و میزان تمرکز روی هر مهارت، بر اساس وضعیت واقعی همان هنرجو تنظیم می‌شود، نه یک برنامه ثابت برای همه.",
++      "از آن‌جا که مدرس دوره، خلیل دلاوران، سلفژ، تئوری موسیقی و ریتم و وزن‌خوانی را هم تدریس می‌کند، این مباحث به‌صورت جداگانه و خشک ارائه نمی‌شوند، بلکه در دل همان تمرین گیتار جای می‌گیرند؛ برای مثال هنگام یادگیری یک ریتم جدید، هم‌زمان دلیل تئوریک شمارش آن ریتم هم توضیح داده می‌شود."
++    ],
++
++    practicePlan: [
++      "برای هنرجوی مبتدی، تمرین کوتاه و منظم روزانه معمولاً نتیجه بهتری نسبت به جلسات طولانی و نامنظم می‌دهد. یک ساختار پیشنهادی می‌تواند شامل چند دقیقه گرم‌کردن انگشتان، تمرین فنی روی آکورد یا الگوی ریتمیک تازه، و در پایان نواختن بخشی از قطعه یا آهنگی باشد که هنرجو از قبل با آن آشنا بوده است.",
++      "در هفته‌های نخست، طبیعی است که نوک انگشتان دست چپ دچار درد خفیف شود؛ این موضوع بخشی از فرایند شکل‌گیری پینه است و با تمرین منظم و بدون فشار بیش‌ازحد، طی چند هفته کاهش می‌یابد."
++    ],
++
++    commonMistakes: [
++      { mistake: "توقف تمرین به‌محض احساس درد خفیف نوک انگشتان در هفته‌های اول", fix: "این درد بخش طبیعی شکل‌گیری پینه است؛ بهتر است بازه‌های تمرین کوتاه‌تر و مکررتر شود، نه این‌که تمرین به‌طور کامل متوقف شود." },
++      { mistake: "عجله برای رسیدن به آکوردهای باره پیش از آماده‌شدن استقامت دست چپ", fix: "تمرین کافی روی آکوردهای باز و تقویت تدریجی فشار انگشت، مسیر رسیدن به باره را هموارتر و کم‌دردسرتر می‌کند." },
++      { mistake: "تمرکز صرف روی دست چپ (آکوردها) و بی‌توجهی به تکنیک دست راست", fix: "استرام و همراهی، نیمی از صدای نهایی گیتار را می‌سازد؛ تمرین جداگانه دست راست به‌اندازه یادگیری آکورد اهمیت دارد." },
++      { mistake: "کوک نکردن ساز پیش از هر جلسه تمرین", fix: "چند ثانیه کوک‌کردن، هم گوش هنرجو را تربیت می‌کند و هم از عادت‌کردن به شنیدن صدای نادرست جلوگیری می‌کند." },
++      { mistake: "وضعیت نامناسب نشستن یا نگه‌داشتن ساز", fix: "قرارگیری درست ساز روی پا و زاویه مچ دست چپ، از خستگی زودرس و ناراحتی‌های احتمالی درازمدت جلوگیری می‌کند." },
++      { mistake: "دنبال‌کردن هم‌زمان چند منبع آموزشی متفاوت و ناهماهنگ", fix: "پیروی از یک مسیر مشخص و مشورت با مدرس پیش از افزودن منابع جانبی، از سردرگمی در ترتیب یادگیری جلوگیری می‌کند." }
++    ],
++
++    skillsGained: [
++      "خواندن و اجرای آکوردهای باز و باره",
++      "نواختن الگوهای استرام رایج در سبک پاپ",
++      "مبانی فینگراستایل برای نواختن هم‌زمان ملودی و همراهی",
++      "آشنایی عملی با ریتم و وزن‌خوانی",
++      "درک مقدماتی از هارمونی و رابطه آکوردها",
++      "توانایی همراهی‌کردن آواز با گیتار",
++      "پایه‌ای برای ادامه مسیر در هر سه شاخه کلاسیک، پاپ یا فلامنکو"
++    ],
++
++    benefits: [
++      "یادگیری گیتار هماهنگی میان دو دست را تقویت می‌کند، چرا که هر دست هم‌زمان وظیفه‌ای متفاوت بر عهده دارد",
++      "گیتار سازی قابل‌حمل است و امکان تمرین در خانه، دورهمی یا حتی سفر را فراهم می‌کند",
++      "تنوع سبکی گیتار (کلاسیک، پاپ، فلامنکو) اجازه می‌دهد مسیر آموزشی با علاقه شخصی هنرجو هماهنگ شود",
++      "توانایی همراهی‌کردن آواز با گیتار، فرصت اجرای گروهی و نوازندگی در جمع را فراهم می‌کند",
++      "آموزش هم‌زمان مبانی تئوری و ریتم، پایه‌ای می‌سازد که در یادگیری هر ساز دیگری هم قابل استفاده است"
++    ],
++
++    localContext: [
++      "کلاس‌های گیتار آموزشگاه موسیقی فاتح در شوشتر به‌صورت حضوری و خصوصی برگزار می‌شود. ساختار ترمیک دوره این امکان را می‌دهد که هنرجو در طول یک ترم مشخص، مسیر مشخصی از پیشرفت را طی کند و در پایان هر ترم، سطح واقعی خود را ارزیابی کند.",
++      "از آن‌جا که کلاس‌ها برای سه گروه سنی کودک، نوجوان و بزرگسال تعریف شده، خانواده‌ها می‌توانند فرزندان خود را از سنین پایه ثبت‌نام کنند، بدون نگرانی از این‌که برنامه آموزشی برای سن آن‌ها مناسب نباشد."
++    ],
++
++    faqAdditions: [
++      { question: "از چه سنی می‌توان یادگیری گیتار را شروع کرد؟", answer: "دوره گیتار آموزشگاه فاتح برای کودکان، نوجوانان و بزرگسالان تعریف شده است. برای کودکان خردسال معمولاً استفاده از گیتار با سایز کوچک‌تر پیشنهاد می‌شود؛ تصمیم دقیق درباره سن و سایز مناسب را می‌توان در مشاوره پیش از ثبت‌نام با آموزشگاه هماهنگ کرد." },
++      { question: "تفاوت گیتار کلاسیک و گیتار آکوستیک چیست؟", answer: "گیتار کلاسیک سیم‌های نایلونی دارد و دسته پهن‌تری برای فینگراستایل دقیق‌تر، در حالی‌که گیتار آکوستیک سیم‌های فلزی دارد و برای استرام و همراهی آواز در سبک پاپ رایج‌تر است. انتخاب بین این دو بیشتر به سبک موردعلاقه هنرجو بستگی دارد تا برتری مطلق یکی بر دیگری." },
++      { question: "برای شروع، گیتار کلاسیک بهتر است یا پاپ؟", answer: "برای اکثر مبتدیان، شروع با مبانی گیتار کلاسیک (وضعیت دست، انگشت‌گذاری دقیق) پایه محکم‌تری می‌سازد، حتی اگر هدف نهایی نواختن سبک پاپ باشد؛ اما در نهایت این انتخاب بر اساس علاقه هنرجو و هدف او از یادگیری تعیین می‌شود." },
++      { question: "آیا برای یادگیری گیتار لازم است نت بخوانم؟", answer: "برای شروع، نه؛ می‌توان با آکورد پیش رفت. اما نت‌خوانی مهارتی است که در ادامه مسیر، به‌ویژه برای گیتار کلاسیک و اجرای قطعات پیچیده‌تر، یادگیری را سریع‌تر و مستقل‌تر می‌کند و در برنامه این دوره هم به‌تدریج آموزش داده می‌شود." },
++      { question: "آیا سلفژ برای یک نوازنده گیتار ضروری است؟", answer: "سلفژ به‌طور مستقیم روی دقت گوش و شناخت فاصله‌های صوتی اثر می‌گذارد؛ چیزی که در کوک‌کردن، همراهی با آواز و حتی بداهه‌نوازی روی گیتار کاربرد دارد. به همین دلیل در آموزشگاه فاتح، مبانی سلفژ در کنار گیتار به هنرجو منتقل می‌شود، نه به‌صورت کاملاً جدا." },
++      { question: "چند وقت طول می‌کشد تا بتوانم یک آهنگ کامل بنوازم؟", answer: "این بازه به میزان تمرین منظم هفتگی، سن هنرجو و پیچیدگی آهنگ انتخابی بستگی دارد. با تمرین منظم، معمولاً نواختن نخستین آهنگ‌های ساده با چند آکورد باز، در همان ترم اول در دسترس هنرجو قرار می‌گیرد." },
++      { question: "آیا باید پیش از ثبت‌نام گیتار بخرم؟", answer: "برای تمرین منظم بین جلسات، در دسترس داشتن یک گیتار شخصی لازم است. در صورت نیاز به راهنمایی درباره انتخاب نخستین ساز متناسب با سن و بودجه، می‌توان پیش از خرید با آموزشگاه مشورت کرد." },
++      { question: "آیا گیتار برای کودکان خردسال سخت است؟", answer: "با انتخاب سایز مناسب ساز و برنامه‌ای متناسب با سن، کودکان می‌توانند مبانی گیتار را به‌شکلی تدریجی و متناسب با توان جسمی‌شان یاد بگیرند. سرعت پیشرفت کودکان طبیعتاً با بزرگسالان متفاوت است و برنامه آموزشی هم بر همین اساس تنظیم می‌شود." },
++      { question: "چه زمانی می‌توانم آکوردهای باره را یاد بگیرم؟", answer: "باره معمولاً پس از تسلط کافی بر آکوردهای باز و رسیدن استقامت انگشتان دست چپ به سطح مناسب آموزش داده می‌شود؛ عجله در این مرحله معمولاً باعث دلسردی هنرجو می‌شود، به همین دلیل زمان دقیق آن در هر هنرجو متفاوت است." },
++      { question: "آیا می‌توان هم‌زمان با گیتار، آواز را هم یاد گرفت؟", answer: "بله. از آن‌جا که مدرس این دوره صداسازی را هم تدریس می‌کند، هنرجویانی که علاقه‌مند به همراهی‌کردن آواز خودشان با گیتار هستند، می‌توانند این دو مهارت را در کنار هم پیش ببرند." },
++      { question: "فرق فینگراستایل با استرام معمولی چیست؟", answer: "در استرام، دست راست با یک حرکت یکنواخت روی همه سیم‌ها می‌کشد؛ اما در فینگراستایل، هر انگشت دست راست وظیفه نواختن یک یا چند سیم مشخص را برعهده دارد، که امکان نواختن هم‌زمان ملودی و همراهی را فراهم می‌کند." },
++      { question: "آیا کلاس گیتار آموزشگاه فاتح گروهی است یا خصوصی؟", answer: "کلاس‌های آموزشگاه موسیقی فاتح، از جمله دوره گیتار، به‌صورت خصوصی و یک‌نفره برگزار می‌شود." }
++    ],
++
++    summary: [
++      "دوره آموزش گیتار در آموزشگاه موسیقی فاتح، مسیری پیوسته از آشنایی با ساز تا تخصصی‌شدن در یکی از سبک‌های کلاسیک، پاپ یا فلامنکو ارائه می‌دهد؛ مسیری که در آن ریتم، تئوری و گاه صداسازی، جدا از نواختن آموزش داده نمی‌شوند بلکه در دل همان تمرین گیتار جای می‌گیرند.",
++      "برای شروع، تنها چیزی که لازم است انگیزه و در دسترس‌داشتن یک گیتار برای تمرین است؛ باقی مسیر، گام‌به‌گام و متناسب با سن و سرعت یادگیری هر هنرجو، در کلاس‌های خصوصی این دوره طی می‌شود. برای هماهنگی سطح، انتخاب ساز یا اطلاع از زمان‌بندی کلاس‌ها، می‌توانید پیش از ثبت‌نام با آموزشگاه تماس بگیرید."
++    ]
++
++  }
++
++  // Remaining 22 slugs (violin-course, kamancheh-course, piano-course,
++  // keyboard-course, tar-course, setar-course, santur-course, daf-course,
++  // tonbak-course, zarb-tempo-course, ney-anban-course, ney-course,
++  // children-music-course, hangdrum-course, traditional-vocal-course,
++  // bakhtiari-vocal-course, pop-vocal-course, shushtari-vocal-course,
++  // solfege-course, rhythm-reading-course, music-theory-course,
++  // voice-training-course) intentionally omitted for now — see chat.
++
++};
+diff --git a/src/data/instructor-content.js b/src/data/instructor-content.js
+new file mode 100644
+index 0000000..79123cb
+--- /dev/null
++++ b/src/data/instructor-content.js
+@@ -0,0 +1,116 @@
++/**
++ * ============================================================
++ * Fateh Music Academy
++ * instructor-content.js
++ * Long-form SEO / GEO content, keyed by instructor slug.
++ *
++ * Same rationale as course-content.js: instructors.js is marked
++ * "Architecture: FROZEN v1.0", so this file is purely additive.
++ * src/seo/resolvers/instructor.js looks up an entry here by
++ * `instructor.slug` and merges it in as an optional `seoContent`
++ * field. Instructors NOT listed here resolve `seoContent: null`
++ * and the page renders without that section — safe to fill in
++ * one instructor at a time.
++ *
++ * TRUST — read before adding another instructor:
++ * - metrics.students / metrics.concerts / metrics.awards are
++ *   `null` in instructors.js for every instructor. That is
++ *   intentional (per AGENTS.md "TRUST": never invent facts, never
++ *   fabricate awards, never fake statistics). Do not translate
++ *   that null into an invented number or a vague-but-impressive
++ *   claim here. Write about teaching method, subject coverage,
++ *   and process instead — exactly the categories AGENTS.md and
++ *   the project's own decision log say to lean on when hard data
++ *   isn't available.
++ * - Only use facts already present in instructors.js
++ *   (professional.roles, professional.education,
++ *   professional.experienceYears, relations.courses) or generic,
++ *   well-established music-pedagogy knowledge that isn't a
++ *   specific claim about this person or this school.
++ *
++ * Shape per entry (key names are gender-neutral — "Them" not
++ * "Him"/"Her" — since this same shape will cover all 14
++ * instructors, several of whom are women):
++ * {
++ *   quickSummary: string,
++ *   teachingPhilosophy: string[],
++ *   methodBySubject: { subject, description }[],
++ *   whoShouldStudyWithThem: string[],
++ *   typicalProgression: string[],
++ *   commonStudentMistakes: { mistake, fix }[],
++ *   whyStudentsChooseThem: string[],
++ *   faqAdditions: { question, answer }[],
++ *   summary: string[]
++ * }
++ * ============================================================
++ */
++
++export const instructorContent = {
++
++  /* ======================================================================
++     khalil-delavaran — fully worked template.
++     Remaining 13 instructors intentionally left unset for now; see
++     the chat response for the phased plan to fill these in.
++  ====================================================================== */
++  "khalil-delavaran": {
++
++    quickSummary:
++      "خلیل دلاوران در آموزشگاه موسیقی فاتح شوشتر، گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی و صداسازی تدریس می‌کند؛ ترکیبی که کمتر در یک مدرس واحد دیده می‌شود و به این معناست که هنرجویان او این پنج مهارت را جدا از هم یاد نمی‌گیرند، بلکه در دل یکدیگر تمرین می‌کنند. او دارای مدرک کارشناسی ارشد علوم کامپیوتر با گرایش هوش مصنوعی است و بیش از بیست سال سابقه تدریس موسیقی دارد. کلاس‌های او به‌صورت خصوصی و یک‌نفره برگزار می‌شود و برای کودکان، نوجوانان و بزرگسالان مبتدی تا نیمه‌پیشرفته مناسب است. در ادامه این صفحه، درباره روش تدریس او در هر یک از پنج حوزه، مسیر معمول پیشرفت هنرجویان، اشتباهات رایجی که در جلسات ابتدایی دیده می‌شود و پاسخ به پرسش‌های متداول می‌خوانید.",
++
++    teachingPhilosophy: [
++      "نقطه شروع خلیل دلاوران در تدریس این است که مهارت‌های موسیقایی را کاملاً جدا از هم آموزش ندهد. بسیاری از هنرجویان در کلاس‌های معمول گیتار، ریتم یا تئوری را به‌صورت جداگانه و بدون ارتباط مستقیم با نواختن یاد می‌گیرند؛ در حالی‌که در کلاس‌های او، یک الگوی ریتمیک تازه یا یک آکورد جدید، معمولاً همراه با توضیح منطق تئوریک همان لحظه ارائه می‌شود.",
++      "پیشینه تحصیلی او در علوم کامپیوتر و هوش مصنوعی، به شکل‌گیری رویکردی ساختاریافته و گام‌به‌گام در تدریس کمک کرده است؛ مسیر آموزشی هر هنرجو بر اساس سطح واقعی او تعریف می‌شود، نه یک برنامه ثابت و یکسان برای همه."
++    ],
++
++    methodBySubject: [
++      { subject: "گیتار", description: "آموزش از مبانی کوک، وضعیت نشستن و آکوردهای باز آغاز می‌شود و به‌تدریج به استرام، باره و فینگراستایل می‌رسد. بسته به علاقه هنرجو، مسیر می‌تواند به سمت گیتار کلاسیک، پاپ یا فلامنکو تخصصی شود." },
++      { subject: "سلفژ", description: "تمرین‌های سلفژ برای تقویت دقت گوش در تشخیص فاصله‌های صوتی و خواندن نت به‌کار می‌رود؛ مهارتی که مستقیماً به کوک‌کردن ساز، همراهی با آواز و نواختن گوشی کمک می‌کند." },
++      { subject: "تئوری موسیقی", description: "به‌جای حفظ مکانیکی قواعد، تئوری در کنار مثال‌های عملی از قطعاتی که هنرجو در حال یادگیری آن‌هاست آموزش داده می‌شود تا کاربرد هر مفهوم از همان ابتدا ملموس باشد." },
++      { subject: "ریتم و وزن‌خوانی", description: "پیش از نواختن یک الگوی ریتمیک روی ساز، همان الگو ابتدا با کف‌زدن یا وزن‌خوانی تمرین می‌شود تا هنرجو منطق شمارش آن را کاملاً درک کرده باشد." },
++      { subject: "صداسازی", description: "برای هنرجویانی که علاقه‌مند به خواندن هستند، تمرین‌های پایه صداسازی شامل تنفس دیافراگمی و کنترل صدا ارائه می‌شود، به‌ویژه برای کسانی که می‌خواهند هم‌زمان با نواختن گیتار، خودشان را همراهی کنند." }
++    ],
++
++    whoShouldStudyWithThem: [
++      "هنرجویانی که می‌خواهند علاوه بر نواختن گیتار، مبانی تئوری و سلفژ را هم به‌صورت کاربردی یاد بگیرند",
++      "کودکان و نوجوانانی که برای اولین‌بار با یک ساز آشنا می‌شوند و به آموزشی گام‌به‌گام و ساختاریافته نیاز دارند",
++      "بزرگسالانی که پیش‌تر گیتار زده‌اند اما می‌خواهند مبانی تئوریک پشت آن‌چه می‌نوازند را هم درک کنند",
++      "خوانندگانی که می‌خواهند بتوانند خودشان را با گیتار همراهی کنند"
++    ],
++
++    typicalProgression: [
++      "هنرجویان معمولاً از آشنایی با ساز، کوک و اولین آکوردها آغاز می‌کنند و در کنار آن، تمرین‌های ساده سلفژ برای تقویت گوش وارد برنامه می‌شود. با تثبیت آکوردهای باز، الگوهای استرام و مبانی ریتم و وزن‌خوانی اضافه می‌شود. در ادامه، بسته به علاقه هنرجو، مسیر می‌تواند به سمت باره و فینگراستایل در گیتار، یا تمرکز بیشتر روی تئوری و صداسازی برای کسانی که به خواندن هم علاقه دارند، پیش برود."
++    ],
++
++    commonStudentMistakes: [
++      { mistake: "نگاه‌کردن به تئوری و سلفژ به‌عنوان دروسی جدا و کم‌اهمیت‌تر از نواختن", fix: "در کلاس‌های او این دو، بخشی از تمرین گیتار هستند نه دروسی اضافه؛ نگاه‌کردن به آن‌ها به همین شکل، یادگیری را ساده‌تر می‌کند." },
++      { mistake: "مقایسه سرعت پیشرفت خود با هنرجویان دیگر", fix: "چون کلاس‌ها خصوصی و متناسب با سن و پیش‌زمینه هر فرد برنامه‌ریزی می‌شود، سرعت پیشرفت افراد مختلف طبیعتاً متفاوت است." },
++      { mistake: "کم‌کردن تمرین در خانه با این تصور که فقط زمان کلاس اهمیت دارد", fix: "تمرین منظم بین جلسات، حتی کوتاه، تاثیر مستقیمی روی سرعت پیشرفت در جلسه بعدی دارد." }
++    ],
++
++    whyStudentsChooseThem: [
++      "انتخاب یک مدرس که هم‌زمان گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی و صداسازی را پوشش می‌دهد، به این معناست که هنرجو برای یادگیری کامل این مهارت‌ها نیازی به مراجعه به چند مدرس جداگانه ندارد. کلاس‌های خصوصی و یک‌نفره هم امکان تنظیم دقیق سرعت و محتوای آموزش را بر اساس وضعیت واقعی هر فرد فراهم می‌کند."
++    ],
++
++    faqAdditions: [
++      { question: "آیا خلیل دلاوران فقط گیتار تدریس می‌کند؟", answer: "خیر. او علاوه بر گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی و صداسازی را هم تدریس می‌کند و این مباحث را در کنار گیتار به هنرجو منتقل می‌کند." },
++      { question: "آیا برای شرکت در کلاس گیتار او باید سلفژ یا تئوری را جداگانه یاد بگیرم؟", answer: "نه؛ این مباحث در کنار خود دوره گیتار و متناسب با نیاز هر هنرجو ارائه می‌شود، نه به‌صورت پیش‌نیاز جداگانه." },
++      { question: "کلاس‌های خلیل دلاوران خصوصی است یا گروهی؟", answer: "کلاس‌های او، مانند سایر دوره‌های آموزشگاه موسیقی فاتح، به‌صورت خصوصی و یک‌نفره برگزار می‌شود." },
++      { question: "چه سنی برای شروع کلاس با ایشان مناسب است؟", answer: "او هم کودکان، هم نوجوانان و هم بزرگسالان را آموزش می‌دهد؛ برنامه دقیق بر اساس سن و هدف هر هنرجو در مشاوره پیش از ثبت‌نام تعیین می‌شود." },
++      { question: "آیا کسی که قبلاً گیتار زده هم می‌تواند نزد او کلاس بگیرد؟", answer: "بله. بسیاری از هنرجویانی که پیش‌تر به‌صورت خودآموز گیتار زده‌اند، برای اصلاح مبانی و یادگیری تئوریک آن‌چه پیش‌تر فقط عملی یاد گرفته بودند، این کلاس را انتخاب می‌کنند." },
++      { question: "سابقه تدریس خلیل دلاوران چقدر است؟", answer: "بیش از بیست سال سابقه تدریس موسیقی دارد." },
++      { question: "چه دوره‌هایی را می‌توان نزد او گذراند؟", answer: "دوره‌های گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی، و صداسازی زیر نظر او در آموزشگاه موسیقی فاتح برگزار می‌شود." }
++    ],
++
++    summary: [
++      "خلیل دلاوران با تدریس هم‌زمان گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی و صداسازی، مسیری یکپارچه برای یادگیری موسیقی در آموزشگاه فاتح فراهم کرده است؛ مسیری که در آن هر مهارت جدید، در ارتباط مستقیم با آن‌چه هنرجو در حال نواختن یا خواندن آن است آموزش داده می‌شود. برای اطلاع از زمان‌بندی کلاس‌ها یا مشاوره درباره دوره مناسب، می‌توانید پیش از ثبت‌نام با آموزشگاه تماس بگیرید."
++    ]
++
++  }
++
++  // Remaining 13 slugs (reza-fateh, mohammadali-zafarani, vahid-bahman,
++  // behnam-iravani, mojtaba-nejadsafari, gholamabbas-abbasi,
++  // alireza-eydi-nejad, bahram-mousavi, farnaz-kadkhoda-moradi,
++  // narges-fateh, mohsen-naghib, majid-jafarizade, reza-bashir)
++  // intentionally omitted for now — see chat.
++
++};
+diff --git a/src/pages/about.astro b/src/pages/about.astro
+index 7356159..a13fcfe 100644
+--- a/src/pages/about.astro
++++ b/src/pages/about.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../layouts/MainLayout.astro";
+ import Header from "../components/Header.astro";
+ import Footer from "../components/Footer.astro";
+diff --git a/src/pages/contact.astro b/src/pages/contact.astro
+index 4125bd8..3f10817 100644
+--- a/src/pages/contact.astro
++++ b/src/pages/contact.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../layouts/MainLayout.astro";
+ import Header from "../components/Header.astro";
+ import Footer from "../components/Footer.astro";
+diff --git a/src/pages/courses.astro b/src/pages/courses.astro
+index d1f30da..70cd269 100644
+--- a/src/pages/courses.astro
++++ b/src/pages/courses.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../layouts/MainLayout.astro";
+ import Header from "../components/Header.astro";
+ import Footer from "../components/Footer.astro";
+diff --git a/src/pages/courses/[slug].astro b/src/pages/courses/[slug].astro
+index fca504d..4efaaf5 100644
+--- a/src/pages/courses/[slug].astro
++++ b/src/pages/courses/[slug].astro
+@@ -1,7 +1,11 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../../layouts/MainLayout.astro";
+ import Header from "../../components/Header.astro";
+ import Footer from "../../components/Footer.astro";
++import CourseSeoContent from "../../components/CourseSeoContent.astro";
++import FAQSection from "../../components/FAQSection.astro";
+ 
+ import { courses } from "../../data/courses";
+ 
+@@ -246,6 +250,13 @@ alt={teacher.name}
+ </section>
+ 
+ 
++<CourseSeoContent courseTitle={course.title} seoContent={resolvedCourse.seoContent} />
++
++<FAQSection
++  title={`سوالات متداول درباره ${course.title}`}
++  subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام در این دوره می‌پرسند."
++  items={resolvedCourse.faqs}
++/>
+ 
+ 
+ <section class="course-page__section">
+@@ -315,4 +326,214 @@ alt={item.title}
+ <Footer />
+ 
+ 
+-</MainLayout>
+\ No newline at end of file
++</MainLayout>
++
++<style>
++/*
++  NOTE: src/styles/course-page.css targets an older set of class
++  names (.course-hero, .course-badge, .course-info, .course-meta,
++  .course-image) that this template no longer uses — it currently
++  renders .course-page__* everywhere instead, which had no matching
++  CSS anywhere in the project. This block styles the classes this
++  file actually renders. course-page.css can likely be deleted in a
++  follow-up cleanup once that's confirmed nothing else depends on it.
++*/
++
++.course-page{
++    padding:70px 0 0;
++}
++
++.course-page__hero{
++    padding-bottom:70px;
++}
++
++.course-page__content{
++    display:grid;
++    grid-template-columns:1.15fr .85fr;
++    gap:3rem;
++    align-items:center;
++}
++
++.course-page__badge{
++    display:inline-flex;
++    padding:8px 18px;
++    border-radius:999px;
++    background:rgba(212,175,55,.08);
++    border:1px solid rgba(212,175,55,.2);
++    color:var(--primary);
++    margin-bottom:20px;
++}
++
++.course-page__title{
++    font-size:2.75rem;
++    margin-bottom:1.25rem;
++}
++
++.course-page__description{
++    line-height:2;
++    color:var(--text-secondary);
++    margin-bottom:2rem;
++    max-width:640px;
++}
++
++.course-page__meta{
++    display:grid;
++    grid-template-columns:repeat(2,1fr);
++    gap:1rem;
++    margin-bottom:2.5rem;
++}
++
++.course-page__meta-item{
++    padding:1rem 1.25rem;
++    border-radius:16px;
++    background:var(--surface);
++    border:1px solid var(--border);
++}
++
++.course-page__meta-item strong{
++    display:block;
++    color:var(--primary);
++    margin-bottom:.35rem;
++    font-size:.9rem;
++}
++
++.course-page__meta-item span{
++    color:var(--text-secondary);
++}
++
++.course-page__image img{
++    width:100%;
++    display:block;
++    border-radius:24px;
++    border:1px solid var(--border);
++    box-shadow:0 30px 70px rgba(0,0,0,.35);
++}
++
++.course-page__section{
++    padding:70px 0;
++    border-top:1px solid var(--border);
++}
++
++.course-page__section h2{
++    margin-bottom:1.5rem;
++}
++
++.course-page__teachers{
++    display:grid;
++    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
++    gap:1.5rem;
++    margin-top:1.5rem;
++}
++
++.course-page__teacher-card{
++    display:block;
++    padding:1.5rem;
++    text-align:center;
++    border-radius:20px;
++    background:var(--surface);
++    border:1px solid var(--border);
++    text-decoration:none;
++    color:inherit;
++    transition:var(--transition);
++}
++
++.course-page__teacher-card:hover{
++    transform:translateY(-6px);
++}
++
++.course-page__teacher-card img{
++    width:88px;
++    height:88px;
++    object-fit:cover;
++    border-radius:50%;
++    margin:0 auto 1rem;
++    display:block;
++}
++
++.course-page__teacher-card h3{
++    margin-bottom:.35rem;
++}
++
++.course-page__teacher-card p{
++    color:var(--text-secondary);
++    font-size:.9rem;
++}
++
++.course-page__features{
++    list-style:none;
++    display:flex;
++    flex-wrap:wrap;
++    gap:.85rem;
++    margin-top:1.5rem;
++}
++
++.course-page__features li{
++    padding:.6rem 1.25rem;
++    border-radius:999px;
++    background:rgba(212,175,55,.08);
++    border:1px solid rgba(212,175,55,.2);
++    color:var(--primary);
++}
++
++.course-page__related-grid{
++    display:grid;
++    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
++    gap:2rem;
++    margin-top:1.5rem;
++}
++
++.course-page__related-grid .course-card{
++    display:block;
++    overflow:hidden;
++    border-radius:22px;
++    background:var(--surface);
++    border:1px solid var(--border);
++    text-decoration:none;
++    color:inherit;
++    transition:var(--transition);
++}
++
++.course-page__related-grid .course-card:hover{
++    transform:translateY(-8px);
++}
++
++.course-page__related-grid .course-image img{
++    width:100%;
++    height:200px;
++    object-fit:cover;
++    display:block;
++}
++
++.course-page__related-grid .course-content{
++    padding:1.25rem 1.5rem;
++}
++
++.course-page__related-grid .course-content h3{
++    margin-bottom:.5rem;
++}
++
++.course-page__related-grid .course-content span{
++    color:var(--text-secondary);
++    font-size:.9rem;
++}
++
++@media (max-width:900px){
++
++    .course-page__content{
++        grid-template-columns:1fr;
++    }
++
++    .course-page__image{
++        order:-1;
++    }
++
++    .course-page__title{
++        font-size:2rem;
++    }
++
++    .course-page__meta{
++        grid-template-columns:1fr;
++    }
++
++}
++</style>
+\ No newline at end of file
+diff --git a/src/pages/gallery.astro b/src/pages/gallery.astro
+index 016a62d..a8b878b 100644
+--- a/src/pages/gallery.astro
++++ b/src/pages/gallery.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../layouts/MainLayout.astro";
+ 
+ import Header from "../components/Header.astro";
+diff --git a/src/pages/index.astro b/src/pages/index.astro
+index 5a1b22f..4038ba2 100644
+--- a/src/pages/index.astro
++++ b/src/pages/index.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../layouts/MainLayout.astro";
+ import Header from "../components/Header.astro";
+ import Hero from "../components/Hero.astro";
+diff --git a/src/pages/instructors.astro b/src/pages/instructors.astro
+index e7fe5cf..79d8370 100644
+--- a/src/pages/instructors.astro
++++ b/src/pages/instructors.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../layouts/MainLayout.astro";
+ import Header from "../components/Header.astro";
+ import Footer from "../components/Footer.astro";
+diff --git a/src/pages/instructors/[slug].astro b/src/pages/instructors/[slug].astro
+index 7e5aa2f..0b9f707 100644
+--- a/src/pages/instructors/[slug].astro
++++ b/src/pages/instructors/[slug].astro
+@@ -1,8 +1,12 @@
+ ---
++export const prerender = true;
++
+ import MainLayout from "../../layouts/MainLayout.astro";
+ import Header from "../../components/Header.astro";
+ import Footer from "../../components/Footer.astro";
+ import CTA from "../../components/CTA.astro";
++import InstructorSeoContent from "../../components/InstructorSeoContent.astro";
++import FAQSection from "../../components/FAQSection.astro";
+ 
+ import { instructors } from "../../data/instructors";
+ 
+@@ -223,6 +227,15 @@ const teacherCourses = resolvedInstructor.courses;
+   </div>
+ 
+ </section>
++
++<InstructorSeoContent instructorName={teacher.name} seoContent={resolvedInstructor.seoContent} />
++
++<FAQSection
++  title={`سوالات متداول درباره ${teacher.name}`}
++  subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام می‌پرسند."
++  items={resolvedInstructor.faqs}
++/>
++
+   <CTA />
+ 
+   <Footer />
+diff --git a/src/pages/register.astro b/src/pages/register.astro
+index 70a5295..51a0886 100644
+--- a/src/pages/register.astro
++++ b/src/pages/register.astro
+@@ -1,4 +1,6 @@
+ ---
++export const prerender = true;
++
+ /*
+ ====================================================
+ File: src/pages/register.astro
+diff --git a/src/seo/resolvers/course.js b/src/seo/resolvers/course.js
+index c1c4759..2d30692 100644
+--- a/src/seo/resolvers/course.js
++++ b/src/seo/resolvers/course.js
+@@ -13,6 +13,7 @@ import { courses } from "../../data/courses.js";
+ import { instructors } from "../../data/instructors.js";
+ import { pricing } from "../../data/pricing.js";
+ import { generateCourseFAQ } from "../../data/faq.js";
++import { courseContent } from "../../data/course-content.js";
+ import { absoluteUrl } from "../helpers/url.js";
+ 
+ /**
+@@ -39,6 +40,12 @@ export function resolveCourse(slugOrCourse, site) {
+     const planKey = pricing.coursePricingMap[course.slug];
+     const plan = planKey ? pricing.plans[planKey] : null;
+ 
++    // Optional long-form SEO/GEO content (course-content.js). Most
++    // courses don't have an entry yet, so this is `null` for them —
++    // every consumer (schema builders, page templates) must treat a
++    // missing seoContent as "render without that section", not an error.
++    const extendedContent = courseContent[course.slug] || null;
++
+     return Object.freeze({
+         id: course.id,
+         slug: course.slug,
+@@ -53,7 +60,13 @@ export function resolveCourse(slugOrCourse, site) {
+         instructors: resolvedInstructors,
+         plan,
+         seo: course.seo || {},
+-        faqs: generateCourseFAQ(course.id),
++        seoContent: extendedContent,
++        // Fact-derived logistics FAQ (price/schedule/format) first,
++        // then hand-authored pedagogical FAQ, if this course has any.
++        faqs: [
++            ...generateCourseFAQ(course.id),
++            ...(extendedContent ? extendedContent.faqAdditions : [])
++        ],
+         url: absoluteUrl(`/courses/${course.slug}`, site.url)
+     });
+ }
+diff --git a/src/seo/resolvers/instructor.js b/src/seo/resolvers/instructor.js
+index e5a6398..e622caf 100644
+--- a/src/seo/resolvers/instructor.js
++++ b/src/seo/resolvers/instructor.js
+@@ -7,6 +7,7 @@
+ 
+ import { instructors } from "../../data/instructors.js";
+ import { courses } from "../../data/courses.js";
++import { instructorContent } from "../../data/instructor-content.js";
+ import { absoluteUrl } from "../helpers/url.js";
+ 
+ /**
+@@ -31,6 +32,11 @@ export function resolveInstructor(slugOrInstructor, site) {
+         getInstructorIds(course).includes(instructor.id)
+     );
+ 
++    // Optional long-form SEO/GEO content (instructor-content.js). Most
++    // instructors don't have an entry yet, so this is `null` for them —
++    // page templates must render without the extended sections in that case.
++    const extendedContent = instructorContent[instructor.slug] || null;
++
+     return Object.freeze({
+         id: instructor.id,
+         slug: instructor.slug,
+@@ -46,6 +52,8 @@ export function resolveInstructor(slugOrInstructor, site) {
+         roles: instructor.professional ? instructor.professional.roles : [],
+         sameAs: dedupeSameAs(instructor.social),
+         courses: taughtCourses,
++        seoContent: extendedContent,
++        faqs: extendedContent ? extendedContent.faqAdditions : [],
+         url: absoluteUrl(`/instructors/${instructor.slug}`, site.url)
+     });
+ }

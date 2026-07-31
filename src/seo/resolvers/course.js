@@ -13,6 +13,7 @@ import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
 import { pricing } from "../../data/pricing.js";
 import { generateCourseFAQ } from "../../data/faq.js";
+import { courseContent } from "../../data/course-content.js";
 import { absoluteUrl } from "../helpers/url.js";
 
 /**
@@ -39,6 +40,12 @@ export function resolveCourse(slugOrCourse, site) {
     const planKey = pricing.coursePricingMap[course.slug];
     const plan = planKey ? pricing.plans[planKey] : null;
 
+    // Optional long-form SEO/GEO content (course-content.js). Most
+    // courses don't have an entry yet, so this is `null` for them —
+    // every consumer (schema builders, page templates) must treat a
+    // missing seoContent as "render without that section", not an error.
+    const extendedContent = courseContent[course.slug] || null;
+
     return Object.freeze({
         id: course.id,
         slug: course.slug,
@@ -53,7 +60,13 @@ export function resolveCourse(slugOrCourse, site) {
         instructors: resolvedInstructors,
         plan,
         seo: course.seo || {},
-        faqs: generateCourseFAQ(course.id),
+        seoContent: extendedContent,
+        // Fact-derived logistics FAQ (price/schedule/format) first,
+        // then hand-authored pedagogical FAQ, if this course has any.
+        faqs: [
+            ...generateCourseFAQ(course.id),
+            ...(extendedContent ? extendedContent.faqAdditions : [])
+        ],
         url: absoluteUrl(`/courses/${course.slug}`, site.url)
     });
 }

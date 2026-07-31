@@ -1,0 +1,151 @@
+---
+/**
+ * --------------------------------------------------------
+ * Fateh Music Academy
+ * Component: FAQSection (generic, reusable)
+ * Description: Visible accordion for any {question, answer}[]
+ * list. Visual language matches AboutFAQ.astro exactly (same
+ * class names, scoped separately by Astro so there's no
+ * collision) so FAQs look identical everywhere on the site,
+ * whether it's About, Contact, a course, or an instructor page.
+ *
+ * Why this exists: course/instructor pages already build
+ * FAQPage JSON-LD (buildFaqSchema) from resolvedCourse.faqs /
+ * resolvedInstructor.faqs, but neither page actually rendered
+ * that FAQ list as visible content. Structured data that doesn't
+ * match what's on the page is a real risk for FAQ rich results,
+ * not just a missed content opportunity — this component closes
+ * that gap.
+ * --------------------------------------------------------
+ */
+
+export interface Props {
+  title: string;
+  subtitle?: string;
+  items: { question: string; answer: string }[];
+}
+
+const { title, subtitle, items = [] } = Astro.props;
+---
+
+{items.length > 0 && (
+
+  <section class="faq-section">
+
+    <div class="container">
+
+      <div class="section-header">
+
+        <span class="section-badge">
+          سوالات متداول
+        </span>
+
+        <h2>{title}</h2>
+
+        {subtitle && <p>{subtitle}</p>}
+
+      </div>
+
+      <div class="faq-list">
+
+        {items.map((item) => (
+
+          <details class="card faq-item">
+
+            <summary>{item.question}</summary>
+
+            <p>{item.answer}</p>
+
+          </details>
+
+        ))}
+
+      </div>
+
+    </div>
+
+  </section>
+
+)}
+
+<style>
+.faq-section{
+    padding:80px 0;
+}
+
+.faq-list{
+    display:flex;
+    flex-direction:column;
+    gap:1rem;
+    margin-top:2.5rem;
+}
+
+.faq-item{
+    padding:1.6rem 2rem;
+    transition:var(--transition);
+}
+
+.faq-item:hover{
+    transform:translateY(-2px);
+}
+
+.faq-item summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:1rem;
+    cursor:pointer;
+    list-style:none;
+    color:var(--text);
+    font-size:1.08rem;
+    font-weight:700;
+    user-select:none;
+}
+
+.faq-item summary::-webkit-details-marker{
+    display:none;
+}
+
+.faq-item summary::after{
+    content:"+";
+    width:34px;
+    height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:rgba(212,175,55,.08);
+    border:1px solid rgba(212,175,55,.20);
+    color:var(--gold);
+    font-size:1.4rem;
+    font-weight:400;
+    transition:.35s;
+    flex-shrink:0;
+}
+
+.faq-item[open] summary::after{
+    content:"−";
+    background:rgba(212,175,55,.16);
+}
+
+.faq-item p{
+    margin-top:1.25rem;
+    padding-top:1.25rem;
+    border-top:1px solid var(--border);
+    color:var(--text-secondary);
+    line-height:2;
+}
+
+@media (max-width:768px){
+
+    .faq-item{
+        padding:1.35rem 1.5rem;
+    }
+
+    .faq-item summary{
+        font-size:1rem;
+        line-height:1.8;
+    }
+
+}
+</style>

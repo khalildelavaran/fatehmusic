@@ -5,6 +5,8 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
+import InstructorSeoContent from "../../components/InstructorSeoContent.astro";
+import FAQSection from "../../components/FAQSection.astro";
 
 import { instructors } from "../../data/instructors";
 
@@ -225,6 +227,15 @@ const teacherCourses = resolvedInstructor.courses;
   </div>
 
 </section>
+
+<InstructorSeoContent instructorName={teacher.name} seoContent={resolvedInstructor.seoContent} />
+
+<FAQSection
+  title={`سوالات متداول درباره ${teacher.name}`}
+  subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام می‌پرسند."
+  items={resolvedInstructor.faqs}
+/>
+
   <CTA />
 
   <Footer />

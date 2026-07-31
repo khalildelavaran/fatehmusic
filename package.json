@@ -12,13 +12,14 @@
     "db:migrate:remote": "wrangler d1 migrations apply fatehmusic-db --remote"
   },
   "dependencies": {
-    "astro": "^7.0.6",
     "@astrojs/cloudflare": "^14.1.1",
+    "@astrojs/sitemap": "^3.7.3",
+    "astro": "^7.0.6",
     "lucide-astro": "^0.556.0"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0",
+    "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "wrangler": "^4.0.0"
   }
 }

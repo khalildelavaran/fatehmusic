@@ -7,6 +7,7 @@
 
 import { instructors } from "../../data/instructors.js";
 import { courses } from "../../data/courses.js";
+import { instructorContent } from "../../data/instructor-content.js";
 import { absoluteUrl } from "../helpers/url.js";
 
 /**
@@ -31,6 +32,11 @@ export function resolveInstructor(slugOrInstructor, site) {
         getInstructorIds(course).includes(instructor.id)
     );
 
+    // Optional long-form SEO/GEO content (instructor-content.js). Most
+    // instructors don't have an entry yet, so this is `null` for them —
+    // page templates must render without the extended sections in that case.
+    const extendedContent = instructorContent[instructor.slug] || null;
+
     return Object.freeze({
         id: instructor.id,
         slug: instructor.slug,
@@ -46,6 +52,8 @@ export function resolveInstructor(slugOrInstructor, site) {
         roles: instructor.professional ? instructor.professional.roles : [],
         sameAs: dedupeSameAs(instructor.social),
         courses: taughtCourses,
+        seoContent: extendedContent,
+        faqs: extendedContent ? extendedContent.faqAdditions : [],
         url: absoluteUrl(`/instructors/${instructor.slug}`, site.url)
     });
 }

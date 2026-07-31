@@ -1,0 +1,380 @@
+---
+/**
+ * --------------------------------------------------------
+ * Fateh Music Academy
+ * Component: CourseSeoContent
+ * Description: Renders the long-form seoContent block that
+ * src/seo/resolvers/course.js merges in from
+ * src/data/course-content.js. Renders nothing at all when a
+ * course has no entry there yet (`seoContent === null`), so
+ * rolling this content out one course at a time never breaks
+ * the courses that don't have it yet.
+ * --------------------------------------------------------
+ */
+
+export interface Props {
+  courseTitle: string;
+  seoContent: {
+    quickSummary: string;
+    overview: string[];
+    whoIsItFor: string[];
+    whoIsItNotFor: string[];
+    prerequisites: string;
+    learningPath: { stage: string; description: string }[];
+    curriculum: { title: string; description: string }[];
+    teachingMethod: string[];
+    practicePlan: string[];
+    commonMistakes: { mistake: string; fix: string }[];
+    skillsGained: string[];
+    benefits: string[];
+    localContext: string[];
+  } | null;
+}
+
+const { courseTitle, seoContent } = Astro.props;
+---
+
+{seoContent && (
+
+  <Fragment>
+
+    <section class="course-page__section course-page__quick-summary">
+      <div class="container">
+        <span class="section-badge">خلاصه این صفحه</span>
+        <p>{seoContent.quickSummary}</p>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">معرفی دوره</span>
+          <h2>{courseTitle} چیست و چه ویژگی‌هایی دارد؟</h2>
+        </div>
+        {seoContent.overview.map((paragraph) => <p class="course-page__prose">{paragraph}</p>)}
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="course-page__two-col">
+
+          <div>
+            <h3>این دوره برای چه کسانی مناسب است؟</h3>
+            <ul class="course-page__list">
+              {seoContent.whoIsItFor.map((item) => <li>{item}</li>)}
+            </ul>
+          </div>
+
+          {seoContent.whoIsItNotFor.length > 0 && (
+            <div>
+              <h3>این دوره برای چه کسانی مناسب نیست؟</h3>
+              <ul class="course-page__list course-page__list--muted">
+                {seoContent.whoIsItNotFor.map((item) => <li>{item}</li>)}
+              </ul>
+            </div>
+          )}
+
+        </div>
+
+        <div class="course-page__note-box">
+          <strong>پیش‌نیازها</strong>
+          <p>{seoContent.prerequisites}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">مسیر یادگیری</span>
+          <h2>مراحل پیشرفت در دوره {courseTitle}</h2>
+        </div>
+
+        <ol class="course-page__path">
+          {seoContent.learningPath.map((step) => (
+            <li>
+              <strong>{step.stage}</strong>
+              <p>{step.description}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">سرفصل‌های آموزشی</span>
+          <h2>در این دوره چه مباحثی تدریس می‌شود؟</h2>
+        </div>
+
+        <div class="course-page__curriculum-grid">
+          {seoContent.curriculum.map((topic) => (
+            <div class="card course-page__curriculum-card">
+              <h3>{topic.title}</h3>
+              <p>{topic.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="course-page__two-col">
+          <div>
+            <h3>روش تدریس</h3>
+            {seoContent.teachingMethod.map((paragraph) => <p>{paragraph}</p>)}
+          </div>
+          <div>
+            <h3>برنامه تمرین پیشنهادی</h3>
+            {seoContent.practicePlan.map((paragraph) => <p>{paragraph}</p>)}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">اشتباهات رایج</span>
+          <h2>اشتباهات رایج هنرجویان مبتدی</h2>
+        </div>
+
+        <div class="course-page__mistakes-grid">
+          {seoContent.commonMistakes.map((item) => (
+            <div class="card course-page__mistake-card">
+              <p class="course-page__mistake"><strong>اشتباه رایج:</strong> {item.mistake}</p>
+              <p class="course-page__fix"><strong>راه‌حل:</strong> {item.fix}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="course-page__two-col">
+          <div>
+            <h3>مهارت‌هایی که کسب می‌کنید</h3>
+            <ul class="course-page__list">
+              {seoContent.skillsGained.map((item) => <li>{item}</li>)}
+            </ul>
+          </div>
+          <div>
+            <h3>مزایای یادگیری این ساز</h3>
+            <ul class="course-page__list">
+              {seoContent.benefits.map((item) => <li>{item}</li>)}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="course-page__section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">در شوشتر</span>
+          <h2>این دوره در آموزشگاه موسیقی فاتح</h2>
+        </div>
+        {seoContent.localContext.map((paragraph) => <p class="course-page__prose">{paragraph}</p>)}
+      </div>
+    </section>
+
+  </Fragment>
+
+)}
+
+<style>
+.course-page__quick-summary{
+    padding-top:0;
+}
+
+.course-page__quick-summary p{
+    max-width:900px;
+    line-height:2;
+    color:var(--text-secondary);
+    margin-top:1rem;
+}
+
+.course-page__prose{
+    max-width:900px;
+    line-height:2;
+    color:var(--text-secondary);
+    margin-bottom:1.25rem;
+}
+
+.course-page__two-col{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:2.5rem;
+}
+
+.course-page__two-col h3{
+    margin-bottom:1rem;
+}
+
+.course-page__two-col p{
+    line-height:2;
+    color:var(--text-secondary);
+    margin-bottom:1rem;
+}
+
+.course-page__list{
+    list-style:none;
+    display:flex;
+    flex-direction:column;
+    gap:.85rem;
+}
+
+.course-page__list li{
+    position:relative;
+    padding-inline-start:1.6rem;
+    line-height:1.9;
+    color:var(--text-secondary);
+}
+
+.course-page__list li::before{
+    content:"";
+    position:absolute;
+    inset-inline-start:0;
+    top:.6em;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--gold);
+}
+
+.course-page__list--muted li::before{
+    background:var(--text-secondary);
+    opacity:.5;
+}
+
+.course-page__note-box{
+    margin-top:2rem;
+    padding:1.5rem 1.75rem;
+    border-radius:18px;
+    background:rgba(212,175,55,.06);
+    border:1px solid rgba(212,175,55,.18);
+}
+
+.course-page__note-box strong{
+    display:block;
+    color:var(--primary);
+    margin-bottom:.5rem;
+}
+
+.course-page__note-box p{
+    color:var(--text-secondary);
+    line-height:1.9;
+}
+
+.course-page__path{
+    list-style:none;
+    counter-reset:step;
+    display:flex;
+    flex-direction:column;
+    gap:1.25rem;
+    margin-top:2rem;
+}
+
+.course-page__path li{
+    counter-increment:step;
+    position:relative;
+    padding:1.5rem 1.75rem 1.5rem 1.75rem;
+    padding-inline-start:4.5rem;
+    border-radius:18px;
+    background:var(--surface);
+    border:1px solid var(--border);
+}
+
+.course-page__path li::before{
+    content:counter(step);
+    position:absolute;
+    inset-inline-start:1.5rem;
+    top:50%;
+    transform:translateY(-50%);
+    width:2.25rem;
+    height:2.25rem;
+    border-radius:50%;
+    background:rgba(212,175,55,.12);
+    border:1px solid rgba(212,175,55,.3);
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+}
+
+.course-page__path strong{
+    display:block;
+    margin-bottom:.5rem;
+}
+
+.course-page__path p{
+    color:var(--text-secondary);
+    line-height:1.9;
+}
+
+.course-page__curriculum-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.5rem;
+    margin-top:2rem;
+}
+
+.course-page__curriculum-card{
+    padding:1.5rem;
+}
+
+.course-page__curriculum-card h3{
+    margin-bottom:.75rem;
+    font-size:1.05rem;
+}
+
+.course-page__curriculum-card p{
+    color:var(--text-secondary);
+    line-height:1.8;
+    font-size:.95rem;
+}
+
+.course-page__mistakes-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:1.5rem;
+    margin-top:2rem;
+}
+
+.course-page__mistake-card{
+    padding:1.5rem;
+}
+
+.course-page__mistake{
+    color:var(--text-secondary);
+    line-height:1.8;
+    margin-bottom:.85rem;
+}
+
+.course-page__mistake strong{
+    color:var(--text);
+}
+
+.course-page__fix{
+    color:var(--text-secondary);
+    line-height:1.8;
+}
+
+.course-page__fix strong{
+    color:var(--primary);
+}
+
+@media (max-width:900px){
+
+    .course-page__two-col{
+        grid-template-columns:1fr;
+        gap:1.5rem;
+    }
+
+}
+</style>

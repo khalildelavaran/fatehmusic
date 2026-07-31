@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
+import sitemap from "@astrojs/sitemap";
 
 // ====================================================================
 // IMPORTANT - read this before merging into your real project
@@ -15,6 +16,10 @@ import cloudflare from "@astrojs/cloudflare";
 // ====================================================================
 
 export default defineConfig({
+  // Matches data/site.js's `url` field (src/seo/resolvers/site.js) — the
+  // custom SEO engine and Astro's own sitemap/canonical machinery should
+  // never disagree about the domain.
+  site: "https://fatehmusic.ir",
   output: "server",
   adapter: cloudflare({
     // Lets `astro dev` talk to a local D1/KV/etc. simulation instead of
@@ -22,5 +27,11 @@ export default defineConfig({
     platformProxy: {
       enabled: true
     }
-  })
+  }),
+  integrations: [
+    // robots.txt already advertises /sitemap-index.xml; this is what
+    // actually generates it. Only prerendered (static) routes are
+    // included, which as of this change is every page except /api/register.
+    sitemap()
+  ]
 });
