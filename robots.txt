@@ -8,11 +8,11 @@ User-agent: *
 
 Allow: /
 
+# Private application routes
 Disallow: /api/
 Disallow: /admin/
+
+# Development files
 Disallow: /.git/
-Disallow: /.well-known/
 
 Sitemap: https://fatehmusic.ir/sitemap-index.xml
-
-Host: https://fatehmusic.ir

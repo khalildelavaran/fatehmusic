@@ -2,36 +2,86 @@ import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
 import sitemap from "@astrojs/sitemap";
 
-// ====================================================================
-// IMPORTANT - read this before merging into your real project
-// ====================================================================
-// This project was static (`output: 'static'`, no adapter) before now.
-// Adding real D1 storage requires ONE server-rendered route (the new
-// /api/register endpoint), so the whole site switches to `output:
-// 'server'`. Every EXISTING page needs `export const prerender = true;`
-// added to its frontmatter so it keeps being built as static HTML at
-// build time exactly like before (same performance, same behavior) -
-// only src/pages/api/register.ts should be left dynamic
-// (`prerender = false`). See MIGRATION.md for the full checklist.
-// ====================================================================
-
 export default defineConfig({
-  // Matches data/site.js's `url` field (src/seo/resolvers/site.js) — the
-  // custom SEO engine and Astro's own sitemap/canonical machinery should
-  // never disagree about the domain.
+
+  /**
+   * Main production domain
+   * Used for:
+   * - Canonical URLs
+   * - Sitemap generation
+   * - SEO metadata
+   */
   site: "https://fatehmusic.ir",
+
+
+  /**
+   * Hybrid rendering:
+   * - Static pages can use prerender = true
+   * - Dynamic routes (API, D1, auth) run on Cloudflare Workers
+   */
   output: "server",
+
+
+  /**
+   * URL normalization
+   * Prevents duplicate URLs:
+   * /teachers
+   * /teachers/
+   */
+  trailingSlash: "never",
+
+
+  /**
+   * Cloudflare Workers adapter
+   * Enables:
+   * - D1 Database
+   * - KV
+   * - R2
+   * - Cloudflare bindings
+   */
   adapter: cloudflare({
-    // Lets `astro dev` talk to a local D1/KV/etc. simulation instead of
-    // requiring a real Cloudflare account during development.
     platformProxy: {
       enabled: true
     }
   }),
+
+
+  /**
+   * SEO Sitemap generation
+   */
   integrations: [
-    // robots.txt already advertises /sitemap-index.xml; this is what
-    // actually generates it. Only prerendered (static) routes are
-    // included, which as of this change is every page except /api/register.
-    sitemap()
-  ]
+    sitemap({
+      filter: (page) => {
+        return (
+          !page.includes("/api/") &&
+          !page.includes("/admin/")
+        );
+      }
+    })
+  ],
+
+
+  /**
+   * Better Cloudflare deployment output
+   */
+  build: {
+    format: "directory"
+  },
+
+
+  /**
+   * Smaller HTML output
+   */
+  compressHTML: true,
+
+
+  /**
+   * Vite optimization
+   */
+  vite: {
+    build: {
+      cssMinify: true
+    }
+  }
+
 });
