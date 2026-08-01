@@ -20,6 +20,7 @@ export function buildBreadcrumbSchema(items, site) {
 
     return {
         "@type": SCHEMA_TYPES.BREADCRUMB_LIST,
+        "@id": `${absoluteUrl(items[items.length - 1].path, site.url)}#breadcrumb`,
         itemListElement: items.map((item, index) => ({
             "@type": SCHEMA_TYPES.LIST_ITEM,
             position: index + 1,

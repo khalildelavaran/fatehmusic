@@ -17,6 +17,7 @@ export function buildWebsiteSchema(site) {
         "@id": `${site.url}/#website`,
         url: site.url,
         name: site.name,
+        description: site.description,
         inLanguage: DEFAULT_LOCALE.replace("_", "-"),
         publisher: {
             "@id": `${site.url}/#organization`
