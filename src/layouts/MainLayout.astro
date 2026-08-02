@@ -78,12 +78,14 @@ const seo = buildSEO({
     content={Astro.generator}
   />
 
+
   <!-- Canonical -->
 
   <link
     rel="canonical"
     href={seo.canonical}
   />
+
 
   <!-- Favicon -->
 
@@ -97,6 +99,7 @@ const seo = buildSEO({
     rel="apple-touch-icon"
     href="/logo.svg"
   />
+
 
   <!-- Fonts -->
 
@@ -116,31 +119,77 @@ const seo = buildSEO({
     rel="stylesheet"
   />
 
+
   <!-- Open Graph -->
 
-  <meta property="og:type" content={seo.openGraph["og:type"]} />
-  <meta property="og:locale" content={seo.openGraph["og:locale"]} />
-  <meta property="og:site_name" content={seo.openGraph["og:site_name"]} />
-  <meta property="og:title" content={seo.openGraph["og:title"]} />
-  <meta property="og:description" content={seo.openGraph["og:description"]} />
-  <meta property="og:url" content={seo.openGraph["og:url"]} />
-  <meta property="og:image" content={seo.openGraph["og:image"]} />
+  <meta
+    property="og:type"
+    content={seo.openGraph["og:type"]}
+  />
 
-  <!-- Twitter -->
+  <meta
+    property="og:locale"
+    content={seo.openGraph["og:locale"]}
+  />
 
-  <meta name="twitter:card" content={seo.twitter["twitter:card"]} />
-  <meta name="twitter:title" content={seo.twitter["twitter:title"]} />
-  <meta name="twitter:description" content={seo.twitter["twitter:description"]} />
-  <meta name="twitter:image" content={seo.twitter["twitter:image"]} />
+  <meta
+    property="og:site_name"
+    content={seo.openGraph["og:site_name"]}
+  />
 
-  <!-- Schema.org: one @graph per page (Organization + Website + whatever the page passed in) -->
+  <meta
+    property="og:title"
+    content={seo.openGraph["og:title"]}
+  />
+
+  <meta
+    property="og:description"
+    content={seo.openGraph["og:description"]}
+  />
+
+  <meta
+    property="og:url"
+    content={seo.openGraph["og:url"]}
+  />
+
+  <meta
+    property="og:image"
+    content={seo.openGraph["og:image"]}
+  />
+
+
+  <!-- Twitter Card -->
+
+  <meta
+    name="twitter:card"
+    content={seo.twitter["twitter:card"]}
+  />
+
+  <meta
+    name="twitter:title"
+    content={seo.twitter["twitter:title"]}
+  />
+
+  <meta
+    name="twitter:description"
+    content={seo.twitter["twitter:description"]}
+  />
+
+  <meta
+    name="twitter:image"
+    content={seo.twitter["twitter:image"]}
+  />
+
+
+  <!-- Schema.org JSON-LD -->
 
   <script
     type="application/ld+json"
     set:html={JSON.stringify(seo.schemaGraph)}
   />
 
-  <!-- Google Analytics -->
+
+  <!-- Google Analytics 4 -->
 
   <script
     async
@@ -148,26 +197,31 @@ const seo = buildSEO({
   ></script>
 
   <script is:inline>
-
     window.dataLayer = window.dataLayer || [];
 
-    function gtag(){
-      dataLayer.push(arguments);
+    function gtag() {
+      window.dataLayer.push(arguments);
     }
 
     gtag("js", new Date());
 
-    gtag("config","G-YKFKP4QH45");
-
+    gtag("config", "G-YKFKP4QH45", {
+      send_page_view: true
+    });
   </script>
 
+
 </head>
+
 
 <body>
 
   <slot />
 
-  <script src="../scripts/reveal.js"></script>
+
+  <!-- Global Client Script -->
+
+	<script src="../scripts/reveal.js"></script>
 
 </body>
 
