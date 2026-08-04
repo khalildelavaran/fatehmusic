@@ -22,6 +22,26 @@ import { buildSchemaGraph } from "./schema/graph.js";
 import { absoluteUrl } from "./helpers/url.js";
 
 /**
+ * @typedef {Object} SEOResult
+ *
+ * @property {Object} metadata
+ * @property {string} metadata.title
+ * @property {string} metadata.description
+ * @property {string[]} metadata.keywords
+ * @property {string} metadata.robots
+ * @property {string} metadata.author
+ * @property {string} metadata.themeColor
+ *
+ * @property {string} canonical
+ *
+ * @property {Record<string,string>} openGraph
+ *
+ * @property {Record<string,string>} twitter
+ *
+ * @property {Object} schemaGraph
+ */
+
+/**
  * @param {Object} params
  * @param {string} params.path - Astro.url.pathname
  * @param {string} [params.title]
@@ -31,7 +51,7 @@ import { absoluteUrl } from "./helpers/url.js";
  * @param {boolean} [params.noindex]
  * @param {string[]} [params.keywords]
  * @param {Object[]} [params.extraSchema] - page-specific JSON-LD nodes
- * @returns {Object}
+ * @returns {SEOResult}
  */
 export function buildSEO({
     path,

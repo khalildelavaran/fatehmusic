@@ -181,20 +181,22 @@ const seo = buildSEO({
   />
 
 
-  <!-- Schema.org JSON-LD -->
+<!-- Schema.org JSON-LD -->
 
-  <script
-    type="application/ld+json"
-    set:html={JSON.stringify(seo.schemaGraph)}
-  />
+<script
+  is:inline
+  type="application/ld+json"
+  set:html={JSON.stringify(seo.schemaGraph)}
+/>
 
 
-  <!-- Google Analytics 4 -->
+<!-- Google Analytics 4 -->
 
-  <script
-    async
-    src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"
-  ></script>
+<script
+  is:inline
+  async
+  src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"
+></script>
 
   <script is:inline>
     window.dataLayer = window.dataLayer || [];

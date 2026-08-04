@@ -1,23 +1,15 @@
 ---
 interface Props {
-
-    title: string;
-
-    description: string;
-
+    title?: string;
+    description?: string;
     badge?: string;
-
 }
 
 const {
-
-    title,
-
-    description,
-
+    title = "آموزشگاه موسیقی فاتح",
+    description = "آموزش موسیقی، آموزش سازهای ایرانی و جهانی، کلاس آواز و آموزش تخصصی موسیقی در شوشتر",
     badge = "آموزشگاه موسیقی فاتح"
-
-} = Astro.props;
+}: Props = Astro.props;
 ---
 
 <section class="page-hero">

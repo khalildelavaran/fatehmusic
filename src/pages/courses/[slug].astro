@@ -1,6 +1,8 @@
 ---
 export const prerender = true;
 
+import type { Instructor } from "../../types/courses";
+
 import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
@@ -19,44 +21,94 @@ import {
 
 
 export async function getStaticPaths() {
+
   return courses.map((course) => ({
-    params: { slug: course.slug },
-    props: { course }
+    params: {
+      slug: course.slug
+    },
+    props: {
+      course
+    }
   }));
+
 }
+
 
 
 const { course } = Astro.props;
 
 
 const site = resolveSite();
-const resolvedCourse = resolveCourse(course, site);
 
-const courseSchema = buildCourseSchema(resolvedCourse, { site });
-const faqSchema = buildFaqSchema(resolvedCourse.faqs);
+
+const resolvedCourse = resolveCourse(
+  course,
+  site
+);
+
+
+
+const courseSchema = buildCourseSchema(
+  resolvedCourse,
+  {
+    site
+  }
+);
+
+
+
+const faqSchema = buildFaqSchema(
+  resolvedCourse.faqs
+);
+
+
+
 const breadcrumbSchema = buildBreadcrumbSchema(
   [
-    { name: "خانه", path: "/" },
-    { name: "دوره‌ها", path: "/courses" },
-    { name: course.title, path: `/courses/${course.slug}` }
+    {
+      name: "خانه",
+      path: "/"
+    },
+    {
+      name: "دوره‌ها",
+      path: "/courses"
+    },
+    {
+      name: course.title,
+      path: `/courses/${course.slug}`
+    }
   ],
   site
 );
 
 
-// resolvedCourse.instructors already merges the singular `instructor`
-// field and the `instructors` array field, so co-taught courses
-// (tonbak, traditional-vocal, shushtari-vocal) now show every teacher.
-const teachers = resolvedCourse.instructors;
+
+// حذف schema های null
+const schema: object[] = [
+  courseSchema,
+  faqSchema,
+  breadcrumbSchema
+
+].filter(
+  (item): item is object =>
+    item !== null
+);
+
+
+
+const teachers: Instructor[] =
+  resolvedCourse.instructors;
+
 
 
 const relatedCourses = courses
-  .filter(
-    (item) =>
-      item.slug !== course.slug &&
-      item.instrument === course.instrument
-  )
-  .slice(0,3);
+.filter(
+  (item) =>
+    item.slug !== course.slug &&
+    item.instrument === course.instrument
+)
+.slice(0,3);
+
 
 ---
 
@@ -64,7 +116,7 @@ const relatedCourses = courses
 <MainLayout
   title={course.seo.title}
   description={course.seo.description}
-  schema={[courseSchema, faqSchema, breadcrumbSchema]}
+  schema={schema}
 >
 
 
@@ -75,10 +127,14 @@ const relatedCourses = courses
 
 <div class="container">
 
+
 <div class="course-page__hero">
 
 
 <div class="course-page__content">
+
+
+<div>
 
 
 <span class="course-page__badge">
@@ -102,7 +158,20 @@ const relatedCourses = courses
 
 <div class="course-page__meta-item">
 
-<strong>اساتید</strong> <span>{teachers.map(t=>t.name).join(" - ")}</span>
+<strong>
+اساتید
+</strong>
+
+<span>
+{
+teachers
+.map(
+(t: Instructor) =>
+t.name
+)
+.join(" - ")
+}
+</span>
 
 </div>
 
@@ -110,7 +179,13 @@ const relatedCourses = courses
 
 <div class="course-page__meta-item">
 
-<strong>سطح</strong> <span>{course.level.join(" - ")}</span>
+<strong>
+سطح
+</strong>
+
+<span>
+{course.level.join(" - ")}
+</span>
 
 </div>
 
@@ -118,7 +193,13 @@ const relatedCourses = courses
 
 <div class="course-page__meta-item">
 
-<strong>مدت دوره</strong> <span>{course.duration}</span>
+<strong>
+مدت دوره
+</strong>
+
+<span>
+{course.duration}
+</span>
 
 </div>
 
@@ -126,7 +207,13 @@ const relatedCourses = courses
 
 <div class="course-page__meta-item">
 
-<strong>نوع کلاس</strong> <span>{course.classType}</span>
+<strong>
+نوع کلاس
+</strong>
+
+<span>
+{course.classType}
+</span>
 
 </div>
 
@@ -136,12 +223,11 @@ const relatedCourses = courses
 
 
 <a 
-href="/register" 
+href="/register"
 class="btn btn-primary"
 >
 ثبت نام آنلاین
 </a>
-
 
 
 </div>
@@ -150,12 +236,16 @@ class="btn btn-primary"
 
 <div class="course-page__image">
 
-<img 
-src={course.media.cover || course.media.image} 
+<img
+src={
+course.media.cover ||
+course.media.image
+}
 alt={course.title}
 />
 
 </div>
+
 
 
 </div>
@@ -163,6 +253,7 @@ alt={course.title}
 </div>
 
 </section>
+
 
 
 
@@ -180,17 +271,19 @@ alt={course.title}
 <div class="course-page__teachers">
 
 
-{teachers.map((teacher)=>(
-
-
-<a 
-href={`/instructors/${teacher.slug}`} 
+{
+teachers.map(
+(teacher: Instructor)=>(
+<a
+href={`/instructors/${teacher.slug}`}
 class="course-page__teacher-card"
 >
 
 
-<img 
-src={teacher.media.images.profile} 
+<img
+src={
+teacher.media?.images?.profile
+}
 alt={teacher.name}
 />
 
@@ -206,9 +299,9 @@ alt={teacher.name}
 
 
 </a>
-
-
-))}
+)
+)
+}
 
 
 </div>
@@ -235,11 +328,17 @@ alt={teacher.name}
 <ul class="course-page__features">
 
 
-{course.ageGroup.map(item=>
+{
+course.ageGroup.map(
+(item: string)=>(
+
 <li>
 {item}
 </li>
-)}
+
+)
+)
+}
 
 
 </ul>
@@ -250,13 +349,27 @@ alt={teacher.name}
 </section>
 
 
-<CourseSeoContent courseTitle={course.title} seoContent={resolvedCourse.seoContent} />
+
+
+<CourseSeoContent
+courseTitle={course.title}
+seoContent={resolvedCourse.seoContent}
+/>
+
+
 
 <FAQSection
-  title={`سوالات متداول درباره ${course.title}`}
-  subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام در این دوره می‌پرسند."
-  items={resolvedCourse.faqs}
+
+title={`سوالات متداول درباره ${course.title}`}
+
+subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام در این دوره می‌پرسند."
+
+items={resolvedCourse.faqs}
+
 />
+
+
+
 
 
 <section class="course-page__section">
@@ -273,19 +386,19 @@ alt={teacher.name}
 <div class="course-page__related-grid">
 
 
-{relatedCourses.map(item=>(
-
-
-<a 
-href={`/courses/${item.slug}`} 
+{
+relatedCourses.map(
+(item)=>(
+<a
+href={`/courses/${item.slug}`}
 class="course-card"
 >
 
 
 <div class="course-image">
 
-<img 
-src={item.media.image} 
+<img
+src={item.media.image}
 alt={item.title}
 />
 
@@ -310,8 +423,9 @@ alt={item.title}
 
 </a>
 
-
-))}
+)
+)
+}
 
 
 </div>
@@ -327,213 +441,3 @@ alt={item.title}
 
 
 </MainLayout>
-
-<style>
-/*
-  NOTE: src/styles/course-page.css targets an older set of class
-  names (.course-hero, .course-badge, .course-info, .course-meta,
-  .course-image) that this template no longer uses — it currently
-  renders .course-page__* everywhere instead, which had no matching
-  CSS anywhere in the project. This block styles the classes this
-  file actually renders. course-page.css can likely be deleted in a
-  follow-up cleanup once that's confirmed nothing else depends on it.
-*/
-
-.course-page{
-    padding:70px 0 0;
-}
-
-.course-page__hero{
-    padding-bottom:70px;
-}
-
-.course-page__content{
-    display:grid;
-    grid-template-columns:1.15fr .85fr;
-    gap:3rem;
-    align-items:center;
-}
-
-.course-page__badge{
-    display:inline-flex;
-    padding:8px 18px;
-    border-radius:999px;
-    background:rgba(212,175,55,.08);
-    border:1px solid rgba(212,175,55,.2);
-    color:var(--primary);
-    margin-bottom:20px;
-}
-
-.course-page__title{
-    font-size:2.75rem;
-    margin-bottom:1.25rem;
-}
-
-.course-page__description{
-    line-height:2;
-    color:var(--text-secondary);
-    margin-bottom:2rem;
-    max-width:640px;
-}
-
-.course-page__meta{
-    display:grid;
-    grid-template-columns:repeat(2,1fr);
-    gap:1rem;
-    margin-bottom:2.5rem;
-}
-
-.course-page__meta-item{
-    padding:1rem 1.25rem;
-    border-radius:16px;
-    background:var(--surface);
-    border:1px solid var(--border);
-}
-
-.course-page__meta-item strong{
-    display:block;
-    color:var(--primary);
-    margin-bottom:.35rem;
-    font-size:.9rem;
-}
-
-.course-page__meta-item span{
-    color:var(--text-secondary);
-}
-
-.course-page__image img{
-    width:100%;
-    display:block;
-    border-radius:24px;
-    border:1px solid var(--border);
-    box-shadow:0 30px 70px rgba(0,0,0,.35);
-}
-
-.course-page__section{
-    padding:70px 0;
-    border-top:1px solid var(--border);
-}
-
-.course-page__section h2{
-    margin-bottom:1.5rem;
-}
-
-.course-page__teachers{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:1.5rem;
-    margin-top:1.5rem;
-}
-
-.course-page__teacher-card{
-    display:block;
-    padding:1.5rem;
-    text-align:center;
-    border-radius:20px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    text-decoration:none;
-    color:inherit;
-    transition:var(--transition);
-}
-
-.course-page__teacher-card:hover{
-    transform:translateY(-6px);
-}
-
-.course-page__teacher-card img{
-    width:88px;
-    height:88px;
-    object-fit:cover;
-    border-radius:50%;
-    margin:0 auto 1rem;
-    display:block;
-}
-
-.course-page__teacher-card h3{
-    margin-bottom:.35rem;
-}
-
-.course-page__teacher-card p{
-    color:var(--text-secondary);
-    font-size:.9rem;
-}
-
-.course-page__features{
-    list-style:none;
-    display:flex;
-    flex-wrap:wrap;
-    gap:.85rem;
-    margin-top:1.5rem;
-}
-
-.course-page__features li{
-    padding:.6rem 1.25rem;
-    border-radius:999px;
-    background:rgba(212,175,55,.08);
-    border:1px solid rgba(212,175,55,.2);
-    color:var(--primary);
-}
-
-.course-page__related-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-    gap:2rem;
-    margin-top:1.5rem;
-}
-
-.course-page__related-grid .course-card{
-    display:block;
-    overflow:hidden;
-    border-radius:22px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    text-decoration:none;
-    color:inherit;
-    transition:var(--transition);
-}
-
-.course-page__related-grid .course-card:hover{
-    transform:translateY(-8px);
-}
-
-.course-page__related-grid .course-image img{
-    width:100%;
-    height:200px;
-    object-fit:cover;
-    display:block;
-}
-
-.course-page__related-grid .course-content{
-    padding:1.25rem 1.5rem;
-}
-
-.course-page__related-grid .course-content h3{
-    margin-bottom:.5rem;
-}
-
-.course-page__related-grid .course-content span{
-    color:var(--text-secondary);
-    font-size:.9rem;
-}
-
-@media (max-width:900px){
-
-    .course-page__content{
-        grid-template-columns:1fr;
-    }
-
-    .course-page__image{
-        order:-1;
-    }
-
-    .course-page__title{
-        font-size:2rem;
-    }
-
-    .course-page__meta{
-        grid-template-columns:1fr;
-    }
-
-}
-</style>

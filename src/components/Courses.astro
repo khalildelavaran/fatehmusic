@@ -1,36 +1,30 @@
 ---
+import type { Course, Instructor } from "../types/courses";
+
 import { courses } from "../data/courses";
 import { instructors } from "../data/instructors";
 import { schedules } from "../data/schedule";
 
+
 // -------------------------------------------------
-//    Course Cards
-//    Multi Instructor Compatible Schema
-// --------------------------------------------------
+// Typed Data
+// -------------------------------------------------
 
-const courseCards = courses.map((course) => {
-
-  /*
-    پشتیبانی از هر دو ساختار:
-
-    قدیمی:
-    instructor: "teacher-id"
-
-    جدید:
-    instructors: [
-      "teacher-id-1",
-      "teacher-id-2"
-    ]
-  */
-
-  const instructorIds = Array.isArray(course.instructors)
-    ? course.instructors
-    : course.instructor
-      ? [course.instructor]
-      : [];
+const typedCourses = courses as Course[];
 
 
-  const courseInstructors = instructors.filter(
+// -------------------------------------------------
+// Course Cards
+// Multi Instructor Compatible Schema
+// -------------------------------------------------
+
+const courseCards = typedCourses.map((course: Course) => {
+
+
+  const instructorIds = course.instructors ?? [];
+
+
+  const courseInstructors: Instructor[] = instructors.filter(
     (i) => instructorIds.includes(i.id)
   );
 
@@ -42,7 +36,7 @@ const courseCards = courses.map((course) => {
   );
 
 
-  const days = [
+  const days: string[] = [
     ...new Set(
       courseSchedules.map((s) => s.weekday)
     )
@@ -60,6 +54,7 @@ const courseCards = courses.map((course) => {
   };
 
 });
+
 ---
 
 
@@ -70,10 +65,6 @@ const courseCards = courses.map((course) => {
 
   <div class="container">
 
-
-    <!-- ===========================
-         Section Header
-    ============================ -->
 
     <div
       class="section-header"
@@ -89,13 +80,13 @@ const courseCards = courses.map((course) => {
       </span>
 
 
-		<h2
-		  class="section-title"
-		  data-reveal
-		  data-reveal-delay="2"
-		>
-		  یادگیری موسیقی با بهترین اساتید
-		</h2>
+      <h2
+        class="section-title"
+        data-reveal
+        data-reveal-delay="2"
+      >
+        یادگیری موسیقی با بهترین اساتید
+      </h2>
 
 
       <p
@@ -108,11 +99,6 @@ const courseCards = courses.map((course) => {
 
     </div>
 
-
-
-    <!-- ===========================
-         Course Cards
-    ============================ -->
 
 
     <div
@@ -132,14 +118,12 @@ const courseCards = courses.map((course) => {
 
           <div class="course-image">
 
-
             <img
               src={course.media.image}
               alt={course.title}
               loading="lazy"
               decoding="async"
             />
-
 
           </div>
 
@@ -148,83 +132,54 @@ const courseCards = courses.map((course) => {
           <div class="course-content">
 
 
-			<h3 class="course-title">
-			  {course.title}
-			</h3>
+            <h3 class="course-title">
+              {course.title}
+            </h3>
 
 
 
-			<span class="course-subtitle">
-			  {course.content.excerpt}
-			</span>
+            <span class="course-subtitle">
+              {course.content.excerpt}
+            </span>
 
 
-
-
-
-            <!-- ===========================
-                 Multiple Instructors
-            ============================ -->
 
 
             {course.instructors.length > 0 && (
 
-
               <div class="course-instructors">
 
-
-                {course.instructors.map((instructor) => (
-
+                {course.instructors.map((instructor: Instructor) => (
 
                   <div class="course-instructor">
-
                     {instructor.name}
-
                   </div>
-
 
                 ))}
 
-
               </div>
-
 
             )}
 
 
 
 
-
-
-            <!-- ===========================
-                 Course Days
-            ============================ -->
-
-
             {course.days.length > 0 && (
-
 
               <div class="days-tags">
 
-
-                {course.days.map((day) => (
-
+                {course.days.map((day: string) => (
 
                   <span
                     class="day-tag"
                     aria-label={`روز برگزاری ${day}`}
                   >
-
                     {day}
-
                   </span>
-
 
                 ))}
 
-
               </div>
-
 
             )}
 

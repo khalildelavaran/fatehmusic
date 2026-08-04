@@ -33,9 +33,14 @@ const site = resolveSite();
 
 const instructorSchemas = instructors
     .filter((instructor) => instructor.active)
-    .map((instructor) =>
-        buildPersonSchema(resolveInstructor(instructor, site), { site })
-    );
+    .map((instructor) => {
+        const resolved = resolveInstructor(instructor, site);
+
+        return resolved
+            ? buildPersonSchema(resolved, { site })
+            : null;
+    })
+    .filter((item): item is object => item !== null);
 
 const schema = [
     buildAboutPageSchema({ title, description, site }),
@@ -48,7 +53,7 @@ const schema = [
     ),
     buildFaqSchema(faqs),
     ...instructorSchemas
-];
+].filter((item): item is object => item !== null);
 ---
 
 <MainLayout

@@ -1,33 +1,49 @@
 ---
+import type { Course } from "../types/courses";
 import "../styles/AboutCourses.css";
 import { courses } from "../data/courses.js";
 
-/**
- * Group active courses by their real `category` field, preserving
- * first-appearance order from courses.js — no hand-typed category
- * strings here, so there's no risk of a stray character mismatch
- * silently dropping a whole group.
- */
-const categoryGroups = courses
-    .filter((course) => course.active)
-    .reduce((groups, course) => {
-        let group = groups.find((g) => g.category === course.category);
+interface CategoryGroup {
+    category: string;
+    courses: Course[];
+}
+
+const activeCourses = (courses as Course[]).filter(
+    (course: Course) => course.active
+);
+
+const categoryGroups = activeCourses.reduce<CategoryGroup[]>(
+    (groups, course: Course) => {
+        let group = groups.find(
+            (g: CategoryGroup) => g.category === course.category
+        );
 
         if (!group) {
-            group = { category: course.category, courses: [] };
+            group = {
+                category: course.category,
+                courses: []
+            };
+
             groups.push(group);
         }
 
         group.courses.push(course);
+
         return groups;
-    }, []);
+    },
+    []
+);
 
-const totalCourses = courses.filter((course) => course.active).length;
+const totalCourses = activeCourses.length;
 
-function categoryHeading(category) {
-    if (category.startsWith("آموزش") || category.startsWith("دروس")) {
+function categoryHeading(category: string): string {
+    if (
+        category.startsWith("آموزش") ||
+        category.startsWith("دروس")
+    ) {
         return category;
     }
+
     return `دوره‌های ${category}`;
 }
 ---
@@ -73,7 +89,7 @@ function categoryHeading(category) {
 
         </div>
 
-        {categoryGroups.map((group) => (
+        {categoryGroups.map((group: CategoryGroup) => (
 
             <div class="course-category">
 
@@ -89,7 +105,7 @@ function categoryHeading(category) {
                     data-reveal-group
                 >
 
-                    {group.courses.map((course) => (
+                    {group.courses.map((course: Course) => (
 
                         <a
                             href={`/courses/${course.slug}`}
@@ -133,7 +149,10 @@ function categoryHeading(category) {
             data-reveal
             data-reveal-delay="4"
         >
-            <a href="/courses" class="secondary-btn">
+            <a
+                href="/courses"
+                class="secondary-btn"
+            >
                 مشاهده همه دوره‌ها
             </a>
         </div>

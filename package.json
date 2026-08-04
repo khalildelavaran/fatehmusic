@@ -8,6 +8,7 @@
     "preview": "astro build && wrangler dev",
     "deploy": "astro build && wrangler deploy",
     "types": "wrangler types",
+	"check": "astro check",
     "db:migrate:local": "wrangler d1 migrations apply fatehmusic-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply fatehmusic-db --remote"
   },
@@ -18,6 +19,7 @@
     "lucide-astro": "^0.556.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
     "wrangler": "^4.0.0"

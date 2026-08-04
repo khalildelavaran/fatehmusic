@@ -11,12 +11,29 @@ import { instructorContent } from "../../data/instructor-content.js";
 import { absoluteUrl } from "../helpers/url.js";
 
 /**
+ * @typedef {Object} ResolvedInstructor
+ * @property {number} id
+ * @property {string} slug
+ * @property {string} name
+ * @property {string} position
+ * @property {string|undefined} bio
+ * @property {string|undefined} image
+ * @property {number|undefined} experienceYears
+ * @property {string[]} roles
+ * @property {string[]} sameAs
+ * @property {Object[]} courses
+ * @property {Object|null} seoContent
+ * @property {{question:string,answer:string}[]} faqs
+ * @property {string} url
+ */
+
+/**
  * Resolves an instructor (by slug or raw object) into the
  * Instructor contract.
  *
  * @param {string|Object} slugOrInstructor
  * @param {import("./site.js").ResolvedSite} site
- * @returns {Object|null}
+ * @returns {ResolvedInstructor|null}
  */
 export function resolveInstructor(slugOrInstructor, site) {
     const instructor =
