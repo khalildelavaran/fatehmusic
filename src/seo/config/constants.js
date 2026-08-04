@@ -18,20 +18,25 @@ export const DEFAULT_LOCALE = "fa_IR";
 // Schema.org type strings live here so nothing else has to
 // spell them out by hand.
 export const SCHEMA_TYPES = Object.freeze({
-    ORGANIZATION: ["LocalBusiness", "MusicSchool"],
+    ORGANIZATION: ["LocalBusiness", "EducationalOrganization"],
+
     WEBSITE: "WebSite",
     COURSE: "Course",
     OFFER: "Offer",
     PERSON: "Person",
     AUDIENCE: "Audience",
+
     FAQ_PAGE: "FAQPage",
     QUESTION: "Question",
     ANSWER: "Answer",
+
     BREADCRUMB_LIST: "BreadcrumbList",
     LIST_ITEM: "ListItem",
+
     POSTAL_ADDRESS: "PostalAddress",
     GEO_COORDINATES: "GeoCoordinates",
     OPENING_HOURS_SPEC: "OpeningHoursSpecification",
+
     ABOUT_PAGE: "AboutPage"
 });
 

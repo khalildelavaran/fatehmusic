@@ -15,7 +15,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  */
 export function buildOrganizationSchema(site) {
     return {
-        "@type": SCHEMA_TYPES.ORGANIZATION,
+		"@type": SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS
         "@id": `${site.url}/#organization`,
         name: site.name,
         alternateName: site.shortName,
