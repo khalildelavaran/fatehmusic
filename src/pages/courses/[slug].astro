@@ -46,6 +46,9 @@ const resolvedCourse = resolveCourse(
   site
 );
 
+if (!resolvedCourse) {
+  throw new Error(`Course not found: ${course.slug}`);
+}
 
 
 const courseSchema = buildCourseSchema(
@@ -132,9 +135,6 @@ const relatedCourses = courses
 
 
 <div class="course-page__content">
-
-
-<div>
 
 
 <span class="course-page__badge">

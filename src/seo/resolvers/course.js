@@ -1,6 +1,15 @@
-```javascript
 // @ts-check
+/**
+ * @typedef {import("../../types/courses").Course} Course
+ */
 
+/**
+ * @typedef {import("../../types/courses").Instructor} Instructor
+ */
+
+/**
+ * @typedef {{url:string}} Site
+ */
 import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
 import { pricing } from "../../data/pricing.js";
@@ -21,20 +30,21 @@ import { absoluteUrl } from "../helpers/url.js";
  * @property {string[]} ageGroup
  * @property {string} classType
  * @property {string} instrument
- * @property {Object[]} instructors
+ * @property {Instructor[]} instructors
  * @property {Object|null} plan
  * @property {Object} seo
- * @property {Object|null} seoContent
+ * @property {any|null} seoContent
  * @property {{question:string,answer:string}[]} faqs
  * @property {string} url
  */
 
 
 /**
- * @param {string|Object} slugOrCourse
- * @param {Object} site
+ * @param {string|Course} slugOrCourse
+ * @param {Site} site
  * @returns {ResolvedCourse|null}
  */
+
 export function resolveCourse(slugOrCourse, site) {
 
     const course =
@@ -56,18 +66,30 @@ export function resolveCourse(slugOrCourse, site) {
         );
 
 
-    const planKey =
-        pricing.coursePricingMap[course.slug];
+	const planKey =
+		pricing.coursePricingMap[
+			/** @type {keyof typeof pricing.coursePricingMap} */
+			(course.slug)
+		];
 
 
-    const plan =
-        planKey
-            ? pricing.plans[planKey]
-            : null;
+	const plan =
+		planKey &&
+		planKey in pricing.plans
+			? pricing.plans[
+				/** @type {keyof typeof pricing.plans} */
+				(planKey)
+			  ]
+			: null;
 
 
-    const extendedContent =
-        courseContent[course.slug] ?? null;
+	const extendedContent =
+		course.slug in courseContent
+			? courseContent[
+				/** @type {keyof typeof courseContent} */
+				(course.slug)
+			  ]
+			: null;
 
 
 return Object.freeze({
@@ -75,36 +97,60 @@ return Object.freeze({
     slug: course.slug,
     title: course.title,
 
-    ageGroup: course.ageGroup || [],
+    description:
+        course.content?.description ||
+        course.description ||
+        "",
 
-    classType: course.classType,
+    excerpt:
+        course.content?.excerpt ||
+        course.excerpt ||
+        "",
 
-    instrument: course.instrument,
+    image:
+        course.media?.cover ||
+        course.media?.image ||
+        "",
 
-    instructors: resolvedInstructors,
+    level:
+        course.level || [],
+
+    ageGroup:
+        course.ageGroup || [],
+
+    classType:
+        course.classType || "",
+
+    instrument:
+        course.instrument || "",
+
+    instructors:
+        resolvedInstructors,
 
     plan,
 
-    seo: course.seo || {},
+    seo:
+        course.seo || {},
 
-    seoContent: extendedContent,
+    seoContent:
+        extendedContent,
 
     faqs: [
         ...generateCourseFAQ(course.id),
         ...(extendedContent?.faqAdditions || [])
     ],
 
-url: absoluteUrl(
-    "/courses/" + course.slug,
-    site.url
-)
+    url: absoluteUrl(
+        "/courses/" + course.slug,
+        site.url
+    )
 });
 
 
 }
 
 /**
- * @param {Object} course
+ * @param {Course} course
  * @returns {number[]}
  */
 function getInstructorIds(course) {
@@ -124,4 +170,3 @@ function getInstructorIds(course) {
 
     return ids;
 }
-```
