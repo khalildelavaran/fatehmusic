@@ -18,7 +18,10 @@ export const DEFAULT_LOCALE = "fa_IR";
 // Schema.org type strings live here so nothing else has to
 // spell them out by hand.
 export const SCHEMA_TYPES = Object.freeze({
-    ORGANIZATION: ["LocalBusiness", "EducationalOrganization"],
+    LOCAL_EDUCATION_BUSINESS: [
+        "LocalBusiness",
+        "EducationalOrganization"
+    ],
 
     WEBSITE: "WebSite",
     COURSE: "Course",

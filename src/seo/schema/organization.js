@@ -15,7 +15,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  */
 export function buildOrganizationSchema(site) {
     return {
-		"@type": SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS
+        "@type": SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
         "@id": `${site.url}/#organization`,
         name: site.name,
         alternateName: site.shortName,
@@ -26,14 +26,17 @@ export function buildOrganizationSchema(site) {
         telephone: site.telephone,
         email: site.email,
         priceRange: site.priceRange,
+
         address: {
             "@type": SCHEMA_TYPES.POSTAL_ADDRESS,
             ...site.address
         },
+
         geo: {
             "@type": SCHEMA_TYPES.GEO_COORDINATES,
             ...site.geo
         },
+
         hasMap: site.mapUrl,
         openingHoursSpecification: site.openingHoursSpecification,
         sameAs: site.sameAs
