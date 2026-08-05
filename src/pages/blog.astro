@@ -1,0 +1,50 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import CTA from "../components/CTA.astro";
+import { getPublishedPosts } from "../server/blog";
+import "../styles/blog.css";
+
+const posts = await getPublishedPosts();
+---
+
+<MainLayout
+  title="وبلاگ آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح"
+  description="مقالات آموزشی آموزشگاه موسیقی فاتح برای انتخاب ساز، تمرین موسیقی و آشنایی با دوره‌های موسیقی در شوشتر."
+>
+  <Header />
+
+  <main class="blog-page">
+    <section class="blog-hero">
+      <p class="eyebrow">مقالات آموزشی آموزشگاه موسیقی فاتح</p>
+      <h1>وبلاگ آموزش موسیقی در شوشتر</h1>
+      <p>
+        این بخش برای کمک به هنرجویان شوشتر، خانواده‌ها و علاقه‌مندان موسیقی ساخته شده تا هر مقاله یک مسیر روشن به دوره‌ها، اساتید و ثبت‌نام در آموزشگاه موسیقی فاتح بدهد.
+      </p>
+      <div class="blog-hero-actions">
+        <a href="/courses">مشاهده دوره‌ها</a>
+        <a href="/register">مشاوره و ثبت‌نام</a>
+      </div>
+    </section>
+
+    <section class="blog-grid" aria-label="فهرست مقالات">
+      {posts.map((post) => (
+        <article class="blog-card">
+          <div>
+            <span>{post.topic}</span>
+            <h2><a href={`/blog/${post.slug}`}>{post.title}</a></h2>
+            <p>{post.excerpt}</p>
+          </div>
+          <footer>
+            {post.related_course_slug && <a href={`/courses/${post.related_course_slug}`}>دوره مرتبط: {post.related_course_title}</a>}
+            <a class="read-more" href={`/blog/${post.slug}`}>ادامه مقاله</a>
+          </footer>
+        </article>
+      ))}
+    </section>
+  </main>
+
+  <CTA />
+  <Footer />
+</MainLayout>

@@ -1,0 +1,54 @@
+.admin-table-wrap{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+
+    padding:24px;
+
+    overflow:auto;
+
+    box-shadow:var(--shadow);
+
+}
+
+
+.admin-table{
+
+    width:100%;
+
+    min-width:900px;
+
+    border-collapse:collapse;
+
+}
+
+
+.admin-table th{
+
+    color:var(--primary);
+
+    background:rgba(212,175,55,.08);
+
+}
+
+
+.admin-table th,
+.admin-table td{
+
+    padding:14px;
+
+    text-align:right;
+
+    border-bottom:1px solid var(--border);
+
+}
+
+
+.admin-table tbody tr:hover{
+
+    background:rgba(255,255,255,.03);
+
+}

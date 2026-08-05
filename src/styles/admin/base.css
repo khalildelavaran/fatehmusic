@@ -1,0 +1,226 @@
+/* =========================
+   ADMIN BASE
+========================= */
+
+.admin-shell{
+
+    width:min(95%,var(--container));
+
+    margin:auto;
+
+    padding:40px 0 80px;
+
+}
+
+
+.admin-hero{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+
+    padding:30px;
+
+    box-shadow:var(--shadow);
+
+    margin-bottom:24px;
+
+}
+
+
+.admin-hero p:first-child{
+
+    display:inline-flex;
+
+    padding:8px 16px;
+
+    border-radius:999px;
+
+    background:rgba(212,175,55,.1);
+
+    border:1px solid rgba(212,175,55,.2);
+
+    color:var(--primary);
+
+    font-size:13px;
+
+}
+
+
+.admin-hero h1{
+
+    margin:12px 0;
+
+}
+
+
+.admin-hero p:last-child{
+
+    color:var(--text-secondary);
+
+}
+
+
+.admin-login{
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:16px;
+
+    align-items:end;
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+
+    padding:24px;
+
+    margin-bottom:24px;
+
+}
+
+
+.admin-login label{
+
+    flex:1;
+
+    min-width:260px;
+
+}
+
+
+.admin-login input{
+
+    width:100%;
+
+    margin-top:8px;
+
+    padding:12px 14px;
+
+    background:rgba(255,255,255,.03);
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    color:var(--text);
+
+}
+
+
+.admin-login button{
+
+    padding:12px 22px;
+
+    border:0;
+
+    border-radius:12px;
+
+    background:var(--primary);
+
+    color:#111;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+}
+
+
+.no-print{}
+
+
+
+/* print */
+
+@media print{
+
+    .no-print{
+
+        display:none!important;
+
+    }
+
+}
+/* ==========================================
+   ADMIN BUTTONS
+   Use Main Theme Style
+========================================== */
+
+
+.admin-shell button{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+
+    padding:12px 22px;
+
+
+    border-radius:12px;
+
+
+    background:var(--primary);
+
+
+    color:#111;
+
+
+    font-family:inherit;
+
+
+    font-weight:700;
+
+
+    border:1px solid transparent;
+
+
+    cursor:pointer;
+
+
+    transition:var(--transition);
+
+}
+
+
+
+.admin-shell button:hover{
+
+    background:var(--primary-hover);
+
+    transform:translateY(-2px);
+
+}
+
+
+
+/* دکمه‌های ثانویه */
+
+.admin-shell button.secondary{
+
+    background:transparent;
+
+    color:var(--text);
+
+    border:1px solid rgba(255,255,255,.15);
+
+}
+
+
+
+.admin-shell button.secondary:hover{
+
+    border-color:var(--primary);
+
+    color:var(--primary);
+
+}

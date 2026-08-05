@@ -1,0 +1,334 @@
+/* ==========================================
+   ADMIN DASHBOARD
+   Integrated with Main Theme
+========================================== */
+
+
+/* ---------- Shell ---------- */
+
+
+.admin-shell{
+
+    width:min(95%,var(--container));
+
+    margin:auto;
+
+    padding:40px 0 80px;
+
+}
+
+
+
+/* ---------- Hero ---------- */
+
+
+.admin-hero{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius);
+
+    padding:32px;
+
+    box-shadow:var(--shadow);
+
+    margin-bottom:28px;
+
+}
+
+
+
+.admin-hero p:first-child{
+
+    display:inline-flex;
+
+    padding:8px 18px;
+
+    border-radius:999px;
+
+    background:rgba(212,175,55,.1);
+
+    border:1px solid rgba(212,175,55,.2);
+
+    color:var(--primary);
+
+    font-size:13px;
+
+    margin-bottom:16px;
+
+}
+
+
+
+.admin-hero h1{
+
+    margin:0 0 12px;
+
+    color:var(--text);
+
+    font-size:clamp(1.8rem,4vw,3rem);
+
+}
+
+
+
+.admin-hero p:last-child{
+
+    color:var(--text-secondary);
+
+    margin:0;
+
+}
+
+
+
+/* ---------- Dashboard Cards ---------- */
+
+
+.admin-grid{
+
+    display:grid;
+
+    grid-template-columns:
+
+    repeat(auto-fit,minmax(280px,1fr));
+
+
+    gap:24px;
+
+}
+
+
+
+.admin-grid a{
+
+    display:block;
+
+    padding:28px;
+
+
+    background:
+
+    linear-gradient(
+
+        180deg,
+
+        rgba(255,255,255,.045),
+
+        rgba(255,255,255,.02)
+
+    );
+
+
+    border:1px solid rgba(255,255,255,.06);
+
+
+    border-radius:26px;
+
+
+    backdrop-filter:blur(16px);
+
+
+    transition:var(--transition);
+
+
+    position:relative;
+
+    overflow:hidden;
+
+
+    isolation:isolate;
+
+}
+
+
+
+/* ---------- Left Gold Glow ---------- */
+
+
+.admin-grid a::before{
+
+    content:"";
+
+    position:absolute;
+
+
+    top:0;
+
+    left:0;
+
+
+    width:55%;
+
+    height:100%;
+
+
+    background:
+
+    linear-gradient(
+
+        90deg,
+
+        rgba(212,175,55,.28),
+
+        transparent
+
+    );
+
+
+    opacity:0;
+
+
+    transition:.45s ease;
+
+
+    z-index:-1;
+
+}
+
+
+
+/* ---------- Golden Border Light ---------- */
+
+
+.admin-grid a::after{
+
+    content:"";
+
+
+    position:absolute;
+
+
+    inset:0;
+
+
+    border-radius:26px;
+
+
+    background:
+
+    linear-gradient(
+
+        135deg,
+
+        rgba(212,175,55,.35),
+
+        transparent 40%,
+
+        rgba(212,175,55,.12)
+
+    );
+
+
+    opacity:0;
+
+
+    transition:.4s ease;
+
+
+    pointer-events:none;
+
+}
+
+
+
+/* ---------- Hover ---------- */
+
+
+.admin-grid a:hover{
+
+    transform:translateY(-8px);
+
+
+    box-shadow:
+
+    0 30px 70px rgba(0,0,0,.42),
+
+    0 0 45px rgba(212,175,55,.15);
+
+}
+
+
+
+.admin-grid a:hover::before{
+
+    opacity:1;
+
+}
+
+
+
+.admin-grid a:hover::after{
+
+    opacity:1;
+
+}
+
+
+
+/* ---------- Text ---------- */
+
+
+.admin-grid strong{
+
+    display:block;
+
+
+    position:relative;
+
+    z-index:2;
+
+
+    color:var(--primary);
+
+
+    font-size:20px;
+
+
+    margin-bottom:12px;
+
+}
+
+
+
+.admin-grid span{
+
+    position:relative;
+
+    z-index:2;
+
+
+    display:block;
+
+
+    color:var(--text-secondary);
+
+
+    line-height:1.9;
+
+}
+
+
+
+/* ---------- Mobile ---------- */
+
+
+@media(max-width:700px){
+
+    .admin-shell{
+
+        padding:25px 0 50px;
+
+    }
+
+
+    .admin-hero{
+
+        padding:22px;
+
+    }
+
+
+}

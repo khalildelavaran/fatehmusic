@@ -1,0 +1,51 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CTA from "../../components/CTA.astro";
+import { getPublishedPost, getPublishedPosts } from "../../server/blog";
+import "../../styles/blog.css";
+
+const post = await getPublishedPost(Astro.params.slug ?? "");
+
+if (!post) {
+  return Astro.redirect("/blog");
+}
+---
+
+<MainLayout
+  title={post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`}
+  description={post.meta_description || post.excerpt}
+>
+  <Header />
+
+  <main class="blog-article">
+    <nav class="breadcrumb" aria-label="مسیر صفحه">
+      <a href="/">خانه</a>
+      <span>/</span>
+      <a href="/blog">وبلاگ</a>
+    </nav>
+
+    <article>
+      <header>
+        <p class="eyebrow">{post.topic}</p>
+        <h1>{post.title}</h1>
+        <p>{post.excerpt}</p>
+      </header>
+
+      <div class="article-content">
+        {post.content.split("\n").filter(Boolean).map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+
+      <footer class="article-links">
+        <a href="/">آموزشگاه موسیقی فاتح</a>
+        {post.related_course_slug && <a href={`/courses/${post.related_course_slug}`}>دوره مرتبط: {post.related_course_title}</a>}
+        <a href="/register">ثبت‌نام و مشاوره</a>
+        <a href="/contact">تماس با آموزشگاه</a>
+      </footer>
+    </article>
+  </main>
+
+  <CTA />
+  <Footer />
+</MainLayout>
