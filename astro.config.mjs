@@ -1,6 +1,6 @@
 import { defineConfig } from "astro/config";
 import cloudflare from "@astrojs/cloudflare";
-
+import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
 
@@ -12,11 +12,15 @@ export default defineConfig({
 
   adapter: cloudflare(),
 
+  integrations: [
+    sitemap()
+  ],
+
   compressHTML: true,
 
-  vite:{
-    build:{
-      cssMinify:true
+  vite: {
+    build: {
+      cssMinify: true
     }
   }
 
