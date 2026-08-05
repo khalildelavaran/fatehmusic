@@ -15,36 +15,61 @@ export const TWITTER_CARD_TYPE = "summary_large_image";
 export const DEFAULT_OG_TYPE = "website";
 export const DEFAULT_LOCALE = "fa_IR";
 
-// Schema.org type strings live here so nothing else has to
-// spell them out by hand.
+
+/**
+ * Schema.org type strings
+ */
 export const SCHEMA_TYPES = Object.freeze({
+
+    // Main Entity
     LOCAL_EDUCATION_BUSINESS: [
         "LocalBusiness",
         "EducationalOrganization"
     ],
 
     WEBSITE: "WebSite",
+
+    // Content Entities
     COURSE: "Course",
-    OFFER: "Offer",
     PERSON: "Person",
+    EVENT: "Event",
+
+    // Commercial
+    OFFER: "Offer",
+
+    // Audience
     AUDIENCE: "Audience",
 
+    // FAQ
     FAQ_PAGE: "FAQPage",
     QUESTION: "Question",
     ANSWER: "Answer",
 
+    // Navigation
     BREADCRUMB_LIST: "BreadcrumbList",
     LIST_ITEM: "ListItem",
 
+    // Address
     POSTAL_ADDRESS: "PostalAddress",
-    GEO_COORDINATES: "GeoCoordinates",
-    OPENING_HOURS_SPEC: "OpeningHoursSpecification",
+    COUNTRY: "Country",
+    CITY: "City",
 
+    // Geo
+    GEO_COORDINATES: "GeoCoordinates",
+
+    // Business hours
+    OPENING_HOURS_SPEC:
+        "OpeningHoursSpecification",
+
+    // Pages
     ABOUT_PAGE: "AboutPage"
 });
 
-// Saturday-first week order, matching the Iranian calendar,
-// used to expand a "شنبه تا پنج‌شنبه" style range into individual days.
+
+/**
+ * Saturday-first week order,
+ * matching Iranian calendar
+ */
 export const WEEKDAY_ORDER = [
     "شنبه",
     "یکشنبه",
@@ -55,12 +80,16 @@ export const WEEKDAY_ORDER = [
     "جمعه"
 ];
 
-export const WEEKDAY_SCHEMA_MAP = Object.freeze({
-    شنبه: "Saturday",
-    یکشنبه: "Sunday",
-    دوشنبه: "Monday",
-    سهشنبه: "Tuesday",
-    چهارشنبه: "Wednesday",
-    پنجشنبه: "Thursday",
-    جمعه: "Friday"
-});
+
+export const WEEKDAY_SCHEMA_MAP =
+    Object.freeze({
+
+        شنبه: "Saturday",
+        یکشنبه: "Sunday",
+        دوشنبه: "Monday",
+        سهشنبه: "Tuesday",
+        چهارشنبه: "Wednesday",
+        پنجشنبه: "Thursday",
+        جمعه: "Friday"
+
+    });

@@ -17,19 +17,34 @@ export function buildOrganizationSchema(site) {
     return {
         "@type": SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
         "@id": `${site.url}/#organization`,
+
         name: site.name,
         alternateName: site.shortName,
         description: site.description,
+
         url: site.url,
         logo: site.logo,
         image: site.image,
+
         telephone: site.telephone,
         email: site.email,
+
         priceRange: site.priceRange,
+
+        founder: {
+            "@type": SCHEMA_TYPES.PERSON,
+            name: "خلیل دلاوران"
+        },
+
+        areaServed: {
+            "@type": "City",
+            name: "شوشتر"
+        },
 
         address: {
             "@type": SCHEMA_TYPES.POSTAL_ADDRESS,
-            ...site.address
+            ...site.address,
+            addressCountry: "IR"
         },
 
         geo: {
@@ -38,7 +53,10 @@ export function buildOrganizationSchema(site) {
         },
 
         hasMap: site.mapUrl,
-        openingHoursSpecification: site.openingHoursSpecification,
+
+        openingHoursSpecification:
+            site.openingHoursSpecification,
+
         sameAs: site.sameAs
     };
 }
