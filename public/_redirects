@@ -1,0 +1,2 @@
+/courses/*/  /courses/:splat  301
+/instructors/*/  /instructors/:splat  301
