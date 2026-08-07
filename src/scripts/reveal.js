@@ -101,7 +101,7 @@
 
                 rootMargin: "0px 0px -12% 0px",
 
-                threshold: 0.12
+                threshold: 0
 
             }
 
