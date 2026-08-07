@@ -1,0 +1,36 @@
+# ------------------------------------------------------------------
+# Fateh Music Academy — Legacy course-slug redirects
+#
+# Every course page now lives at /courses/{slug}-course (see
+# src/data/courses.js). Google has indexed the old, unsuffixed
+# form of several of these URLs (e.g. /courses/guitar) from before
+# the "-course" suffix was added, so those searches land on a 404.
+#
+# These 301s send both real visitors and Googlebot to the current
+# page and teach Google's index the correct URL over time.
+# https://developers.cloudflare.com/pages/configuration/redirects/
+# ------------------------------------------------------------------
+
+/courses/guitar /courses/guitar-course 301
+/courses/violin /courses/violin-course 301
+/courses/kamancheh /courses/kamancheh-course 301
+/courses/piano /courses/piano-course 301
+/courses/keyboard /courses/keyboard-course 301
+/courses/tar /courses/tar-course 301
+/courses/setar /courses/setar-course 301
+/courses/santur /courses/santur-course 301
+/courses/daf /courses/daf-course 301
+/courses/tonbak /courses/tonbak-course 301
+/courses/zarb-tempo /courses/zarb-tempo-course 301
+/courses/ney-anban /courses/ney-anban-course 301
+/courses/ney /courses/ney-course 301
+/courses/children-music /courses/children-music-course 301
+/courses/hangdrum /courses/hangdrum-course 301
+/courses/traditional-vocal /courses/traditional-vocal-course 301
+/courses/bakhtiari-vocal /courses/bakhtiari-vocal-course 301
+/courses/pop-vocal /courses/pop-vocal-course 301
+/courses/shushtari-vocal /courses/shushtari-vocal-course 301
+/courses/solfege /courses/solfege-course 301
+/courses/rhythm-reading /courses/rhythm-reading-course 301
+/courses/music-theory /courses/music-theory-course 301
+/courses/voice-training /courses/voice-training-course 301

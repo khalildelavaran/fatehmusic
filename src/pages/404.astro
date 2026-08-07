@@ -1,0 +1,35 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import PageHero from "../components/PageHero.astro";
+
+Astro.response.status = 404;
+Astro.response.statusText = "Not Found";
+---
+
+<MainLayout
+  title="صفحه پیدا نشد"
+  description="صفحه‌ای که به دنبال آن بودید در آموزشگاه موسیقی فاتح پیدا نشد. ممکن است آدرس اشتباه باشد یا این صفحه جابه‌جا شده باشد."
+  noindex={true}
+>
+  <Header />
+
+  <PageHero
+    badge="خطای ۴۰۴"
+    title="صفحه مورد نظر پیدا نشد"
+    description="آدرسی که دنبال آن بودید وجود ندارد یا جابه‌جا شده است. می‌توانید به صفحه اصلی برگردید یا سری به وبلاگ آموزشگاه بزنید."
+  />
+
+  <main>
+    <section class="container" style="padding: 20px 0 80px; text-align: center;">
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="/" class="btn">بازگشت به صفحه اصلی</a>
+        <a href="/blog" class="secondary-btn">مشاهده وبلاگ</a>
+        <a href="/courses" class="secondary-btn">مشاهده دوره‌ها</a>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</MainLayout>

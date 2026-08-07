@@ -9,7 +9,7 @@ import "../../styles/blog.css";
 const post = await getPublishedPost(Astro.params.slug ?? "");
 
 if (!post) {
-  return Astro.redirect("/blog");
+  return Astro.rewrite("/404");
 }
 ---
 
