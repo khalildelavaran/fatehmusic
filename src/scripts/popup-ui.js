@@ -1,105 +1,48 @@
-/**
- * ============================================================
- * Fateh Music Academy — FAQ Assistant Renderer
- * src/scripts/popup-ui.js
- * ============================================================
- *
- * Renders faq-bot.js results into an inline panel that lives
- * inside the contact form (not a page-covering modal). A modal
- * would steal focus while the visitor is mid-typing and would
- * disappear the moment the WhatsApp redirect fires — an inline,
- * in-flow panel stays visible, updates live and never blocks
- * the form.
- */
+// public/scripts/popup-ui.js
 
-/**
- * Builds (once) and returns the panel's internal element refs.
- *
- * @param {HTMLElement} container
- * @returns {{heading:HTMLElement, lines:HTMLElement, links:HTMLElement}}
- */
-function ensureElements(container) {
-  if (container.dataset.ready) {
-    return {
-      heading: container.querySelector(".faq-assistant__heading"),
-      lines: container.querySelector(".faq-assistant__lines"),
-      links: container.querySelector(".faq-assistant__links")
-    };
+let popupEl = null;
+let overlayEl = null;
+
+export const showPopup = (data) => {
+  if (!data) return;
+
+  if (!overlayEl) {
+    overlayEl = document.createElement("div");
+    overlayEl.className = "faq-popup-overlay";
+    document.body.appendChild(overlayEl);
   }
 
-  container.classList.add("faq-assistant");
-  container.innerHTML = `
-    <div class="faq-assistant__header">
-      <strong class="faq-assistant__heading"></strong>
-      <button type="button" class="faq-assistant__close" aria-label="بستن پاسخ">×</button>
-    </div>
-    <div class="faq-assistant__lines"></div>
-    <div class="faq-assistant__links"></div>
-  `;
+  if (!popupEl) {
+    popupEl = document.createElement("div");
+    popupEl.className = "faq-popup";
+    popupEl.innerHTML = `
+      <div class="faq-popup-header">
+        <h3 class="faq-popup-title"></h3>
+        <button class="faq-popup-close" type="button">×</button>
+      </div>
+      <div class="faq-popup-body">
+        <pre class="faq-popup-text"></pre>
+      </div>
+    `;
+    document.body.appendChild(popupEl);
 
-  container.querySelector(".faq-assistant__close").addEventListener("click", () => {
-    hideAssistant(container);
-  });
-
-  container.dataset.ready = "true";
-
-  return {
-    heading: container.querySelector(".faq-assistant__heading"),
-    lines: container.querySelector(".faq-assistant__lines"),
-    links: container.querySelector(".faq-assistant__links")
-  };
-}
-
-/**
- * Renders a faq-bot.js result (found answer, hint, or nothing)
- * into the panel. Safe to call on every keystroke.
- *
- * @param {HTMLElement|null} container
- * @param {{found:boolean, heading?:string, lines?:string[], links?:object[], hint?:string}} result
- */
-export function renderAssistant(container, result) {
-  if (!container || !result) return;
-
-  if (!result.found && !result.hint) {
-    hideAssistant(container);
-    return;
+    popupEl.querySelector(".faq-popup-close")?.addEventListener("click", hidePopup);
+    overlayEl.addEventListener("click", hidePopup);
   }
 
-  const refs = ensureElements(container);
-  container.classList.toggle("is-hint", !result.found);
+  popupEl.querySelector(".faq-popup-title").textContent = data.title || "پاسخ آموزشگاه";
+  popupEl.querySelector(".faq-popup-text").textContent = data.text || data.answer || "";
 
-  refs.heading.textContent = result.found ? result.heading || "پاسخ آموزشگاه" : "راهنما";
+  overlayEl.classList.add("visible");
+  popupEl.classList.add("visible");
+};
 
-  refs.lines.innerHTML = "";
-  const textLines = result.found ? result.lines || [] : [result.hint];
-  textLines.forEach((line) => {
-    const p = document.createElement("p");
-    p.textContent = line;
-    refs.lines.appendChild(p);
-  });
+export const hidePopup = () => {
+  overlayEl?.classList.remove("visible");
+  popupEl?.classList.remove("visible");
+};
 
-  refs.links.innerHTML = "";
-  (result.links || []).forEach((link) => {
-    const a = document.createElement("a");
-    a.href = link.href;
-    a.textContent = link.label;
-    a.className = "faq-assistant__link";
-    a.target = "_blank";
-    a.rel = "noopener";
-    refs.links.appendChild(a);
-  });
-
-  container.hidden = false;
-  requestAnimationFrame(() => container.classList.add("is-visible"));
-}
-
-/**
- * Hides the panel without destroying its content.
- *
- * @param {HTMLElement|null} container
- */
-export function hideAssistant(container) {
-  if (!container) return;
-  container.classList.remove("is-visible");
-  container.hidden = true;
-}
+// ⭐ اینجا لیسنر رویداد را اضافه می‌کنیم
+window.addEventListener("faq-popup", (event) => {
+  showPopup(event.detail);
+});
