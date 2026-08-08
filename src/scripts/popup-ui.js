@@ -51,11 +51,52 @@ function ensureElements(container) {
 }
 
 /**
+ * Builds a single answer line. A line is normally plain text; the
+ * closing sentence (see faq-bot.js) is instead an object with one
+ * word turned into a link. Built with createElement/createTextNode
+ * only (never innerHTML), so nothing here can inject markup.
+ *
+ * @param {string|{text:string,linkText:string,href:string}} line
+ * @returns {HTMLParagraphElement}
+ */
+function renderLine(line) {
+  const p = document.createElement("p");
+
+  if (typeof line === "string") {
+    p.textContent = line;
+    return p;
+  }
+
+  const index = line.text.indexOf(line.linkText);
+  if (index === -1) {
+    p.textContent = line.text;
+    return p;
+  }
+
+  const before = line.text.slice(0, index);
+  const after = line.text.slice(index + line.linkText.length);
+
+  if (before) p.appendChild(document.createTextNode(before));
+
+  const a = document.createElement("a");
+  a.href = line.href;
+  a.textContent = line.linkText;
+  a.className = "faq-assistant__inline-link";
+  a.target = "_blank";
+  a.rel = "noopener";
+  p.appendChild(a);
+
+  if (after) p.appendChild(document.createTextNode(after));
+
+  return p;
+}
+
+/**
  * Renders a faq-bot.js result (found answer, hint, or nothing)
  * into the panel. Safe to call on every keystroke.
  *
  * @param {HTMLElement|null} container
- * @param {{found:boolean, heading?:string, lines?:string[], links?:object[], hint?:string}} result
+ * @param {{found:boolean, heading?:string, lines?:(string|object)[], links?:object[], hint?:string}} result
  */
 export function renderAssistant(container, result) {
   if (!container || !result) return;
@@ -73,9 +114,7 @@ export function renderAssistant(container, result) {
   refs.lines.innerHTML = "";
   const textLines = result.found ? result.lines || [] : [result.hint];
   textLines.forEach((line) => {
-    const p = document.createElement("p");
-    p.textContent = line;
-    refs.lines.appendChild(p);
+    refs.lines.appendChild(renderLine(line));
   });
 
   refs.links.innerHTML = "";

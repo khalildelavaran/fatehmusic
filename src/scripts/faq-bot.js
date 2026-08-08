@@ -16,9 +16,27 @@
 
 import { courses } from "../data/courses.js";
 import { instructors } from "../data/instructors.js";
+import { schedules } from "../data/schedule.js";
 import { contact } from "../data/contact.js";
 import { pricing } from "../data/pricing.js";
 import { generateCourseFAQ } from "../data/faq.js";
+
+/* ============================================================
+   Bidi isolation
+   The site is RTL. A hyphen-separated number like a phone number
+   ("۰۹۳۳-۳۱۳-۹۳۱۹"), once mixed into a Persian sentence, gets its
+   segments visually reordered by the browser's bidi algorithm.
+   Wrapping it in Unicode isolate marks keeps the digit groups in
+   their real left-to-right order regardless of the surrounding
+   RTL text.
+============================================================ */
+
+const LRI = "\u2066";
+const PDI = "\u2069";
+
+function isolateLTR(text) {
+  return `${LRI}${text}${PDI}`;
+}
 
 /* ============================================================
    Text normalization
@@ -137,6 +155,64 @@ function matchCourse(query, queryWords) {
   return best;
 }
 
+/**
+ * "فاتح" is both the academy's own name and the shared family
+ * name of two different instructors — too ambiguous to use for
+ * single-word matching, so it's excluded and only works as part
+ * of a full name.
+ */
+const RESERVED_NAME_WORDS = ["فاتح"];
+
+function instructorFullNameTerm(person) {
+  return normalizeText(person.name);
+}
+
+function instructorNameParts(person) {
+  return normalizeText(person.name)
+    .split(" ")
+    .filter((part) => part.length >= 2 && !RESERVED_NAME_WORDS.includes(part));
+}
+
+/**
+ * Finds active instructors matching a query: a full-name match
+ * wins outright; otherwise instructors are scored by how many of
+ * their own name-parts the query covers, so a query overlapping
+ * two parts of one name (e.g. both halves of a surname) beats a
+ * different person who only shares one part with them. Only the
+ * top-scoring instructor(s) are returned, so a genuine tie (two
+ * people sharing a first name) still yields both for disambiguation.
+ *
+ * @param {string} query
+ * @param {string[]} queryWords
+ * @returns {object[]}
+ */
+function matchInstructors(query, queryWords) {
+  const active = instructors.filter((person) => person.active !== false);
+
+  const fullMatches = active.filter(
+    (person) => scoreMatch(query, queryWords, instructorFullNameTerm(person)) > 0
+  );
+  if (fullMatches.length) return fullMatches;
+
+  let bestScore = 0;
+  let best = [];
+
+  active.forEach((person) => {
+    const matchedParts = instructorNameParts(person).filter((part) => queryWords.includes(part));
+    if (!matchedParts.length) return;
+
+    const score = matchedParts.reduce((sum, part) => sum + part.length, 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = [person];
+    } else if (score === bestScore) {
+      best.push(person);
+    }
+  });
+
+  return best;
+}
+
 /* ============================================================
    General (non-course) topics
 ============================================================ */
@@ -164,8 +240,43 @@ function detectTopics(query, queryWords) {
 }
 
 /* ============================================================
+   Closing block
+   Appended to every real answer: how to actually act on the
+   information (call to register / arrange a class time) plus
+   the address, so an answer never leaves the visitor wondering
+   what to do next.
+============================================================ */
+
+function closingBlock() {
+  return {
+    lines: [
+      {
+        text: `برای ثبت‌نام و هماهنگی ساعت کلاس، لطفاً با شماره ${isolateLTR(contact.phones.mobile.display)} تماس بگیرید.`,
+        linkText: "ثبت‌نام",
+        href: "/register"
+      },
+      `📍 آدرس: ${contact.address.full}`
+    ],
+    links: []
+  };
+}
+
+function withClosing(result) {
+  if (!result || !result.found) return result;
+  const closing = closingBlock();
+  return {
+    ...result,
+    lines: [...(result.lines || []), ...closing.lines],
+    links: [...(result.links || []), ...closing.links]
+  };
+}
+
+/* ============================================================
    Answer builders
-   Each returns { found, heading, lines, links }.
+   Each returns { found, heading, lines, links }. A line is
+   normally plain text, or — for the one closing sentence that
+   needs a clickable word inside it — an object of the form
+   { text, linkText, href }.
 ============================================================ */
 
 function buildCourseAnswer(course) {
@@ -192,6 +303,44 @@ function buildCourseAnswer(course) {
   return { found: true, heading: course.title, lines, links };
 }
 
+function buildInstructorAnswer(person) {
+  const taughtCourses = (person.relations?.courses || [])
+    .map((slug) => courses.find((course) => course.slug === slug && course.active !== false))
+    .filter(Boolean);
+
+  const days = [
+    ...new Set(
+      schedules
+        .filter((item) => item.instructorId === person.id && item.active !== false)
+        .map((item) => item.weekday)
+    )
+  ];
+
+  const lines = [];
+  if (person.position) lines.push(`🎼 ${person.position}`);
+  if (taughtCourses.length) {
+    lines.push(`📚 دوره‌ها: ${taughtCourses.map((course) => course.title).join("، ")}`);
+  }
+  if (days.length) lines.push(`📅 روزهای حضور: ${days.join(" و ")}`);
+  if (!lines.length) lines.push("برای اطلاعات کامل، پروفایل استاد را ببینید.");
+
+  const links = [{ label: `پروفایل ${person.name}`, href: `/instructors/${person.slug}` }];
+  taughtCourses.forEach((course) => {
+    links.push({ label: `دوره ${course.title}`, href: `/courses/${course.slug}` });
+  });
+
+  return { found: true, heading: person.name, lines, links };
+}
+
+function buildInstructorDisambiguation(matches) {
+  return {
+    found: true,
+    heading: "چند استاد پیدا شد",
+    lines: ["منظورتان کدام استاد است؟"],
+    links: matches.map((person) => ({ label: person.name, href: `/instructors/${person.slug}` }))
+  };
+}
+
 function buildTopicAnswer(topics) {
   if (!topics.length) return null;
 
@@ -199,17 +348,19 @@ function buildTopicAnswer(topics) {
   const links = [];
 
   if (topics.includes("contact")) {
-    lines.push(`☎️ تلفن: ${contact.phones.mobile.display} | ${contact.phones.landline.display}`);
-    lines.push(`📍 آدرس: ${contact.address.full}`);
+    lines.push("راه‌های دیگر ارتباط با آموزشگاه:");
+    links.push({ label: "اینستاگرام", href: contact.social.instagram });
+    links.push({ label: "تلگرام", href: contact.social.telegram });
     links.push({ label: "مسیریابی در نقشه", href: contact.map.google });
   }
 
   if (topics.includes("price")) {
     Object.values(pricing.plans).forEach((plan) => {
+      const sessions = plan.duration.sessions.toLocaleString("fa-IR");
       const full = plan.paymentOptions.fullTerm.amount.toLocaleString("fa-IR");
       const half = plan.paymentOptions.halfTerm.amount.toLocaleString("fa-IR");
       lines.push(
-        `💳 ${plan.title}: ${plan.duration.sessions} جلسه (${plan.duration.period}) — کامل ${full} تومان یا نیم‌ترم ${half} تومان`
+        `💳 ${plan.title}: ${sessions} جلسه (${plan.duration.period}) — کامل ${full} تومان یا نیم‌ترم ${half} تومان`
       );
     });
   }
@@ -222,7 +373,6 @@ function buildTopicAnswer(topics) {
 
   if (topics.includes("registration")) {
     lines.push("ثبت‌نام به‌صورت حضوری یا از طریق همین فرم انجام می‌شود؛ بعد از هماهنگی، روز و ساعت کلاس با استاد تعیین می‌شود.");
-    links.push({ label: "فرم ثبت‌نام آنلاین", href: "/register" });
   }
 
   if (topics.includes("beginner")) {
@@ -249,7 +399,7 @@ function buildTopicAnswer(topics) {
  * Answers a free-text question using only real academy data.
  *
  * @param {string} rawText
- * @returns {{found:boolean, heading?:string, lines?:string[], links?:object[], hint?:string}}
+ * @returns {{found:boolean, heading?:string, lines?:(string|{text:string,linkText:string,href:string})[], links?:object[], hint?:string}}
  */
 export function ask(rawText = "") {
   const query = normalizeText(rawText);
@@ -258,11 +408,15 @@ export function ask(rawText = "") {
   const queryWords = query.split(" ").filter(Boolean);
 
   const course = matchCourse(query, queryWords);
-  if (course) return buildCourseAnswer(course);
+  if (course) return withClosing(buildCourseAnswer(course));
+
+  const instructorMatches = matchInstructors(query, queryWords);
+  if (instructorMatches.length === 1) return withClosing(buildInstructorAnswer(instructorMatches[0]));
+  if (instructorMatches.length > 1) return buildInstructorDisambiguation(instructorMatches);
 
   const topics = detectTopics(query, queryWords);
   const topicAnswer = buildTopicAnswer(topics);
-  if (topicAnswer) return topicAnswer;
+  if (topicAnswer) return withClosing(topicAnswer);
 
   if (query.length >= 6) {
     return {
