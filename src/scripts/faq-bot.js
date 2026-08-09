@@ -19,6 +19,7 @@ import { instructors } from "../data/instructors.js";
 import { schedules } from "../data/schedule.js";
 import { contact } from "../data/contact.js";
 import { pricing } from "../data/pricing.js";
+import { site } from "../data/site.js";
 import { generateCourseFAQ } from "../data/faq.js";
 
 /* ============================================================
@@ -36,6 +37,56 @@ const PDI = "\u2069";
 
 function isolateLTR(text) {
   return `${LRI}${text}${PDI}`;
+}
+
+/* ============================================================
+   Inline linking
+   A "line" is either a plain string, or an array mixing plain
+   strings with { text, href } link parts — used to turn a real
+   course/instructor name (or the address, or a phone number)
+   into a clickable word wherever it appears, without ever
+   touching innerHTML.
+============================================================ */
+
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Splits `text` wherever any of the given phrases occur, turning
+ * each occurrence into a link part. Longer phrases are matched
+ * first so one name can never be split apart by a shorter one
+ * (e.g. a full name vs. just its first name).
+ *
+ * @param {string} text
+ * @param {{phrase:string, href:string}[]} entries
+ * @returns {string|(string|{text:string,href:string})[]}
+ */
+function linkify(text, entries) {
+  const valid = entries
+    .filter((entry) => entry.phrase && text.includes(entry.phrase))
+    .sort((a, b) => b.phrase.length - a.phrase.length);
+
+  if (!valid.length) return text;
+
+  const pattern = new RegExp(`(${valid.map((entry) => escapeRegExp(entry.phrase)).join("|")})`, "g");
+  const hrefByPhrase = new Map(valid.map((entry) => [entry.phrase, entry.href]));
+
+  return text
+    .split(pattern)
+    .filter((part) => part !== "")
+    .map((part) => (hrefByPhrase.has(part) ? { text: part, href: hrefByPhrase.get(part) } : part));
+}
+
+/**
+ * Prepends a plain-text prefix (an emoji/label) to a linkify()
+ * result, keeping the line a plain string when nothing was
+ * linked and an array otherwise.
+ *
+ * @param {string} prefix
+ * @param {string|(string|object)[]} body
+ * @returns {string|(string|object)[]}
+ */
+function prefixLine(prefix, body) {
+  return typeof body === "string" ? `${prefix}${body}` : [prefix, ...body];
 }
 
 /* ============================================================
@@ -157,11 +208,12 @@ function matchCourse(query, queryWords) {
 
 /**
  * "فاتح" is both the academy's own name and the shared family
- * name of two different instructors — too ambiguous to use for
- * single-word matching, so it's excluded and only works as part
- * of a full name.
+ * name of two different instructors — too ambiguous for generic
+ * single-word matching, so it's excluded there and handled by
+ * its own explicit case instead (see buildAcademyAmbiguity below).
  */
-const RESERVED_NAME_WORDS = ["فاتح"];
+const ACADEMY_TRIGGER_WORD = "فاتح";
+const RESERVED_NAME_WORDS = [ACADEMY_TRIGGER_WORD];
 
 function instructorFullNameTerm(person) {
   return normalizeText(person.name);
@@ -248,14 +300,19 @@ function detectTopics(query, queryWords) {
 ============================================================ */
 
 function closingBlock() {
+  const phoneText = isolateLTR(contact.phones.mobile.display);
+  const telHref = `tel:+${contact.phones.mobile.raw}`;
+
   return {
     lines: [
-      {
-        text: `برای ثبت‌نام و هماهنگی ساعت کلاس، لطفاً با شماره ${isolateLTR(contact.phones.mobile.display)} تماس بگیرید.`,
-        linkText: "ثبت‌نام",
-        href: "/register"
-      },
-      `📍 آدرس: ${contact.address.full}`
+      [
+        "برای ",
+        { text: "ثبت‌نام", href: "/register" },
+        " و هماهنگی ساعت کلاس، لطفاً با شماره ",
+        { text: phoneText, href: telHref },
+        " تماس بگیرید."
+      ],
+      ["📍 آدرس: ", { text: contact.address.full, href: contact.map.google }]
     ],
     links: []
   };
@@ -290,17 +347,27 @@ function buildCourseAnswer(course) {
   const scheduleFaq = faqs.find((item) => item.question.includes("روزهایی"));
   const priceFaq = faqs.find((item) => item.question.includes("هزینه"));
 
+  const courseHref = `/courses/${course.slug}`;
+  const nameEntries = [
+    { phrase: course.title, href: courseHref },
+    ...teacherRecords.map((person) => ({ phrase: person.name, href: `/instructors/${person.slug}` }))
+  ];
+
+  const scheduleText = scheduleFaq ? scheduleFaq.answer : "برنامه هفتگی این دوره به‌زودی اعلام می‌شود.";
+  const priceText = priceFaq ? priceFaq.answer : "برای اطلاع از شهریه با آموزشگاه تماس بگیرید.";
+
   const lines = [];
-  if (teacherNames) lines.push(`👨‍🏫 مدرس: ${teacherNames}`);
-  lines.push(`📅 ${scheduleFaq ? scheduleFaq.answer : "برنامه هفتگی این دوره به‌زودی اعلام می‌شود."}`);
-  lines.push(`💳 ${priceFaq ? priceFaq.answer : "برای اطلاع از شهریه با آموزشگاه تماس بگیرید."}`);
+  if (teacherNames) lines.push(prefixLine("👨‍🏫 مدرس: ", linkify(teacherNames, nameEntries)));
+  lines.push(prefixLine("📅 ", linkify(scheduleText, nameEntries)));
+  lines.push(prefixLine("💳 ", linkify(priceText, nameEntries)));
 
-  const links = [{ label: `مشاهده دوره ${course.title}`, href: `/courses/${course.slug}` }];
-  teacherRecords.forEach((person) => {
-    links.push({ label: `پروفایل ${person.name}`, href: `/instructors/${person.slug}` });
-  });
+  const links = [
+    { label: `مشاهده ${course.title}`, href: courseHref },
+    ...teacherRecords.map((person) => ({ label: `پروفایل ${person.name}`, href: `/instructors/${person.slug}` })),
+    { label: "ثبت‌نام آنلاین", href: "/register" }
+  ];
 
-  return { found: true, heading: course.title, lines, links };
+  return { found: true, heading: { text: course.title, href: courseHref }, lines, links };
 }
 
 function buildInstructorAnswer(person) {
@@ -316,20 +383,28 @@ function buildInstructorAnswer(person) {
     )
   ];
 
+  const personHref = `/instructors/${person.slug}`;
+  const courseEntries = taughtCourses.map((course) => ({
+    phrase: course.title,
+    href: `/courses/${course.slug}`
+  }));
+
   const lines = [];
   if (person.position) lines.push(`🎼 ${person.position}`);
   if (taughtCourses.length) {
-    lines.push(`📚 دوره‌ها: ${taughtCourses.map((course) => course.title).join("، ")}`);
+    const joined = taughtCourses.map((course) => course.title).join("، ");
+    lines.push(prefixLine("📚 دوره‌ها: ", linkify(joined, courseEntries)));
   }
   if (days.length) lines.push(`📅 روزهای حضور: ${days.join(" و ")}`);
   if (!lines.length) lines.push("برای اطلاعات کامل، پروفایل استاد را ببینید.");
 
-  const links = [{ label: `پروفایل ${person.name}`, href: `/instructors/${person.slug}` }];
-  taughtCourses.forEach((course) => {
-    links.push({ label: `دوره ${course.title}`, href: `/courses/${course.slug}` });
-  });
+  const links = [
+    { label: `پروفایل ${person.name}`, href: personHref },
+    ...taughtCourses.map((course) => ({ label: course.title, href: `/courses/${course.slug}` })),
+    { label: "ثبت‌نام آنلاین", href: "/register" }
+  ];
 
-  return { found: true, heading: person.name, lines, links };
+  return { found: true, heading: { text: person.name, href: personHref }, lines, links };
 }
 
 function buildInstructorDisambiguation(matches) {
@@ -339,6 +414,33 @@ function buildInstructorDisambiguation(matches) {
     lines: ["منظورتان کدام استاد است؟"],
     links: matches.map((person) => ({ label: person.name, href: `/instructors/${person.slug}` }))
   };
+}
+
+/**
+ * "فاتح" alone is genuinely three-way ambiguous: the academy's
+ * own name, or either of the two instructors who share it as a
+ * surname. Rather than silently matching none of them, all three
+ * are offered together. The closing block is included since the
+ * academy's own contact details are one of the likely meanings.
+ *
+ * @returns {object}
+ */
+function buildAcademyAmbiguity() {
+  const namedInstructors = instructors.filter(
+    (person) => person.active !== false && normalizeText(person.name).includes(ACADEMY_TRIGGER_WORD)
+  );
+
+  const links = [
+    { label: site.name, href: "/about" },
+    ...namedInstructors.map((person) => ({ label: person.name, href: `/instructors/${person.slug}` }))
+  ];
+
+  return withClosing({
+    found: true,
+    heading: `چند نتیجه برای «${ACADEMY_TRIGGER_WORD}»`,
+    lines: ["می‌تواند به آموزشگاه یا یکی از اساتید زیر اشاره داشته باشد:"],
+    links
+  });
 }
 
 function buildTopicAnswer(topics) {
@@ -399,7 +501,7 @@ function buildTopicAnswer(topics) {
  * Answers a free-text question using only real academy data.
  *
  * @param {string} rawText
- * @returns {{found:boolean, heading?:string, lines?:(string|{text:string,linkText:string,href:string})[], links?:object[], hint?:string}}
+ * @returns {{found:boolean, heading?:(string|{text:string,href:string}), lines?:(string|(string|{text:string,href:string})[])[], links?:object[], hint?:string}}
  */
 export function ask(rawText = "") {
   const query = normalizeText(rawText);
@@ -413,6 +515,8 @@ export function ask(rawText = "") {
   const instructorMatches = matchInstructors(query, queryWords);
   if (instructorMatches.length === 1) return withClosing(buildInstructorAnswer(instructorMatches[0]));
   if (instructorMatches.length > 1) return buildInstructorDisambiguation(instructorMatches);
+
+  if (queryWords.includes(ACADEMY_TRIGGER_WORD)) return buildAcademyAmbiguity();
 
   const topics = detectTopics(query, queryWords);
   const topicAnswer = buildTopicAnswer(topics);

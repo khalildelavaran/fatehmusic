@@ -51,12 +51,35 @@ function ensureElements(container) {
 }
 
 /**
- * Builds a single answer line. A line is normally plain text; the
- * closing sentence (see faq-bot.js) is instead an object with one
- * word turned into a link. Built with createElement/createTextNode
- * only (never innerHTML), so nothing here can inject markup.
+ * Appends one part of a line to a parent element: plain text as
+ * a text node, or a { text, href } part as a bold inline link.
+ * DOM APIs only (never innerHTML), so nothing here can inject
+ * markup, including the real names/titles pulled from data.
  *
- * @param {string|{text:string,linkText:string,href:string}} line
+ * @param {HTMLElement} parent
+ * @param {string|{text:string, href:string}} part
+ */
+function appendPart(parent, part) {
+  if (typeof part === "string") {
+    parent.appendChild(document.createTextNode(part));
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = part.href;
+  a.textContent = part.text;
+  a.className = "faq-assistant__inline-link";
+  a.target = "_blank";
+  a.rel = "noopener";
+  parent.appendChild(a);
+}
+
+/**
+ * Builds a single answer line, which is either plain text or an
+ * array mixing text with one or more inline links (e.g. a course
+ * name and an instructor name both linked within the same sentence).
+ *
+ * @param {string|(string|{text:string,href:string})[]} line
  * @returns {HTMLParagraphElement}
  */
 function renderLine(line) {
@@ -64,31 +87,27 @@ function renderLine(line) {
 
   if (typeof line === "string") {
     p.textContent = line;
-    return p;
+  } else {
+    line.forEach((part) => appendPart(p, part));
   }
-
-  const index = line.text.indexOf(line.linkText);
-  if (index === -1) {
-    p.textContent = line.text;
-    return p;
-  }
-
-  const before = line.text.slice(0, index);
-  const after = line.text.slice(index + line.linkText.length);
-
-  if (before) p.appendChild(document.createTextNode(before));
-
-  const a = document.createElement("a");
-  a.href = line.href;
-  a.textContent = line.linkText;
-  a.className = "faq-assistant__inline-link";
-  a.target = "_blank";
-  a.rel = "noopener";
-  p.appendChild(a);
-
-  if (after) p.appendChild(document.createTextNode(after));
 
   return p;
+}
+
+/**
+ * Fills the heading: plain text, or a single { text, href } link
+ * to the matched course/instructor page.
+ *
+ * @param {HTMLElement} headingEl
+ * @param {string|{text:string, href:string}} heading
+ */
+function renderHeading(headingEl, heading) {
+  headingEl.innerHTML = "";
+  if (typeof heading === "string") {
+    headingEl.textContent = heading;
+    return;
+  }
+  appendPart(headingEl, heading);
 }
 
 /**
@@ -96,7 +115,7 @@ function renderLine(line) {
  * into the panel. Safe to call on every keystroke.
  *
  * @param {HTMLElement|null} container
- * @param {{found:boolean, heading?:string, lines?:(string|object)[], links?:object[], hint?:string}} result
+ * @param {{found:boolean, heading?:(string|object), lines?:(string|object)[], links?:object[], hint?:string}} result
  */
 export function renderAssistant(container, result) {
   if (!container || !result) return;
@@ -109,7 +128,7 @@ export function renderAssistant(container, result) {
   const refs = ensureElements(container);
   container.classList.toggle("is-hint", !result.found);
 
-  refs.heading.textContent = result.found ? result.heading || "پاسخ آموزشگاه" : "راهنما";
+  renderHeading(refs.heading, result.found ? result.heading || "پاسخ آموزشگاه" : "راهنما");
 
   refs.lines.innerHTML = "";
   const textLines = result.found ? result.lines || [] : [result.hint];
