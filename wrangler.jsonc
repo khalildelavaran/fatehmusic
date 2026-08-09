@@ -9,7 +9,8 @@
 
     "assets": {
         "directory": "./dist/client",
-        "binding": "ASSETS"
+        "binding": "ASSETS",
+         "html_handling": "drop-trailing-slash"
     },
 
     "observability": {
