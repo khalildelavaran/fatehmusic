@@ -4,8 +4,8 @@
  * Module: Course Schema
  * Description: Takes an already-resolved course (see
  * resolvers/course.js) and produces its Course JSON-LD node.
- * Instructors and the provider are referenced by "@id" rather
- * than repeated in full, per schema.org best practice.
+ * Instructors are attached to CourseInstance rather than
+ * Course, because schema.org defines instructor on CourseInstance.
  * --------------------------------------------------------
  */
 
@@ -22,6 +22,8 @@ export function buildCourseSchema(course, { site }) {
         "@id": `${site.url}/instructors/${instructor.slug}/#person`
     }));
 
+    const courseInstance = buildCourseInstance(course, instructorRefs);
+
     return pruneEmpty({
         "@type": SCHEMA_TYPES.COURSE,
         "@id": `${course.url}/#course`,
@@ -37,9 +39,20 @@ export function buildCourseSchema(course, { site }) {
                   audienceType: course.ageGroup.join("، ")
               }
             : undefined,
-        instructor: instructorRefs.length ? instructorRefs : undefined,
+        hasCourseInstance: courseInstance,
         offers: buildOffers(course.plan, site)
     });
+}
+
+function buildCourseInstance(course, instructorRefs) {
+    const instance = {
+        "@type": SCHEMA_TYPES.COURSE_INSTANCE,
+        "@id": `${course.url}/#course-instance`,
+        courseMode: course.classType,
+        instructor: instructorRefs.length ? instructorRefs : undefined
+    };
+
+    return pruneEmpty(instance);
 }
 
 function buildOffers(plan, site) {
