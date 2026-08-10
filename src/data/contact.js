@@ -50,7 +50,7 @@ contact: {
 
         instagram: "https://instagram.com/fateh.music.academy",
 
-        whatsapp: "https://wa.me/989333139319",
+        whatsapp: "https://api.whatsapp.com/send/?phone=989333139319&text&type=phone_number&app_absent=0",
 
         telegram: "https://t.me/fatehmusic"
 
