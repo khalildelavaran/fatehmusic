@@ -33,7 +33,21 @@ export function buildCourseSchema(course, { site }) {
                   audienceType: course.ageGroup.join("، ")
               }
             : undefined,
+        hasCourseInstance: buildCourseInstance(course, site),
         offers: buildOffers(course.plan, site)
+    });
+}
+
+function buildCourseInstance(course, site) {
+    const instructorRefs = (course.instructors || []).map((instructor) => ({
+        "@id": `${site.url}/instructors/${instructor.slug}/#person`
+    }));
+
+    return pruneEmpty({
+        "@type": SCHEMA_TYPES.COURSE_INSTANCE,
+        "@id": `${course.url}/#course-instance`,
+        courseMode: course.classType || undefined,
+        instructor: instructorRefs.length ? instructorRefs : undefined
     });
 }
 
