@@ -21,7 +21,7 @@ export const DEFAULT_LOCALE = "fa_IR";
 export const SCHEMA_TYPES = Object.freeze({
 
     // Main Entity
-    LOCAL_EDUCATION_BUSINESS: "MusicSchool",
+    LOCAL_EDUCATION_BUSINESS: "LocalBusiness",
 
     WEBSITE: "WebSite",
 
