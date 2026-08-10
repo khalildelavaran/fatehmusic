@@ -15,17 +15,13 @@ export const TWITTER_CARD_TYPE = "summary_large_image";
 export const DEFAULT_OG_TYPE = "website";
 export const DEFAULT_LOCALE = "fa_IR";
 
-
 /**
  * Schema.org type strings
  */
 export const SCHEMA_TYPES = Object.freeze({
 
     // Main Entity
-    LOCAL_EDUCATION_BUSINESS: [
-        "LocalBusiness",
-        "EducationalOrganization"
-    ],
+    LOCAL_EDUCATION_BUSINESS: "LocalBusiness",
 
     WEBSITE: "WebSite",
 
@@ -58,13 +54,11 @@ export const SCHEMA_TYPES = Object.freeze({
     GEO_COORDINATES: "GeoCoordinates",
 
     // Business hours
-    OPENING_HOURS_SPEC:
-        "OpeningHoursSpecification",
+    OPENING_HOURS_SPEC: "OpeningHoursSpecification",
 
     // Pages
     ABOUT_PAGE: "AboutPage"
 });
-
 
 /**
  * Saturday-first week order,
@@ -80,16 +74,12 @@ export const WEEKDAY_ORDER = [
     "جمعه"
 ];
 
-
-export const WEEKDAY_SCHEMA_MAP =
-    Object.freeze({
-
-        شنبه: "Saturday",
-        یکشنبه: "Sunday",
-        دوشنبه: "Monday",
-        سهشنبه: "Tuesday",
-        چهارشنبه: "Wednesday",
-        پنجشنبه: "Thursday",
-        جمعه: "Friday"
-
-    });
+export const WEEKDAY_SCHEMA_MAP = Object.freeze({
+    شنبه: "Saturday",
+    یکشنبه: "Sunday",
+    دوشنبه: "Monday",
+    سهشنبه: "Tuesday",
+    چهارشنبه: "Wednesday",
+    پنجشنبه: "Thursday",
+    جمعه: "Friday"
+});
