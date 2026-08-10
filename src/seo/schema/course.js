@@ -18,10 +18,6 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @returns {Object}
  */
 export function buildCourseSchema(course, { site }) {
-    const instructorRefs = (course.instructors || []).map((instructor) => ({
-        "@id": `${site.url}/instructors/${instructor.slug}/#person`
-    }));
-
     return pruneEmpty({
         "@type": SCHEMA_TYPES.COURSE,
         "@id": `${course.url}/#course`,
@@ -37,7 +33,6 @@ export function buildCourseSchema(course, { site }) {
                   audienceType: course.ageGroup.join("، ")
               }
             : undefined,
-        instructor: instructorRefs.length ? instructorRefs : undefined,
         offers: buildOffers(course.plan, site)
     });
 }
