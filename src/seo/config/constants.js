@@ -27,6 +27,7 @@ export const SCHEMA_TYPES = Object.freeze({
 
     // Content Entities
     COURSE: "Course",
+    COURSE_INSTANCE: "CourseInstance",
     PERSON: "Person",
     EVENT: "Event",
 
