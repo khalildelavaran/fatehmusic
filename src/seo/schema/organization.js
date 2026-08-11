@@ -17,33 +17,26 @@ import { SCHEMA_TYPES } from "../config/constants.js";
 export function buildOrganizationSchema(site) {
 
     return {
-
         "@type": site.schemaType || [
             SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
             SCHEMA_TYPES.EDUCATIONAL_ORGANIZATION
         ],
 
-
         "@id":
             `${site.url}/#organization`,
 
-
         name:
             site.name,
-
 
         alternateName:
             site.alternateName ||
             site.shortName,
 
-
         legalName:
             site.legalName,
 
-
         description:
             site.description,
-
 
         url:
             site.url,
@@ -98,16 +91,12 @@ export function buildOrganizationSchema(site) {
             site.mapUrl,
 
 
+        /**
+         * Already normalized in resolveSite()
+         * Do not convert again.
+         */
         areaServed:
-            Array.isArray(site.areaServed)
-                ? site.areaServed.map((area) => ({
-                    "@type": SCHEMA_TYPES.CITY,
-                    name: area
-                }))
-                : {
-                    "@type": SCHEMA_TYPES.CITY,
-                    name: site.areaServed
-                },
+            site.areaServed,
 
 
         openingHoursSpecification:
@@ -116,7 +105,6 @@ export function buildOrganizationSchema(site) {
 
         sameAs:
             site.sameAs
-
     };
 
 }
