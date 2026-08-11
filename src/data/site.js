@@ -80,7 +80,7 @@ export const site = {
     streetAddress: "خیابان امام غربی، پس از پاساژ مهستان، محوطه دوم پارکینگ حاج سلیمان",
     addressLocality: "شوشتر",
     addressRegion: "خوزستان",
-    postalCode: "6451956155",
+    postalCode: "6451956156",
     addressCountry: "IR"
   },
 
