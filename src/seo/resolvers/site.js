@@ -167,7 +167,7 @@ export function resolveSite() {
                 site.socials
             ),
         facebookId:
-             site.socials?.facebookId || undefined
+             site.socials?.facebookId || null
 
     });
 
