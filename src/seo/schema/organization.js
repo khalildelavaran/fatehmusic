@@ -63,11 +63,15 @@ export function buildOrganizationSchema(site) {
         priceRange:
             site.priceRange,
 
-        identifier: {
-            "@type": "PropertyValue",
-            "propertyID": "Facebook Page ID",
-            "value": "1302143662973158"
-        },
+
+        identifier: site.facebookId
+            ? {
+                "@type": "PropertyValue",
+                "propertyID": "Facebook Page ID",
+                "value": site.facebookId
+            }
+            : undefined,
+
 
         founder: {
             "@type": SCHEMA_TYPES.PERSON,
@@ -96,10 +100,6 @@ export function buildOrganizationSchema(site) {
             site.mapUrl,
 
 
-        /**
-         * Already normalized in resolveSite()
-         * Do not convert again.
-         */
         areaServed:
             site.areaServed,
 
