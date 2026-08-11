@@ -64,6 +64,8 @@ export const SCHEMA_TYPES = Object.freeze({
     EVENT:
         "Event",
 
+     // Geographic
+    ADMINISTRATIVE_AREA: "AdministrativeArea",
 
 
     // Commercial
