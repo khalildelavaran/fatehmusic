@@ -165,9 +165,9 @@ export function resolveSite() {
         sameAs:
             dedupeSameAs(
                 site.socials
-            )
+            ),
         facebookId:
-             site.socials?.facebookId
+             site.socials?.facebookId || undefined
 
     });
 
