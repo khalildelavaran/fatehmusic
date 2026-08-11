@@ -101,7 +101,7 @@ export const site = {
     instagram: "https://www.instagram.com/fateh.music.academy",
     youtube: "https://www.youtube.com/@fateh.music.academy",
     telegram: "https://t.me/fatehmusic",
-    whatsapp: "https://wa.me/989333139319",
+    whatsapp: "https://api.whatsapp.com/send/?phone=989333139319&text&type=phone_number&app_absent=0",
     aparat: ""
   }
 };
