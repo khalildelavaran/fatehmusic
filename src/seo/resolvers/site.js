@@ -156,18 +156,20 @@ export function resolveSite() {
             ),
 
 
-        mapUrl:
-            site.mapUrl ||
-            contact.map?.google ||
-            undefined,
+   mapUrl:
+       site.mapUrl ||
+       contact.map?.google ||
+       undefined,
 
 
-        sameAs:
-            dedupeSameAs(
-                site.socials
-            ),
-        facebookId:
-             site.socials?.facebookId || null
+   sameAs:
+       dedupeSameAs(
+           site.socials
+       ),
+
+
+   facebookId:
+       site.socials?.facebookId || undefined
 
     });
 
