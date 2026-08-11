@@ -10,6 +10,7 @@ export const site = {
 
   // General
   name: "آموزشگاه موسیقی فاتح",
+  alternateName: "Fateh Music Academy",
   shortName: "فاتح",
   legalName: "آموزشگاه موسیقی فاتح",
 
@@ -30,6 +31,7 @@ export const site = {
     "آموزشگاه موسیقی",
     "آموزشگاه موسیقی فاتح",
     "آموزش موسیقی شوشتر",
+
     "آموزش گیتار",
     "آموزش دف",
     "آموزش تنبک",
@@ -39,6 +41,7 @@ export const site = {
     "آموزش سه تار",
     "آموزش پیانو",
     "آموزش ویولن",
+
     "آموزش موسیقی کودک",
     "آموزش آواز",
     "آموزش آواز سنتی",
@@ -46,10 +49,12 @@ export const site = {
     "آموزش آواز محلی بختیاری",
     "آموزش آواز محلی شوشتری",
     "آموزش آواز پاپ",
+
     "دوره ریتم و وزن خوانی",
     "دوره سلفژ",
     "دوره صداسازی",
     "دوره تئوری موسیقی",
+
     "آموزش نی انبان",
     "آموزش ارگ و کیبورد",
     "آموزش کمانچه",
@@ -63,13 +68,16 @@ export const site = {
     "آموزش سه تار شوشتر",
     "آموزش پیانو شوشتر",
     "آموزش ویولن شوشتر",
+
     "آموزش موسیقی کودک شوشتر",
     "آموزش آواز شوشتر",
     "آموزش نی شوشتر",
     "آموزش آواز پاپ شوشتر",
+
     "دوره سلفژ شوشتر",
     "دوره صداسازی شوشتر",
     "دوره تئوری موسیقی شوشتر",
+
     "آموزش نی انبان شوشتر",
     "آموزش ارگ و کیبورد شوشتر",
     "آموزش کمانچه شوشتر"
@@ -84,23 +92,32 @@ export const site = {
 
   // Address
   address: {
+
     streetAddress:
-      "خیابان امام شرقی، پس از پاساژ مهستان",
+      "خیابان امام شرقی، پس از پاساژ مهستان، محوطه دوم پارکینگ حاج سلیمان",
 
-    description:
-      "محوطه دوم پارکینگ حاج سلیمان",
+    addressLocality:
+      "شوشتر",
 
-    addressLocality: "شوشتر",
-    addressRegion: "خوزستان",
-    postalCode: "6451956156",
-    addressCountry: "IR"
+    addressRegion:
+      "خوزستان",
+
+    postalCode:
+      "6451956156",
+
+    addressCountry:
+      "IR"
+
   },
 
 
   // Geographic location
   geo: {
+
     latitude: 32.04153,
+
     longitude: 48.8554357
+
   },
 
 
@@ -110,19 +127,27 @@ export const site = {
 
   // Local SEO
   areaServed: [
+
     "شوشتر",
+
     "خوزستان",
+
     "ایران"
+
   ],
 
 
   // Business
   openingHours: [
+
     "Sa-Th 16:00-21:00",
+
     "Fr 13:00-21:00"
+
   ],
 
-  priceRange: "1,600,000",
+  priceRange:
+    "1,600,000",
 
 
   // Social profiles
@@ -130,6 +155,9 @@ export const site = {
 
     facebook:
       "https://www.facebook.com/fateh.music.academy",
+
+    facebookId:
+      "1302143662973158",
 
     instagram:
       "https://www.instagram.com/fateh.music.academy",
@@ -145,6 +173,7 @@ export const site = {
 
     aparat:
       ""
+
   }
 
 };
