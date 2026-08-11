@@ -8,7 +8,6 @@
  * --------------------------------------------------------
  */
 
-
 export const MAX_TITLE_LENGTH = 60;
 
 export const MAX_DESCRIPTION_LENGTH = 160;
@@ -17,14 +16,13 @@ export const MAX_KEYWORDS = 15;
 
 
 export const TWITTER_CARD_TYPE =
-    "summary_large_image";
+"summary_large_image";
 
 export const DEFAULT_OG_TYPE =
-    "website";
+"website";
 
 export const DEFAULT_LOCALE =
-    "fa_IR";
-
+"fa_IR";
 
 
 /**
@@ -33,109 +31,105 @@ export const DEFAULT_LOCALE =
 export const SCHEMA_TYPES = Object.freeze({
 
     // Main Entity
+
     LOCAL_EDUCATION_BUSINESS:
-        "LocalBusiness",
+    "LocalBusiness",
 
     EDUCATIONAL_ORGANIZATION:
-        "EducationalOrganization",
+    "EducationalOrganization",
 
     ORGANIZATION:
-        "Organization",
+    "Organization",
 
-    PLACE:
-        "Place",
-    
     WEBSITE:
-        "WebSite",
-
+    "WebSite",
 
 
     // Content Entities
 
     COURSE:
-        "Course",
+    "Course",
 
     COURSE_INSTANCE:
-        "CourseInstance",
+    "CourseInstance",
 
     PERSON:
-        "Person",
+    "Person",
 
     EVENT:
-        "Event",
+    "Event",
 
-     // Geographic
-    ADMINISTRATIVE_AREA: "AdministrativeArea",
+
+    // Geographic
+
+    ADMINISTRATIVE_AREA:
+    "AdministrativeArea",
+
+    PLACE:
+    "Place",
 
 
     // Commercial
 
     OFFER:
-        "Offer",
-
+    "Offer",
 
 
     // Audience
 
     AUDIENCE:
-        "Audience",
-
+    "Audience",
 
 
     // FAQ
 
     FAQ_PAGE:
-        "FAQPage",
+    "FAQPage",
 
     QUESTION:
-        "Question",
+    "Question",
 
     ANSWER:
-        "Answer",
-
+    "Answer",
 
 
     // Navigation
 
     BREADCRUMB_LIST:
-        "BreadcrumbList",
+    "BreadcrumbList",
 
     LIST_ITEM:
-        "ListItem",
-
+    "ListItem",
 
 
     // Address
 
     POSTAL_ADDRESS:
-        "PostalAddress",
+    "PostalAddress",
 
     COUNTRY:
-        "Country",
+    "Country",
 
     CITY:
-        "City",
-
+    "City",
 
 
     // Geo
 
     GEO_COORDINATES:
-        "GeoCoordinates",
-
+    "GeoCoordinates",
 
 
     // Business hours
 
     OPENING_HOURS_SPEC:
-        "OpeningHoursSpecification",
-
+    "OpeningHoursSpecification",
 
 
     // Pages
 
     ABOUT_PAGE:
-        "AboutPage"
+    "AboutPage"
 
 });
 
@@ -156,28 +150,27 @@ export const WEEKDAY_ORDER = [
 ];
 
 
-
 export const WEEKDAY_SCHEMA_MAP = Object.freeze({
 
     شنبه:
-        "Saturday",
+    "Saturday",
 
     یکشنبه:
-        "Sunday",
+    "Sunday",
 
     دوشنبه:
-        "Monday",
+    "Monday",
 
     سهشنبه:
-        "Tuesday",
+    "Tuesday",
 
     چهارشنبه:
-        "Wednesday",
+    "Wednesday",
 
     پنجشنبه:
-        "Thursday",
+    "Thursday",
 
     جمعه:
-        "Friday"
+    "Friday"
 
 });
