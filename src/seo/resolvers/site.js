@@ -13,8 +13,8 @@ import { site } from "../../data/site.js";
 import { contact } from "../../data/contact.js";
 import { absoluteUrl } from "../helpers/url.js";
 import {
-    toLatinDigits,
-    expandWeekdayRange
+  toLatinDigits,
+  expandWeekdayRange
 } from "../helpers/text.js";
 import { SCHEMA_TYPES } from "../config/constants.js";
 
@@ -38,7 +38,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {string} priceRange
  * @property {string[]} sameAs
  * @property {string} mapUrl
- * @property {Object} areaServed
+ * @property {Object[]} areaServed
  */
 
 /**
@@ -47,120 +47,149 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @returns {ResolvedSite}
  */
 export function resolveSite() {
-    return Object.freeze({
-        name: site.name,
-        shortName: site.shortName,
-        legalName: site.legalName,
+  return Object.freeze({
+    name: site.name,
+    shortName: site.shortName,
+    legalName: site.legalName,
 
-        url: site.url,
+    url: site.url,
 
-        logo: absoluteUrl(site.logo, site.url),
-        image: absoluteUrl(site.image, site.url),
-        favicon: site.favicon,
+    logo: absoluteUrl(site.logo, site.url),
+    image: absoluteUrl(site.image, site.url),
+    favicon: site.favicon,
 
-        description: site.description,
-        keywords: site.keywords || [],
+    description: site.description,
+    keywords: site.keywords || [],
 
-        telephone: normalizePhone(
-            contact.phones.landline.raw
-        ),
+    telephone: normalizePhone(
+      contact.phones.landline.raw
+    ),
 
-        mobile: normalizePhone(
-            contact.phones.mobile.raw
-        ),
+    mobile: normalizePhone(
+      contact.phones.mobile.raw
+    ),
 
-        email: site.email,
+    email: site.email,
 
-        address: {
-            ...site.address,
-            addressCountry: "IR"
-        },
+    address: {
+      ...site.address,
+      addressCountry: "IR"
+    },
 
-        geo: {
-            ...site.geo
-        },
+    geo: {
+      ...site.geo
+    },
 
-        areaServed: {
-            "@type": "City",
-            name: "شوشتر"
-        },
+    areaServed: buildAreaServed(
+      site.areaServed
+    ),
 
-        priceRange:
-            site.priceRange ||
-            "1,000,000 - 1,600,000 تومان",
+    priceRange:
+      site.priceRange ||
+      "1,000,000 - 1,600,000 تومان",
 
-        openingHoursSpecification:
-            buildOpeningHoursSpecification(
-                contact.workingHours
-            ),
+    openingHoursSpecification:
+      buildOpeningHoursSpecification(
+        contact.workingHours
+      ),
 
-        mapUrl:
-            contact.map?.google || undefined,
+    mapUrl:
+      site.mapUrl ||
+      contact.map?.google ||
+      undefined,
 
-        sameAs:
-            dedupeSameAs(site.socials)
-    });
+    sameAs:
+      dedupeSameAs(site.socials)
+  });
 }
-
 
 /**
  * Normalize Iranian phone numbers
  */
 function normalizePhone(rawPhone) {
-    const digitsOnly =
-        toLatinDigits(rawPhone)
-            .replace(/\D/g, "");
+  const digitsOnly =
+    toLatinDigits(rawPhone)
+      .replace(/\D/g, "");
 
-    return digitsOnly.startsWith("0")
-        ? `+98${digitsOnly.slice(1)}`
-        : `+${digitsOnly}`;
+  return digitsOnly.startsWith("0")
+    ? `+98${digitsOnly.slice(1)}`
+    : `+${digitsOnly}`;
 }
-
 
 /**
  * Convert working hours to Schema.org format
  */
 function buildOpeningHoursSpecification(
-    workingHours
+  workingHours
 ) {
-    return (workingHours || []).map((entry) => {
+  return (workingHours || []).map((entry) => {
+    const [
+      opensRaw,
+      closesRaw
+    ] = entry.value
+      .split("تا")
+      .map((part) => part.trim());
 
-        const [
-            opensRaw,
-            closesRaw
-        ] = entry.value
-            .split("تا")
-            .map(part => part.trim());
+    return {
+      "@type":
+        SCHEMA_TYPES.OPENING_HOURS_SPEC,
 
-        return {
-            "@type":
-                SCHEMA_TYPES.OPENING_HOURS_SPEC,
+      dayOfWeek:
+        expandWeekdayRange(
+          entry.title
+        ),
 
-            dayOfWeek:
-                expandWeekdayRange(
-                    entry.title
-                ),
+      opens:
+        toLatinDigits(opensRaw),
 
-            opens:
-                toLatinDigits(opensRaw),
-
-            closes:
-                toLatinDigits(closesRaw)
-        };
-    });
+      closes:
+        toLatinDigits(closesRaw)
+    };
+  });
 }
 
+/**
+ * Normalize service areas into Schema.org Place objects.
+ */
+function buildAreaServed(areas) {
+  if (!Array.isArray(areas)) {
+    return [];
+  }
+
+  return areas
+    .filter(Boolean)
+    .map((area) => ({
+      "@type": "Place",
+      name: area
+    }));
+}
 
 /**
- * Remove duplicate social links
+ * Remove duplicate social links.
+ *
+ * Only valid social profile URLs are allowed in sameAs.
+ * Internal IDs such as Facebook Page ID must never be
+ * included in sameAs.
  */
 function dedupeSameAs(socials) {
-    return [
-        ...new Set(
-            Object.values(
-                socials || {}
-            )
-            .filter(Boolean)
-        )
-    ];
+  if (!socials) {
+    return [];
+  }
+
+  return [
+    socials.facebook,
+    socials.instagram,
+    socials.youtube,
+    socials.telegram,
+    socials.aparat
+  ]
+    .filter(
+      (value) =>
+        typeof value === "string" &&
+        value.trim().length > 0
+    )
+    .filter(
+      (value, index, array) =>
+        array.indexOf(value) === index
+    );
 }
