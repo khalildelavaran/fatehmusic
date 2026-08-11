@@ -2,25 +2,30 @@
  * --------------------------------------------------------
  * Fateh Music Academy — SEO Engine
  * Module: Site Resolver
- * Description: The only place that reads data/site.js and
- * data/contact.js directly. Everything downstream (builders,
- * schema modules) only ever sees the normalized object this
- * function returns.
+ * Description:
+ * The only place that reads data/site.js and
+ * data/contact.js directly.
+ * Everything downstream receives this normalized object.
  * --------------------------------------------------------
  */
 
 import { site } from "../../data/site.js";
 import { contact } from "../../data/contact.js";
 import { absoluteUrl } from "../helpers/url.js";
+
 import {
-  toLatinDigits,
-  expandWeekdayRange
+    toLatinDigits,
+    expandWeekdayRange
 } from "../helpers/text.js";
+
 import { SCHEMA_TYPES } from "../config/constants.js";
+
 
 /**
  * @typedef {Object} ResolvedSite
+ * @property {string[]} schemaType
  * @property {string} name
+ * @property {string} alternateName
  * @property {string} shortName
  * @property {string} legalName
  * @property {string} url
@@ -41,155 +46,257 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {Object[]} areaServed
  */
 
+
 /**
- * Builds the normalized Site contract.
+ * Builds normalized Site contract.
  *
  * @returns {ResolvedSite}
  */
 export function resolveSite() {
-  return Object.freeze({
-    name: site.name,
-    shortName: site.shortName,
-    legalName: site.legalName,
 
-    url: site.url,
+    return Object.freeze({
 
-    logo: absoluteUrl(site.logo, site.url),
-    image: absoluteUrl(site.image, site.url),
-    favicon: site.favicon,
+        schemaType:
+            site.schemaType || [
+                SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
+                SCHEMA_TYPES.EDUCATIONAL_ORGANIZATION
+            ],
 
-    description: site.description,
-    keywords: site.keywords || [],
 
-    telephone: normalizePhone(
-      contact.phones.landline.raw
-    ),
+        name:
+            site.name,
 
-    mobile: normalizePhone(
-      contact.phones.mobile.raw
-    ),
 
-    email: site.email,
+        alternateName:
+            site.alternateName ||
+            site.shortName,
 
-    address: {
-      ...site.address,
-      addressCountry: "IR"
-    },
 
-    geo: {
-      ...site.geo
-    },
+        shortName:
+            site.shortName,
 
-    areaServed: buildAreaServed(
-      site.areaServed
-    ),
 
-    priceRange:
-      site.priceRange ||
-      "1,000,000 - 1,600,000 تومان",
+        legalName:
+            site.legalName,
 
-    openingHoursSpecification:
-      buildOpeningHoursSpecification(
-        contact.workingHours
-      ),
 
-    mapUrl:
-      site.mapUrl ||
-      contact.map?.google ||
-      undefined,
+        url:
+            site.url,
 
-    sameAs:
-      dedupeSameAs(site.socials)
-  });
+
+        logo:
+            absoluteUrl(
+                site.logo,
+                site.url
+            ),
+
+
+        image:
+            absoluteUrl(
+                site.image,
+                site.url
+            ),
+
+
+        favicon:
+            site.favicon,
+
+
+        description:
+            site.description,
+
+
+        keywords:
+            site.keywords || [],
+
+
+        telephone:
+            normalizePhone(
+                contact.phones.landline.raw
+            ),
+
+
+        mobile:
+            normalizePhone(
+                contact.phones.mobile.raw
+            ),
+
+
+        email:
+            site.email,
+
+
+        address: {
+            ...site.address,
+            addressCountry:
+                "IR"
+        },
+
+
+        geo: {
+            ...site.geo
+        },
+
+
+        areaServed:
+            buildAreaServed(
+                site.areaServed
+            ),
+
+
+        priceRange:
+            site.priceRange ||
+            "1,000,000 - 1,600,000 تومان",
+
+
+        openingHoursSpecification:
+            buildOpeningHoursSpecification(
+                contact.workingHours
+            ),
+
+
+        mapUrl:
+            site.mapUrl ||
+            contact.map?.google ||
+            undefined,
+
+
+        sameAs:
+            dedupeSameAs(
+                site.socials
+            )
+
+    });
+
 }
+
+
 
 /**
  * Normalize Iranian phone numbers
  */
 function normalizePhone(rawPhone) {
-  const digitsOnly =
-    toLatinDigits(rawPhone)
-      .replace(/\D/g, "");
 
-  return digitsOnly.startsWith("0")
-    ? `+98${digitsOnly.slice(1)}`
-    : `+${digitsOnly}`;
+    const digitsOnly =
+        toLatinDigits(rawPhone)
+        .replace(/\D/g, "");
+
+
+    return digitsOnly.startsWith("0")
+        ? `+98${digitsOnly.slice(1)}`
+        : `+${digitsOnly}`;
+
 }
+
+
 
 /**
  * Convert working hours to Schema.org format
  */
 function buildOpeningHoursSpecification(
-  workingHours
+    workingHours
 ) {
-  return (workingHours || []).map((entry) => {
-    const [
-      opensRaw,
-      closesRaw
-    ] = entry.value
-      .split("تا")
-      .map((part) => part.trim());
 
-    return {
-      "@type":
-        SCHEMA_TYPES.OPENING_HOURS_SPEC,
+    return (workingHours || []).map((entry) => {
 
-      dayOfWeek:
-        expandWeekdayRange(
-          entry.title
-        ),
+        const [
+            opensRaw,
+            closesRaw
+        ] = entry.value
+            .split("تا")
+            .map(
+                (part) =>
+                    part.trim()
+            );
 
-      opens:
-        toLatinDigits(opensRaw),
 
-      closes:
-        toLatinDigits(closesRaw)
-    };
-  });
+        return {
+
+            "@type":
+                SCHEMA_TYPES.OPENING_HOURS_SPEC,
+
+
+            dayOfWeek:
+                expandWeekdayRange(
+                    entry.title
+                ),
+
+
+            opens:
+                toLatinDigits(
+                    opensRaw
+                ),
+
+
+            closes:
+                toLatinDigits(
+                    closesRaw
+                )
+
+        };
+
+    });
+
 }
+
+
 
 /**
  * Normalize service areas into Schema.org Place objects.
  */
 function buildAreaServed(areas) {
-  if (!Array.isArray(areas)) {
-    return [];
-  }
 
-  return areas
-    .filter(Boolean)
-    .map((area) => ({
-      "@type": "Place",
-      name: area
-    }));
+    if (!Array.isArray(areas)) {
+        return [];
+    }
+
+
+    return areas
+        .filter(Boolean)
+        .map((area) => ({
+
+            "@type":
+                SCHEMA_TYPES.CITY,
+
+            name:
+                area
+
+        }));
+
 }
+
+
 
 /**
  * Remove duplicate social links.
  *
- * Only valid social profile URLs are allowed in sameAs.
- * Internal IDs such as Facebook Page ID must never be
- * included in sameAs.
+ * Only social profile URLs belong in sameAs.
+ * Facebook Page ID must never be included.
  */
 function dedupeSameAs(socials) {
-  if (!socials) {
-    return [];
-  }
 
-  return [
-    socials.facebook,
-    socials.instagram,
-    socials.youtube,
-    socials.telegram,
-    socials.aparat
-  ]
+    if (!socials) {
+        return [];
+    }
+
+
+    return [
+
+        socials.facebook,
+        socials.instagram,
+        socials.youtube,
+        socials.telegram,
+        socials.aparat
+
+    ]
     .filter(
-      (value) =>
-        typeof value === "string" &&
-        value.trim().length > 0
+        (value) =>
+            typeof value === "string" &&
+            value.trim().length > 0
     )
     .filter(
-      (value, index, array) =>
-        array.indexOf(value) === index
+        (value, index, array) =>
+            array.indexOf(value) === index
     );
+
 }
