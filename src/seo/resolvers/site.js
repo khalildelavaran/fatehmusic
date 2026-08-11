@@ -44,6 +44,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {string[]} sameAs
  * @property {string} mapUrl
  * @property {Object[]} areaServed
+ * @property {string} facebookId
  */
 
 
