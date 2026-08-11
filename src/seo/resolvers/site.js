@@ -256,7 +256,7 @@ function buildAreaServed(areas) {
         .map((area) => ({
 
             "@type":
-                SCHEMA_TYPES.CITY,
+                SCHEMA_TYPES.PLACE,
 
             name:
                 area
