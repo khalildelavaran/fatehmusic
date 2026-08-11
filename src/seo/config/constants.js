@@ -42,7 +42,9 @@ export const SCHEMA_TYPES = Object.freeze({
     ORGANIZATION:
         "Organization",
 
-
+    PLACE:
+        "Place",
+    
     WEBSITE:
         "WebSite",
 
