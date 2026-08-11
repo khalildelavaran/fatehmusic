@@ -278,12 +278,23 @@ class RegistrationController {
     try {
       const response = await registrationApi.submit(state);
 
-      if (response.success) {
-        registrationStore.setTrackingCode(response.trackingCode || "");
-        registrationStore.complete();
-        this.renderer.updateSuccess(registrationStore.getState());
-        this.goToStep("success");
-      } else {
+if (response.success) {
+  registrationStore.setTrackingCode(response.trackingCode || "");
+  registrationStore.complete();
+
+  const completedState = registrationStore.getState();
+
+  this.renderer.updateSuccess(completedState);
+
+  if (typeof window.fbq === "function") {
+    window.fbq("track", "Lead", {
+      content_name: "Online Registration",
+      content_category: completedState.selection.instrument.title
+    });
+  }
+
+  this.goToStep("success");
+} else {
         const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
         if (box) {
           box.hidden = false;
