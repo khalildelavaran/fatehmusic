@@ -121,7 +121,15 @@ const relatedCourses = courses
   description={course.seo.description}
   schema={schema}
 >
-
+<script is:inline define:vars={{ course }}>
+  if (typeof window.fbq === "function") {
+    window.fbq("track", "ViewContent", {
+      content_type: "course",
+      content_name: course.title,
+      content_id: course.slug
+    });
+  }
+</script>
 
 <Header />
 
