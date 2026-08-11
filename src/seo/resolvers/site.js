@@ -165,6 +165,8 @@ export function resolveSite() {
             dedupeSameAs(
                 site.socials
             )
+        facebookId:
+             site.socials?.facebookId
 
     });
 
