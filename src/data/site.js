@@ -97,10 +97,11 @@ export const site = {
   priceRange: "1,600,000",
 
   socials: {
-    instagram: "https://instagram.com/fateh.music.academy",
+    facebook: "https://www.facebook.com/fateh.music.academy",
+    instagram: "https://www.instagram.com/fateh.music.academy",
+    youtube: "https://www.youtube.com/@fateh.music.academy",
     telegram: "https://t.me/fatehmusic",
     whatsapp: "https://wa.me/989333139319",
-    aparat: "",
-    youtube: ""
+    aparat: ""
   }
 };
