@@ -2,8 +2,9 @@
  * --------------------------------------------------------
  * Fateh Music Academy — SEO Engine
  * Module: Organization Schema
- * Description: The one node every other schema node on the
- * site refers back to via "@id": `${site.url}/#organization`.
+ * Description:
+ * Main organization entity referenced by all schema nodes
+ * through "@id": `${site.url}/#organization`
  * --------------------------------------------------------
  */
 
@@ -14,49 +15,108 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @returns {Object}
  */
 export function buildOrganizationSchema(site) {
+
     return {
-        "@type": SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
-        "@id": `${site.url}/#organization`,
 
-        name: site.name,
-        alternateName: site.shortName,
-        description: site.description,
+        "@type": site.schemaType || [
+            SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
+            SCHEMA_TYPES.EDUCATIONAL_ORGANIZATION
+        ],
 
-        url: site.url,
-        logo: site.logo,
-        image: site.image,
 
-        telephone: site.telephone,
-        email: site.email,
+        "@id":
+            `${site.url}/#organization`,
 
-        priceRange: site.priceRange,
+
+        name:
+            site.name,
+
+
+        alternateName:
+            site.alternateName ||
+            site.shortName,
+
+
+        legalName:
+            site.legalName,
+
+
+        description:
+            site.description,
+
+
+        url:
+            site.url,
+
+
+        logo: {
+            "@type": "ImageObject",
+            url: site.logo
+        },
+
+
+        image:
+            site.image,
+
+
+        telephone:
+            site.telephone,
+
+
+        email:
+            site.email,
+
+
+        priceRange:
+            site.priceRange,
+
 
         founder: {
             "@type": SCHEMA_TYPES.PERSON,
             name: "خلیل دلاوران"
         },
 
-        areaServed: {
-            "@type": "City",
-            name: "شوشتر"
-        },
 
         address: {
             "@type": SCHEMA_TYPES.POSTAL_ADDRESS,
             ...site.address,
-            addressCountry: "IR"
+            addressCountry:
+                site.address.addressCountry || "IR"
         },
+
 
         geo: {
             "@type": SCHEMA_TYPES.GEO_COORDINATES,
-            ...site.geo
+            latitude:
+                site.geo.latitude,
+            longitude:
+                site.geo.longitude
         },
 
-        hasMap: site.mapUrl,
+
+        hasMap:
+            site.mapUrl,
+
+
+        areaServed:
+            Array.isArray(site.areaServed)
+                ? site.areaServed.map((area) => ({
+                    "@type": SCHEMA_TYPES.CITY,
+                    name: area
+                }))
+                : {
+                    "@type": SCHEMA_TYPES.CITY,
+                    name: site.areaServed
+                },
+
 
         openingHoursSpecification:
             site.openingHoursSpecification,
 
-        sameAs: site.sameAs
+
+        sameAs:
+            site.sameAs
+
     };
+
 }
