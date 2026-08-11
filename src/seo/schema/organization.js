@@ -63,6 +63,11 @@ export function buildOrganizationSchema(site) {
         priceRange:
             site.priceRange,
 
+        identifier: {
+            "@type": "PropertyValue",
+            "propertyID": "Facebook Page ID",
+            "value": "1302143662973158"
+        },
 
         founder: {
             "@type": SCHEMA_TYPES.PERSON,
