@@ -245,27 +245,17 @@ function buildOpeningHoursSpecification(
  * Normalize service areas into Schema.org Place objects.
  */
 function buildAreaServed(areas) {
+  if (!Array.isArray(areas)) {
+    return [];
+  }
 
-    if (!Array.isArray(areas)) {
-        return [];
-    }
-
-
-    return areas
-        .filter(Boolean)
-        .map((area) => ({
-
-            "@type":
-                SCHEMA_TYPES.PLACE,
-
-            name:
-                area
-
-        }));
-
+  return areas
+    .filter(Boolean)
+    .map((area) => ({
+      "@type": SCHEMA_TYPES.ADMINISTRATIVE_AREA,
+      name: area
+    }));
 }
-
-
 
 /**
  * Remove duplicate social links.
