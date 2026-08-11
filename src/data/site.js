@@ -131,9 +131,6 @@ export const site = {
     facebook:
       "https://www.facebook.com/fateh.music.academy",
 
-    facebookId:
-      "1302143662973158",
-
     instagram:
       "https://www.instagram.com/fateh.music.academy",
 
