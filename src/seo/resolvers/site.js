@@ -281,6 +281,7 @@ function dedupeSameAs(socials) {
         socials.instagram,
         socials.youtube,
         socials.telegram,
+        socials.x,
         socials.aparat
 
     ]
