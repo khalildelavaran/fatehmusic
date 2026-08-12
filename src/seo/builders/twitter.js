@@ -22,4 +22,3 @@ export function buildTwitter({ metadata, image }) {
         "twitter:image": image
     });
 }
-}
