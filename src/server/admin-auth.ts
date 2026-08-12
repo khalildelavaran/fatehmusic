@@ -45,13 +45,30 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 async function verifyPassword(password: string, encoded: string): Promise<boolean> {
-  const parts = encoded.split("$");
-  if (parts.length !== 4 || parts[0] !== "pbkdf2-sha256") return false;
-  const iterations = Number(parts[1]);
+  const modern = encoded.split("$");
+  let iterations: number;
+  let saltHex: string;
+  let hashHex: string;
+
+  if (modern.length === 4 && modern[0] === "pbkdf2-sha256") {
+    iterations = Number(modern[1]);
+    saltHex = modern[2];
+    hashHex = modern[3];
+  } else {
+    // Compatibility with the initial admin hash format used during first setup:
+    // iterations:salt:hash. Successful login can then be migrated to the modern format.
+    const legacy = encoded.split(":");
+    if (legacy.length !== 3) return false;
+    iterations = Number(legacy[0]);
+    saltHex = legacy[1];
+    hashHex = legacy[2];
+  }
+
   if (!Number.isInteger(iterations) || iterations < 100_000 || iterations > 1_000_000) return false;
+
   try {
-    const actual = new Uint8Array(await derive(password, hexToBytes(parts[2]), iterations));
-    const expected = hexToBytes(parts[3]);
+    const actual = new Uint8Array(await derive(password, hexToBytes(saltHex), iterations));
+    const expected = hexToBytes(hashHex);
     if (actual.length !== expected.length) return false;
     let diff = 0;
     for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
@@ -87,6 +104,13 @@ export async function authenticateAdmin(username: string, password: string, env:
   ).bind(username).first<{ id: number; username: string; password_hash: string; role: string; is_active: number }>();
 
   if (!user || user.is_active !== 1 || !(await verifyPassword(password, user.password_hash))) return null;
+
+  // Migrate the initial setup hash to the current format after a successful login.
+  if (user.password_hash.includes(":")) {
+    const upgraded = await hashPassword(password);
+    await env.DB.prepare("UPDATE admin_users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+      .bind(upgraded, user.id).run();
+  }
 
   const token = randomToken();
   const session: AdminSession = {
