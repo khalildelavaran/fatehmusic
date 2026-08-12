@@ -8,58 +8,85 @@ export const site = {
     "LocalBusiness"
   ],
 
+
   // General
   name: "آموزشگاه موسیقی فاتح",
   alternateName: "Fateh Music Academy",
   shortName: "فاتح",
   legalName: "آموزشگاه موسیقی فاتح",
 
+
   // URLs
   url: "https://fatehmusic.ir",
   canonical: "https://fatehmusic.ir",
+
 
   // Branding
   logo: "/images/logo.webp",
   image: "/images/og-cover.webp",
   favicon: "/favicon.svg",
 
+
   // Description
   description:
     "آموزشگاه موسیقی فاتح برگزارکننده دوره‌های آموزش گیتار، پیانو، ویولن، آواز، سلفژ و سایر سازها در شوشتر.",
 
+
   keywords: [
     "آموزشگاه موسیقی",
     "آموزشگاه موسیقی فاتح",
-    "آموزش موسیقی شوشتر"
+    "آموزش موسیقی شوشتر",
+    "آموزش گیتار شوشتر",
+    "آموزش پیانو شوشتر",
+    "آموزش آواز شوشتر"
   ],
+
 
   // Contact
   telephone: "+986136221174",
   mobile: "+989333139319",
   email: "info@fatehmusic.ir",
 
+
+  // Google Business Entity
+  googlePlaceId:
+    "0x3fc1f3110daa18b7:0xba67d4866163a4cb",
+
+
   // Address
   address: {
+
     streetAddress:
       "خیابان امام شرقی، پس از پاساژ مهستان، محوطه دوم پارکینگ حاج سلیمان",
+
     addressLocality:
       "شوشتر",
+
     addressRegion:
       "خوزستان",
+
     postalCode:
       "6451956156",
+
     addressCountry:
       "IR"
   },
 
+
   // Geographic location
-geo: {
-  latitude: 32.0415255,
-  longitude: 48.8528608
-}
+  geo: {
+
+    latitude:
+      32.0415255,
+
+    longitude:
+      48.8528608
+  },
+
 
   mapUrl:
     "https://www.google.com/maps?q=32.0415255,48.8528608",
+
 
   // Local SEO
   areaServed: [
@@ -68,16 +95,20 @@ geo: {
     "ایران"
   ],
 
+
   openingHours: [
     "Sa-Th 16:00-21:00",
     "Fr 13:00-21:00"
   ],
 
+
   priceRange:
     "1,600,000",
 
+
   // Social profiles
   socials: {
+
     facebook:
       "https://www.facebook.com/fateh.music.academy",
 
@@ -101,6 +132,7 @@ geo: {
 
     aparat:
       ""
+
   }
 
 };
