@@ -1,26 +1,138 @@
+const SESSION_TTL_SECONDS = 60 * 60 * 8;
+const SESSION_COOKIE = "__Host-admin_session";
+const PBKDF2_ITERATIONS = 210_000;
+
 export interface AdminEnv {
-  ADMIN_PASSWORD?: string;
+  DB: D1Database;
+  SESSION: KVNamespace;
 }
 
-export function verifyAdminRequest(request: Request, env: AdminEnv): Response | null {
-  const configuredPassword = env.ADMIN_PASSWORD;
-
-  if (!configuredPassword) {
-    return json({ success: false, message: "رمز مدیریت روی سرور تنظیم نشده است." }, 503);
-  }
-
-  const password = request.headers.get("x-admin-password") ?? "";
-
-  if (password !== configuredPassword) {
-    return json({ success: false, message: "دسترسی مدیریت معتبر نیست." }, 401);
-  }
-
-  return null;
+export interface AdminSession {
+  userId: number;
+  username: string;
+  role: string;
+  expiresAt: number;
+  token?: string;
 }
 
-export function json(body: unknown, status = 200): Response {
+export function json(body: unknown, status = 200, headers: HeadersInit = {}): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8" }
+    headers: { "Content-Type": "application/json; charset=utf-8", ...headers }
   });
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  if (!/^[0-9a-f]+$/i.test(hex) || hex.length % 2) throw new Error("Invalid hex");
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return bytes;
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function derive(password: string, salt: Uint8Array, iterations = PBKDF2_ITERATIONS): Promise<ArrayBuffer> {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  return crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256);
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = new Uint8Array(await derive(password, salt));
+  return `pbkdf2-sha256$${PBKDF2_ITERATIONS}$${bytesToHex(salt)}$${bytesToHex(hash)}`;
+}
+
+async function verifyPassword(password: string, encoded: string): Promise<boolean> {
+  const parts = encoded.split("$");
+  if (parts.length !== 4 || parts[0] !== "pbkdf2-sha256") return false;
+  const iterations = Number(parts[1]);
+  if (!Number.isInteger(iterations) || iterations < 100_000 || iterations > 1_000_000) return false;
+  try {
+    const actual = new Uint8Array(await derive(password, hexToBytes(parts[2]), iterations));
+    const expected = hexToBytes(parts[3]);
+    if (actual.length !== expected.length) return false;
+    let diff = 0;
+    for (let i = 0; i < actual.length; i++) diff |= actual[i] ^ expected[i];
+    return diff === 0;
+  } catch {
+    return false;
+  }
+}
+
+function randomToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function cookies(request: Request): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const part of request.headers.get("Cookie")?.split(";") ?? []) {
+    const i = part.indexOf("=");
+    if (i >= 0) result[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return result;
+}
+
+function setCookie(token: string, maxAge = SESSION_TTL_SECONDS): string {
+  return `${SESSION_COOKIE}=${encodeURIComponent(token)}; Max-Age=${maxAge}; Path=/; HttpOnly; Secure; SameSite=Strict`;
+}
+
+export async function authenticateAdmin(username: string, password: string, env: AdminEnv): Promise<AdminSession | null> {
+  const user = await env.DB.prepare(
+    "SELECT id, username, password_hash, role, is_active FROM admin_users WHERE username = ?1 LIMIT 1"
+  ).bind(username).first<{ id: number; username: string; password_hash: string; role: string; is_active: number }>();
+
+  if (!user || user.is_active !== 1 || !(await verifyPassword(password, user.password_hash))) return null;
+
+  const token = randomToken();
+  const session: AdminSession = {
+    userId: user.id,
+    username: user.username,
+    role: user.role,
+    expiresAt: Date.now() + SESSION_TTL_SECONDS * 1000,
+    token
+  };
+  const { token: _, ...stored } = session;
+  await env.SESSION.put(`admin:${token}`, JSON.stringify(stored), { expirationTtl: SESSION_TTL_SECONDS });
+  return session;
+}
+
+export function createSessionResponse(session: AdminSession): Response {
+  const { token, ...user } = session;
+  return json({ success: true, user }, 200, { "Set-Cookie": setCookie(token ?? "") });
+}
+
+export async function getAdminSession(request: Request, env: AdminEnv): Promise<AdminSession | null> {
+  const token = cookies(request)[SESSION_COOKIE];
+  if (!token) return null;
+  const raw = await env.SESSION.get(`admin:${token}`);
+  if (!raw) return null;
+  try {
+    const session = JSON.parse(raw) as AdminSession;
+    if (!session.expiresAt || session.expiresAt <= Date.now()) {
+      await env.SESSION.delete(`admin:${token}`);
+      return null;
+    }
+    return session;
+  } catch {
+    await env.SESSION.delete(`admin:${token}`);
+    return null;
+  }
+}
+
+export async function requireAdmin(request: Request, env: AdminEnv): Promise<Response | null> {
+  return (await getAdminSession(request, env)) ? null : json({ success: false, message: "دسترسی مدیریت معتبر نیست." }, 401);
+}
+
+export async function logoutAdmin(request: Request, env: AdminEnv): Promise<void> {
+  const token = cookies(request)[SESSION_COOKIE];
+  if (token) await env.SESSION.delete(`admin:${token}`);
+}
+
+export function clearSessionCookie(): string {
+  return setCookie("", 0);
 }
