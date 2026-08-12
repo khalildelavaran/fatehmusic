@@ -2,12 +2,11 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { createAdminSession, hashPassword, json, verifyPassword, ADMIN_SESSION_COOKIE, SESSION_TTL_SECONDS } from "../../../server/admin-auth";
+import { createAdminSession, json, verifyPassword, ADMIN_SESSION_COOKIE, SESSION_TTL_SECONDS } from "../../../server/admin-auth";
 
 export const POST: APIRoute = async ({ request }) => {
   const db = env.DB;
-  const sessionStore = env.SESSION;
-  if (!db || !sessionStore) {
+  if (!db || !env.SESSION) {
     return json({ success: false, message: "سرویس احراز هویت روی سرور آماده نیست." }, 503);
   }
 
@@ -38,13 +37,13 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ success: false, message: "نام کاربری یا رمز عبور نادرست است." }, 401);
   }
 
-  const sessionId = crypto.randomUUID();
   const expiresAt = Date.now() + SESSION_TTL_SECONDS * 1000;
-  await sessionStore.put(
-    `admin:${sessionId}`,
-    JSON.stringify({ userId: user.id, username: user.username, role: user.role, expiresAt }),
-    { expirationTtl: SESSION_TTL_SECONDS }
-  );
+  const sessionId = await createAdminSession(env, {
+    userId: user.id,
+    username: user.username,
+    role: user.role,
+    expiresAt
+  });
 
   return new Response(JSON.stringify({ success: true, username: user.username, role: user.role }), {
     status: 200,
@@ -55,5 +54,3 @@ export const POST: APIRoute = async ({ request }) => {
     }
   });
 };
-
-void hashPassword;
