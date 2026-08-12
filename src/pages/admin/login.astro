@@ -1,0 +1,55 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/admin/base.css";
+
+const next = Astro.url.searchParams.get("next") || "/admin";
+---
+<MainLayout title="ورود مدیریت | آموزشگاه موسیقی فاتح" noindex={true}>
+  <main class="admin-shell">
+    <section class="admin-hero">
+      <p>دسترسی مدیریت</p>
+      <h1>ورود به داشبورد</h1>
+      <p>برای دسترسی به بخش مدیریت، نام کاربری و رمز عبور خود را وارد کنید.</p>
+    </section>
+    <section class="admin-login" data-admin-login>
+      <label>نام کاربری <input type="text" id="adminUsername" autocomplete="username" required /></label>
+      <label>رمز عبور <input type="password" id="adminPassword" autocomplete="current-password" required /></label>
+      <button id="adminLoginButton" type="button">ورود</button>
+      <p id="adminMessage" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script is:inline define:vars={{ next }}>
+    const username = document.querySelector("#adminUsername");
+    const password = document.querySelector("#adminPassword");
+    const button = document.querySelector("#adminLoginButton");
+    const message = document.querySelector("#adminMessage");
+
+    async function login() {
+      message.textContent = "در حال بررسی...";
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ username: username.value, password: password.value })
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          message.textContent = data.message || "ورود انجام نشد.";
+          return;
+        }
+        window.location.assign(next);
+      } catch {
+        message.textContent = "ارتباط با سرور برقرار نشد.";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    button.addEventListener("click", login);
+    password.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") login();
+    });
+  </script>
+</MainLayout>
