@@ -2,13 +2,13 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { json, verifyAdminRequest } from "../../../server/admin-auth";
+import { json, requireAdmin } from "../../../server/admin-auth";
 
 const fields = `id, slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, created_at, updated_at, published_at`;
 
 export const GET: APIRoute = async ({ request }) => {
-  const denied = verifyAdminRequest(request, env);
-  if (denied) return denied;
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
   const result = await db.prepare(`SELECT ${fields} FROM blog_posts ORDER BY updated_at DESC`).all();
@@ -16,8 +16,8 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const denied = verifyAdminRequest(request, env);
-  if (denied) return denied;
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
   const post = await request.json() as Record<string, string>;
@@ -35,8 +35,8 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const DELETE: APIRoute = async ({ request }) => {
-  const denied = verifyAdminRequest(request, env);
-  if (denied) return denied;
+  const auth = await requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
   const { id } = await request.json() as { id?: number };
