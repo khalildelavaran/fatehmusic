@@ -16,8 +16,10 @@ import { TWITTER_CARD_TYPE } from "../config/constants.js";
 export function buildTwitter({ metadata, image }) {
     return Object.freeze({
         "twitter:card": TWITTER_CARD_TYPE,
+        "twitter:site": "@FatehMusicIR",
         "twitter:title": metadata.title,
         "twitter:description": metadata.description,
         "twitter:image": image
     });
+}
 }
