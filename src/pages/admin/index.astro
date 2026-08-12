@@ -2,17 +2,22 @@
 import MainLayout from "../../layouts/MainLayout.astro";
 import "../../styles/admin/base.css";
 import "../../styles/admin/dashboard.css";
+import { getAdminSession, type AdminEnv } from "../../server/admin-auth";
+
+const session = await getAdminSession(Astro.request, Astro.locals.runtime.env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
 ---
 <MainLayout title="داشبورد مدیریت | آموزشگاه موسیقی فاتح" noindex={true}>
   <main class="admin-shell">
     <section class="admin-hero">
       <p>داشبورد داخلی</p>
       <h1>مدیریت محتوای آموزشگاه موسیقی فاتح</h1>
-      <p>برای مدیریت نوشته‌ها و بررسی ثبت‌نام‌های سایت از بخش‌های زیر استفاده کنید.</p>
+      <p>خوش آمدید، {session.username}.</p>
     </section>
     <nav class="admin-grid" aria-label="بخش‌های مدیریت">
       <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
       <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
     </nav>
+    <form method="post" action="/api/admin/logout" style="margin-top:1rem"><button type="submit">خروج</button></form>
   </main>
 </MainLayout>
