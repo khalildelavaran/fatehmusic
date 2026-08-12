@@ -53,13 +53,13 @@ export const site = {
   },
 
   // Geographic location
-  geo: {
-    latitude: 32.04153,
-    longitude: 48.8554357
-  },
+geo: {
+  latitude: 32.0415255,
+  longitude: 48.8528608
+}
 
   mapUrl:
-    "https://www.google.com/maps?q=32.04153,48.8554357",
+    "https://www.google.com/maps?q=32.0415255,48.8528608",
 
   // Local SEO
   areaServed: [
