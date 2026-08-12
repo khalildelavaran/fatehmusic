@@ -54,7 +54,9 @@ contact: {
 
         whatsapp: "https://api.whatsapp.com/send/?phone=989333139319&text&type=phone_number&app_absent=0",
 
-        telegram: "https://t.me/fatehmusic"
+        telegram: "https://t.me/fatehmusic",
+
+        facebook: "https://facebook.com/fateh.music.academy"
 
     },
 
