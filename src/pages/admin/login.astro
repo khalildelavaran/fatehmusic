@@ -1,0 +1,48 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/dashboard.css";
+import { env } from "cloudflare:workers";
+import { getAdminSession } from "../../server/admin-auth";
+
+export const prerender = false;
+
+const session = await getAdminSession(Astro.request, env);
+if (session) return Astro.redirect("/admin");
+---
+<MainLayout title="ورود مدیریت | آموزشگاه موسیقی فاتح" noindex={true}>
+  <main class="admin-shell">
+    <section class="admin-hero">
+      <p>ورود امن مدیریت</p>
+      <h1>داشبورد مدیریت آموزشگاه موسیقی فاتح</h1>
+      <p>برای ورود، نام کاربری و رمز عبور حساب مدیریتی را وارد کنید.</p>
+    </section>
+    <section class="admin-login" aria-labelledby="admin-login-title">
+      <h2 id="admin-login-title">ورود</h2>
+      <form id="adminLoginForm">
+        <label>نام کاربری<input name="username" autocomplete="username" required /></label>
+        <label>رمز عبور<input name="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit">ورود به داشبورد</button>
+        <p id="adminMessage" role="alert"></p>
+      </form>
+    </section>
+  </main>
+  <script>
+    const form = document.querySelector("#adminLoginForm");
+    const message = document.querySelector("#adminMessage");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form)))
+      });
+      const data = await response.json();
+      if (data.success) {
+        window.location.assign("/admin");
+        return;
+      }
+      if (message) message.textContent = data.message || "ورود انجام نشد.";
+    });
+  </script>
+</MainLayout>
