@@ -280,8 +280,8 @@ function dedupeSameAs(socials) {
         socials.facebook,
         socials.instagram,
         socials.youtube,
-        socials.telegram,
         socials.x,
+        socials.telegram,
         socials.aparat
 
     ]
