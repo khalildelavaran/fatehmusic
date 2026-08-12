@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
+import { env } from "cloudflare:workers";
 import { authenticateAdmin, createSessionResponse, json, type AdminEnv } from "../../../server/admin-auth";
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime.env as AdminEnv;
+export const POST: APIRoute = async ({ request }) => {
+  const runtimeEnv = env as AdminEnv;
   let body: { username?: string; password?: string };
   try {
     body = await request.json();
@@ -14,7 +15,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const password = typeof body.password === "string" ? body.password : "";
   if (!username || !password) return json({ success: false, message: "نام کاربری و رمز عبور الزامی است." }, 400);
 
-  const session = await authenticateAdmin(username, password, env);
+  const session = await authenticateAdmin(username, password, runtimeEnv);
   if (!session) return json({ success: false, message: "نام کاربری یا رمز عبور نادرست است." }, 401);
   return createSessionResponse(session as typeof session & { token: string });
 };
