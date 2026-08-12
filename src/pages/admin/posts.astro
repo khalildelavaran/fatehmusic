@@ -1,0 +1,26 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/posts.css";
+import { env } from "cloudflare:workers";
+import { getAdminSession } from "../../server/admin-auth";
+
+const session = await getAdminSession(Astro.request, env);
+if (!session) return Astro.redirect(`/admin/login?next=${encodeURIComponent(Astro.url.pathname)}`);
+---
+<MainLayout title="مدیریت نوشته‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
+  <main class="admin-shell" data-admin-posts>
+    <section class="admin-hero"><p>مدیریت نوشته‌ها</p><h1>داشبورد نوشته‌های وبلاگ</h1><p>مقاله‌ها باید به دوره، استاد یا هدف تجاری آموزشگاه موسیقی فاتح در شوشتر وصل باشند.</p></section>
+    <section class="admin-login"><p>کاربر: <strong>{session.username}</strong></p><button id="loadPosts" type="button">بارگذاری نوشته‌ها</button><button id="adminLogout" type="button">خروج</button><p id="adminMessage" role="status"></p></section>
+    <section class="admin-panel"><form id="postForm" class="admin-form"><input type="hidden" name="id" /><label>عنوان<input name="title" required /></label><label>اسلاگ انگلیسی<input name="slug" dir="ltr" required /></label><label>موضوع<input name="topic" required /></label><label>خلاصه<textarea name="excerpt" required></textarea></label><label>متن مقاله<textarea name="content" rows="8" required></textarea></label><label>اسلاگ دوره مرتبط<input name="related_course_slug" dir="ltr" /></label><label>عنوان دوره مرتبط<input name="related_course_title" /></label><label>Meta Title<input name="meta_title" /></label><label>Meta Description<textarea name="meta_description"></textarea></label><label>وضعیت<select name="status"><option value="draft">پیش‌نویس</option><option value="published">منتشر شده</option></select></label><button>ذخیره نوشته</button></form><div class="admin-list" id="postsList"></div></section>
+  </main>
+  <script>
+    import "../../scripts/admin/posts.js";
+  </script>
+  <script is:inline>
+    document.querySelector("#adminLogout")?.addEventListener("click", async () => {
+      await fetch("/api/admin/logout", { method: "POST", credentials: "same-origin" });
+      window.location.assign("/admin/login");
+    });
+  </script>
+</MainLayout>
