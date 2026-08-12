@@ -12,6 +12,8 @@ declare global {
     ASSETS: Fetcher;
 
     // ===== Secrets =====
+    ADMIN_PASSWORD?: string;
+    ADMIN_USERNAME?: string;
     TELEGRAM_BOT_TOKEN?: string;
     TELEGRAM_CHAT_ID?: string;
     RESEND_API_KEY?: string;
@@ -28,6 +30,8 @@ declare global {
 
       ASSETS: Fetcher;
 
+      ADMIN_PASSWORD?: string;
+      ADMIN_USERNAME?: string;
       TELEGRAM_BOT_TOKEN?: string;
       TELEGRAM_CHAT_ID?: string;
       RESEND_API_KEY?: string;
