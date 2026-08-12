@@ -63,10 +63,10 @@ contact: {
     map: {
 
         iframe:
-            "https://www.google.com/maps?q=32.0415255,48.8528608&z=17&output=embed",
+            "https://www.google.com/maps?q=32.039394,48.8439126&z=17&output=embed",
 
         google:
-            "https://www.google.com/maps?q=32.0415255,48.8528608",
+            "https://www.google.com/maps?q=32.039394,48.8439126",
 
         neshan:
             "https://neshan.org/maps/share/a8_b_LH9GBh-OF",
@@ -75,7 +75,7 @@ contact: {
             "https://balad.ir/p/%D8%A2%D9%85%D9%88%D8%B2%D8%B4%DA%AF%D8%A7%D9%87-%D9%85%D9%88%D8%B3%DB%8C%D9%82%DB%8C-%D9%81%D8%A7%D8%AA%D8%AD_educational-institutions-P5GnGnNaopX9DX",
 
         navigation:
-            "https://www.google.com/maps?q=32.0415255,48.8528608"
+            "https://www.google.com/maps?q=32.039394,48.8439126"
 
     }
 
