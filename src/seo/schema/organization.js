@@ -1,11 +1,11 @@
 /**
- * --------------------------------------------------------
+ * ---
  * Fateh Music Academy — SEO Engine
  * Module: Organization Schema
  * Description:
  * Main organization entity referenced by all schema nodes
  * through "@id": `${site.url}/#organization`
- * --------------------------------------------------------
+ * ---
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
@@ -16,100 +16,155 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  */
 export function buildOrganizationSchema(site) {
 
-    return {
-        "@type": site.schemaType || [
-            SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
-            SCHEMA_TYPES.EDUCATIONAL_ORGANIZATION
-        ],
+  return {
 
-        "@id":
-            `${site.url}/#organization`,
-
-        name:
-            site.name,
-
-        alternateName:
-            site.alternateName ||
-            site.shortName,
-
-        legalName:
-            site.legalName,
-
-        description:
-            site.description,
-
-        url:
-            site.url,
+    "@type":
+      site.schemaType || [
+        SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
+        SCHEMA_TYPES.EDUCATIONAL_ORGANIZATION
+      ],
 
 
-        logo: {
-            "@type": "ImageObject",
-            url: site.logo
-        },
+    "@id":
+      `${site.url}/#organization`,
 
 
-        image:
-            site.image,
+    name:
+      site.name,
 
 
-        telephone:
-            site.telephone,
+    alternateName:
+      site.alternateName ||
+      site.shortName,
 
 
-        email:
-            site.email,
+    legalName:
+      site.legalName,
 
 
-        priceRange:
-            site.priceRange,
+    description:
+      site.description,
 
 
-        identifier: site.facebookId
-            ? {
-                "@type": "PropertyValue",
-                "propertyID": "Facebook Page ID",
-                "value": site.facebookId
-            }
-            : undefined,
+    url:
+      site.url,
 
 
-        founder: {
-            "@type": SCHEMA_TYPES.PERSON,
-            name: "خلیل دلاوران"
-        },
+    logo: {
+
+      "@type":
+        "ImageObject",
+
+      url:
+        site.logo
+
+    },
 
 
-        address: {
-            "@type": SCHEMA_TYPES.POSTAL_ADDRESS,
-            ...site.address,
-            addressCountry:
-                site.address.addressCountry || "IR"
-        },
+    image:
+      site.image,
 
 
-        geo: {
-            "@type": SCHEMA_TYPES.GEO_COORDINATES,
-            latitude:
-                site.geo.latitude,
-            longitude:
-                site.geo.longitude
-        },
+    telephone:
+      site.telephone,
 
 
-        hasMap:
-            site.mapUrl,
+    email:
+      site.email,
 
 
-        areaServed:
-            site.areaServed,
+    priceRange:
+      site.priceRange,
 
 
-        openingHoursSpecification:
-            site.openingHoursSpecification,
+    identifier: [
+
+      site.facebookId
+        ? {
+            "@type":
+              "PropertyValue",
+
+            "propertyID":
+              "Facebook Page ID",
+
+            "value":
+              site.facebookId
+          }
+        : undefined,
 
 
-        sameAs:
-            site.sameAs
-    };
+      site.googlePlaceId
+        ? {
+            "@type":
+              "PropertyValue",
+
+            "propertyID":
+              "Google Place ID",
+
+            "value":
+              site.googlePlaceId
+          }
+        : undefined
+
+    ].filter(Boolean),
+
+
+    founder: {
+
+      "@type":
+        SCHEMA_TYPES.PERSON,
+
+      name:
+        "خلیل دلاوران"
+
+    },
+
+
+    address: {
+
+      "@type":
+        SCHEMA_TYPES.POSTAL_ADDRESS,
+
+      ...site.address,
+
+
+      addressCountry:
+        site.address.addressCountry || "IR"
+
+    },
+
+
+    geo: {
+
+      "@type":
+        SCHEMA_TYPES.GEO_COORDINATES,
+
+
+      latitude:
+        site.geo.latitude,
+
+
+      longitude:
+        site.geo.longitude
+
+    },
+
+
+    hasMap:
+      site.mapUrl,
+
+
+    areaServed:
+      site.areaServed,
+
+
+    openingHoursSpecification:
+      site.openingHoursSpecification,
+
+
+    sameAs:
+      site.sameAs
+
+  };
 
 }
