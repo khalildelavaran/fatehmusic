@@ -2,10 +2,14 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { json, verifyAdminRequest } from "../../../server/admin-auth";
+import { json, getAdminSession } from "../../../server/admin-auth";
+
+async function requireAdmin(request: Request): Promise<Response | null> {
+  return (await getAdminSession(request, env)) ? null : json({ success: false, message: "دسترسی مدیریت معتبر نیست." }, 401);
+}
 
 export const GET: APIRoute = async ({ request }) => {
-  const denied = verifyAdminRequest(request, env);
+  const denied = await requireAdmin(request);
   if (denied) return denied;
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
@@ -14,7 +18,7 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 export const PATCH: APIRoute = async ({ request }) => {
-  const denied = verifyAdminRequest(request, env);
+  const denied = await requireAdmin(request);
   if (denied) return denied;
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
