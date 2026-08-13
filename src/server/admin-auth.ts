@@ -68,6 +68,13 @@ async function verifyPassword(password: string, encoded: string): Promise<boolea
 
   try {
     const actual = new Uint8Array(await derive(password, hexToBytes(saltHex), iterations));
+    console.log("VERIFY DEBUG", {
+      passwordLength: password.length,
+      iterations,
+      saltHex,
+      expectedHash: hashHex,
+      actualHash: bytesToHex(actual)
+    });
     const expected = hexToBytes(hashHex);
     if (actual.length !== expected.length) return false;
     let diff = 0;
