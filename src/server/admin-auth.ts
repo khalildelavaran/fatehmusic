@@ -103,8 +103,24 @@ export async function authenticateAdmin(username: string, password: string, env:
     "SELECT id, username, password_hash, role, is_active FROM admin_users WHERE username = ?1 LIMIT 1"
   ).bind(username).first<{ id: number; username: string; password_hash: string; role: string; is_active: number }>();
 
-  if (!user || user.is_active !== 1 || !(await verifyPassword(password, user.password_hash))) return null;
+if (!user) {
+  console.log("ADMIN DEBUG: user not found");
+  return null;
+}
 
+console.log("ADMIN DEBUG:", {
+  username: user.username,
+  active: user.is_active,
+  hashPrefix: user.password_hash.slice(0, 25)
+});
+
+const valid = await verifyPassword(password, user.password_hash);
+
+console.log("ADMIN DEBUG verify:", valid);
+
+if (user.is_active !== 1 || !valid) {
+  return null;
+}
   // Migrate the initial setup hash to the current format after a successful login.
   if (user.password_hash.includes(":")) {
     const upgraded = await hashPassword(password);
