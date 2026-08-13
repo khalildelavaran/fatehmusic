@@ -1,0 +1,42 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/admin/base.css";
+---
+<MainLayout title="ورود مدیریت | آموزشگاه موسیقی فاتح" noindex={true}>
+  <main class="admin-shell">
+    <section class="admin-hero">
+      <p>ورود مدیریت</p>
+      <h1>ورود به داشبورد مدیریت</h1>
+      <p>برای ورود، نام کاربری و رمز عبور مدیریت را وارد کنید.</p>
+    </section>
+    <section class="admin-login">
+      <form id="adminLoginForm">
+        <label>نام کاربری <input name="username" autocomplete="username" required /></label>
+        <label>رمز عبور <input type="password" name="password" autocomplete="current-password" required /></label>
+        <button type="submit">ورود</button>
+        <p id="adminMessage" role="status"></p>
+      </form>
+    </section>
+  </main>
+  <script>
+    const form = document.querySelector("#adminLoginForm");
+    const message = document.querySelector("#adminMessage");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "در حال ورود...";
+      const data = Object.fromEntries(new FormData(form));
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify(data)
+      });
+      const result = await response.json().catch(() => ({ success: false, message: "پاسخ نامعتبر از سرور." }));
+      if (!response.ok || !result.success) {
+        message.textContent = result.message || "ورود ناموفق بود.";
+        return;
+      }
+      window.location.assign("/admin");
+    });
+  </script>
+</MainLayout>
