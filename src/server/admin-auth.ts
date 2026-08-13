@@ -251,7 +251,11 @@ export async function authenticateAdmin(
     role:string;
     is_active:number;
   }>();
-
+  console.log("FULL ADMIN HASH DEBUG", {
+    username: user?.username,
+    hash: user?.password_hash,
+    active: user?.is_active
+  });
 
   if (!user) {
 
