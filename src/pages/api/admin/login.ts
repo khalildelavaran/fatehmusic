@@ -14,8 +14,13 @@ export const POST: APIRoute = async ({ request }) => {
   const username = typeof body.username === "string" ? body.username.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   if (!username || !password) return json({ success: false, message: "نام کاربری و رمز عبور الزامی است." }, 400);
-
+console.log("LOGIN DEBUG START", {
+  username,
+  hasPassword: Boolean(password),
+  length: password.length
+});
   const session = await authenticateAdmin(username, password, runtimeEnv);
+  console.log("LOGIN DEBUG RESULT", Boolean(session));
   if (!session) return json({ success: false, message: "نام کاربری یا رمز عبور نادرست است." }, 401);
   return createSessionResponse(session as typeof session & { token: string });
 };
