@@ -2,11 +2,15 @@
 import MainLayout from "../../layouts/MainLayout.astro";
 import "../../styles/admin/base.css";
 import "../../styles/admin/registrations.css";
+import { getAdminSession, type AdminEnv } from "../../server/admin-auth";
+
+const session = await getAdminSession(Astro.request, Astro.locals.runtime.env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
 ---
 <MainLayout title="مدیریت ثبت‌نام‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
   <main class="admin-shell" data-admin-registrations>
     <section class="admin-hero no-print"><p>ثبت‌نام‌ها</p><h1>نمایش و پرینت ثبت‌نام‌های سایت</h1><p>فهرست ثبت‌نام‌های هنرجویان آموزشگاه موسیقی فاتح را بررسی، وضعیت پیگیری را ثبت و خروجی چاپی تهیه کنید.</p></section>
-    <section class="admin-login no-print"><label>رمز مدیریت <input type="password" id="adminPassword" autocomplete="current-password" /></label><button id="loadRegistrations">ورود و بارگذاری</button><button id="printRegistrations">پرینت</button><p id="adminMessage" role="status"></p></section>
+    <section class="admin-login no-print"><p>وارد شده به‌عنوان: <strong>{session.username}</strong></p><button id="loadRegistrations">بارگذاری ثبت‌نام‌ها</button><button id="printRegistrations">پرینت</button><p id="adminMessage" role="status"></p></section>
     <section class="admin-table-wrap"><table class="admin-table"><thead><tr><th>کد</th><th>هنرجو</th><th>موبایل</th><th>دوره</th><th>استاد</th><th>زمان</th><th>وضعیت</th><th class="no-print">عملیات</th></tr></thead><tbody id="registrationsBody"></tbody></table></section>
   </main>
   <script>
