@@ -64,8 +64,7 @@ async function verifyPassword(password: string, encoded: string): Promise<boolea
     hashHex = legacy[2];
   }
 
-  if (!Number.isInteger(iterations) || iterations < 100_000 || iterations > 1_000_000) return false;
-
+  if (!Number.isInteger(iterations) || iterations < 10_000 || iterations > 100_000) return false;
   try {
     const actual = new Uint8Array(await derive(password, hexToBytes(saltHex), iterations));
     const expected = hexToBytes(hashHex);
