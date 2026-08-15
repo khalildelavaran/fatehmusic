@@ -1,11 +1,20 @@
-const loadButton = document.querySelector("#loadPosts");
 const message = document.querySelector("#adminMessage");
 const form = document.querySelector("#postForm");
+const clearFormButton = document.querySelector("#clearForm");
 const list = document.querySelector("#postsList");
 let posts = [];
 
 const headers = () => ({ "Content-Type": "application/json" });
 const setMessage = (text) => { message.textContent = text; };
+const statusLabel = (status) => (status === "published" ? "منتشر شده" : "پیش‌نویس");
+const formatDate = (value) => {
+  if (!value) return "—";
+  try {
+    return new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  } catch {
+    return value;
+  }
+};
 
 async function loadPosts() {
   const response = await fetch("/api/admin/posts", { credentials: "same-origin", headers: headers() });
@@ -14,14 +23,44 @@ async function loadPosts() {
   if (!data.success) { setMessage(data.message); return; }
   posts = data.posts;
   renderPosts();
-  setMessage("نوشته‌ها بارگذاری شدند.");
+  setMessage(`${posts.length} نوشته بارگذاری شد.`);
 }
 
 function renderPosts() {
-  list.innerHTML = posts.map((post) => `<article class="admin-item"><h2>${post.title}</h2><p>${post.topic} — ${post.status === "published" ? "منتشر شده" : "پیش‌نویس"}</p><p dir="ltr">/blog/${post.slug}</p><div class="admin-item-actions"><button data-edit="${post.id}">ویرایش</button><button data-delete="${post.id}">حذف</button></div></article>`).join("");
+  if (posts.length === 0) {
+    list.innerHTML = `<tr><td colspan="5" class="admin-table-empty">هنوز نوشته‌ای ثبت نشده است.</td></tr>`;
+    return;
+  }
+  list.innerHTML = posts
+    .map(
+      (post) => `
+    <tr>
+      <td>
+        <strong>${post.title}</strong>
+        <div class="admin-table-subtext" dir="ltr">/blog/${post.slug}</div>
+      </td>
+      <td>${post.topic ?? "—"}</td>
+      <td><span class="admin-status-pill" data-status="${post.status}">${statusLabel(post.status)}</span></td>
+      <td>${formatDate(post.updated_at)}</td>
+      <td class="admin-table-actions">
+        <button type="button" data-edit="${post.id}">مشاهده / ویرایش</button>
+        <button type="button" class="secondary" data-delete="${post.id}">حذف</button>
+      </td>
+    </tr>`
+    )
+    .join("");
 }
 
-loadButton.addEventListener("click", loadPosts);
+function resetForm() {
+  form.reset();
+  form.elements.id.value = "";
+  setMessage("فرم برای نوشته‌ی جدید آماده است.");
+  form.elements.title.focus();
+}
+
+loadPosts();
+clearFormButton.addEventListener("click", resetForm);
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = Object.fromEntries(new FormData(form));
@@ -29,17 +68,26 @@ form.addEventListener("submit", async (event) => {
   if (response.status === 401) { window.location.assign("/admin/login"); return; }
   const data = await response.json();
   setMessage(data.success ? "نوشته ذخیره شد." : data.message);
-  if (data.success) { form.reset(); await loadPosts(); }
+  if (data.success) { resetForm(); await loadPosts(); }
 });
+
 list.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
   const editId = target.dataset.edit;
   const deleteId = target.dataset.delete;
+
   if (editId) {
     const post = posts.find((item) => String(item.id) === editId);
-    if (post) Object.entries(post).forEach(([key, value]) => { if (form.elements[key]) form.elements[key].value = value ?? ""; });
+    if (post) {
+      Object.entries(post).forEach(([key, value]) => {
+        if (form.elements[key]) form.elements[key].value = value ?? "";
+      });
+      form.scrollIntoView({ behavior: "smooth", block: "start" });
+      setMessage(`در حال ویرایش: ${post.title}`);
+    }
   }
+
   if (deleteId && confirm("این نوشته حذف شود؟")) {
     const response = await fetch("/api/admin/posts", { method: "DELETE", headers: headers(), credentials: "same-origin", body: JSON.stringify({ id: Number(deleteId) }) });
     if (response.status === 401) { window.location.assign("/admin/login"); return; }
