@@ -1,6 +1,19 @@
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 const SESSION_COOKIE = "__Host-admin_session";
+// NOTE: Cloudflare Workers' crypto.subtle enforces a hard cap of 100,000
+// iterations for PBKDF2 (throws NotSupportedError above it). Do not raise this.
 const PBKDF2_ITERATIONS = 100_000;
+
+export const ROLES = {
+  ADMIN: "admin",
+  REGISTRAR: "registrar"
+} as const;
+export type Role = (typeof ROLES)[keyof typeof ROLES];
+
+export const ROLE_LABELS_FA: Record<string, string> = {
+  [ROLES.ADMIN]: "مدیر",
+  [ROLES.REGISTRAR]: "منشی"
+};
 
 export interface AdminEnv {
   DB: D1Database;
@@ -65,6 +78,7 @@ async function verifyPassword(password: string, encoded: string): Promise<boolea
   }
 
   if (!Number.isInteger(iterations) || iterations < 10_000 || iterations > 100_000) return false;
+
   try {
     const actual = new Uint8Array(await derive(password, hexToBytes(saltHex), iterations));
     const expected = hexToBytes(hashHex);
@@ -149,6 +163,13 @@ export async function getAdminSession(request: Request, env: AdminEnv): Promise<
 
 export async function requireAdmin(request: Request, env: AdminEnv): Promise<Response | null> {
   return (await getAdminSession(request, env)) ? null : json({ success: false, message: "دسترسی مدیریت معتبر نیست." }, 401);
+}
+
+export async function requireRole(request: Request, env: AdminEnv, allowedRoles: readonly string[]): Promise<Response | null> {
+  const session = await getAdminSession(request, env);
+  if (!session) return json({ success: false, message: "دسترسی مدیریت معتبر نیست." }, 401);
+  if (!allowedRoles.includes(session.role)) return json({ success: false, message: "شما به این بخش دسترسی ندارید." }, 403);
+  return null;
 }
 
 export async function logoutAdmin(request: Request, env: AdminEnv): Promise<void> {
