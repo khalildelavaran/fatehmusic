@@ -25,6 +25,7 @@ const regStatusLabels: Record<string, string> = { pending: "در انتظار", 
 let postsTotal = 0;
 let postsPublished = 0;
 let postsDraft = 0;
+let aiDraftsPending = 0;
 if (isAdmin && db) {
   const postRows = (await db.prepare("SELECT status, COUNT(*) as count FROM blog_posts GROUP BY status").all<{ status: string; count: number }>()).results;
   for (const row of postRows) {
@@ -32,6 +33,8 @@ if (isAdmin && db) {
     if (row.status === "published") postsPublished = row.count;
     if (row.status === "draft") postsDraft = row.count;
   }
+  const aiRow = await db.prepare("SELECT COUNT(*) as count FROM blog_posts WHERE is_ai_generated = 1 AND status = 'draft'").first<{ count: number }>();
+  aiDraftsPending = aiRow?.count ?? 0;
 }
 ---
 <MainLayout title="داشبورد مدیریت | آموزشگاه موسیقی فاتح" noindex={true}>
@@ -60,6 +63,16 @@ if (isAdmin && db) {
                 <span>{postsPublished} منتشر شده</span>
                 <span>{postsDraft} پیش‌نویس</span>
               </span>
+            </a>
+          )}
+
+          {isAdmin && aiDraftsPending > 0 && (
+            <a href="/admin/posts" class="admin-stat-card attention">
+              <span class="admin-stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4Z"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M9 14.5 12 17l3-2.5"/></svg>
+              </span>
+              <span class="admin-stat-value">{aiDraftsPending}</span>
+              <span class="admin-stat-label">پیش‌نویس هوش مصنوعی، منتظر بررسی</span>
             </a>
           )}
 
