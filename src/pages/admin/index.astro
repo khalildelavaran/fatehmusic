@@ -1,31 +1,98 @@
 ---
 import { env } from "cloudflare:workers";
 import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
 import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
 import "../../styles/admin/dashboard.css";
-import { getAdminSession, type AdminEnv } from "../../server/admin-auth";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/admin/login");
+
+const isAdmin = session.role === ROLES.ADMIN;
+const db = (env as AdminEnv).DB;
+
+const regRows = db
+  ? (await db.prepare("SELECT status, COUNT(*) as count FROM registrations GROUP BY status").all<{ status: string; count: number }>()).results
+  : [];
+const regByStatus: Record<string, number> = Object.fromEntries(regRows.map((r) => [r.status, r.count]));
+const regTotal = regRows.reduce((sum, r) => sum + r.count, 0);
+const regPending = regByStatus.pending ?? 0;
+
+const regStatusLabels: Record<string, string> = { pending: "در انتظار", contacted: "تماس گرفته شد", confirmed: "تأیید شد", cancelled: "لغو شد" };
+
+let postsTotal = 0;
+let postsPublished = 0;
+let postsDraft = 0;
+if (isAdmin && db) {
+  const postRows = (await db.prepare("SELECT status, COUNT(*) as count FROM blog_posts GROUP BY status").all<{ status: string; count: number }>()).results;
+  for (const row of postRows) {
+    postsTotal += row.count;
+    if (row.status === "published") postsPublished = row.count;
+    if (row.status === "draft") postsDraft = row.count;
+  }
+}
 ---
 <MainLayout title="داشبورد مدیریت | آموزشگاه موسیقی فاتح" noindex={true}>
-  <main class="admin-shell">
-    <section class="admin-hero">
-      <p>داشبورد داخلی</p>
-      <h1>مدیریت محتوای آموزشگاه موسیقی فاتح</h1>
-      <p>خوش آمدید، {session.username}.</p>
-    </section>
-    <nav class="admin-grid" aria-label="بخش‌های مدیریت">
-      <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
-      <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
-    </nav>
-    <form id="logoutForm" method="post" action="/api/admin/logout" style="margin-top:1rem"><button type="submit">خروج</button></form>
-  </main>
-  <script>
-    document.querySelector("#logoutForm")?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      await fetch("/api/admin/logout", { method: "POST", credentials: "same-origin" });
-      window.location.assign("/admin/login");
-    });
-  </script>
+  <div class="admin-layout">
+    <AdminNav session={session} active="dashboard" />
+    <main class="admin-main">
+      <div class="admin-shell">
+        <section class="admin-hero">
+          <p>داشبورد داخلی</p>
+          <h1>خوش آمدید، {session.username}</h1>
+          <p>نمای کلی از وضعیت {isAdmin ? "محتوا و ثبت‌نام‌های" : "ثبت‌نام‌های"} آموزشگاه موسیقی فاتح.</p>
+        </section>
+
+        <div class="admin-section-title">
+          <h2>آمار کلی</h2>
+        </div>
+        <div class="admin-grid">
+          {isAdmin && (
+            <a href="/admin/posts" class="admin-stat-card">
+              <span class="admin-stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5a1 1 0 0 0 1 1h5"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+              </span>
+              <span class="admin-stat-value">{postsTotal}</span>
+              <span class="admin-stat-label">نوشته‌ی وبلاگ</span>
+              <span class="admin-stat-breakdown">
+                <span>{postsPublished} منتشر شده</span>
+                <span>{postsDraft} پیش‌نویس</span>
+              </span>
+            </a>
+          )}
+
+          <a href="/admin/registration" class="admin-stat-card">
+            <span class="admin-stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <span class="admin-stat-value">{regTotal}</span>
+            <span class="admin-stat-label">ثبت‌نام کل</span>
+            <span class="admin-stat-breakdown">
+              {Object.entries(regByStatus).map(([status, count]) => <span>{count} {regStatusLabels[status] ?? status}</span>)}
+            </span>
+          </a>
+
+          <a href="/admin/registration" class:list={["admin-stat-card", regPending > 0 && "attention"]}>
+            <span class="admin-stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+            <span class="admin-stat-value">{regPending}</span>
+            <span class="admin-stat-label">در انتظار پیگیری</span>
+          </a>
+        </div>
+
+        <div class="admin-section-title">
+          <h2>دسترسی سریع</h2>
+        </div>
+        <nav class="admin-grid" aria-label="بخش‌های مدیریت">
+          {isAdmin && (
+            <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
+          )}
+          <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
+        </nav>
+      </div>
+    </main>
+  </div>
 </MainLayout>
