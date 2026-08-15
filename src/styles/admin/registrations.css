@@ -1,54 +1,14 @@
-.admin-table-wrap{
+/* Registrations-page-specific tweaks. Shared table styles live in base.css
+   so the posts page (which uses the same table pattern) doesn't need to
+   duplicate them. */
 
-    background:var(--surface);
-
-    border:1px solid var(--border);
-
-    border-radius:var(--radius);
-
-    padding:24px;
-
-    overflow:auto;
-
-    box-shadow:var(--shadow);
-
+.admin-live-status{
+    color:var(--text-secondary);
+    font-size:13px;
 }
 
-
-.admin-table{
-
-    width:100%;
-
-    min-width:900px;
-
-    border-collapse:collapse;
-
-}
-
-
-.admin-table th{
-
-    color:var(--primary);
-
-    background:rgba(212,175,55,.08);
-
-}
-
-
-.admin-table th,
-.admin-table td{
-
-    padding:14px;
-
-    text-align:right;
-
-    border-bottom:1px solid var(--border);
-
-}
-
-
-.admin-table tbody tr:hover{
-
-    background:rgba(255,255,255,.03);
-
+@media print{
+    .admin-live-status{
+        display:none;
+    }
 }

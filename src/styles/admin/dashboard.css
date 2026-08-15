@@ -4,21 +4,6 @@
 ========================================== */
 
 
-/* ---------- Shell ---------- */
-
-
-.admin-shell{
-
-    width:min(95%,var(--container));
-
-    margin:auto;
-
-    padding:40px 0 80px;
-
-}
-
-
-
 /* ---------- Hero ---------- */
 
 
@@ -102,7 +87,46 @@
 
 
 
-.admin-grid a{
+.admin-section-title{
+
+    display:flex;
+
+    align-items:baseline;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    margin:36px 0 16px;
+
+}
+
+.admin-section-title:first-child{
+
+    margin-top:0;
+
+}
+
+.admin-section-title h2{
+
+    font-size:17px;
+
+    color:var(--text);
+
+    margin:0;
+
+}
+
+.admin-section-title span{
+
+    font-size:13px;
+
+    color:var(--text-secondary);
+
+}
+
+.admin-grid a,
+.admin-stat-card{
 
     display:block;
 
@@ -148,7 +172,8 @@
 /* ---------- Left Gold Glow ---------- */
 
 
-.admin-grid a::before{
+.admin-grid a::before,
+.admin-stat-card::before{
 
     content:"";
 
@@ -193,7 +218,8 @@
 /* ---------- Golden Border Light ---------- */
 
 
-.admin-grid a::after{
+.admin-grid a::after,
+.admin-stat-card::after{
 
     content:"";
 
@@ -237,7 +263,8 @@
 /* ---------- Hover ---------- */
 
 
-.admin-grid a:hover{
+.admin-grid a:hover,
+.admin-stat-card:hover{
 
     transform:translateY(-8px);
 
@@ -252,7 +279,8 @@
 
 
 
-.admin-grid a:hover::before{
+.admin-grid a:hover::before,
+.admin-stat-card:hover::before{
 
     opacity:1;
 
@@ -260,7 +288,8 @@
 
 
 
-.admin-grid a:hover::after{
+.admin-grid a:hover::after,
+.admin-stat-card:hover::after{
 
     opacity:1;
 
@@ -310,6 +339,123 @@
 
 }
 
+
+
+/* ---------- Stat Cards ---------- */
+
+.admin-stat-card{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:10px;
+
+}
+
+.admin-stat-icon{
+
+    display:grid;
+
+    place-items:center;
+
+    width:44px;
+
+    height:44px;
+
+    border-radius:14px;
+
+    background:rgba(212,175,55,.12);
+
+    color:var(--primary);
+
+    position:relative;
+
+    z-index:2;
+
+}
+
+.admin-stat-icon svg{
+
+    width:22px;
+
+    height:22px;
+
+}
+
+.admin-stat-value{
+
+    position:relative;
+
+    z-index:2;
+
+    font-size:2.4rem;
+
+    font-weight:800;
+
+    color:var(--text);
+
+    line-height:1.1;
+
+}
+
+.admin-stat-label{
+
+    position:relative;
+
+    z-index:2;
+
+    color:var(--text-secondary);
+
+    font-size:14px;
+
+}
+
+.admin-stat-breakdown{
+
+    position:relative;
+
+    z-index:2;
+
+    display:flex;
+
+    flex-wrap:wrap;
+
+    gap:8px;
+
+    margin-top:4px;
+
+}
+
+.admin-stat-breakdown span{
+
+    font-size:12px;
+
+    padding:4px 10px;
+
+    border-radius:999px;
+
+    background:rgba(255,255,255,.05);
+
+    border:1px solid var(--border);
+
+    color:var(--text-secondary);
+
+}
+
+.admin-stat-card.attention .admin-stat-icon{
+
+    background:rgba(230,126,34,.15);
+
+    color:#e6a13c;
+
+}
+
+.admin-stat-card.attention .admin-stat-value{
+
+    color:#e6a13c;
+
+}
 
 
 /* ---------- Mobile ---------- */

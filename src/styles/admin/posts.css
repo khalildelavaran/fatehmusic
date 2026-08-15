@@ -103,71 +103,9 @@
 
 
 
-/* ---------- Posts List ---------- */
+/* ---------- Form actions ---------- */
 
-.admin-list{
-
-    display:grid;
-
-    gap:16px;
-
-}
-
-
-
-.admin-item{
-
-    background:var(--surface);
-
-    border:1px solid var(--border);
-
-    border-radius:var(--radius);
-
-    padding:22px;
-
-    box-shadow:var(--shadow);
-
-    transition:var(--transition);
-
-}
-
-
-
-.admin-item:hover{
-
-    border-color:rgba(201,162,39,.35);
-
-}
-
-
-
-.admin-item h2{
-
-    margin:0 0 10px;
-
-    color:var(--primary);
-
-    font-size:1.2rem;
-
-}
-
-
-
-.admin-item p{
-
-    margin:8px 0;
-
-    color:var(--text-secondary);
-
-    line-height:1.9;
-
-}
-
-
-
-/* ---------- Actions ---------- */
-
-.admin-item-actions{
+.admin-form-actions{
 
     display:flex;
 
@@ -175,7 +113,12 @@
 
     gap:10px;
 
-    margin-top:16px;
+}
+
+
+.admin-form-actions button{
+
+    flex:1;
 
 }
 
