@@ -45,7 +45,7 @@ export const site = {
   // Contact
   telephone: "+986136221174",
   mobile: "+989333139319",
-  email: "info@fatehmusic.ir",
+  email: "fateh.academy.music@gmail.com",
 
 
   // Google Business Entity
