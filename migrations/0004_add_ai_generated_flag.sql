@@ -1,0 +1,1 @@
+ALTER TABLE blog_posts ADD COLUMN is_ai_generated INTEGER NOT NULL DEFAULT 0;
