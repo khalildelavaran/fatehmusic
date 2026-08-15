@@ -19,6 +19,13 @@ if (!session) return Astro.redirect("/admin/login");
       <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
       <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
     </nav>
-    <form method="post" action="/api/admin/logout" style="margin-top:1rem"><button type="submit">خروج</button></form>
+    <form id="logoutForm" method="post" action="/api/admin/logout" style="margin-top:1rem"><button type="submit">خروج</button></form>
   </main>
+  <script>
+    document.querySelector("#logoutForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await fetch("/api/admin/logout", { method: "POST", credentials: "same-origin" });
+      window.location.assign("/admin/login");
+    });
+  </script>
 </MainLayout>
