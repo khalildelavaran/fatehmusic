@@ -2,12 +2,12 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { json, getAdminSession } from "../../../server/admin-auth";
+import { json, requireRole, ROLES } from "../../../server/admin-auth";
 
 const fields = `id, slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, created_at, updated_at, published_at`;
 
 async function requireAdmin(request: Request): Promise<Response | null> {
-  return (await getAdminSession(request, env)) ? null : json({ success: false, message: "دسترسی مدیریت معتبر نیست." }, 401);
+  return requireRole(request, env, [ROLES.ADMIN]);
 }
 
 export const GET: APIRoute = async ({ request }) => {
