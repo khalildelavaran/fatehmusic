@@ -1,6 +1,6 @@
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
 const SESSION_COOKIE = "__Host-admin_session";
-const PBKDF2_ITERATIONS = 210_000;
+const PBKDF2_ITERATIONS = 100_000;
 
 export interface AdminEnv {
   DB: D1Database;
