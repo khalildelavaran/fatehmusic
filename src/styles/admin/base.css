@@ -256,6 +256,18 @@
     color:#e08080;
     border-color:rgba(220,80,80,.25);
 }
+
+.admin-ai-badge{
+    display:inline-flex;
+    margin-right:8px;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:rgba(155,120,255,.14);
+    color:#b9a3ff;
+    border:1px solid rgba(155,120,255,.28);
+    vertical-align:middle;
+}
 /* ==========================================
    ADMIN BUTTONS
    Use Main Theme Style
