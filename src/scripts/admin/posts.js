@@ -1,3 +1,5 @@
+import { formatJalaliDateTime } from "../../utils/format-date";
+
 const message = document.querySelector("#adminMessage");
 const form = document.querySelector("#postForm");
 const clearFormButton = document.querySelector("#clearForm");
@@ -7,14 +9,7 @@ let posts = [];
 const headers = () => ({ "Content-Type": "application/json" });
 const setMessage = (text) => { message.textContent = text; };
 const statusLabel = (status) => (status === "published" ? "منتشر شده" : "پیش‌نویس");
-const formatDate = (value) => {
-  if (!value) return "—";
-  try {
-    return new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
-  } catch {
-    return value;
-  }
-};
+const formatDate = (value) => formatJalaliDateTime(value);
 
 async function loadPosts() {
   const response = await fetch("/api/admin/posts", { credentials: "same-origin", headers: headers() });

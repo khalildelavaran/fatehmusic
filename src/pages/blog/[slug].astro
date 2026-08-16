@@ -4,6 +4,7 @@ import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
 import { getPublishedPost, getPublishedPosts } from "../../server/blog";
+import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
 
 const post = await getPublishedPost(Astro.params.slug ?? "");
@@ -30,6 +31,7 @@ if (!post) {
       <header>
         <p class="eyebrow">{post.topic}</p>
         <h1>{post.title}</h1>
+        <p class="blog-date">{formatJalaliDate(post.published_at ?? post.created_at)}</p>
         <p>{post.excerpt}</p>
       </header>
 

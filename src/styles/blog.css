@@ -42,6 +42,21 @@
 }
 
 
+.blog-date {
+  display: inline-block;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  margin-inline-start: 10px;
+}
+
+.blog-article .blog-date {
+  display: block;
+  margin-inline-start: 0;
+  margin: 6px 0 4px;
+}
+
+
 .blog-hero h1,
 .blog-article h1 {
   margin: 12px 0 18px;

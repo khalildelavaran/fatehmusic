@@ -1,3 +1,5 @@
+import { formatJalaliDate, formatJalaliTime } from "../../utils/format-date";
+
 const liveStatus = document.querySelector("#liveStatus");
 const printButton = document.querySelector("#printRegistrations");
 const body = document.querySelector("#registrationsBody");
@@ -33,7 +35,7 @@ async function loadRegistrations({ silent = false } = {}) {
             <td dir="ltr">${item.student_mobile}</td>
             <td>${item.instrument_title}</td>
             <td>${item.instructor_name}</td>
-            <td>${item.schedule_weekday}<br><span class="admin-table-subtext">${item.schedule_duration || ""} دقیقه · ${item.created_at}</span></td>
+            <td>${item.schedule_weekday}<br><span class="admin-table-subtext">${item.schedule_duration || ""} دقیقه · ${formatJalaliDate(item.created_at)}</span></td>
             <td><span class="admin-status-pill" data-status="${item.status}">${statusLabels[item.status] || item.status}</span></td>
             <td class="no-print">
               <select data-id="${item.id}">
@@ -44,7 +46,7 @@ async function loadRegistrations({ silent = false } = {}) {
         )
         .join("");
 
-  const now = new Intl.DateTimeFormat("fa-IR", { timeStyle: "medium" }).format(new Date());
+  const now = formatJalaliTime(new Date());
   setLiveStatus(`${data.registrations.length} ثبت‌نام · آخرین به‌روزرسانی: ${now}`);
 }
 

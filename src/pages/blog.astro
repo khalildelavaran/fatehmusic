@@ -4,6 +4,7 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import CTA from "../components/CTA.astro";
 import { getPublishedPosts } from "../server/blog";
+import { formatJalaliDate } from "../utils/format-date";
 import "../styles/blog.css";
 
 const posts = await getPublishedPosts();
@@ -33,6 +34,7 @@ const posts = await getPublishedPosts();
         <article class="blog-card">
           <div>
             <span>{post.topic}</span>
+            <span class="blog-date">{formatJalaliDate(post.published_at ?? post.created_at)}</span>
             <h2><a href={`/blog/${post.slug}`}>{post.title}</a></h2>
             <p>{post.excerpt}</p>
           </div>
