@@ -22,6 +22,15 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
           <p>مقاله‌ها باید به دوره، استاد یا هدف تجاری آموزشگاه موسیقی فاتح در شوشتر وصل باشند.</p>
         </section>
 
+        <section class="admin-ai-trigger">
+          <div>
+            <strong>تولید خودکار روزانه</strong>
+            <span>هر روز ساعت ۶ صبح یک پیش‌نویس جدید با هوش مصنوعی ساخته می‌شود.</span>
+          </div>
+          <button type="button" id="generateNowButton">تولید همین الان (تست)</button>
+        </section>
+        <p id="generateStatus" role="status" class="admin-ai-status"></p>
+
         <section class="admin-panel">
           <form id="postForm" class="admin-form">
             <input type="hidden" name="id" />

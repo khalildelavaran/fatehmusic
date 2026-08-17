@@ -1,6 +1,8 @@
 import { formatJalaliDateTime } from "../../utils/format-date";
 
 const message = document.querySelector("#adminMessage");
+const generateButton = document.querySelector("#generateNowButton");
+const generateStatus = document.querySelector("#generateStatus");
 const form = document.querySelector("#postForm");
 const clearFormButton = document.querySelector("#clearForm");
 const list = document.querySelector("#postsList");
@@ -56,6 +58,27 @@ function resetForm() {
 
 loadPosts();
 clearFormButton.addEventListener("click", resetForm);
+
+generateButton.addEventListener("click", async () => {
+  generateButton.disabled = true;
+  generateButton.textContent = "در حال تولید... (تا ۳۰ ثانیه طول می‌کشد)";
+  generateStatus.textContent = "";
+  generateStatus.className = "admin-ai-status";
+  try {
+    const response = await fetch("/api/admin/generate-post", { method: "POST", credentials: "same-origin" });
+    if (response.status === 401) { window.location.assign("/admin/login"); return; }
+    const data = await response.json();
+    generateStatus.textContent = data.message;
+    generateStatus.className = "admin-ai-status" + (data.success ? " is-success" : " is-error");
+    if (data.success) await loadPosts();
+  } catch (err) {
+    generateStatus.textContent = "خطای شبکه هنگام تماس با سرور.";
+    generateStatus.className = "admin-ai-status is-error";
+  } finally {
+    generateButton.disabled = false;
+    generateButton.textContent = "تولید همین الان (تست)";
+  }
+});
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();

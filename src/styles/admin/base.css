@@ -268,6 +268,45 @@
     border:1px solid rgba(155,120,255,.28);
     vertical-align:middle;
 }
+
+.admin-ai-trigger{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px 22px;
+    margin-bottom:10px;
+}
+
+.admin-ai-trigger strong{
+    display:block;
+    color:var(--text);
+    font-size:14.5px;
+}
+
+.admin-ai-trigger span{
+    color:var(--text-secondary);
+    font-size:13px;
+}
+
+.admin-ai-status{
+    min-height:20px;
+    font-size:13.5px;
+    color:var(--text-secondary);
+    margin:0 0 20px;
+}
+
+.admin-ai-status.is-success{
+    color:#7fd88a;
+}
+
+.admin-ai-status.is-error{
+    color:#e08080;
+}
 /* ==========================================
    ADMIN BUTTONS
    Use Main Theme Style

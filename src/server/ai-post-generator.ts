@@ -15,9 +15,6 @@ const GENERAL_TOPICS = [
   "چند اشتباه رایج هنرجویان تازه‌کار موسیقی و راه رفع آن‌ها"
 ];
 
-// Cloudflare Workers AI enforces this cap on PBKDF2-unrelated things too in
-// some edge runtimes, but the real constraint here is just keeping requests
-// well inside the free daily Neuron allowance -- one call a day is trivial.
 const MODEL = "@cf/zai-org/glm-4.7-flash";
 
 function slugify(text: string): string {
@@ -82,14 +79,47 @@ interface ParsedPost {
   meta_description?: string;
 }
 
-export async function generateDailyPost(env: GenEnv): Promise<void> {
+function extractJson(raw: string): string | null {
+  const cleaned = raw.replace(/```json|```/gi, "").trim();
+  // Fast path: the whole cleaned string parses directly.
+  try {
+    JSON.parse(cleaned);
+    return cleaned;
+  } catch {
+    // fall through
+  }
+  // Fallback: the model added text before/after the JSON object -- grab the
+  // first balanced {...} block instead of giving up.
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return null;
+  const candidate = cleaned.slice(start, end + 1);
+  try {
+    JSON.parse(candidate);
+    return candidate;
+  } catch {
+    return null;
+  }
+}
+
+export interface GenerateResult {
+  success: boolean;
+  message: string;
+  slug?: string;
+}
+
+export async function generateDailyPost(env: GenEnv): Promise<GenerateResult> {
+  console.log("generateDailyPost: starting");
+
   if (!env.DB || !env.AI) {
-    console.error("generateDailyPost: DB or AI binding missing");
-    return;
+    const message = `اتصال دیتابیس یا هوش مصنوعی برقرار نیست (DB: ${!!env.DB}, AI: ${!!env.AI}). باید binding مربوطه در wrangler.jsonc تنظیم و دیپلوی شده باشد.`;
+    console.error("generateDailyPost:", message);
+    return { success: false, message };
   }
 
   const pick = await pickTopic(env.DB);
   const brief = buildBrief(pick);
+  console.log("generateDailyPost: topic picked ->", pick.kind === "course" ? pick.course.slug : pick.topic);
 
   let aiResponse: unknown;
   try {
@@ -101,26 +131,41 @@ export async function generateDailyPost(env: GenEnv): Promise<void> {
       max_tokens: 2048
     });
   } catch (err) {
-    console.error("generateDailyPost: Workers AI call failed:", err);
-    return;
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("generateDailyPost: Workers AI call failed:", detail);
+    return { success: false, message: `فراخوانی Workers AI شکست خورد: ${detail}` };
   }
 
   const raw =
     (aiResponse as any)?.response ??
     (aiResponse as any)?.result?.response ??
     (typeof aiResponse === "string" ? aiResponse : "");
-  const cleaned = String(raw).replace(/```json|```/g, "").trim();
+
+  if (!raw) {
+    const detail = JSON.stringify(aiResponse).slice(0, 300);
+    console.error("generateDailyPost: empty AI response, full payload:", detail);
+    return { success: false, message: `پاسخ هوش مصنوعی خالی بود. payload: ${detail}` };
+  }
+
+  const jsonText = extractJson(String(raw));
+  if (!jsonText) {
+    const detail = String(raw).slice(0, 400);
+    console.error("generateDailyPost: could not extract JSON from AI response. Raw output (first 800 chars):", String(raw).slice(0, 800));
+    return { success: false, message: `خروجی هوش مصنوعی JSON معتبر نبود. ابتدای خروجی: ${detail}` };
+  }
 
   let parsed: ParsedPost;
   try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    console.error("generateDailyPost: could not parse AI response as JSON:", cleaned.slice(0, 300));
-    return;
+    parsed = JSON.parse(jsonText);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("generateDailyPost: JSON.parse failed even after extraction:", detail);
+    return { success: false, message: `خطای parse کردن JSON: ${detail}` };
   }
   if (!parsed?.title || !parsed?.content) {
-    console.error("generateDailyPost: AI response missing title/content");
-    return;
+    const detail = JSON.stringify(parsed).slice(0, 300);
+    console.error("generateDailyPost: parsed JSON missing title/content:", detail);
+    return { success: false, message: `پاسخ فاقد فیلد title یا content بود: ${detail}` };
   }
 
   const dateSuffix = new Date().toISOString().slice(0, 10);
@@ -130,22 +175,29 @@ export async function generateDailyPost(env: GenEnv): Promise<void> {
   const relatedCourseSlug = pick.kind === "course" ? pick.course.slug : null;
   const relatedCourseTitle = pick.kind === "course" ? pick.course.title : null;
 
-  await env.DB.prepare(
-    `INSERT INTO blog_posts (slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, is_ai_generated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, 1)`
-  )
-    .bind(
-      slug,
-      parsed.title,
-      parsed.excerpt ?? "",
-      parsed.content,
-      parsed.topic ?? (pick.kind === "course" ? pick.course.title : "عمومی"),
-      relatedCourseSlug,
-      relatedCourseTitle,
-      parsed.meta_title ?? parsed.title,
-      parsed.meta_description ?? parsed.excerpt ?? ""
+  try {
+    await env.DB.prepare(
+      `INSERT INTO blog_posts (slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, is_ai_generated)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, 1)`
     )
-    .run();
+      .bind(
+        slug,
+        parsed.title,
+        parsed.excerpt ?? "",
+        parsed.content,
+        parsed.topic ?? (pick.kind === "course" ? pick.course.title : "عمومی"),
+        relatedCourseSlug,
+        relatedCourseTitle,
+        parsed.meta_title ?? parsed.title,
+        parsed.meta_description ?? parsed.excerpt ?? ""
+      )
+      .run();
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("generateDailyPost: D1 insert failed:", detail, "slug was:", slug);
+    return { success: false, message: `ذخیره در دیتابیس شکست خورد: ${detail}` };
+  }
 
   console.log(`generateDailyPost: created draft "${parsed.title}" (${slug})`);
+  return { success: true, message: `پیش‌نویس «${parsed.title}» ساخته شد.`, slug };
 }
