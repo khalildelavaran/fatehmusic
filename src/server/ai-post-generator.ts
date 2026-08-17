@@ -128,7 +128,7 @@ export async function generateDailyPost(env: GenEnv): Promise<GenerateResult> {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: brief }
       ],
-      max_tokens: 2048
+      max_tokens: 8192
     });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -136,15 +136,21 @@ export async function generateDailyPost(env: GenEnv): Promise<GenerateResult> {
     return { success: false, message: `فراخوانی Workers AI شکست خورد: ${detail}` };
   }
 
+  const choice = (aiResponse as any)?.choices?.[0];
   const raw =
+    choice?.message?.content ??
     (aiResponse as any)?.response ??
     (aiResponse as any)?.result?.response ??
     (typeof aiResponse === "string" ? aiResponse : "");
 
   if (!raw) {
-    const detail = JSON.stringify(aiResponse).slice(0, 300);
-    console.error("generateDailyPost: empty AI response, full payload:", detail);
-    return { success: false, message: `پاسخ هوش مصنوعی خالی بود. payload: ${detail}` };
+    const finishReason = choice?.finish_reason ?? "نامشخص";
+    const reasoningPreview = String(choice?.message?.reasoning ?? "").slice(0, 200);
+    console.error("generateDailyPost: empty content. finish_reason:", finishReason, "reasoning preview:", reasoningPreview);
+    return {
+      success: false,
+      message: `پاسخ هوش مصنوعی خالی بود (content=null). دلیل توقف: ${finishReason}${finishReason === "length" ? " -- یعنی توکن‌ها قبل از رسیدن به جواب نهایی تمام شد." : ""}. ابتدای reasoning: ${reasoningPreview || "(خالی)"}`
+    };
   }
 
   const jsonText = extractJson(String(raw));
