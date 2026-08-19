@@ -1,0 +1,145 @@
+/* ==========================================
+   ADMIN TOPICS
+   Extends the shared tables/pills from base.css
+   and reuses .admin-panel from posts.css, but the
+   topics page has no side form -- go full width.
+========================================== */
+
+.admin-panel--topics{
+    grid-template-columns: 1fr;
+}
+
+.admin-topics-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:14px;
+    margin-bottom:16px;
+}
+
+.admin-topics-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+.admin-topics-filters button{
+    padding:8px 16px;
+    border-radius:999px;
+    background:rgba(255,255,255,.03);
+    color:var(--text-secondary);
+    border:1px solid var(--border);
+    font-family:inherit;
+    font-size:13px;
+    cursor:pointer;
+    transition:var(--transition);
+}
+
+.admin-topics-filters button:hover{
+    border-color:var(--primary);
+    color:var(--text);
+}
+
+.admin-topics-filters button.is-active{
+    background:var(--primary);
+    color:#111;
+    font-weight:700;
+    border-color:transparent;
+}
+
+.admin-topics-export{
+    padding:10px 18px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:13px;
+    text-decoration:none;
+    transition:var(--transition);
+}
+
+.admin-topics-export:hover{
+    border-color:var(--primary);
+    color:var(--primary);
+}
+
+.admin-table--topics{
+    min-width:960px;
+}
+
+/* Score pill -- distinct from status pill, always shown regardless of status. */
+.admin-score-pill{
+    display:inline-flex;
+    min-width:34px;
+    justify-content:center;
+    padding:5px 10px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:700;
+    background:rgba(255,255,255,.06);
+    color:var(--text-secondary);
+    border:1px solid var(--border);
+}
+
+.admin-score-pill.is-high{
+    background:rgba(76,175,80,.14);
+    color:#7fd88a;
+    border-color:rgba(76,175,80,.28);
+}
+
+.admin-score-pill.is-mid{
+    background:rgba(230,161,60,.14);
+    color:#e6a13c;
+    border-color:rgba(230,161,60,.28);
+}
+
+.admin-score-pill.is-low{
+    background:rgba(220,80,80,.1);
+    color:#e08080;
+    border-color:rgba(220,80,80,.2);
+}
+
+/* Extra topic statuses beyond what base.css already covers (published/draft/cancelled). */
+.admin-status-pill[data-status="approved"]{
+    background:rgba(76,175,80,.12);
+    color:#7fd88a;
+    border-color:rgba(76,175,80,.25);
+}
+
+.admin-status-pill[data-status="candidate"]{
+    background:rgba(230,161,60,.12);
+    color:#e6a13c;
+    border-color:rgba(230,161,60,.25);
+}
+
+.admin-status-pill[data-status="rejected"]{
+    background:rgba(220,80,80,.12);
+    color:#e08080;
+    border-color:rgba(220,80,80,.25);
+}
+
+.admin-status-pill[data-status="used"]{
+    background:rgba(155,120,255,.14);
+    color:#b9a3ff;
+    border-color:rgba(155,120,255,.28);
+}
+
+.admin-shell button.danger{
+    background:transparent;
+    color:#e08080;
+    border:1px solid rgba(220,80,80,.3);
+}
+
+.admin-shell button.danger:hover{
+    background:rgba(220,80,80,.1);
+    border-color:#e08080;
+    color:#e08080;
+    transform:translateY(-2px);
+}
+
+@media(max-width:700px){
+    .admin-topics-toolbar{
+        flex-direction:column;
+        align-items:stretch;
+    }
+}

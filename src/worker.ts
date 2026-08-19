@@ -1,9 +1,10 @@
 import { handle } from "@astrojs/cloudflare/handler";
-import { generateDailyPost } from "./server/ai-post-generator";
+import { runDailyArticleGeneration } from "./ai/content-engine/article-generator";
 
 interface WorkerEnv {
   DB: D1Database;
   AI: Ai;
+  DEEPSEEK_API_KEY?: string;
   [key: string]: unknown;
 }
 
@@ -13,6 +14,6 @@ export default {
   },
 
   async scheduled(controller: ScheduledController, env: WorkerEnv, ctx: ExecutionContext) {
-    ctx.waitUntil(generateDailyPost(env));
+    ctx.waitUntil(runDailyArticleGeneration(env));
   }
 };
