@@ -31,7 +31,7 @@ The project focuses on:
 - Cloudflare D1
 - Cloudflare Images
 - Cloudflare KV
-- DeepSeek API (daily AI blog article generation — see ADR-011)
+- Anthropic Claude API (daily AI blog article generation — see ADR-011)
 - CSS
 - JavaScript
 
@@ -43,7 +43,7 @@ Set these with `wrangler secret put <NAME>` — never commit them or paste them 
 
 | Secret | Used by |
 |---|---|
-| `DEEPSEEK_API_KEY` | `src/ai/content-engine/article-generator.ts` — writes the daily blog draft. Without it, the scheduled job and the admin "تولید همین الان" button return a clear error instead of failing silently. |
+| `ANTHROPIC_API_KEY` | `src/ai/content-engine/article-generator.ts` — writes the daily blog draft with Claude. Without it, the scheduled job and the admin "تولید همین الان" button return a clear error instead of failing silently. |
 
 ---
 

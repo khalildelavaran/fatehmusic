@@ -18,6 +18,19 @@
 
 ---
 
+## Amendment (2026-08-19) — LLM provider changed from DeepSeek to Claude
+
+Section 3.5 below describes the original DeepSeek implementation as first shipped. In practice, the DeepSeek account used for testing returned inconsistent errors (HTTP 401 "invalid key" through the deployed Worker, then "Insufficient Balance" on a direct test with the same key) that could not be resolved quickly, and DeepSeek's promotional free-credit balance was not reliably confirmed as active on that account. Rather than lose more time on account/billing troubleshooting for a third-party provider, the article-writing step was moved to Anthropic's Claude (`claude-sonnet-5`, Messages API, tool-forced structured output) — see `src/ai/content-engine/providers/anthropic.ts`. `providers/deepseek.ts` was deleted; DeepSeek's code is still recoverable from git history (`git log -- src/ai/content-engine/providers/deepseek.ts`) if ever needed again.
+
+This amendment also folds in real research (done at the time of the switch, see sources in `article-generator.ts`'s SYSTEM_PROMPT comment) on two points the site owner raised directly:
+
+- **Google does not penalize content for being AI-written.** Its guidance (Search Central's AI-content post, the spam policies' "scaled content abuse" definition, and the Quality Rater Guidelines' E-E-A-T framework) has been consistent since 2023: quality and intent are judged, not production method. The March 2026 core update specifically targets content that "appears thin or robotic" — which is a real, current risk for naively-prompted AI output, just not a categorical "AI content = penalty" rule.
+- **What actually reads as AI-written** is reasonably well studied by August 2026: uniform sentence rhythm, generic statements instead of concrete specifics, artificially symmetric structure (always exactly 3 points), formulaic "in conclusion" wrap-ups, and a small set of overused hedge phrases. A pure word-blacklist is known to be weak on its own; forcing concrete specificity and varied structure matters more. The SYSTEM_PROMPT in `article-generator.ts` was rewritten around both findings, including a Persian-specific phrase list (e.g. avoiding «در این راستا»، «شایان ذکر است»، «بدون شک» as sentence-openers).
+
+Everything else in this ADR (§3.1–3.4, 3.6, 3.7, the D1 schema, scoring, dedup, admin UI) is unaffected by this change — only the article-writing provider moved.
+
+---
+
 # 1. Summary
 
 This ADR records the first implemented slice of the Content Intelligence system described at a full-enterprise scope in `doc/AI Blog Automation System.md` and in the uploaded `fateh-content-intelligence-architecture.md` working document.
@@ -44,7 +57,7 @@ This work implements Topic Discovery plus the article-writing handoff — the pi
 
 **3.4 — Scoring is per-course, not per-instrument.** `courses.js` deliberately keeps some instrument families as multiple distinct Landing Pages (e.g. four vocal-style courses all share `instrument: "voice"` but are four separate pages). Content-gap and freshness scoring in `scoring.ts` are keyed by `related_course_slug`, matching that page-level model rather than collapsing them.
 
-**3.5 — DeepSeek, thinking mode explicitly disabled.** `providers/deepseek.ts` calls `deepseek-v4-flash` (the current model ID — the legacy `deepseek-chat` alias retires 2026-07-24) with `thinking: { type: "disabled" }`. DeepSeek's v4 models default thinking mode to *on*, which reproduces the exact failure this project already hit once with Workers AI's `glm-4.7-flash` (reasoning consumes the token budget, `content` comes back empty). This is the single most important line in that file; do not remove it without re-reading this ADR.
+**3.5 — [Superseded by the 2026-08-19 amendment above — kept for history] DeepSeek, thinking mode explicitly disabled.** `providers/deepseek.ts` calls `deepseek-v4-flash` (the current model ID — the legacy `deepseek-chat` alias retires 2026-07-24) with `thinking: { type: "disabled" }`. DeepSeek's v4 models default thinking mode to *on*, which reproduces the exact failure this project already hit once with Workers AI's `glm-4.7-flash` (reasoning consumes the token budget, `content` comes back empty). This is the single most important line in that file; do not remove it without re-reading this ADR.
 
 **3.6 — The title is fixed before the article is written.** The old flow let the LLM invent the title as part of the same call that wrote the body. Now `article-generator.ts` passes the approved title to DeepSeek as a fixed instruction ("عنوان مقاله از قبل مشخص شده... آن را عوض نکن") and only asks it to write the body — otherwise the scoring/dedup work from the topic engine would be silently discardable by the model.
 
@@ -63,7 +76,7 @@ This work implements Topic Discovery plus the article-writing handoff — the pi
 # 5. Consequences
 
 - The candidate pool is finite (~500–600 titles from the current 23 courses × modifier templates). At roughly one post/day this is over a year of runway, but it will eventually need either more hand-written templates/courses, or a real keyword-expansion provider wired into `KeywordProvider` — tracked as follow-up, not done here.
-- `DEEPSEEK_API_KEY` must be set as a Cloudflare Secret (`wrangler secret put DEEPSEEK_API_KEY`) before the article-writing step will work; without it, `runDailyArticleGeneration` returns a clear Persian error rather than silently failing or falling back to a different model.
+- `ANTHROPIC_API_KEY` must be set as a Cloudflare Secret (`wrangler secret put ANTHROPIC_API_KEY`) before the article-writing step will work; without it, `runDailyArticleGeneration` returns a clear Persian error rather than silently failing or falling back to a different model.
 - `src/server/ai-post-generator.ts` no longer exists — replaced by `src/ai/content-engine/article-generator.ts`. Both `src/worker.ts` and `/api/admin/generate-post` were updated to the new import.
 
 ---

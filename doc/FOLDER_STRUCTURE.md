@@ -819,7 +819,7 @@ storybook/
 
 The architecture is prepared without requiring structural changes.
 
-`ai/` is no longer only reserved: `src/ai/content-engine/` holds the Content Intelligence Engine (topic generation, scoring, DeepSeek article writing). See ADR-011. Its data-only counterpart, `src/data/content-engine-seeds.ts`, follows the existing `data/` convention rather than living inside `ai/`.
+`ai/` is no longer only reserved: `src/ai/content-engine/` holds the Content Intelligence Engine (topic generation, scoring, Claude article writing). See ADR-011. Its data-only counterpart, `src/data/content-engine-seeds.ts`, follows the existing `data/` convention rather than living inside `ai/`.
 
 ---
 

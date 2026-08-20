@@ -9,7 +9,7 @@ export const POST: APIRoute = async ({ request }) => {
   const denied = await requireRole(request, env as AdminEnv, [ROLES.ADMIN]);
   if (denied) return denied;
 
-  const runtimeEnv = env as unknown as { DB: D1Database; DEEPSEEK_API_KEY?: string };
+  const runtimeEnv = env as unknown as { DB: D1Database; ANTHROPIC_API_KEY?: string };
   const result = await runDailyArticleGeneration(runtimeEnv);
   return json(result, result.success ? 200 : 500);
 };

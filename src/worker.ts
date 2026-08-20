@@ -4,7 +4,7 @@ import { runDailyArticleGeneration } from "./ai/content-engine/article-generator
 interface WorkerEnv {
   DB: D1Database;
   AI: Ai;
-  DEEPSEEK_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
   [key: string]: unknown;
 }
 
