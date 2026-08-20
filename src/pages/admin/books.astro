@@ -1,0 +1,107 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/posts.css";
+import "../../styles/admin/topics.css";
+import "../../styles/admin/books.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { courses } from "../../data/courses.js";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
+
+const activeCourses = (courses as Array<{ slug: string; title: string; active: boolean }>)
+  .filter((c) => c.active)
+  .map((c) => ({ slug: c.slug, title: c.title }));
+---
+<MainLayout title="مدیریت کتاب‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="books" />
+    <main class="admin-main">
+      <div class="admin-shell" data-admin-books>
+        <section class="admin-hero">
+          <p>گواهینامه‌ها</p>
+          <h1>کتاب‌های وابسته به هر دوره</h1>
+          <p>هر دوره می‌تواند چند کتاب (به تفکیک سطح یا نویسنده) داشته باشد. موقع صدور هر گواهینامه، از همین فهرست انتخاب می‌شود. دوره‌هایی که هنوز کتابی برایشان ثبت نشده، همین‌جا قابل افزودن هستند.</p>
+        </section>
+
+        <section class="admin-panel admin-panel--books">
+          <form id="bookForm" class="admin-form">
+            <input type="hidden" id="bookId" value="" />
+            <label>
+              دوره
+              <select id="courseSlug" required>
+                <option value="">— انتخاب دوره —</option>
+                {activeCourses.map((c) => <option value={c.slug}>{c.title}</option>)}
+              </select>
+            </label>
+            <label>
+              عنوان کتاب
+              <input type="text" id="title" required placeholder="مثلا: بیایید تار و سه‌تار بنوازیم - کتاب اول" />
+            </label>
+            <label>
+              نویسنده (اختیاری)
+              <input type="text" id="author" placeholder="اگر مطمئن نیستید خالی بگذارید" />
+            </label>
+            <label>
+              سطح (اختیاری)
+              <select id="level">
+                <option value="">—</option>
+                <option value="مقدماتی">مقدماتی</option>
+                <option value="متوسط">متوسط</option>
+                <option value="پیشرفته">پیشرفته</option>
+                <option value="عالی">عالی</option>
+              </select>
+            </label>
+            <label>
+              نام فایل عکس جلد (اختیاری)
+              <input type="text" id="coverImage" placeholder="مثلا: tar&setar1-saket.jpg" />
+            </label>
+            <label>
+              ترتیب نمایش
+              <input type="number" id="displayOrder" value="0" />
+            </label>
+            <div class="admin-form-actions">
+              <button type="submit" id="submitBtn">افزودن کتاب</button>
+              <button type="button" class="secondary" id="clearForm">پاک کردن فرم</button>
+            </div>
+          </form>
+        </section>
+        <p id="formStatus" role="status" class="admin-ai-status"></p>
+
+        <section class="admin-panel admin-panel--books">
+          <div class="admin-topics-toolbar">
+            <div class="admin-topics-filters" role="tablist" aria-label="فیلتر دوره">
+              <button type="button" class="is-active" data-course-filter="">همه دوره‌ها</button>
+              {activeCourses.map((c) => <button type="button" data-course-filter={c.slug}>{c.title}</button>)}
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table admin-table--books">
+              <thead>
+                <tr>
+                  <th>جلد</th>
+                  <th>دوره</th>
+                  <th>عنوان</th>
+                  <th>نویسنده</th>
+                  <th>سطح</th>
+                  <th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody id="booksList">
+                <tr><td colspan="6" class="admin-table-empty">در حال بارگذاری...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    import "../../scripts/admin/books.js";
+  </script>
+</MainLayout>
