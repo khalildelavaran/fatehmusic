@@ -34,6 +34,20 @@ Purpose: Step 4 - student information form.
 
     <div class="form-row">
       <div class="form-group">
+        <label for="student-national-code">کد ملی</label>
+        <input
+          id="student-national-code"
+          type="text"
+          inputmode="numeric"
+          maxlength="10"
+          pattern="[0-9۰-۹٠-٩]{10}"
+          placeholder="مثلاً ۰۰۱۲۳۴۵۶۷۸"
+          data-field="nationalCode"
+          autocomplete="off"
+          dir="ltr"
+        />
+      </div>
+      <div class="form-group">
         <label for="student-mobile">شماره موبایل</label>
         <input
           id="student-mobile"
@@ -44,6 +58,9 @@ Purpose: Step 4 - student information form.
           autocomplete="tel"
         />
       </div>
+    </div>
+
+    <div class="form-row">
       <div class="form-group">
         <label for="student-age">سن</label>
         <input id="student-age" type="number" min="3" max="100" data-field="age" />
