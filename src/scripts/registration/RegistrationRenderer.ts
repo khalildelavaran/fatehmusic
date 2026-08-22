@@ -51,12 +51,9 @@ class RegistrationRenderer {
   updateProgress(step: string) {
     const rail = document.querySelector<HTMLElement>("[data-progress]");
     if (!rail) return;
-
     const isWizardStep = (PROGRESS_STEPS as readonly string[]).includes(step);
     rail.hidden = !isWizardStep && step !== "success";
-
     const currentIndex = step === "success" ? PROGRESS_STEPS.length : PROGRESS_STEPS.indexOf(step as (typeof PROGRESS_STEPS)[number]);
-
     rail.querySelectorAll<HTMLElement>("[data-progress-step]").forEach((node) => {
       const nodeStep = node.dataset.progressStep as (typeof PROGRESS_STEPS)[number];
       const nodeIndex = PROGRESS_STEPS.indexOf(nodeStep);
@@ -73,7 +70,6 @@ class RegistrationRenderer {
       container.innerHTML = this.emptyState("استادی برای این ساز در حال حاضر موجود نیست.");
       return;
     }
-
     container.innerHTML = list.map((instructor) => {
       const roles = instructor.professional?.roles ?? [];
       const image = instructor.media?.images?.profile;
@@ -99,7 +95,6 @@ class RegistrationRenderer {
       container.innerHTML = this.emptyState("در حال حاضر زمان آزادی برای این استاد ثبت نشده است.");
       return;
     }
-
     const sorted = sortByWeekday(list);
     container.innerHTML = sorted.map((schedule) => `
           <article class="registration-card schedule-card" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">
@@ -139,7 +134,6 @@ class RegistrationRenderer {
       container.innerHTML = "";
       return;
     }
-
     container.innerHTML = `
       <div class="pricing-card">
         <div class="pricing-head">
@@ -170,56 +164,54 @@ class RegistrationRenderer {
     const container = document.querySelector<HTMLElement>("[data-materials-container]");
     if (!container) return;
     const materials = getMaterialsByInstrument(instrumentType);
-
     const renderGroup = (title: string, items: any[], optional: boolean) => {
       if (!items.length) return "";
       return `
         <section class="materials-group">
           <h4>${title}</h4>
           <div class="materials-grid">
-            ${items.map((item: any) => `<div class="material-item"><span>${escapeHtml(item.title ?? item.name ?? item)}</span>${optional ? "<small>اختیاری</small>" : ""}</div>`).join("")}
+            ${items.map((item) => `
+                  <article class="material-card${optional ? " optional" : ""}">
+                    ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" />` : ""}
+                    <strong>${escapeHtml(item.title)}</strong>
+                    ${optional ? `<span class="optional-tag">اختیاری</span>` : ""}
+                  </article>`).join("")}
           </div>
         </section>`;
     };
-
-    container.innerHTML = [
-      renderGroup("کتاب‌های اصلی", materials.required ?? [], false),
-      renderGroup("کتاب‌های تکمیلی", materials.optional ?? [], true)
-    ].join("");
+    container.innerHTML = renderGroup("موارد ضروری", materials.required, false) + renderGroup("موارد اختیاری", materials.optional, true);
   }
 
   private renderContactLinks() {
     const container = document.querySelector<HTMLElement>("[data-contact-links]");
     if (!container) return;
+    const telHref = `tel:+${contact.phones.mobile.raw}`;
     container.innerHTML = `
-      ${contact.phone ? `<a href="tel:${escapeHtml(contact.phone)}">تماس با آموزشگاه</a>` : ""}
-      ${contact.whatsapp ? `<a href="${escapeHtml(contact.whatsapp)}" target="_blank" rel="noreferrer">واتساپ</a>` : ""}`;
+      <a href="${contact.social.whatsapp}" class="btn" target="_blank" rel="noopener">پیام واتساپ</a>
+      <a href="${telHref}" class="secondary-btn">تماس تلفنی</a>`;
   }
 
-  private setText(field: string, value: unknown) {
-    const node = document.querySelector<HTMLElement>(`[data-field-out="${field}"]`);
-    if (node) node.textContent = value == null || value === "" ? "-" : String(value);
+  private formatSchedule(schedule: RegistrationState["selection"]["schedule"]): string | null {
+    if (!schedule?.weekday) return null;
+    const parts = [schedule.weekday];
+    if (schedule.sessionDuration) parts.push(`${toPersianDigits(schedule.sessionDuration)} دقیقه`);
+    if (schedule.classroom) parts.push(`کلاس ${toPersianDigits(schedule.classroom)}`);
+    return parts.join(" · ");
   }
 
-  private formatSchedule(schedule: RegistrationState["selection"]["schedule"]) {
-    return [
-      schedule.weekday,
-      schedule.sessionDuration ? `${toPersianDigits(schedule.sessionDuration)} دقیقه` : null,
-      schedule.classroom ? `کلاس ${toPersianDigits(schedule.classroom)}` : null,
-      classModeLabel(schedule.classMode)
-    ].filter(Boolean).join(" · ");
+  private translateGender(value: RegistrationState["student"]["gender"]): string {
+    const map: Record<string, string> = { male: "آقا", female: "خانم" };
+    return map[value ?? ""] ?? "-";
   }
 
-  private translateGender(gender: RegistrationState["student"]["gender"]) {
-    if (gender === "male") return "آقا";
-    if (gender === "female") return "خانم";
-    return "-";
+  private translateInstrumentStatus(value: RegistrationState["student"]["hasInstrument"]): string {
+    const map: Record<string, string> = { yes: "ساز دارم", no: "نیاز به مشاوره خرید ساز دارم" };
+    return map[value ?? ""] ?? "-";
   }
 
-  private translateInstrumentStatus(status: RegistrationState["student"]["hasInstrument"]) {
-    if (status === "yes") return "دارم";
-    if (status === "no") return "نیاز به راهنمایی دارم";
-    return "-";
+  private setText(field: string, value: string | number | null | undefined) {
+    const element = document.querySelector(`[data-field-out="${field}"]`);
+    if (element) element.textContent = value ? String(value) : "-";
   }
 }
 
