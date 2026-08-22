@@ -1,0 +1,81 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/posts.css";
+import "../../styles/admin/topics.css";
+import "../../styles/admin/certificates.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
+---
+<MainLayout title="صدور گواهینامه | آموزشگاه موسیقی فاتح" noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="certificates" />
+    <main class="admin-main">
+      <div class="admin-shell" data-admin-certificates>
+        <section class="admin-hero">
+          <p>گواهینامه‌ها</p>
+          <h1>صدور گواهی پایان دوره</h1>
+          <p>یک ثبت‌نام را پیدا کنید، اطلاعات پایان دوره را وارد کنید و PDF نهایی را بسازید.</p>
+        </section>
+
+        <section class="admin-panel admin-panel--certificates">
+          <label class="admin-cert-search-label">
+            جستجوی هنرجو (نام یا کد پیگیری)
+            <input type="text" id="studentSearch" placeholder="مثلا: پریسا یا FM-2026-483920" autocomplete="off" />
+          </label>
+          <div id="searchResults" class="admin-cert-results"></div>
+        </section>
+
+        <section class="admin-panel admin-panel--certificates" id="certFormSection" hidden>
+          <div class="admin-cert-selected" id="selectedSummary"></div>
+
+          <form id="certForm" class="admin-form">
+            <input type="hidden" id="registrationId" />
+            <label>
+              کد ملی هنرجو
+              <input type="text" id="nationalId" required placeholder="مثلا: 1234567890" />
+            </label>
+            <label>
+              تاریخ پایان دوره (شمسی)
+              <input type="text" id="completionDate" required placeholder="۱۴۰۵/۰۲/۰۱" />
+            </label>
+            <label>
+              سطح (اختیاری)
+              <select id="level">
+                <option value="">— بدون بج سطح —</option>
+                <option value="1">۱ (مقدماتی)</option>
+                <option value="2">۲ (متوسط)</option>
+                <option value="3">۳ (پیشرفته)</option>
+                <option value="4">۴ (عالی)</option>
+              </select>
+            </label>
+            <label>
+              کتاب (اختیاری)
+              <select id="bookId">
+                <option value="">— بدون ذکر کتاب مشخص —</option>
+              </select>
+            </label>
+            <label>
+              توضیح تکمیلی برنامه‌ی درسی (اختیاری)
+              <input type="text" id="curriculumNote" placeholder="مثلا: و اجرای آهنگ‌های پاپ همراه با آکوردها و ریتم‌ها" />
+            </label>
+            <div class="admin-form-actions">
+              <button type="submit" id="generateBtn">تولید PDF گواهینامه</button>
+              <button type="button" class="secondary" id="cancelSelection">انصراف / انتخاب هنرجوی دیگر</button>
+            </div>
+          </form>
+        </section>
+        <p id="certStatus" role="status" class="admin-ai-status"></p>
+      </div>
+    </main>
+  </div>
+  <script>
+    import "../../scripts/admin/certificates.js";
+  </script>
+</MainLayout>
