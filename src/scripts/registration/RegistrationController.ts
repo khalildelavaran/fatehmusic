@@ -23,7 +23,7 @@ import { registrationApi } from "./RegistrationApi";
 import { courses } from "../../data/courses";
 import { instructors } from "../../data/instructors";
 import { schedules } from "../../data/schedule";
-import { normalizeMobile, isValidMobile } from "./RegistrationUtils";
+import { normalizeMobile, normalizeNationalCode, isValidMobile } from "./RegistrationUtils";
 
 class RegistrationController {
   private renderer: RegistrationRenderer;
@@ -219,6 +219,11 @@ class RegistrationController {
         return;
       }
 
+      if (key === "nationalCode") {
+        student[key] = normalizeNationalCode(input.value);
+        return;
+      }
+
       student[key] = input.value;
     });
 
@@ -264,64 +269,45 @@ class RegistrationController {
     const validation = registrationValidation.validate(state);
 
     if (!validation.valid) {
-      const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
-      if (box) {
-        box.hidden = false;
-        box.innerHTML = validation.errors.map((message) => `<li>${message}</li>`).join("");
-      }
+      this.showReviewErrors(validation.errors);
       return;
     }
 
-    const submitButton = document.querySelector<HTMLButtonElement>('[data-action="submit-registration"]');
-    submitButton?.setAttribute("disabled", "true");
+    const result = await registrationApi.submit(state);
+    if (!result.success) {
+      this.showReviewErrors(result.errors ?? ["ثبت نام انجام نشد."]);
+      return;
+    }
 
-    try {
-      const response = await registrationApi.submit(state);
-
-if (response.success) {
-  registrationStore.setTrackingCode(response.trackingCode || "");
-  registrationStore.complete();
-
-  const completedState = registrationStore.getState();
-
-  this.renderer.updateSuccess(completedState);
-
-  if (typeof window.fbq === "function") {
-    window.fbq("track", "Lead", {
-      content_name: "Online Registration",
-      content_category: completedState.selection.instrument.title
-    });
+    registrationStore.setTrackingCode(result.trackingCode ?? "");
+    registrationStore.complete();
+    this.renderer.updateSuccess(registrationStore.getState());
+    this.goToStep("success");
   }
 
-  this.goToStep("success");
-} else {
-        const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
-        if (box) {
-          box.hidden = false;
-          box.innerHTML = `<li>${response.message}</li>`;
-        }
-      }
-    } finally {
-      submitButton?.removeAttribute("disabled");
-    }
+  private showReviewErrors(errors: string[]) {
+    const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
+    if (!box) return;
+
+    box.hidden = false;
+    box.innerHTML = errors.map((message) => `<li>${message}</li>`).join("");
   }
 
   /* ==================================================
-     Step navigation
+     Navigation / rendering
   ================================================== */
 
   private goToStep(step: RegistrationStep) {
     registrationStore.setStep(step);
     this.showStep(step);
-    this.renderer.updateProgress(step);
-    document.querySelector(".registration-container")?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
-  private showStep(step: string) {
-    document.querySelectorAll<HTMLElement>("[data-step]").forEach((section) => {
-      section.hidden = section.dataset.step !== step;
+  private showStep(step: RegistrationStep) {
+    document.querySelectorAll<HTMLElement>("[data-step]").forEach((node) => {
+      node.hidden = node.dataset.step !== step;
     });
+    this.renderer.updateProgress(step);
   }
 }
 
-export { RegistrationController };
+export const registrationController = new RegistrationController();
