@@ -15,7 +15,7 @@ Architecture:
 */
 
 import type { RegistrationState, RegistrationStudent } from "./RegistrationStore";
-import { isValidMobile } from "./RegistrationUtils";
+import { isValidMobile, isValidNationalCode } from "./RegistrationUtils";
 
 export interface ValidationResult {
   valid: boolean;
@@ -33,6 +33,10 @@ class RegistrationValidation {
 
     if (!student.lastName?.trim()) {
       errors.push("نام خانوادگی هنرجو وارد نشده است.");
+    }
+
+    if (!isValidNationalCode(student.nationalCode || "")) {
+      errors.push("کد ملی صحیح نیست.");
     }
 
     if (!isValidMobile(student.mobile || "")) {

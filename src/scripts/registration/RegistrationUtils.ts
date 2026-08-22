@@ -50,6 +50,35 @@ export function isValidMobile(raw: string): boolean {
   return /^09\d{9}$/.test(normalizeMobile(raw));
 }
 
+/** Normalizes an Iranian national code to exactly its ten ASCII digits. */
+export function normalizeNationalCode(raw: string): string {
+  return toEnglishDigits(raw).replace(/\D/g, "");
+}
+
+/**
+ * Validates an Iranian national code using the official 10-digit check-digit algorithm.
+ *
+ * For digits d1..d10, the first nine digits are multiplied by weights 10..2.
+ * If the weighted sum remainder modulo 11 is less than 2, the check digit is
+ * that remainder; otherwise it is 11 minus the remainder.
+ */
+export function isValidNationalCode(raw: string): boolean {
+  const code = normalizeNationalCode(raw);
+  if (!/^\d{10}$/.test(code)) return false;
+
+  // Reject the common placeholder values such as 0000000000 and 1111111111.
+  if (/^(\d)\1{9}$/.test(code)) return false;
+
+  const digits = code.split("").map(Number);
+  const sum = digits
+    .slice(0, 9)
+    .reduce((total, digit, index) => total + digit * (10 - index), 0);
+  const remainder = sum % 11;
+  const expectedCheckDigit = remainder < 2 ? remainder : 11 - remainder;
+
+  return digits[9] === expectedCheckDigit;
+}
+
 /** Formats an integer amount (assumed Toman) with Persian digits and thousands separators. */
 export function formatToman(amount: number): string {
   const withSeparators = Math.round(amount).toLocaleString("en-US");

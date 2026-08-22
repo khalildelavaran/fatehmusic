@@ -23,7 +23,7 @@ import { registrationApi } from "./RegistrationApi";
 import { courses } from "../../data/courses";
 import { instructors } from "../../data/instructors";
 import { schedules } from "../../data/schedule";
-import { normalizeMobile, isValidMobile } from "./RegistrationUtils";
+import { normalizeMobile, normalizeNationalCode, isValidMobile } from "./RegistrationUtils";
 
 class RegistrationController {
   private renderer: RegistrationRenderer;
@@ -38,92 +38,37 @@ class RegistrationController {
     this.showStep("welcome");
   }
 
-  /* ==================================================
-     Event binding
-  ================================================== */
-
   private bindEvents() {
     document.addEventListener("click", (event) => {
       const element = (event.target as HTMLElement).closest("[data-action]") as HTMLElement | null;
       if (!element) return;
 
       const action = element.dataset.action;
-
       switch (action) {
-        case "start-registration":
-          this.goToStep("instrument");
-          break;
-
-        case "select-instrument":
-          this.selectInstrument(element);
-          break;
-
-        case "back-to-instrument":
-          this.goToStep("instrument");
-          break;
-
-        case "select-instructor":
-          this.selectInstructor(element);
-          break;
-
-        case "back-to-instructor":
-          this.goToStep("instructor");
-          break;
-
-        case "select-schedule":
-          this.selectSchedule(element);
-          break;
-
-        case "back-to-schedule":
-          this.goToStep("schedule");
-          break;
-
-        case "continue-student":
-          this.continueFromStudent();
-          break;
-
+        case "start-registration": this.goToStep("instrument"); break;
+        case "select-instrument": this.selectInstrument(element); break;
+        case "back-to-instrument": this.goToStep("instrument"); break;
+        case "select-instructor": this.selectInstructor(element); break;
+        case "back-to-instructor": this.goToStep("instructor"); break;
+        case "select-schedule": this.selectSchedule(element); break;
+        case "back-to-schedule": this.goToStep("schedule"); break;
+        case "continue-student": this.continueFromStudent(); break;
         case "back-to-student":
-        case "edit-student":
-          this.goToStep("student");
-          break;
-
-        case "edit-instrument":
-          this.goToStep("instrument");
-          break;
-
-        case "edit-instructor":
-          this.goToStep("instructor");
-          break;
-
-        case "edit-schedule":
-          this.goToStep("schedule");
-          break;
-
-        case "submit-registration":
-          this.submitRegistration();
-          break;
-
-        case "print-receipt":
-          window.print();
-          break;
-
-        case "back-home":
-          window.location.href = "/";
-          break;
+        case "edit-student": this.goToStep("student"); break;
+        case "edit-instrument": this.goToStep("instrument"); break;
+        case "edit-instructor": this.goToStep("instructor"); break;
+        case "edit-schedule": this.goToStep("schedule"); break;
+        case "submit-registration": this.submitRegistration(); break;
+        case "print-receipt": window.print(); break;
+        case "back-home": window.location.href = "/"; break;
       }
     });
 
     document.addEventListener("input", (event) => {
       const input = event.target as HTMLInputElement;
-      if (input?.dataset?.field === "mobile") {
-        this.reflectMobileValidity(input);
-      }
+      if (input?.dataset?.field === "mobile") this.reflectMobileValidity(input);
     });
   }
-
-  /* ==================================================
-     Instrument -> Instructor
-  ================================================== */
 
   private selectInstrument(element: HTMLElement) {
     const id = Number(element.dataset.instrumentId);
@@ -140,34 +85,20 @@ class RegistrationController {
     const available = instructors.filter(
       (instructor) => instructor.active && (course.instructors ?? []).includes(instructor.id)
     );
-
     this.renderer.renderInstructors(available);
     this.goToStep("instructor");
   }
-
-  /* ==================================================
-     Instructor -> Schedule
-  ================================================== */
 
   private selectInstructor(element: HTMLElement) {
     const id = Number(element.dataset.instructorId);
     const instructor = instructors.find((item) => item.id === id);
     if (!instructor) return;
 
-    registrationStore.selectInstructor({
-      id: instructor.id,
-      name: instructor.name
-    });
-
+    registrationStore.selectInstructor({ id: instructor.id, name: instructor.name });
     const available = schedules.filter((schedule) => schedule.active && schedule.instructorId === instructor.id);
-
     this.renderer.renderSchedules(available);
     this.goToStep("schedule");
   }
-
-  /* ==================================================
-     Schedule -> Student
-  ================================================== */
 
   private selectSchedule(element: HTMLElement) {
     const id = Number(element.dataset.scheduleId);
@@ -181,13 +112,8 @@ class RegistrationController {
       classroom: schedule.classroom ?? null,
       classMode: schedule.classMode ?? null
     });
-
     this.goToStep("student");
   }
-
-  /* ==================================================
-     Student -> Review
-  ================================================== */
 
   private continueFromStudent() {
     const student = this.collectStudent();
@@ -219,11 +145,15 @@ class RegistrationController {
         return;
       }
 
+      if (key === "nationalCode") {
+        student[key] = normalizeNationalCode(input.value);
+        return;
+      }
+
       student[key] = input.value;
     });
 
     if (student.age) student.age = Number(student.age);
-
     return student;
   }
 
@@ -255,10 +185,6 @@ class RegistrationController {
     group.classList.toggle("is-invalid", !valid);
   }
 
-  /* ==================================================
-     Submit
-  ================================================== */
-
   private async submitRegistration() {
     const state = registrationStore.getState();
     const validation = registrationValidation.validate(state);
@@ -278,23 +204,22 @@ class RegistrationController {
     try {
       const response = await registrationApi.submit(state);
 
-if (response.success) {
-  registrationStore.setTrackingCode(response.trackingCode || "");
-  registrationStore.complete();
+      if (response.success) {
+        registrationStore.setTrackingCode(response.trackingCode || "");
+        registrationStore.complete();
 
-  const completedState = registrationStore.getState();
+        const completedState = registrationStore.getState();
+        this.renderer.updateSuccess(completedState);
 
-  this.renderer.updateSuccess(completedState);
+        if (typeof window.fbq === "function") {
+          window.fbq("track", "Lead", {
+            content_name: "Online Registration",
+            content_category: completedState.selection.instrument.title
+          });
+        }
 
-  if (typeof window.fbq === "function") {
-    window.fbq("track", "Lead", {
-      content_name: "Online Registration",
-      content_category: completedState.selection.instrument.title
-    });
-  }
-
-  this.goToStep("success");
-} else {
+        this.goToStep("success");
+      } else {
         const box = document.querySelector<HTMLElement>('[data-step="review"] [data-form-errors]');
         if (box) {
           box.hidden = false;
@@ -305,10 +230,6 @@ if (response.success) {
       submitButton?.removeAttribute("disabled");
     }
   }
-
-  /* ==================================================
-     Step navigation
-  ================================================== */
 
   private goToStep(step: RegistrationStep) {
     registrationStore.setStep(step);

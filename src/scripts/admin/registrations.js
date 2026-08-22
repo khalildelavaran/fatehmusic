@@ -26,12 +26,13 @@ async function loadRegistrations({ silent = false } = {}) {
   if (!data.success) { setLiveStatus(data.message); return; }
 
   body.innerHTML = data.registrations.length === 0
-    ? `<tr><td colspan="8" class="admin-table-empty">هنوز ثبت‌نامی وجود ندارد.</td></tr>`
+    ? `<tr><td colspan="9" class="admin-table-empty">هنوز ثبت‌نامی وجود ندارد.</td></tr>`
     : data.registrations
         .map(
           (item) => `<tr>
             <td>${item.tracking_code}</td>
             <td>${item.student_first_name} ${item.student_last_name}<br><span class="admin-table-subtext">سن: ${item.student_age}</span></td>
+            <td dir="ltr">${item.student_national_code || "-"}</td>
             <td dir="ltr">${item.student_mobile}</td>
             <td>${item.instrument_title}</td>
             <td>${item.instructor_name}</td>

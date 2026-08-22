@@ -48,8 +48,6 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ success: false, errors: ["سرویس ذخیره‌سازی در دسترس نیست. لطفاً بعداً تلاش کنید."] }, 500);
   }
 
-  // A handful of retries covers the astronomically unlikely case of a
-  // duplicate 6-digit tracking code in the same year.
   let trackingCode = "";
   let inserted = false;
 
@@ -64,8 +62,8 @@ export const POST: APIRoute = async ({ request }) => {
             instrument_id, instrument_title, instrument_slug,
             instructor_id, instructor_name,
             schedule_id, schedule_weekday, schedule_classroom, schedule_duration,
-            student_first_name, student_last_name, student_mobile, student_age, student_gender, has_instrument
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+            student_first_name, student_last_name, student_national_code, student_mobile, student_age, student_gender, has_instrument
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         )
         .bind(
           trackingCode,
@@ -80,6 +78,7 @@ export const POST: APIRoute = async ({ request }) => {
           state.selection.schedule.sessionDuration,
           state.student.firstName,
           state.student.lastName,
+          state.student.nationalCode,
           state.student.mobile,
           state.student.age,
           state.student.gender,
@@ -92,9 +91,7 @@ export const POST: APIRoute = async ({ request }) => {
       const message = String(err?.message ?? "");
       const isUniqueViolation = message.includes("UNIQUE");
 
-      if (isUniqueViolation) {
-        continue; // try again with a freshly generated tracking code
-      }
+      if (isUniqueViolation) continue;
 
       console.error("D1 insert failed:", err);
 
@@ -134,6 +131,7 @@ export const POST: APIRoute = async ({ request }) => {
       scheduleSummary,
       studentFirstName: state.student.firstName,
       studentLastName: state.student.lastName,
+      studentNationalCode: state.student.nationalCode,
       studentMobile: state.student.mobile,
       studentAge: state.student.age ?? 0
     },
@@ -146,8 +144,6 @@ export const POST: APIRoute = async ({ request }) => {
       .bind(notified.telegram ? 1 : 0, notified.email ? 1 : 0, trackingCode)
       .run();
   } catch (err) {
-    // Notification-status bookkeeping only - the registration itself is
-    // already safely stored, so this is logged and swallowed.
     console.error("Failed to record notification status:", err);
   }
 

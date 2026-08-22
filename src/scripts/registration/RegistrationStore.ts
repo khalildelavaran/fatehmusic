@@ -40,6 +40,7 @@ export interface RegistrationSchedule {
 export interface RegistrationStudent {
   firstName: string;
   lastName: string;
+  nationalCode: string;
   mobile: string;
   age: number | null;
   gender: "male" | "female" | null;
@@ -99,6 +100,7 @@ const createInitialState = (): RegistrationState => ({
   student: {
     firstName: "",
     lastName: "",
+    nationalCode: "",
     mobile: "",
     age: null,
     gender: null,

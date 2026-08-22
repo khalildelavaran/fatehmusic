@@ -12,13 +12,6 @@ Each channel is independent and best-effort: if Telegram isn't
 configured yet, it's silently skipped; same for email. Missing
 or failing notifications never fail the registration itself -
 the D1 write already happened by the time this runs.
-
-Setup:
-- Telegram: create a bot via @BotFather, then set the
-  TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets
-  (wrangler secret put TELEGRAM_BOT_TOKEN, etc).
-- Email: sign up at resend.com (or swap sendEmail() below for
-  another provider), then set RESEND_API_KEY and NOTIFY_EMAIL.
 ====================================================
 */
 
@@ -29,6 +22,7 @@ export interface NotificationPayload {
   scheduleSummary: string;
   studentFirstName: string;
   studentLastName: string;
+  studentNationalCode: string;
   studentMobile: string;
   studentAge: number;
 }
@@ -77,6 +71,7 @@ function buildMessageText(payload: NotificationPayload): string {
     `ثبت‌نام جدید — کد پیگیری: ${payload.trackingCode}`,
     ``,
     `هنرجو: ${payload.studentFirstName} ${payload.studentLastName} (${payload.studentAge} سال)`,
+    `کد ملی: ${payload.studentNationalCode}`,
     `موبایل: ${payload.studentMobile}`,
     `ساز: ${payload.instrumentTitle}`,
     `استاد: ${payload.instructorName}`,
@@ -97,9 +92,7 @@ async function sendTelegram(
     })
   });
 
-  if (!res.ok) {
-    throw new Error(`Telegram API responded ${res.status}: ${await res.text()}`);
-  }
+  if (!res.ok) throw new Error(`Telegram API responded ${res.status}: ${await res.text()}`);
 }
 
 async function sendEmail(payload: NotificationPayload, env: { RESEND_API_KEY: string; NOTIFY_EMAIL: string }) {
@@ -110,10 +103,6 @@ async function sendEmail(payload: NotificationPayload, env: { RESEND_API_KEY: st
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      // onboarding@resend.dev works immediately with no setup, but only
-      // delivers to the email you signed up to Resend with. Once you
-      // verify your own domain in the Resend dashboard, change this to
-      // something like "ثبت نام <no-reply@fatehmusic.ir>".
       from: "ثبت نام آموزشگاه فاتح <onboarding@resend.dev>",
       to: env.NOTIFY_EMAIL,
       subject: `ثبت‌نام جدید - ${payload.studentFirstName} ${payload.studentLastName}`,
@@ -121,7 +110,5 @@ async function sendEmail(payload: NotificationPayload, env: { RESEND_API_KEY: st
     })
   });
 
-  if (!res.ok) {
-    throw new Error(`Resend API responded ${res.status}: ${await res.text()}`);
-  }
+  if (!res.ok) throw new Error(`Resend API responded ${res.status}: ${await res.text()}`);
 }
