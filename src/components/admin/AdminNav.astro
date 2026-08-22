@@ -3,7 +3,7 @@ import { ROLES, ROLE_LABELS_FA } from "../../server/admin-auth";
 
 export interface Props {
   session: { username: string; role: string };
-  active: "dashboard" | "posts" | "topics" | "books" | "registration";
+  active: "dashboard" | "posts" | "topics" | "books" | "certificates" | "registration";
 }
 
 const { session, active } = Astro.props;
@@ -43,6 +43,13 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
       <a href="/admin/books" class:list={["admin-nav-link", active === "books" && "is-active"]} aria-current={active === "books" ? "page" : undefined}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
         کتاب‌ها
+      </a>
+    )}
+
+    {isAdmin && (
+      <a href="/admin/certificates" class:list={["admin-nav-link", active === "certificates" && "is-active"]} aria-current={active === "certificates" ? "page" : undefined}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="m9 13.5-1.5 7L12 18l4.5 2.5-1.5-7"/></svg>
+        گواهینامه‌ها
       </a>
     )}
 
