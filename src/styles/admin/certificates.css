@@ -1,0 +1,81 @@
+/* ==========================================
+   ADMIN CERTIFICATES
+========================================== */
+
+.admin-panel--certificates{
+    grid-template-columns: 1fr;
+    max-width: 640px;
+}
+
+.admin-cert-search-label{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    font-size:14px;
+    color:var(--text-secondary);
+}
+
+.admin-cert-search-label input{
+    padding:12px 14px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.03);
+    color:var(--text);
+    font-family:inherit;
+    font-size:15px;
+}
+
+.admin-cert-results{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:12px;
+}
+
+.admin-cert-result{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    padding:10px 14px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:rgba(255,255,255,.02);
+    color:var(--text);
+    cursor:pointer;
+    text-align:right;
+    font-family:inherit;
+    transition:var(--transition);
+}
+
+.admin-cert-result:hover{
+    border-color:var(--primary);
+    background:rgba(255,255,255,.05);
+}
+
+.admin-cert-result span{
+    font-size:12.5px;
+    color:var(--text-secondary);
+}
+
+.admin-cert-result-empty{
+    padding:10px 14px;
+    color:var(--text-secondary);
+    font-size:13px;
+}
+
+.admin-cert-selected{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:14px 16px;
+    border-radius:10px;
+    background:rgba(76,175,80,.08);
+    border:1px solid rgba(76,175,80,.25);
+    margin-bottom:18px;
+}
+
+.admin-cert-selected span{
+    font-size:13px;
+    color:var(--text-secondary);
+}
