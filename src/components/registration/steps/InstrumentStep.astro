@@ -23,7 +23,6 @@ for (const course of activeCourses) {
 }
 
 // Categories with more available courses get visual priority and appear first.
-// Priority is used as the tie-breaker through the already priority-sorted courses.
 categories.sort((a, b) => b.items.length - a.items.length);
 ---
 
@@ -34,12 +33,12 @@ categories.sort((a, b) => b.items.length - a.items.length);
     <p data-step-subtitle>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
   </header>
 
-  <div class="registration-categories-grid">
+  <div class="registration-courses-flow">
     {
       categories.map((group) => (
-        <div class="instrument-category" data-category-name={group.name}>
+        <section class="instrument-category" data-category-name={group.name}>
           <h3 class="category-title">{group.name}</h3>
-          <div class="registration-grid instrument-grid">
+          <div class="category-cards">
             {group.items.map((course) => (
               <InstrumentCard
                 id={course.id}
@@ -52,72 +51,82 @@ categories.sort((a, b) => b.items.length - a.items.length);
               />
             ))}
           </div>
-        </div>
+        </section>
       ))
     }
   </div>
 </section>
 
 <style>
-  /* Put category groups beside each other instead of stacking the whole
-     registration page vertically. Larger groups are ordered first above. */
-  .registration-categories-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 28px 20px;
+  /*
+   * One shared masonry-like flow for all category cards.
+   * Categories themselves are not separate vertical columns, so a category
+   * with one course cannot leave an artificial empty area beside a category
+   * with three courses.
+   */
+  .registration-courses-flow {
+    column-count: 3;
+    column-gap: 20px;
     align-items: start;
   }
 
   .instrument-category {
-    margin-bottom: 0;
-    min-width: 0;
+    display: inline-block;
+    width: 100%;
+    margin: 0 0 22px;
+    vertical-align: top;
+    break-inside: avoid;
   }
 
-  /* Instructor deep-link filtering marks empty groups in the renderer. */
   .instrument-category[data-empty="true"] {
     display: none;
   }
 
-  .instrument-category .registration-grid {
+  .category-title {
+    margin: 0 0 10px;
+  }
+
+  .category-cards {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
 
-  .instrument-category .registration-card {
+  .category-cards .registration-card {
     padding: 14px;
   }
 
-  .instrument-category .instrument-media {
+  .category-cards .instrument-media {
     margin-bottom: 10px;
   }
 
-  .instrument-category .instrument-content h3 {
+  .category-cards .instrument-content h3 {
     font-size: 16px;
   }
 
-  .instrument-category .instrument-excerpt {
+  .category-cards .instrument-excerpt {
     font-size: 12.5px;
     line-height: 1.7;
   }
 
   @media (max-width: 1100px) {
-    .registration-categories-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+    .registration-courses-flow {
+      column-count: 2;
     }
   }
 
   @media (max-width: 760px) {
-    .registration-categories-grid {
-      grid-template-columns: 1fr;
+    .registration-courses-flow {
+      column-count: 1;
     }
 
-    .instrument-category .registration-grid {
+    .category-cards {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 480px) {
-    .instrument-category .registration-grid {
+    .category-cards {
       grid-template-columns: 1fr;
     }
   }
