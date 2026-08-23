@@ -90,21 +90,25 @@ const instructorCards = instructors.map((ins) => {
       {instructorCards.map((ins) => (
 
 
-        <a
-          href={`/instructors/${ins.slug}`}
-          class="instructor-card"
-        >
+        <div class="instructor-card">
 
 
           <div class="instructor-image">
 
 
-            <img
-              src={ins.media.images.profile}
-              alt={ins.name}
-              loading="lazy"
-              decoding="async"
-            />
+            <a
+              href={`/instructors/${ins.slug}`}
+              class="instructor-image-link"
+            >
+
+              <img
+                src={ins.media.images.profile}
+                alt={ins.name}
+                loading="lazy"
+                decoding="async"
+              />
+
+            </a>
 
 
 
@@ -121,6 +125,15 @@ const instructorCards = instructors.map((ins) => {
             )}
 
 
+            <a
+              href={`/register?instructor=${ins.slug}`}
+              class="card-register-badge"
+              aria-label={`ثبت‌نام با ${ins.name}`}
+            >
+              ثبت‌نام
+            </a>
+
+
           </div>
 
 
@@ -128,11 +141,16 @@ const instructorCards = instructors.map((ins) => {
           <div class="instructor-content">
 
 
-            <h3>
+            <a
+              href={`/instructors/${ins.slug}`}
+              class="instructor-title-link"
+            >
+              <h3>
 
-              {ins.name}
+                {ins.name}
 
-            </h3>
+              </h3>
+            </a>
 
 
 
@@ -178,7 +196,7 @@ const instructorCards = instructors.map((ins) => {
 
 
 
-        </a>
+        </div>
 
 
       ))}

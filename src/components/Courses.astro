@@ -110,20 +110,30 @@ const courseCards = typedCourses.map((course: Course) => {
       {courseCards.map((course) => (
 
 
-        <a
-          href={`/courses/${course.slug}`}
-          class="course-card"
-        >
+        <div class="course-card">
 
 
           <div class="course-image">
 
-            <img
-              src={course.media.image}
-              alt={course.title}
-              loading="lazy"
-              decoding="async"
-            />
+            <a
+              href={`/courses/${course.slug}`}
+              class="course-image-link"
+            >
+              <img
+                src={course.media.image}
+                alt={course.title}
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+
+            <a
+              href={`/register?course=${course.slug}`}
+              class="card-register-badge"
+              aria-label={`ثبت‌نام در ${course.title}`}
+            >
+              ثبت‌نام
+            </a>
 
           </div>
 
@@ -132,9 +142,14 @@ const courseCards = typedCourses.map((course: Course) => {
           <div class="course-content">
 
 
-            <h3 class="course-title">
-              {course.title}
-            </h3>
+            <a
+              href={`/courses/${course.slug}`}
+              class="course-title-link"
+            >
+              <h3 class="course-title">
+                {course.title}
+              </h3>
+            </a>
 
 
 
@@ -189,7 +204,7 @@ const courseCards = typedCourses.map((course: Course) => {
 
 
 
-        </a>
+        </div>
 
 
 
