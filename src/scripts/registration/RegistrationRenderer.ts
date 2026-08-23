@@ -7,69 +7,48 @@ File: src/scripts/registration/RegistrationRenderer.ts
 import type { RegistrationState } from "./RegistrationStore";
 import { contact } from "../../data/contact";
 import { getMaterialsByInstrument } from "../../data/materials";
-import {
-  classModeLabel, escapeHtml, formatMobileDisplay, formatToman,
-  getPricingPlan, sortByWeekday, toPersianDigits
-} from "./RegistrationUtils";
+import { classModeLabel, escapeHtml, formatMobileDisplay, formatToman, getPricingPlan, sortByWeekday, toPersianDigits } from "./RegistrationUtils";
 
-export interface InstructorRecord {
-  id: number;
-  name: string;
-  slug?: string;
-  media?: { images?: { profile?: string } };
-  professional?: { roles?: string[] };
-  content?: { excerpt?: string };
-}
+export interface InstructorRecord { id: number; name: string; slug?: string; media?: { images?: { profile?: string } }; professional?: { roles?: string[] }; content?: { excerpt?: string }; }
 export interface ScheduleRecord { id: number; weekday: string; sessionDuration?: number; classroom?: string | number; classMode?: string; }
 const PROGRESS_STEPS = ["instrument", "instructor", "schedule", "student", "review"] as const;
 
 class RegistrationRenderer {
-  updateProgress(step: string) {
-    const rail = document.querySelector<HTMLElement>("[data-progress]"); if (!rail) return;
-    const isWizardStep = (PROGRESS_STEPS as readonly string[]).includes(step);
-    rail.hidden = !isWizardStep && step !== "success";
-    const currentIndex = step === "success" ? PROGRESS_STEPS.length : PROGRESS_STEPS.indexOf(step as (typeof PROGRESS_STEPS)[number]);
-    rail.querySelectorAll<HTMLElement>("[data-progress-step]").forEach((node) => {
-      const nodeIndex = PROGRESS_STEPS.indexOf(node.dataset.progressStep as (typeof PROGRESS_STEPS)[number]);
-      node.classList.remove("is-active", "is-complete");
-      if (nodeIndex < currentIndex) node.classList.add("is-complete"); else if (nodeIndex === currentIndex) node.classList.add("is-active");
-    });
-  }
-  renderSelectionSummary(state: RegistrationState) {
-    const el = document.querySelector<HTMLElement>("[data-selection-summary]"); if (!el) return;
-    const { instrument, instructor, schedule } = state.selection; const chips: string[] = [];
-    if (instrument.title) chips.push(this.summaryChip("ساز", instrument.title));
-    if (instructor.name) chips.push(this.summaryChip("استاد", instructor.name, instructor.auto));
-    if (schedule.weekday) chips.push(this.summaryChip("زمان", this.formatSchedule(schedule) ?? "", schedule.auto));
-    el.hidden = !chips.length; el.innerHTML = chips.join("");
-  }
+  updateProgress(step: string) { const rail = document.querySelector<HTMLElement>("[data-progress]"); if (!rail) return; const isWizardStep = (PROGRESS_STEPS as readonly string[]).includes(step); rail.hidden = !isWizardStep && step !== "success"; const currentIndex = step === "success" ? PROGRESS_STEPS.length : PROGRESS_STEPS.indexOf(step as (typeof PROGRESS_STEPS)[number]); rail.querySelectorAll<HTMLElement>("[data-progress-step]").forEach((node) => { const nodeIndex = PROGRESS_STEPS.indexOf(node.dataset.progressStep as (typeof PROGRESS_STEPS)[number]); node.classList.remove("is-active", "is-complete"); if (nodeIndex < currentIndex) node.classList.add("is-complete"); else if (nodeIndex === currentIndex) node.classList.add("is-active"); }); }
+  renderSelectionSummary(state: RegistrationState) { const el = document.querySelector<HTMLElement>("[data-selection-summary]"); if (!el) return; const { instrument, instructor, schedule } = state.selection; const chips: string[] = []; if (instrument.title) chips.push(this.summaryChip("ساز", instrument.title)); if (instructor.name) chips.push(this.summaryChip("استاد", instructor.name, instructor.auto)); if (schedule.weekday) chips.push(this.summaryChip("زمان", this.formatSchedule(schedule) ?? "", schedule.auto)); el.hidden = !chips.length; el.innerHTML = chips.join(""); }
   private summaryChip(label: string, value: string, auto?: boolean) { return `<span class="summary-chip"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span>${auto ? `<em>پیشنهادی</em>` : ""}</span>`; }
   renderInstrumentIntro(text: string) { const el = document.querySelector<HTMLElement>(`[data-step="instrument"] [data-step-subtitle]`); if (el) el.textContent = text; }
 
-  /** Filter the single shared registration card row by the selected instructor. */
+  /** Filter the shared course row and rebuild category labels from the visible courses. */
   filterInstrumentsByInstructor(instructorId: number) {
-    const cards = document.querySelectorAll<HTMLElement>('[data-step="instrument"] [data-instructor-ids]');
-    cards.forEach((card) => {
-      const ids = (card.dataset.instructorIds ?? "").split(",").filter(Boolean).map(Number);
-      card.closest<HTMLElement>(".registration-card-item")?.toggleAttribute("hidden", !ids.includes(instructorId));
+    const items = Array.from(document.querySelectorAll<HTMLElement>('[data-step="instrument"] .registration-card-item'));
+    const visibleItems: HTMLElement[] = [];
+    items.forEach((item) => {
+      const card = item.querySelector<HTMLElement>("[data-instructor-ids]");
+      const ids = (card?.dataset.instructorIds ?? "").split(",").filter(Boolean).map(Number);
+      const visible = ids.includes(instructorId);
+      item.hidden = !visible;
+      if (visible) visibleItems.push(item);
+    });
+
+    // A category heading belongs above the first visible course of that category,
+    // not above the first course in the global catalog. This remains correct after filtering.
+    items.forEach((item) => {
+      const title = item.querySelector<HTMLElement>("[data-category-title]");
+      if (title) title.hidden = true;
+    });
+    const seen = new Set<string>();
+    visibleItems.forEach((item) => {
+      const category = item.dataset.category ?? "";
+      if (category && !seen.has(category)) {
+        item.querySelector<HTMLElement>("[data-category-title]")?.removeAttribute("hidden");
+        seen.add(category);
+      }
     });
   }
 
-  renderInstructors(list: InstructorRecord[]) {
-    const container = document.querySelector<HTMLElement>("[data-instructors-container]"); if (!container) return;
-    if (!list.length) { container.innerHTML = this.emptyState("استادی برای این ساز در حال حاضر موجود نیست."); return; }
-    const isAuto = list.length === 1;
-    container.innerHTML = list.map((instructor) => {
-      const roles = instructor.professional?.roles ?? []; const image = instructor.media?.images?.profile;
-      return `<article class="registration-card instructor-card${isAuto ? " is-auto-selected" : ""}" data-action="select-instructor" data-instructor-id="${instructor.id}" tabindex="0" role="button">${isAuto ? `<div class="auto-badge">استاد این دوره</div>` : ""}<div class="instructor-portrait">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(instructor.name)}" loading="lazy" />` : `<span class="portrait-fallback">${escapeHtml(instructor.name.charAt(0))}</span>`}</div><div class="instructor-content"><h3>${escapeHtml(instructor.name)}</h3>${roles.length ? `<div class="tag-row">${roles.map((role) => `<span class="mini-tag">${escapeHtml(role)}</span>`).join("")}</div>` : ""}${instructor.content?.excerpt ? `<p class="instructor-excerpt">${escapeHtml(instructor.content.excerpt)}</p>` : ""}</div><div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب استاد"}</div></article>`;
-    }).join("");
-  }
-  renderSchedules(list: ScheduleRecord[]) {
-    const container = document.querySelector<HTMLElement>("[data-schedules-container]"); if (!container) return;
-    if (!list.length) { container.innerHTML = this.emptyState("در حال حاضر زمان آزادی برای این استاد ثبت نشده است."); return; }
-    const sorted = sortByWeekday(list); const isAuto = sorted.length === 1;
-    container.innerHTML = sorted.map((schedule) => `<article class="registration-card schedule-card${isAuto ? " is-auto-selected" : ""}" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">${isAuto ? `<div class="auto-badge">تنها زمان موجود</div>` : ""}<div class="schedule-day">${escapeHtml(schedule.weekday)}</div><ul class="schedule-meta">${schedule.sessionDuration ? `<li>${toPersianDigits(schedule.sessionDuration)} دقیقه</li>` : ""}${schedule.classroom ? `<li>کلاس ${toPersianDigits(schedule.classroom)}</li>` : ""}<li>${classModeLabel(schedule.classMode)}</li></ul><div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب این زمان"}</div></article>`).join("");
-  }
+  renderInstructors(list: InstructorRecord[]) { const container = document.querySelector<HTMLElement>("[data-instructors-container]"); if (!container) return; if (!list.length) { container.innerHTML = this.emptyState("استادی برای این ساز در حال حاضر موجود نیست."); return; } const isAuto = list.length === 1; container.innerHTML = list.map((instructor) => { const roles = instructor.professional?.roles ?? []; const image = instructor.media?.images?.profile; return `<article class="registration-card instructor-card${isAuto ? " is-auto-selected" : ""}" data-action="select-instructor" data-instructor-id="${instructor.id}" tabindex="0" role="button">${isAuto ? `<div class="auto-badge">استاد این دوره</div>` : ""}<div class="instructor-portrait">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(instructor.name)}" loading="lazy" />` : `<span class="portrait-fallback">${escapeHtml(instructor.name.charAt(0))}</span>`}</div><div class="instructor-content"><h3>${escapeHtml(instructor.name)}</h3>${roles.length ? `<div class="tag-row">${roles.map((role) => `<span class="mini-tag">${escapeHtml(role)}</span>`).join("")}</div>` : ""}${instructor.content?.excerpt ? `<p class="instructor-excerpt">${escapeHtml(instructor.content.excerpt)}</p>` : ""}</div><div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب استاد"}</div></article>`; }).join(""); }
+  renderSchedules(list: ScheduleRecord[]) { const container = document.querySelector<HTMLElement>("[data-schedules-container]"); if (!container) return; if (!list.length) { container.innerHTML = this.emptyState("در حال حاضر زمان آزادی برای این استاد ثبت نشده است."); return; } const sorted = sortByWeekday(list); const isAuto = sorted.length === 1; container.innerHTML = sorted.map((schedule) => `<article class="registration-card schedule-card${isAuto ? " is-auto-selected" : ""}" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">${isAuto ? `<div class="auto-badge">تنها زمان موجود</div>` : ""}<div class="schedule-day">${escapeHtml(schedule.weekday)}</div><ul class="schedule-meta">${schedule.sessionDuration ? `<li>${toPersianDigits(schedule.sessionDuration)} دقیقه</li>` : ""}${schedule.classroom ? `<li>کلاس ${toPersianDigits(schedule.classroom)}</li>` : ""}<li>${classModeLabel(schedule.classMode)}</li></ul><div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب این زمان"}</div></article>`).join(""); }
   private emptyState(message: string) { return `<div class="registration-card empty-state"><p>${escapeHtml(message)}</p></div>`; }
   updateReview(state: RegistrationState) { const { instrument, instructor, schedule } = state.selection; this.setText("review-instrument", instrument.title); this.setText("review-instructor", instructor.name); this.setText("review-schedule", this.formatSchedule(schedule)); this.setText("review-student", `${state.student.firstName} ${state.student.lastName}`.trim()); this.setText("review-nationalCode", state.student.nationalCode ? toPersianDigits(state.student.nationalCode) : null); this.setText("review-mobile", state.student.mobile ? formatMobileDisplay(state.student.mobile) : null); this.setText("review-age", state.student.age ? toPersianDigits(state.student.age) : null); this.setText("review-gender", this.translateGender(state.student.gender)); this.setText("review-hasInstrument", this.translateInstrumentStatus(state.student.hasInstrument)); this.renderPricing(instrument.slug); }
   private renderPricing(slug: string | null) { const container = document.querySelector<HTMLElement>("[data-review-pricing]"); if (!container) return; const plan = getPricingPlan(slug); if (!plan) { container.innerHTML = ""; return; } container.innerHTML = `<div class="pricing-card"><div class="pricing-head"><span>${escapeHtml(plan.title)}</span><strong>${toPersianDigits(plan.duration.sessions)} جلسه · ${escapeHtml(plan.duration.period)}</strong></div><div class="pricing-options">${Object.values(plan.paymentOptions).map((option: any) => `<div class="pricing-option"><span>${escapeHtml(option.title)}</span><strong>${formatToman(option.amount)}</strong></div>`).join("")}</div></div>`; }
