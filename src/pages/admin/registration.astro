@@ -13,46 +13,10 @@ const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
 if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
 ---
 <MainLayout title="مدیریت ثبت‌نام‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
-  <div class="admin-layout">
-    <AdminNav session={session} active="registration" />
-    <main class="admin-main">
-      <div class="admin-shell" data-admin-registrations>
-        <section class="admin-hero no-print">
-          <p>ثبت‌نام‌ها</p>
-          <h1>نمایش و پرینت ثبت‌نام‌های سایت</h1>
-          <p>فهرست ثبت‌نام‌های هنرجویان آموزشگاه موسیقی فاتح را بررسی، وضعیت پیگیری را ثبت و خروجی چاپی تهیه کنید. این فهرست به‌صورت خودکار هر ۳۰ ثانیه به‌روز می‌شود.</p>
-        </section>
-
-        <section class="admin-login no-print">
-          <p>وارد شده به‌عنوان: <strong>{session.username}</strong></p>
-          <p class="admin-live-status" id="liveStatus">در حال بارگذاری...</p>
-          <button id="printRegistrations">پرینت</button>
-        </section>
-
-        <section class="admin-table-wrap">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>کد</th>
-                <th>هنرجو</th>
-                <th>کد ملی</th>
-                <th>موبایل</th>
-                <th>دوره</th>
-                <th>استاد</th>
-                <th>زمان</th>
-                <th>وضعیت</th>
-                <th class="no-print">عملیات</th>
-              </tr>
-            </thead>
-            <tbody id="registrationsBody">
-              <tr><td colspan="9" class="admin-table-empty">در حال بارگذاری ثبت‌نام‌ها...</td></tr>
-            </tbody>
-          </table>
-        </section>
-      </div>
-    </main>
-  </div>
-  <script>
-    import "../../scripts/admin/registrations.js";
-  </script>
+  <div class="admin-layout"><AdminNav session={session} active="registration" /><main class="admin-main"><div class="admin-shell" data-admin-registrations>
+    <section class="admin-hero no-print"><p>ثبت‌نام‌ها</p><h1>ثبت‌نام‌های سایت</h1><p>مشاهده، پیگیری و پرینت ثبت‌نام‌ها.</p></section>
+    <section class="admin-login no-print"><p>وارد شده به‌عنوان: <strong>{session.username}</strong></p><p class="admin-live-status" id="liveStatus">در حال بارگذاری...</p><button id="printRegistrations">پرینت</button></section>
+    <section class="admin-table-wrap"><table class="admin-table"><thead><tr><th>کد</th><th>هنرجو</th><th>کد ملی</th><th>موبایل</th><th>دوره</th><th>استاد</th><th>زمان</th><th>وضعیت</th><th class="no-print">عملیات</th></tr></thead><tbody id="registrationsBody"><tr><td colspan="9" class="admin-table-empty">در حال بارگذاری ثبت‌نام‌ها...</td></tr></tbody></table></section>
+  </div></main></div>
+  <script>import "../../scripts/admin/registrations.js";</script>
 </MainLayout>
