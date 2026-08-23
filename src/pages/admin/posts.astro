@@ -12,71 +12,15 @@ if (!session) return Astro.redirect("/admin/login");
 if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 ---
 <MainLayout title="مدیریت نوشته‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
-  <div class="admin-layout">
-    <AdminNav session={session} active="posts" />
-    <main class="admin-main">
-      <div class="admin-shell" data-admin-posts>
-        <section class="admin-hero">
-          <p>مدیریت نوشته‌ها</p>
-          <h1>داشبورد نوشته‌های وبلاگ</h1>
-          <p>مقاله‌ها باید به دوره، استاد یا هدف تجاری آموزشگاه موسیقی فاتح در شوشتر وصل باشند.</p>
-        </section>
-
-        <section class="admin-ai-trigger">
-          <div>
-            <strong>تولید خودکار روزانه</strong>
-            <span>هر روز ساعت ۶ صبح یک پیش‌نویس جدید با هوش مصنوعی ساخته می‌شود.</span>
-          </div>
-          <button type="button" id="generateNowButton">تولید همین الان (تست)</button>
-        </section>
-        <p id="generateStatus" role="status" class="admin-ai-status"></p>
-
-        <section class="admin-panel">
-          <form id="postForm" class="admin-form">
-            <input type="hidden" name="id" />
-            <label>عنوان<input name="title" required /></label>
-            <label>اسلاگ انگلیسی<input name="slug" dir="ltr" required /></label>
-            <label>موضوع<input name="topic" required /></label>
-            <label>خلاصه<textarea name="excerpt" required></textarea></label>
-            <label>متن مقاله<textarea name="content" rows="8" required></textarea></label>
-            <label>اسلاگ دوره مرتبط<input name="related_course_slug" dir="ltr" /></label>
-            <label>عنوان دوره مرتبط<input name="related_course_title" /></label>
-            <label>Meta Title<input name="meta_title" /></label>
-            <label>Meta Description<textarea name="meta_description"></textarea></label>
-            <label>وضعیت
-              <select name="status">
-                <option value="draft">پیش‌نویس</option>
-                <option value="published">منتشر شده</option>
-              </select>
-            </label>
-            <div class="admin-form-actions">
-              <button type="submit">ذخیره نوشته</button>
-              <button type="button" class="secondary" id="clearForm">فرم خالی / نوشته جدید</button>
-            </div>
-            <p id="adminMessage" role="status"></p>
-          </form>
-
-          <div class="admin-table-wrap">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>عنوان</th>
-                  <th>موضوع</th>
-                  <th>وضعیت</th>
-                  <th>به‌روزرسانی</th>
-                  <th>عملیات</th>
-                </tr>
-              </thead>
-              <tbody id="postsList">
-                <tr><td colspan="5" class="admin-table-empty">در حال بارگذاری نوشته‌ها...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </main>
-  </div>
-  <script>
-    import "../../scripts/admin/posts.js";
-  </script>
+  <div class="admin-layout"><AdminNav session={session} active="posts" /><main class="admin-main"><div class="admin-shell" data-admin-posts>
+    <section class="admin-hero"><p>مدیریت نوشته‌ها</p><h1>نوشته‌های وبلاگ</h1><p>ایجاد، ویرایش و انتشار مقاله‌های وبلاگ.</p></section>
+    <section class="admin-ai-trigger"><div><strong>تولید خودکار روزانه</strong><span>هر روز یک پیش‌نویس جدید با هوش مصنوعی ساخته می‌شود.</span></div><button type="button" id="generateNowButton">تولید همین الان (تست)</button></section>
+    <p id="generateStatus" role="status" class="admin-ai-status"></p>
+    <section class="admin-panel"><form id="postForm" class="admin-form">
+      <input type="hidden" name="id" /><label>عنوان<input name="title" required /></label><label>اسلاگ انگلیسی<input name="slug" dir="ltr" required /></label><label>موضوع<input name="topic" required /></label><label>خلاصه<textarea name="excerpt" required></textarea></label><label>متن مقاله<textarea name="content" rows="8" required></textarea></label><label>اسلاگ دوره مرتبط<input name="related_course_slug" dir="ltr" /></label><label>عنوان دوره مرتبط<input name="related_course_title" /></label><label>Meta Title<input name="meta_title" /></label><label>Meta Description<textarea name="meta_description"></textarea></label>
+      <label>وضعیت<select name="status"><option value="draft">پیش‌نویس</option><option value="published">منتشر شده</option></select></label>
+      <div class="admin-form-actions"><button type="submit">ذخیره نوشته</button><button type="button" class="secondary" id="clearForm">فرم خالی / نوشته جدید</button></div><p id="adminMessage" role="status"></p>
+    </form><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>عنوان</th><th>موضوع</th><th>وضعیت</th><th>به‌روزرسانی</th><th>عملیات</th></tr></thead><tbody id="postsList"><tr><td colspan="5" class="admin-table-empty">در حال بارگذاری نوشته‌ها...</td></tr></tbody></table></div></section>
+  </div></main></div>
+  <script>import "../../scripts/admin/posts.js";</script>
 </MainLayout>
