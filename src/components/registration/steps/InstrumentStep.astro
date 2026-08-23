@@ -2,54 +2,50 @@
 import { courses } from "../../../data/courses";
 import InstrumentCard from "../cards/InstrumentCard.astro";
 
-const activeCourses = courses.filter((course) => course.active).sort((a, b) => a.priority - b.priority);
-
-const categories: { name: string; items: typeof activeCourses }[] = [];
-for (const course of activeCourses) {
-  let group = categories.find((entry) => entry.name === course.category);
-  if (!group) {
-    group = { name: course.category, items: [] };
-    categories.push(group);
-  }
-  group.items.push(course);
-}
-
-categories.sort((a, b) => b.items.length - a.items.length);
-
-// Flatten all courses into one continuous card stream. Category headings are
-// rendered as labels in the same stream; cards never have a nested grid.
-const orderedCourses = categories.flatMap((group) =>
-  group.items.map((course, index) => ({ course, category: group.name, isFirst: index === 0 }))
-);
+// Course priority is the canonical ordering rule.
+const orderedCourses = courses
+  .filter((course) => course.active)
+  .sort((a, b) => a.priority - b.priority);
 ---
 
 <section class="registration-step" data-step="instrument">
   <header class="step-header">
     <span class="section-badge">مرحله ۱ از ۵</span>
-    <h2>ساز مورد نظر خود را انتخاب کنید</h2>
-    <p data-step-subtitle>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
+    <h2>دوره مورد نظر خود را انتخاب کنید</h2>
+    <p data-step-subtitle>دوره مورد نظر خود را انتخاب کنید.</p>
   </header>
 
   <div class="registration-cards-row">
-    {orderedCourses.map(({ course, category, isFirst }) => (
-      <div class="registration-card-item">
-        {isFirst && <h3 class="category-title">{category}</h3>}
-        <InstrumentCard
-          id={course.id}
-          slug={course.slug}
-          title={course.title}
-          excerpt={course.content?.excerpt}
-          image={course.media?.image}
-          level={course.level}
-          instructorIds={course.instructors ?? []}
-        />
-      </div>
-    ))}
+    {orderedCourses.map((course, index) => {
+      const previous = orderedCourses[index - 1];
+      const isFirstInCategory = !previous || previous.category !== course.category;
+      return (
+        <div
+          class="registration-card-item"
+          data-category={course.category}
+          data-category-start={isFirstInCategory ? "true" : "false"}
+        >
+          {isFirstInCategory && (
+            <div class="category-divider" aria-label={`دسته‌بندی ${course.category}`}>
+              <span>{course.category}</span>
+            </div>
+          )}
+          <InstrumentCard
+            id={course.id}
+            slug={course.slug}
+            title={course.title}
+            excerpt={course.content?.excerpt}
+            image={course.media?.image}
+            level={course.level}
+            instructorIds={course.instructors ?? []}
+          />
+        </div>
+      );
+    })}
   </div>
 </section>
 
 <style>
-  /* Every course is one independent item in one shared horizontal stream. */
   .registration-cards-row {
     display: flex;
     flex-wrap: nowrap;
@@ -61,19 +57,37 @@ const orderedCourses = categories.flatMap((group) =>
   }
 
   .registration-card-item {
+    position: relative;
     flex: 0 0 220px;
     width: 220px;
+    padding-top: 34px;
   }
 
-  .category-title {
-    min-height: 24px;
-    margin: 0 0 8px;
-    font-size: 15px;
+  .category-divider {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-gold, #d4af37);
+    font-size: 13px;
     font-weight: 700;
+    white-space: nowrap;
   }
 
-  .registration-card-item:not(:has(.category-title)) {
-    padding-top: 32px;
+  .category-divider::before,
+  .category-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-gold, #d4af37);
+    opacity: 0.8;
+  }
+
+  .category-divider span {
+    flex: 0 0 auto;
   }
 
   @media (max-width: 760px) {
