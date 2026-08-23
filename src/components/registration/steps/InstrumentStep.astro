@@ -2,7 +2,6 @@
 import { courses } from "../../../data/courses";
 import InstrumentCard from "../cards/InstrumentCard.astro";
 
-// Course priority is the canonical ordering rule.
 const orderedCourses = courses
   .filter((course) => course.active)
   .sort((a, b) => a.priority - b.priority);
@@ -15,28 +14,28 @@ const orderedCourses = courses
     <p data-step-subtitle>دوره مورد نظر خود را انتخاب کنید.</p>
   </header>
 
-  <div class="registration-cards-row">
+  <div class="registration-categories">
     {orderedCourses.map((course, index) => {
       const previous = orderedCourses[index - 1];
       const isFirstInCategory = !previous || previous.category !== course.category;
       return (
-        <div
-          class="registration-card-item"
-          data-category={course.category}
-          data-category-start={isFirstInCategory ? "true" : "false"}
-        >
-          <div class:list={["category-divider", { "category-divider--labeled": isFirstInCategory }]} aria-label={isFirstInCategory ? `دسته‌بندی ${course.category}` : undefined}>
-            {isFirstInCategory && <span>{course.category}</span>}
+        <div class="category-group" data-category={course.category} data-category-start={isFirstInCategory ? "true" : "false"}>
+          {isFirstInCategory && (
+            <div class="category-header" aria-label={`دسته‌بندی ${course.category}`}>
+              <span>{course.category}</span>
+            </div>
+          )}
+          <div class="category-card">
+            <InstrumentCard
+              id={course.id}
+              slug={course.slug}
+              title={course.title}
+              excerpt={course.content?.excerpt}
+              image={course.media?.image}
+              level={course.level}
+              instructorIds={course.instructors ?? []}
+            />
           </div>
-          <InstrumentCard
-            id={course.id}
-            slug={course.slug}
-            title={course.title}
-            excerpt={course.content?.excerpt}
-            image={course.media?.image}
-            level={course.level}
-            instructorIds={course.instructors ?? []}
-          />
         </div>
       );
     })}
@@ -44,7 +43,7 @@ const orderedCourses = courses
 </section>
 
 <style>
-  .registration-cards-row {
+  .registration-categories {
     display: flex;
     flex-wrap: nowrap;
     align-items: flex-start;
@@ -54,55 +53,38 @@ const orderedCourses = courses
     scrollbar-width: thin;
   }
 
-  .registration-card-item {
-    position: relative;
+  .category-group {
     flex: 0 0 220px;
     width: 220px;
-    padding-top: 34px;
   }
 
-  /* Every card gets a gold line. The first card additionally carries the
-     category label, so the line visually continues across all cards in the
-     same category instead of appearing only above the first card. */
-  .category-divider {
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    height: 24px;
+  .category-header {
+    height: 28px;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
-    gap: 8px;
-  }
-
-  .category-divider::before,
-  .category-divider::after {
-    content: "";
-    height: 1px;
-    background: var(--color-gold, #d4af37);
-    opacity: 0.8;
-    flex: 1;
-  }
-
-  .category-divider:not(.category-divider--labeled)::before,
-  .category-divider:not(.category-divider--labeled)::after {
-    display: none;
-  }
-
-  .category-divider:not(.category-divider--labeled) {
-    border-top: 1px solid var(--color-gold, #d4af37);
-    opacity: 0.8;
-  }
-
-  .category-divider--labeled span {
-    flex: 0 0 auto;
+    gap: 10px;
     color: var(--color-gold, #d4af37);
     font-size: 13px;
     font-weight: 700;
     white-space: nowrap;
   }
 
+  .category-header::before,
+  .category-header::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-gold, #d4af37);
+    opacity: 0.85;
+  }
+
+  .category-card {
+    width: 100%;
+  }
+
   @media (max-width: 760px) {
-    .registration-card-item {
+    .category-group {
       flex-basis: 200px;
       width: 200px;
     }
