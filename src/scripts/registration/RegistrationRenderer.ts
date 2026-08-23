@@ -6,12 +6,6 @@ Purpose:
 Everything that writes dynamic data into the DOM for the
 Registration Wizard: instructor/schedule lists, the progress
 stepper, the review summary, and the success screen.
-
-Architecture:
-- Pure DOM writer: reads RegistrationState (and the finished
-  instructor/schedule lists the Controller already filtered)
-  and updates the page
-- No state management, no event binding, no filtering logic
 ====================================================
 */
 
@@ -63,66 +57,52 @@ class RegistrationRenderer {
     });
   }
 
-  /**
-   * Keeps a compact "ساز · استاد · زمان" strip in sync with the current
-   * selection. Called after every selection change (manual or automatic)
-   * so the student always knows their instructor/time even on steps
-   * that were skipped because there was only one option.
-   */
   renderSelectionSummary(state: RegistrationState) {
     const el = document.querySelector<HTMLElement>("[data-selection-summary]");
     if (!el) return;
-
     const { instrument, instructor, schedule } = state.selection;
     const chips: string[] = [];
-
-    if (instrument.title) {
-      chips.push(this.summaryChip("ساز", instrument.title));
-    }
-    if (instructor.name) {
-      chips.push(this.summaryChip("استاد", instructor.name, instructor.auto));
-    }
-    if (schedule.weekday) {
-      chips.push(this.summaryChip("زمان", this.formatSchedule(schedule) ?? "", schedule.auto));
-    }
-
+    if (instrument.title) chips.push(this.summaryChip("ساز", instrument.title));
+    if (instructor.name) chips.push(this.summaryChip("استاد", instructor.name, instructor.auto));
+    if (schedule.weekday) chips.push(this.summaryChip("زمان", this.formatSchedule(schedule) ?? "", schedule.auto));
     if (!chips.length) {
       el.hidden = true;
       el.innerHTML = "";
       return;
     }
-
     el.hidden = false;
     el.innerHTML = chips.join("");
   }
 
   private summaryChip(label: string, value: string, auto?: boolean): string {
-    return `
-      <span class="summary-chip">
-        <strong>${escapeHtml(label)}</strong>
-        <span>${escapeHtml(value)}</span>
-        ${auto ? `<em>پیشنهادی</em>` : ""}
-      </span>`;
+    return `<span class="summary-chip"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span>${auto ? `<em>پیشنهادی</em>` : ""}</span>`;
   }
 
-  /** Swaps the Step 1 helper text, used when arriving pre-filtered to one instructor's courses. */
   renderInstrumentIntro(text: string) {
     const el = document.querySelector<HTMLElement>("[data-step=\"instrument\"] [data-step-subtitle]");
     if (el) el.textContent = text;
   }
 
   /**
-   * Hides instrument cards that the given instructor does not teach.
-   * Used when a student arrives from a specific instructor's profile page
-   * and that instructor teaches more than one course.
+   * When registration starts from an instructor profile, show only the
+   * courses actually taught by that instructor and remove now-empty
+   * instrument categories. This prevents unrelated instrument groups from
+   * remaining visible after their cards have been filtered out.
    */
   filterInstrumentsByInstructor(instructorId: number) {
-    document.querySelectorAll<HTMLElement>('[data-step="instrument"] [data-instrument-id]').forEach((card) => {
-      const ids = (card.dataset.instructorIds ?? "")
-        .split(",")
-        .filter(Boolean)
-        .map(Number);
-      card.hidden = !ids.includes(instructorId);
+    document.querySelectorAll<HTMLElement>('[data-step="instrument"] .instrument-category').forEach((category) => {
+      const cards = Array.from(category.querySelectorAll<HTMLElement>("[data-instrument-id]"));
+      let visibleCount = 0;
+      for (const card of cards) {
+        const ids = (card.dataset.instructorIds ?? "")
+          .split(",")
+          .filter(Boolean)
+          .map(Number);
+        const visible = ids.includes(instructorId);
+        card.hidden = !visible;
+        if (visible) visibleCount += 1;
+      }
+      category.dataset.empty = visibleCount === 0 ? "true" : "false";
     });
   }
 
@@ -137,19 +117,16 @@ class RegistrationRenderer {
     container.innerHTML = list.map((instructor) => {
       const roles = instructor.professional?.roles ?? [];
       const image = instructor.media?.images?.profile;
-      return `
-          <article class="registration-card instructor-card${isAuto ? " is-auto-selected" : ""}" data-action="select-instructor" data-instructor-id="${instructor.id}" tabindex="0" role="button">
-            ${isAuto ? `<div class="auto-badge">استاد این دوره</div>` : ""}
-            <div class="instructor-portrait">
-              ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(instructor.name)}" loading="lazy" />` : `<span class="portrait-fallback">${escapeHtml(instructor.name.charAt(0))}</span>`}
-            </div>
-            <div class="instructor-content">
-              <h3>${escapeHtml(instructor.name)}</h3>
-              ${roles.length ? `<div class="tag-row">${roles.map((role) => `<span class="mini-tag">${escapeHtml(role)}</span>`).join("")}</div>` : ""}
-              ${instructor.content?.excerpt ? `<p class="instructor-excerpt">${escapeHtml(instructor.content.excerpt)}</p>` : ""}
-            </div>
-            <div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب استاد"}</div>
-          </article>`;
+      return `<article class="registration-card instructor-card${isAuto ? " is-auto-selected" : ""}" data-action="select-instructor" data-instructor-id="${instructor.id}" tabindex="0" role="button">
+        ${isAuto ? `<div class="auto-badge">استاد این دوره</div>` : ""}
+        <div class="instructor-portrait">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(instructor.name)}" loading="lazy" />` : `<span class="portrait-fallback">${escapeHtml(instructor.name.charAt(0))}</span>`}</div>
+        <div class="instructor-content">
+          <h3>${escapeHtml(instructor.name)}</h3>
+          ${roles.length ? `<div class="tag-row">${roles.map((role) => `<span class="mini-tag">${escapeHtml(role)}</span>`).join("")}</div>` : ""}
+          ${instructor.content?.excerpt ? `<p class="instructor-excerpt">${escapeHtml(instructor.content.excerpt)}</p>` : ""}
+        </div>
+        <div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب استاد"}</div>
+      </article>`;
     }).join("");
   }
 
@@ -162,17 +139,16 @@ class RegistrationRenderer {
     }
     const sorted = sortByWeekday(list);
     const isAuto = sorted.length === 1;
-    container.innerHTML = sorted.map((schedule) => `
-          <article class="registration-card schedule-card${isAuto ? " is-auto-selected" : ""}" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">
-            ${isAuto ? `<div class="auto-badge">تنها زمان موجود</div>` : ""}
-            <div class="schedule-day">${escapeHtml(schedule.weekday)}</div>
-            <ul class="schedule-meta">
-              ${schedule.sessionDuration ? `<li>${toPersianDigits(schedule.sessionDuration)} دقیقه</li>` : ""}
-              ${schedule.classroom ? `<li>کلاس ${toPersianDigits(schedule.classroom)}</li>` : ""}
-              <li>${classModeLabel(schedule.classMode)}</li>
-            </ul>
-            <div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب این زمان"}</div>
-          </article>`).join("");
+    container.innerHTML = sorted.map((schedule) => `<article class="registration-card schedule-card${isAuto ? " is-auto-selected" : ""}" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">
+      ${isAuto ? `<div class="auto-badge">تنها زمان موجود</div>` : ""}
+      <div class="schedule-day">${escapeHtml(schedule.weekday)}</div>
+      <ul class="schedule-meta">
+        ${schedule.sessionDuration ? `<li>${toPersianDigits(schedule.sessionDuration)} دقیقه</li>` : ""}
+        ${schedule.classroom ? `<li>کلاس ${toPersianDigits(schedule.classroom)}</li>` : ""}
+        <li>${classModeLabel(schedule.classMode)}</li>
+      </ul>
+      <div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب این زمان"}</div>
+    </article>`).join("");
   }
 
   private emptyState(message: string): string {
@@ -201,20 +177,10 @@ class RegistrationRenderer {
       container.innerHTML = "";
       return;
     }
-    container.innerHTML = `
-      <div class="pricing-card">
-        <div class="pricing-head">
-          <span>${escapeHtml(plan.title)}</span>
-          <strong>${toPersianDigits(plan.duration.sessions)} جلسه · ${escapeHtml(plan.duration.period)}</strong>
-        </div>
-        <div class="pricing-options">
-          ${Object.values(plan.paymentOptions).map((option: any) => `
-                <div class="pricing-option">
-                  <span>${escapeHtml(option.title)}</span>
-                  <strong>${formatToman(option.amount)}</strong>
-                </div>`).join("")}
-        </div>
-      </div>`;
+    container.innerHTML = `<div class="pricing-card">
+      <div class="pricing-head"><span>${escapeHtml(plan.title)}</span><strong>${toPersianDigits(plan.duration.sessions)} جلسه · ${escapeHtml(plan.duration.period)}</strong></div>
+      <div class="pricing-options">${Object.values(plan.paymentOptions).map((option: any) => `<div class="pricing-option"><span>${escapeHtml(option.title)}</span><strong>${formatToman(option.amount)}</strong></div>`).join("")}</div>
+    </div>`;
   }
 
   updateSuccess(state: RegistrationState) {
@@ -233,18 +199,7 @@ class RegistrationRenderer {
     const materials = getMaterialsByInstrument(instrumentType);
     const renderGroup = (title: string, items: any[], optional: boolean) => {
       if (!items.length) return "";
-      return `
-        <section class="materials-group">
-          <h4>${title}</h4>
-          <div class="materials-grid">
-            ${items.map((item) => `
-                  <article class="material-card${optional ? " optional" : ""}">
-                    ${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" />` : ""}
-                    <strong>${escapeHtml(item.title)}</strong>
-                    ${optional ? `<span class="optional-tag">اختیاری</span>` : ""}
-                  </article>`).join("")}
-          </div>
-        </section>`;
+      return `<section class="materials-group"><h4>${title}</h4><div class="materials-grid">${items.map((item) => `<article class="material-card${optional ? " optional" : ""}">${item.image ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" />` : ""}<strong>${escapeHtml(item.title)}</strong>${optional ? `<span class="optional-tag">اختیاری</span>` : ""}</article>`).join("")}</div></section>`;
     };
     container.innerHTML = renderGroup("موارد ضروری", materials.required, false) + renderGroup("موارد اختیاری", materials.optional, true);
   }
@@ -253,9 +208,7 @@ class RegistrationRenderer {
     const container = document.querySelector<HTMLElement>("[data-contact-links]");
     if (!container) return;
     const telHref = `tel:+${contact.phones.mobile.raw}`;
-    container.innerHTML = `
-      <a href="${contact.social.whatsapp}" class="btn" target="_blank" rel="noopener">پیام واتساپ</a>
-      <a href="${telHref}" class="secondary-btn">تماس تلفنی</a>`;
+    container.innerHTML = `<a href="${contact.social.whatsapp}" class="btn" target="_blank" rel="noopener">پیام واتساپ</a><a href="${telHref}" class="secondary-btn">تماس تلفنی</a>`;
   }
 
   private formatSchedule(schedule: RegistrationState["selection"]["schedule"]): string | null {
