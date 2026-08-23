@@ -7,8 +7,22 @@
     max-width:none;
 }
 
+/* The certificate form must remain a real two-column grid on desktop.
+   Keep the search/results block separate so it cannot consume one of
+   the form columns. */
 .admin-panel--certificates .admin-form{
+    display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px 20px;
+}
+
+.admin-panel--certificates > .admin-form:not(#certForm) > label,
+.admin-panel--certificates > .admin-form:not(#certForm) > .admin-cert-results{
+    grid-column:1 / -1;
+}
+
+#certForm > label{
+    min-width:0;
 }
 
 .admin-panel--certificates .admin-form > label:has(textarea),
