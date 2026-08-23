@@ -25,11 +25,9 @@ const orderedCourses = courses
           data-category={course.category}
           data-category-start={isFirstInCategory ? "true" : "false"}
         >
-          {isFirstInCategory && (
-            <div class="category-divider" aria-label={`دسته‌بندی ${course.category}`}>
-              <span>{course.category}</span>
-            </div>
-          )}
+          <div class:list={["category-divider", { "category-divider--labeled": isFirstInCategory }]} aria-label={isFirstInCategory ? `دسته‌بندی ${course.category}` : undefined}>
+            {isFirstInCategory && <span>{course.category}</span>}
+          </div>
           <InstrumentCard
             id={course.id}
             slug={course.slug}
@@ -63,6 +61,9 @@ const orderedCourses = courses
     padding-top: 34px;
   }
 
+  /* Every card gets a gold line. The first card additionally carries the
+     category label, so the line visually continues across all cards in the
+     same category instead of appearing only above the first card. */
   .category-divider {
     position: absolute;
     inset-inline: 0;
@@ -71,23 +72,33 @@ const orderedCourses = courses
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--color-gold, #d4af37);
-    font-size: 13px;
-    font-weight: 700;
-    white-space: nowrap;
   }
 
   .category-divider::before,
   .category-divider::after {
     content: "";
-    flex: 1;
     height: 1px;
     background: var(--color-gold, #d4af37);
     opacity: 0.8;
+    flex: 1;
   }
 
-  .category-divider span {
+  .category-divider:not(.category-divider--labeled)::before,
+  .category-divider:not(.category-divider--labeled)::after {
+    display: none;
+  }
+
+  .category-divider:not(.category-divider--labeled) {
+    border-top: 1px solid var(--color-gold, #d4af37);
+    opacity: 0.8;
+  }
+
+  .category-divider--labeled span {
     flex: 0 0 auto;
+    color: var(--color-gold, #d4af37);
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   @media (max-width: 760px) {
