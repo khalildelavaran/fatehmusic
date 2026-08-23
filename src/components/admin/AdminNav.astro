@@ -73,6 +73,71 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
   </div>
 </aside>
 
+<style is:global>
+  .admin-shell input,
+  .admin-shell textarea,
+  .admin-shell select {
+    color-scheme: dark;
+    color: var(--text);
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-family: inherit;
+  }
+
+  .admin-shell select {
+    appearance: auto;
+    min-height: 42px;
+    padding: 9px 12px;
+  }
+
+  .admin-shell select option,
+  .admin-shell select optgroup {
+    color: var(--text);
+    background: var(--surface);
+  }
+
+  .admin-shell input:focus,
+  .admin-shell textarea:focus,
+  .admin-shell select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.14);
+  }
+
+  .admin-shell .admin-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .admin-shell .admin-form > label,
+  .admin-shell .admin-form > textarea,
+  .admin-shell .admin-form > .admin-form-actions,
+  .admin-shell .admin-form > fieldset,
+  .admin-shell .admin-form > .full-width {
+    grid-column: 1 / -1;
+  }
+
+  .admin-shell .admin-form > label:has(textarea),
+  .admin-shell .admin-form > label:has(select[multiple]) {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 760px) {
+    .admin-shell .admin-form {
+      grid-template-columns: 1fr;
+    }
+
+    .admin-shell .admin-form > label,
+    .admin-shell .admin-form > textarea,
+    .admin-shell .admin-form > .admin-form-actions,
+    .admin-shell .admin-form > fieldset,
+    .admin-shell .admin-form > .full-width {
+      grid-column: 1;
+    }
+  }
+</style>
+
 <script>
   document.querySelector("#navLogoutForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
