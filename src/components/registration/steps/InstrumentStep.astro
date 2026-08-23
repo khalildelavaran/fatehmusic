@@ -3,7 +3,7 @@
 ====================================================
 File: src/components/registration/steps/InstrumentStep.astro
 
-Purpose: Step 1 - instrument selection, grouped by category.
+Purpose: Step 1 - instrument/course selection, grouped by category.
 ====================================================
 */
 
@@ -21,6 +21,10 @@ for (const course of activeCourses) {
   }
   group.items.push(course);
 }
+
+// Categories with more available courses get visual priority and appear first.
+// Priority is used as the tie-breaker through the already priority-sorted courses.
+categories.sort((a, b) => b.items.length - a.items.length);
 ---
 
 <section class="registration-step" data-step="instrument">
@@ -30,24 +34,91 @@ for (const course of activeCourses) {
     <p data-step-subtitle>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
   </header>
 
-  {
-    categories.map((group) => (
-      <div class="instrument-category">
-        <h3 class="category-title">{group.name}</h3>
-        <div class="registration-grid instrument-grid">
-          {group.items.map((course) => (
-            <InstrumentCard
-              id={course.id}
-              slug={course.slug}
-              title={course.title}
-              excerpt={course.content?.excerpt}
-              image={course.media?.image}
-              level={course.level}
-              instructorIds={course.instructors ?? []}
-            />
-          ))}
+  <div class="registration-categories-grid">
+    {
+      categories.map((group) => (
+        <div class="instrument-category" data-category-name={group.name}>
+          <h3 class="category-title">{group.name}</h3>
+          <div class="registration-grid instrument-grid">
+            {group.items.map((course) => (
+              <InstrumentCard
+                id={course.id}
+                slug={course.slug}
+                title={course.title}
+                excerpt={course.content?.excerpt}
+                image={course.media?.image}
+                level={course.level}
+                instructorIds={course.instructors ?? []}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-    ))
-  }
+      ))
+    }
+  </div>
 </section>
+
+<style>
+  /* Put category groups beside each other instead of stacking the whole
+     registration page vertically. Larger groups are ordered first above. */
+  .registration-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px 20px;
+    align-items: start;
+  }
+
+  .instrument-category {
+    margin-bottom: 0;
+    min-width: 0;
+  }
+
+  /* Instructor deep-link filtering marks empty groups in the renderer. */
+  .instrument-category[data-empty="true"] {
+    display: none;
+  }
+
+  .instrument-category .registration-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .instrument-category .registration-card {
+    padding: 14px;
+  }
+
+  .instrument-category .instrument-media {
+    margin-bottom: 10px;
+  }
+
+  .instrument-category .instrument-content h3 {
+    font-size: 16px;
+  }
+
+  .instrument-category .instrument-excerpt {
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 1100px) {
+    .registration-categories-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .registration-categories-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .instrument-category .registration-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 480px) {
+    .instrument-category .registration-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
