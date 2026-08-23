@@ -1,12 +1,4 @@
 ---
-/*
-====================================================
-File: src/components/registration/steps/InstrumentStep.astro
-
-Purpose: Step 1 - instrument/course selection, grouped by category.
-====================================================
-*/
-
 import { courses } from "../../../data/courses";
 import InstrumentCard from "../cards/InstrumentCard.astro";
 
@@ -22,8 +14,13 @@ for (const course of activeCourses) {
   group.items.push(course);
 }
 
-// Categories with more available courses get visual priority and appear first.
 categories.sort((a, b) => b.items.length - a.items.length);
+
+// Flatten all courses into one continuous card stream. Category headings are
+// rendered as labels in the same stream; cards never have a nested grid.
+const orderedCourses = categories.flatMap((group) =>
+  group.items.map((course, index) => ({ course, category: group.name, isFirst: index === 0 }))
+);
 ---
 
 <section class="registration-step" data-step="instrument">
@@ -33,101 +30,56 @@ categories.sort((a, b) => b.items.length - a.items.length);
     <p data-step-subtitle>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
   </header>
 
-  <div class="registration-courses-flow">
-    {
-      categories.map((group) => (
-        <section class="instrument-category" data-category-name={group.name}>
-          <h3 class="category-title">{group.name}</h3>
-          <div class="category-cards">
-            {group.items.map((course) => (
-              <InstrumentCard
-                id={course.id}
-                slug={course.slug}
-                title={course.title}
-                excerpt={course.content?.excerpt}
-                image={course.media?.image}
-                level={course.level}
-                instructorIds={course.instructors ?? []}
-              />
-            ))}
-          </div>
-        </section>
-      ))
-    }
+  <div class="registration-cards-row">
+    {orderedCourses.map(({ course, category, isFirst }) => (
+      <div class="registration-card-item">
+        {isFirst && <h3 class="category-title">{category}</h3>}
+        <InstrumentCard
+          id={course.id}
+          slug={course.slug}
+          title={course.title}
+          excerpt={course.content?.excerpt}
+          image={course.media?.image}
+          level={course.level}
+          instructorIds={course.instructors ?? []}
+        />
+      </div>
+    ))}
   </div>
 </section>
 
 <style>
-  /*
-   * One shared masonry-like flow for all category cards.
-   * Categories themselves are not separate vertical columns, so a category
-   * with one course cannot leave an artificial empty area beside a category
-   * with three courses.
-   */
-  .registration-courses-flow {
-    column-count: 3;
-    column-gap: 20px;
-    align-items: start;
+  /* Every course is one independent item in one shared horizontal stream. */
+  .registration-cards-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
   }
 
-  .instrument-category {
-    display: inline-block;
-    width: 100%;
-    margin: 0 0 22px;
-    vertical-align: top;
-    break-inside: avoid;
-  }
-
-  .instrument-category[data-empty="true"] {
-    display: none;
+  .registration-card-item {
+    flex: 0 0 220px;
+    width: 220px;
   }
 
   .category-title {
-    margin: 0 0 10px;
+    min-height: 24px;
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
   }
 
-  .category-cards {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .category-cards .registration-card {
-    padding: 14px;
-  }
-
-  .category-cards .instrument-media {
-    margin-bottom: 10px;
-  }
-
-  .category-cards .instrument-content h3 {
-    font-size: 16px;
-  }
-
-  .category-cards .instrument-excerpt {
-    font-size: 12.5px;
-    line-height: 1.7;
-  }
-
-  @media (max-width: 1100px) {
-    .registration-courses-flow {
-      column-count: 2;
-    }
+  .registration-card-item:not(:has(.category-title)) {
+    padding-top: 32px;
   }
 
   @media (max-width: 760px) {
-    .registration-courses-flow {
-      column-count: 1;
-    }
-
-    .category-cards {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 480px) {
-    .category-cards {
-      grid-template-columns: 1fr;
+    .registration-card-item {
+      flex-basis: 200px;
+      width: 200px;
     }
   }
 </style>
