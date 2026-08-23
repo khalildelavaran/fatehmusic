@@ -27,6 +27,8 @@ export interface RegistrationInstrument {
 export interface RegistrationInstructor {
   id: number | null;
   name: string | null;
+  /** True when this instructor was the only option and was picked automatically, not clicked by the student. */
+  auto?: boolean;
 }
 
 export interface RegistrationSchedule {
@@ -35,6 +37,8 @@ export interface RegistrationSchedule {
   sessionDuration: number | null;
   classroom: string | number | null;
   classMode: string | null;
+  /** True when this time slot was the only option and was picked automatically, not clicked by the student. */
+  auto?: boolean;
 }
 
 export interface RegistrationStudent {
@@ -79,7 +83,8 @@ const emptyInstrument = (): RegistrationInstrument => ({
 
 const emptyInstructor = (): RegistrationInstructor => ({
   id: null,
-  name: null
+  name: null,
+  auto: false
 });
 
 const emptySchedule = (): RegistrationSchedule => ({
@@ -87,7 +92,8 @@ const emptySchedule = (): RegistrationSchedule => ({
   weekday: null,
   sessionDuration: null,
   classroom: null,
-  classMode: null
+  classMode: null,
+  auto: false
 });
 
 const createInitialState = (): RegistrationState => ({

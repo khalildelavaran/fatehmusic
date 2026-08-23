@@ -5,7 +5,6 @@ import AdminNav from "../../components/admin/AdminNav.astro";
 import "../../styles/admin/base.css";
 import "../../styles/admin/nav.css";
 import "../../styles/admin/posts.css";
-import "../../styles/admin/topics.css";
 import "../../styles/admin/certificates.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 
@@ -25,11 +24,13 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
         </section>
 
         <section class="admin-panel admin-panel--certificates">
-          <label class="admin-cert-search-label">
-            جستجوی هنرجو (نام یا کد پیگیری)
-            <input type="text" id="studentSearch" placeholder="مثلا: پریسا یا FM-2026-483920" autocomplete="off" />
-          </label>
-          <div id="searchResults" class="admin-cert-results"></div>
+          <div class="admin-form">
+            <label>
+              جستجوی هنرجو (نام یا کد پیگیری)
+              <input type="text" id="studentSearch" placeholder="مثلا: پریسا یا FM-2026-483920" autocomplete="off" />
+            </label>
+            <div id="searchResults" class="admin-cert-results"></div>
+          </div>
         </section>
 
         <section class="admin-panel admin-panel--certificates" id="certFormSection" hidden>
@@ -40,6 +41,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
             <label>
               کد ملی هنرجو
               <input type="text" id="nationalId" required placeholder="مثلا: 1234567890" />
+              <small class="field-hint" id="nationalIdHint" hidden></small>
             </label>
             <label>
               تاریخ پایان دوره (شمسی)

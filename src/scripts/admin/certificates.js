@@ -58,6 +58,20 @@ async function selectRegistration(id) {
     <strong>${selected.student_first_name} ${selected.student_last_name}</strong>
     <span>${selected.instrument_title} · مدرس: ${selected.instructor_name} · کد پیگیری: ${selected.tracking_code}</span>`;
 
+  const nationalIdField = document.querySelector("#nationalId");
+  const nationalIdHint = document.querySelector("#nationalIdHint");
+  if (selected.student_national_code) {
+    nationalIdField.value = selected.student_national_code;
+    nationalIdHint.hidden = false;
+    nationalIdHint.classList.remove("is-warning");
+    nationalIdHint.textContent = "این کد از فرم ثبت‌نام هنرجو دریافت شد.";
+  } else {
+    nationalIdField.value = "";
+    nationalIdHint.hidden = false;
+    nationalIdHint.classList.add("is-warning");
+    nationalIdHint.textContent = "کد ملی در ثبت‌نام این هنرجو ثبت نشده؛ لطفاً به‌صورت دستی وارد کنید.";
+  }
+
   bookSelect.innerHTML = `<option value="">— بدون ذکر کتاب مشخص —</option>`;
   try {
     const response = await fetch(`/api/admin/books?course_slug=${encodeURIComponent(selected.instrument_slug)}`, { credentials: "same-origin" });
@@ -92,6 +106,9 @@ cancelBtn.addEventListener("click", () => {
   selected = null;
   formSection.hidden = true;
   certForm.reset();
+  const nationalIdHint = document.querySelector("#nationalIdHint");
+  nationalIdHint.hidden = true;
+  nationalIdHint.classList.remove("is-warning");
   setStatus("");
 });
 

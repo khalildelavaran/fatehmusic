@@ -27,7 +27,7 @@ for (const course of activeCourses) {
   <header class="step-header">
     <span class="section-badge">مرحله ۱ از ۵</span>
     <h2>ساز مورد نظر خود را انتخاب کنید</h2>
-    <p>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
+    <p data-step-subtitle>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
   </header>
 
   {
@@ -43,6 +43,7 @@ for (const course of activeCourses) {
               excerpt={course.content?.excerpt}
               image={course.media?.image}
               level={course.level}
+              instructorIds={course.instructors ?? []}
             />
           ))}
         </div>

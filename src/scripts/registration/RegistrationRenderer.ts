@@ -63,6 +63,69 @@ class RegistrationRenderer {
     });
   }
 
+  /**
+   * Keeps a compact "ساز · استاد · زمان" strip in sync with the current
+   * selection. Called after every selection change (manual or automatic)
+   * so the student always knows their instructor/time even on steps
+   * that were skipped because there was only one option.
+   */
+  renderSelectionSummary(state: RegistrationState) {
+    const el = document.querySelector<HTMLElement>("[data-selection-summary]");
+    if (!el) return;
+
+    const { instrument, instructor, schedule } = state.selection;
+    const chips: string[] = [];
+
+    if (instrument.title) {
+      chips.push(this.summaryChip("ساز", instrument.title));
+    }
+    if (instructor.name) {
+      chips.push(this.summaryChip("استاد", instructor.name, instructor.auto));
+    }
+    if (schedule.weekday) {
+      chips.push(this.summaryChip("زمان", this.formatSchedule(schedule) ?? "", schedule.auto));
+    }
+
+    if (!chips.length) {
+      el.hidden = true;
+      el.innerHTML = "";
+      return;
+    }
+
+    el.hidden = false;
+    el.innerHTML = chips.join("");
+  }
+
+  private summaryChip(label: string, value: string, auto?: boolean): string {
+    return `
+      <span class="summary-chip">
+        <strong>${escapeHtml(label)}</strong>
+        <span>${escapeHtml(value)}</span>
+        ${auto ? `<em>پیشنهادی</em>` : ""}
+      </span>`;
+  }
+
+  /** Swaps the Step 1 helper text, used when arriving pre-filtered to one instructor's courses. */
+  renderInstrumentIntro(text: string) {
+    const el = document.querySelector<HTMLElement>("[data-step=\"instrument\"] [data-step-subtitle]");
+    if (el) el.textContent = text;
+  }
+
+  /**
+   * Hides instrument cards that the given instructor does not teach.
+   * Used when a student arrives from a specific instructor's profile page
+   * and that instructor teaches more than one course.
+   */
+  filterInstrumentsByInstructor(instructorId: number) {
+    document.querySelectorAll<HTMLElement>('[data-step="instrument"] [data-instrument-id]').forEach((card) => {
+      const ids = (card.dataset.instructorIds ?? "")
+        .split(",")
+        .filter(Boolean)
+        .map(Number);
+      card.hidden = !ids.includes(instructorId);
+    });
+  }
+
   renderInstructors(list: InstructorRecord[]) {
     const container = document.querySelector<HTMLElement>("[data-instructors-container]");
     if (!container) return;
@@ -70,11 +133,13 @@ class RegistrationRenderer {
       container.innerHTML = this.emptyState("استادی برای این ساز در حال حاضر موجود نیست.");
       return;
     }
+    const isAuto = list.length === 1;
     container.innerHTML = list.map((instructor) => {
       const roles = instructor.professional?.roles ?? [];
       const image = instructor.media?.images?.profile;
       return `
-          <article class="registration-card instructor-card" data-action="select-instructor" data-instructor-id="${instructor.id}" tabindex="0" role="button">
+          <article class="registration-card instructor-card${isAuto ? " is-auto-selected" : ""}" data-action="select-instructor" data-instructor-id="${instructor.id}" tabindex="0" role="button">
+            ${isAuto ? `<div class="auto-badge">استاد این دوره</div>` : ""}
             <div class="instructor-portrait">
               ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(instructor.name)}" loading="lazy" />` : `<span class="portrait-fallback">${escapeHtml(instructor.name.charAt(0))}</span>`}
             </div>
@@ -83,7 +148,7 @@ class RegistrationRenderer {
               ${roles.length ? `<div class="tag-row">${roles.map((role) => `<span class="mini-tag">${escapeHtml(role)}</span>`).join("")}</div>` : ""}
               ${instructor.content?.excerpt ? `<p class="instructor-excerpt">${escapeHtml(instructor.content.excerpt)}</p>` : ""}
             </div>
-            <div class="select-indicator">انتخاب استاد</div>
+            <div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب استاد"}</div>
           </article>`;
     }).join("");
   }
@@ -96,15 +161,17 @@ class RegistrationRenderer {
       return;
     }
     const sorted = sortByWeekday(list);
+    const isAuto = sorted.length === 1;
     container.innerHTML = sorted.map((schedule) => `
-          <article class="registration-card schedule-card" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">
+          <article class="registration-card schedule-card${isAuto ? " is-auto-selected" : ""}" data-action="select-schedule" data-schedule-id="${schedule.id}" tabindex="0" role="button">
+            ${isAuto ? `<div class="auto-badge">تنها زمان موجود</div>` : ""}
             <div class="schedule-day">${escapeHtml(schedule.weekday)}</div>
             <ul class="schedule-meta">
               ${schedule.sessionDuration ? `<li>${toPersianDigits(schedule.sessionDuration)} دقیقه</li>` : ""}
               ${schedule.classroom ? `<li>کلاس ${toPersianDigits(schedule.classroom)}</li>` : ""}
               <li>${classModeLabel(schedule.classMode)}</li>
             </ul>
-            <div class="select-indicator">انتخاب این زمان</div>
+            <div class="select-indicator">${isAuto ? "تأیید و ادامه" : "انتخاب این زمان"}</div>
           </article>`).join("");
   }
 

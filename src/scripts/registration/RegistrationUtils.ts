@@ -116,6 +116,15 @@ export function classModeLabel(mode: string | null | undefined): string {
   return "-";
 }
 
+/**
+ * Returns the sole item of a list when there is exactly one, otherwise null.
+ * Used to decide whether a wizard step has a real choice to offer (0 or 2+
+ * items) or can be resolved for the student automatically (exactly 1 item).
+ */
+export function resolveSingleOption<T>(list: T[]): T | null {
+  return list.length === 1 ? list[0] : null;
+}
+
 /** Escapes text before it is interpolated into an HTML template string. */
 export function escapeHtml(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, (char) => {

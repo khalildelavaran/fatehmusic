@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { isValidNationalCode, normalizeNationalCode } from "./RegistrationUtils";
+import { isValidNationalCode, normalizeNationalCode, resolveSingleOption } from "./RegistrationUtils";
+
+describe("resolveSingleOption", () => {
+  it("returns null for an empty list", () => {
+    expect(resolveSingleOption([])).toBeNull();
+  });
+
+  it("returns the item when the list has exactly one entry", () => {
+    expect(resolveSingleOption(["only"])).toBe("only");
+  });
+
+  it("returns null when the list has more than one entry", () => {
+    expect(resolveSingleOption(["first", "second"])).toBeNull();
+  });
+});
 
 describe("Iranian national code validation", () => {
   it("accepts a valid national code", () => {

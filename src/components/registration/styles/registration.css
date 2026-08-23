@@ -131,6 +131,49 @@ section {
 }
 
 /* ==========================================
+   Selection summary
+   Persistent "ساز · استاد · زمان" strip, kept in sync from
+   the moment each choice becomes known -- whether the
+   student clicked it or it was resolved automatically
+   because there was only one option. Lets a step be
+   skipped without the choice becoming invisible.
+========================================== */
+
+.registration-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin: 0 0 40px;
+  padding: 16px 24px;
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border);
+}
+
+.registration-summary[hidden] {
+  display: none;
+}
+
+.summary-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.summary-chip strong {
+  color: var(--gold-light);
+  font-size: 12px;
+}
+
+.summary-chip em {
+  font-style: normal;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+
+/* ==========================================
    Step shell + entrance animation
 ========================================== */
 
@@ -388,6 +431,32 @@ section {
   transform: none;
   border-color: var(--border);
   box-shadow: none;
+}
+
+/* Sole instructor / sole time slot: still a real, clickable card (so
+   "back" always shows correct content and the student can reconfirm
+   by hand), but flagged so it doesn't read as an arbitrary single
+   choice, and its indicator doesn't hide behind a hover state the
+   student has no reason to trigger. */
+.registration-card.is-auto-selected {
+  border-color: rgba(212, 175, 55, 0.35);
+}
+
+.registration-card.is-auto-selected .select-indicator {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.auto-badge {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 .tag-row {

@@ -16,9 +16,10 @@ interface Props {
   excerpt?: string;
   image?: string;
   level?: string[];
+  instructorIds?: number[];
 }
 
-const { id, slug, title, excerpt, image, level = [] } = Astro.props;
+const { id, slug, title, excerpt, image, level = [], instructorIds = [] } = Astro.props;
 
 const plan = getPricingPlan(slug);
 const monthlyPrice = plan?.paymentOptions?.halfTerm?.amount;
@@ -29,6 +30,7 @@ const monthlyPrice = plan?.paymentOptions?.halfTerm?.amount;
   data-action="select-instrument"
   data-instrument-id={id}
   data-instrument-title={title}
+  data-instructor-ids={instructorIds.join(",")}
   tabindex="0"
   role="button"
 >
