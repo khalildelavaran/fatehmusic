@@ -2,78 +2,87 @@
    ADMIN CERTIFICATES
 ========================================== */
 
-.admin-panel--certificates{
-    grid-template-columns:1fr;
-    max-width:none;
+.admin-panel--certificates {
+    grid-template-columns: 1fr;
+    max-width: none;
 }
 
-/* The certificate form must remain a real two-column grid on desktop.
-   Keep the search/results block separate so it cannot consume one of
-   the form columns. */
-.admin-panel--certificates .admin-form{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:16px 20px;
+/* Certificate fields: two columns on desktop. Keep the search block
+   separate so it always spans the full width. */
+.admin-panel--certificates #certForm {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+    align-items: start;
 }
 
-.admin-panel--certificates > .admin-form:not(#certForm) > label,
-.admin-panel--certificates > .admin-form:not(#certForm) > .admin-cert-results{
-    grid-column:1 / -1;
+.admin-panel--certificates #certForm > label {
+    min-width: 0;
 }
 
-#certForm > label{
-    min-width:0;
+.admin-panel--certificates .admin-form:not(#certForm) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
 }
 
-.admin-panel--certificates .admin-form > label:has(textarea),
-.admin-panel--certificates .admin-form > .admin-form-actions{
-    grid-column:1 / -1;
+.admin-panel--certificates .admin-form:not(#certForm) > label,
+.admin-panel--certificates .admin-form:not(#certForm) > .admin-cert-results {
+    grid-column: 1 / -1;
 }
 
-.admin-cert-results{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-    margin-top:12px;
+.admin-panel--certificates #certForm > .admin-form-actions {
+    grid-column: 1 / -1;
 }
 
-.admin-cert-result{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:2px;
-    padding:10px 14px;
-    border-radius:12px;
-    border:1px solid var(--border);
-    background:rgba(255,255,255,.02);
-    color:var(--text);
-    cursor:pointer;
-    text-align:right;
-    font-family:inherit;
-    transition:var(--transition);
+.admin-cert-results {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
 }
 
-.admin-cert-result:hover{border-color:var(--primary);background:rgba(255,255,255,.05);}
-.admin-cert-result span{font-size:12.5px;color:var(--text-secondary);}
-.admin-cert-result-empty{padding:10px 14px;color:var(--text-secondary);font-size:13px;}
-
-.admin-cert-selected{
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-    padding:14px 16px;
-    border-radius:12px;
-    background:rgba(76,175,80,.08);
-    border:1px solid rgba(76,175,80,.25);
-    margin-bottom:18px;
+.admin-cert-result {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,.02);
+    color: var(--text);
+    cursor: pointer;
+    text-align: right;
+    font-family: inherit;
+    transition: var(--transition);
 }
 
-.admin-cert-selected span{font-size:13px;color:var(--text-secondary);}
-.field-hint{display:block;margin-top:6px;font-size:12.5px;color:var(--text-secondary);}
-.field-hint.is-warning{color:#e08080;}
+.admin-cert-result:hover { border-color: var(--primary); background: rgba(255,255,255,.05); }
+.admin-cert-result span { font-size: 12.5px; color: var(--text-secondary); }
+.admin-cert-result-empty { padding: 10px 14px; color: var(--text-secondary); font-size: 13px; }
 
-@media(max-width:760px){
-    .admin-panel--certificates .admin-form{grid-template-columns:1fr;}
-    .admin-panel--certificates .admin-form > label:has(textarea),
-    .admin-panel--certificates .admin-form > .admin-form-actions{grid-column:1;}
+.admin-cert-selected {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(76,175,80,.08);
+    border: 1px solid rgba(76,175,80,.25);
+    margin-bottom: 18px;
+}
+
+.admin-cert-selected span { font-size: 13px; color: var(--text-secondary); }
+.field-hint { display: block; margin-top: 6px; font-size: 12.5px; color: var(--text-secondary); }
+.field-hint.is-warning { color: #e08080; }
+
+@media (max-width: 760px) {
+    .admin-panel--certificates #certForm {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-panel--certificates #certForm > .admin-form-actions {
+        grid-column: 1;
+    }
 }
