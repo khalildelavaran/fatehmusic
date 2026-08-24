@@ -19,29 +19,32 @@ class RegistrationRenderer {
   private summaryChip(label: string, value: string, auto?: boolean) { return `<span class="summary-chip"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span>${auto ? `<em>پیشنهادی</em>` : ""}</span>`; }
   renderInstrumentIntro(text: string) { const el = document.querySelector<HTMLElement>(`[data-step="instrument"] [data-step-subtitle]`); if (el) el.textContent = text; }
 
-  /** Filter courses by instructor and remove category headers that have no visible courses. */
+  /**
+   * Filter individual course cards by the selected instructor.
+   * Category headers remain attached to their category group and are hidden
+   * only when every card in that category has been filtered out.
+   */
   filterInstrumentsByInstructor(instructorId: number) {
-    const groups = Array.from(document.querySelectorAll<HTMLElement>('[data-step="instrument"] .category-group'));
-    const byCategory = new Map<string, HTMLElement[]>();
-    groups.forEach((group) => {
-      const category = group.dataset.category ?? "";
-      if (!byCategory.has(category)) byCategory.set(category, []);
-      byCategory.get(category)!.push(group);
-    });
+    const groups = document.querySelectorAll<HTMLElement>('[data-step="instrument"] .category-group');
 
-    byCategory.forEach((categoryGroups) => {
-      const originalHeader = categoryGroups.find((group) => group.dataset.categoryStart === "true")?.querySelector<HTMLElement>(".category-header");
-      categoryGroups.forEach((group) => {
-        const card = group.querySelector<HTMLElement>('[data-instructor-ids]');
-        const ids = (card?.dataset.instructorIds ?? "").split(",").filter(Boolean).map(Number);
-        group.hidden = !ids.includes(instructorId);
-        group.querySelector<HTMLElement>(".category-header")?.remove();
+    groups.forEach((group) => {
+      const items = group.querySelectorAll<HTMLElement>('.registration-card-item');
+      let visibleCount = 0;
+
+      items.forEach((item) => {
+        const card = item.querySelector<HTMLElement>('[data-instructor-ids]');
+        const ids = (card?.dataset.instructorIds ?? "")
+          .split(",")
+          .filter(Boolean)
+          .map(Number);
+        const visible = ids.includes(instructorId);
+        item.hidden = !visible;
+        if (visible) visibleCount++;
       });
 
-      const visibleGroups = categoryGroups.filter((group) => !group.hidden);
-      if (visibleGroups.length && originalHeader) {
-        visibleGroups[0].insertBefore(originalHeader, visibleGroups[0].firstChild);
-      }
+      // Remove the entire category, including its gold divider/header, when
+      // none of its courses are taught by the selected instructor.
+      group.hidden = visibleCount === 0;
     });
   }
 
