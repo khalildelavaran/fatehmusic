@@ -7,20 +7,28 @@
     max-width: none;
 }
 
-/* Certificate fields: two columns on desktop. Keep the search block
-   separate so it always spans the full width. */
-.admin-panel--certificates #certForm {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/* Certificate form: explicitly override the generic admin form layout. */
+.admin-panel--certificates form#certForm.admin-form {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(280px, 1fr)) !important;
     gap: 16px 20px;
     align-items: start;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.admin-panel--certificates #certForm > label {
+.admin-panel--certificates form#certForm.admin-form > label {
+    display: grid;
+    grid-column: auto;
     min-width: 0;
 }
 
-.admin-panel--certificates .admin-form:not(#certForm) {
+.admin-panel--certificates form#certForm.admin-form > .admin-form-actions {
+    grid-column: 1 / -1;
+}
+
+/* Keep the student search block separate and full width. */
+.admin-panel--certificates > .admin-form:not(#certForm) {
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
@@ -28,10 +36,6 @@
 
 .admin-panel--certificates .admin-form:not(#certForm) > label,
 .admin-panel--certificates .admin-form:not(#certForm) > .admin-cert-results {
-    grid-column: 1 / -1;
-}
-
-.admin-panel--certificates #certForm > .admin-form-actions {
     grid-column: 1 / -1;
 }
 
@@ -78,11 +82,11 @@
 .field-hint.is-warning { color: #e08080; }
 
 @media (max-width: 760px) {
-    .admin-panel--certificates #certForm {
-        grid-template-columns: 1fr;
+    .admin-panel--certificates form#certForm.admin-form {
+        grid-template-columns: 1fr !important;
     }
 
-    .admin-panel--certificates #certForm > .admin-form-actions {
+    .admin-panel--certificates form#certForm.admin-form > .admin-form-actions {
         grid-column: 1;
     }
 }
