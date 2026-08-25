@@ -1,109 +1,53 @@
 ---
+/*
+====================================================
+File: src/components/registration/steps/InstrumentStep.astro
+
+Purpose: Step 1 - instrument selection, grouped by category.
+====================================================
+*/
+
 import { courses } from "../../../data/courses";
 import InstrumentCard from "../cards/InstrumentCard.astro";
 
-const orderedCourses = courses
-  .filter((course) => course.active)
-  .sort((a, b) => a.priority - b.priority);
+const activeCourses = courses.filter((course) => course.active).sort((a, b) => a.priority - b.priority);
 
-const categories: { name: string; courses: typeof orderedCourses }[] = [];
-for (const course of orderedCourses) {
-  const existing = categories.find((category) => category.name === course.category);
-  if (existing) existing.courses.push(course);
-  else categories.push({ name: course.category, courses: [course] });
+const categories: { name: string; items: typeof activeCourses }[] = [];
+for (const course of activeCourses) {
+  let group = categories.find((entry) => entry.name === course.category);
+  if (!group) {
+    group = { name: course.category, items: [] };
+    categories.push(group);
+  }
+  group.items.push(course);
 }
 ---
 
 <section class="registration-step" data-step="instrument">
   <header class="step-header">
     <span class="section-badge">مرحله ۱ از ۵</span>
-    <h2>دوره مورد نظر خود را انتخاب کنید</h2>
-    <p data-step-subtitle>دوره مورد نظر خود را انتخاب کنید.</p>
+    <h2>ساز مورد نظر خود را انتخاب کنید</h2>
+    <p data-step-subtitle>با انتخاب هر ساز، استادهای مرتبط با همان ساز به شما نمایش داده می‌شود.</p>
   </header>
 
-  <div class="registration-categories">
-    {categories.map((category) => (
-      <section class="category-group" data-category={category.name}>
-        <div class="category-header" aria-label={`دسته‌بندی ${category.name}`}>
-          <span>{category.name}</span>
-        </div>
-        <div class="category-cards">
-          {category.courses.map((course) => (
-            <div class="registration-card-item" data-category={category.name}>
-              <InstrumentCard
-                id={course.id}
-                slug={course.slug}
-                title={course.title}
-                excerpt={course.content?.excerpt}
-                image={course.media?.image}
-                level={course.level}
-                instructorIds={course.instructors ?? []}
-              />
-            </div>
+  {
+    categories.map((group) => (
+      <div class="instrument-category">
+        <h3 class="category-title">{group.name}</h3>
+        <div class="registration-grid instrument-grid">
+          {group.items.map((course) => (
+            <InstrumentCard
+              id={course.id}
+              slug={course.slug}
+              title={course.title}
+              excerpt={course.content?.excerpt}
+              image={course.media?.image}
+              level={course.level}
+              instructorIds={course.instructors ?? []}
+            />
           ))}
         </div>
-      </section>
-    ))}
-  </div>
+      </div>
+    ))
+  }
 </section>
-
-<style>
-  /* Each category is one horizontal group; its header spans all of its cards. */
-  .registration-categories {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 24px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    scrollbar-width: thin;
-  }
-
-  .category-group {
-    flex: 0 0 auto;
-    width: max-content;
-  }
-
-  .category-header {
-    width: 100%;
-    height: 28px;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--color-gold, #d4af37);
-    font-size: 13px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  /* One continuous gold line across the complete category, with the name in its center. */
-  .category-header::before,
-  .category-header::after {
-    content: "";
-    flex: 1 1 auto;
-    min-width: 24px;
-    height: 1px;
-    background: var(--color-gold, #d4af37);
-    opacity: 0.85;
-  }
-
-  .category-cards {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .registration-card-item {
-    flex: 0 0 220px;
-    width: 220px;
-  }
-
-  @media (max-width: 760px) {
-    .registration-card-item {
-      flex-basis: 200px;
-      width: 200px;
-    }
-  }
-</style>
