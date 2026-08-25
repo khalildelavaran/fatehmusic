@@ -17,11 +17,17 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
     <AdminNav session={session} active="certificates" />
     <main class="admin-main">
       <div class="admin-shell" data-admin-certificates>
+        <section class="admin-hero">
+          <p>گواهینامه‌ها</p>
+          <h1>صدور گواهی پایان دوره</h1>
+          <p>یک ثبت‌نام را پیدا کنید، اطلاعات پایان دوره را وارد کنید و PDF نهایی را بسازید.</p>
+        </section>
+
         <section class="admin-panel admin-panel--certificates">
           <div class="admin-form">
             <label>
               جستجوی هنرجو (نام یا کد پیگیری)
-              <input type="text" id="studentSearch" placeholder="مثلا: آریا آریایی FM-2026-483920" autocomplete="off" />
+              <input type="text" id="studentSearch" placeholder="مثلا: پریسا یا FM-2026-483920" autocomplete="off" />
             </label>
             <div id="searchResults" class="admin-cert-results"></div>
           </div>
@@ -44,7 +50,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
             <label>
               سطح (اختیاری)
               <select id="level">
-                <option value="">— بدون سطح —</option>
+                <option value="">— بدون بج سطح —</option>
                 <option value="1">۱ (مقدماتی)</option>
                 <option value="2">۲ (متوسط)</option>
                 <option value="3">۳ (پیشرفته)</option>
@@ -54,7 +60,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
             <label>
               کتاب (اختیاری)
               <select id="bookId">
-                <option value="">— بدون کتاب —</option>
+                <option value="">— بدون ذکر کتاب مشخص —</option>
               </select>
             </label>
             <label>
