@@ -85,6 +85,7 @@ class RegistrationController {
         case "edit-schedule": this.goToStep("schedule"); break;
         case "submit-registration": this.submitRegistration(); break;
         case "print-receipt": window.print(); break;
+        case "print-contract": this.printContract(); break;
         case "back-home": window.location.href = "/"; break;
       }
     });
@@ -295,6 +296,7 @@ class RegistrationController {
     });
 
     if (student.age) student.age = Number(student.age);
+    if (student.birthYear) student.birthYear = Number(student.birthYear);
     return student;
   }
 
@@ -383,6 +385,21 @@ class RegistrationController {
     document.querySelectorAll<HTMLElement>("[data-step]").forEach((section) => {
       section.hidden = section.dataset.step !== step;
     });
+  }
+
+  /**
+   * Prints only the contract card, not the rest of the success page.
+   * The "printing-contract" class is matched by @media print rules in
+   * registration.css that hide everything else and show the contract
+   * in full (no scroll clipping) while it's present.
+   */
+  private printContract() {
+    document.body.classList.add("printing-contract");
+    const cleanup = () => document.body.classList.remove("printing-contract");
+    window.addEventListener("afterprint", cleanup, { once: true });
+    window.print();
+    // Safety net for browsers that don't fire afterprint reliably.
+    setTimeout(cleanup, 2000);
   }
 }
 

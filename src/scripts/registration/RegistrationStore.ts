@@ -49,6 +49,12 @@ export interface RegistrationStudent {
   age: number | null;
   gender: "male" | "female" | null;
   hasInstrument: "yes" | "no" | null;
+  /** Needed only to fill the printed student contract (قرارداد هنرجویی). */
+  fatherName: string;
+  idIssuePlace: string;
+  birthYear: number | null;
+  occupation: string;
+  address: string;
 }
 
 export interface RegistrationSelection {
@@ -110,7 +116,12 @@ const createInitialState = (): RegistrationState => ({
     mobile: "",
     age: null,
     gender: null,
-    hasInstrument: null
+    hasInstrument: null,
+    fatherName: "",
+    idIssuePlace: "",
+    birthYear: null,
+    occupation: "",
+    address: ""
   },
   trackingCode: null,
   completed: false

@@ -57,6 +57,28 @@ class RegistrationValidation {
       errors.push("لطفاً وضعیت داشتن ساز را مشخص کنید.");
     }
 
+    if (!student.fatherName?.trim()) {
+      errors.push("نام پدر وارد نشده است.");
+    }
+
+    if (!student.idIssuePlace?.trim()) {
+      errors.push("محل صدور کدملی وارد نشده است.");
+    }
+
+    if (!student.birthYear) {
+      errors.push("سال تولد وارد نشده است.");
+    } else if (student.birthYear < 1300 || student.birthYear > 1410) {
+      errors.push("سال تولد وارد شده معتبر نیست.");
+    }
+
+    if (!student.occupation?.trim()) {
+      errors.push("شغل وارد نشده است.");
+    }
+
+    if (!student.address?.trim()) {
+      errors.push("آدرس وارد نشده است.");
+    }
+
     return { valid: errors.length === 0, errors };
   }
 
