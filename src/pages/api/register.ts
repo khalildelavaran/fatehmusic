@@ -62,8 +62,9 @@ export const POST: APIRoute = async ({ request }) => {
             instrument_id, instrument_title, instrument_slug,
             instructor_id, instructor_name,
             schedule_id, schedule_weekday, schedule_classroom, schedule_duration,
-            student_first_name, student_last_name, student_national_code, student_mobile, student_age, student_gender, has_instrument
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+            student_first_name, student_last_name, student_national_code, student_mobile, student_age, student_gender, has_instrument,
+            student_father_name, student_id_issue_place, student_birth_year, student_occupation, student_address
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         )
         .bind(
           trackingCode,
@@ -82,7 +83,12 @@ export const POST: APIRoute = async ({ request }) => {
           state.student.mobile,
           state.student.age,
           state.student.gender,
-          state.student.hasInstrument
+          state.student.hasInstrument,
+          state.student.fatherName,
+          state.student.idIssuePlace,
+          state.student.birthYear,
+          state.student.occupation,
+          state.student.address
         )
         .run();
 
