@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildContract, numberToPersianWords } from "./ContractTemplates";
+import { buildContract, computeClassStartDate, numberToPersianWords } from "./ContractTemplates";
 import type { RegistrationState } from "./RegistrationStore";
 
 describe("numberToPersianWords", () => {
@@ -33,7 +33,37 @@ describe("numberToPersianWords", () => {
   });
 });
 
-function baseState(overrides: Partial<RegistrationState["selection"]["instrument"]> = {}): RegistrationState {
+describe("computeClassStartDate", () => {
+  it("matches Khalil's example exactly: registering on شنبه for a پنج‌شنبه class starts that same پنج‌شنبه (5 days later)", () => {
+    const registeredOnSaturday = new Date("2026-08-22T10:00:00"); // confirmed Saturday
+    const start = computeClassStartDate("پنج‌شنبه", registeredOnSaturday);
+    expect(start?.toDateString()).toBe("Thu Aug 27 2026");
+  });
+
+  it("resolves to the same day when registering on the class's own weekday", () => {
+    const registeredOnThursday = new Date("2026-08-27T10:00:00"); // confirmed Thursday
+    const start = computeClassStartDate("پنج‌شنبه", registeredOnThursday);
+    expect(start?.toDateString()).toBe("Thu Aug 27 2026");
+  });
+
+  it("moves forward (never into the past) when the chosen weekday already passed this week", () => {
+    // Registering Thursday for a شنبه class: شنبه already happened this week,
+    // so the next one is 2 days later, not a negative offset.
+    const registeredOnThursday = new Date("2026-08-27T10:00:00");
+    const start = computeClassStartDate("شنبه", registeredOnThursday);
+    expect(start?.toDateString()).toBe("Sat Aug 29 2026");
+  });
+
+  it("returns null for an unrecognized weekday instead of guessing", () => {
+    expect(computeClassStartDate("نامعتبر", new Date())).toBeNull();
+    expect(computeClassStartDate(null, new Date())).toBeNull();
+  });
+});
+
+function baseState(
+  overrides: Partial<RegistrationState["selection"]["instrument"]> = {},
+  term: number | null = null
+): RegistrationState {
   return {
     currentStep: "success",
     selection: {
@@ -62,6 +92,7 @@ function baseState(overrides: Partial<RegistrationState["selection"]["instrument
       address: "شوشتر، خیابان نمونه"
     },
     trackingCode: "FM-2026-123456",
+    term,
     completed: true
   };
 }
@@ -109,11 +140,23 @@ describe("buildContract", () => {
     expect(article3?.paragraphs[0]).toContain("۳۲,۰۰۰,۰۰۰");
   });
 
-  it("leaves term number and class start date as blank lines, never fabricated", () => {
+  it("fills the term number when the server has computed one", () => {
+    const result = buildContract(baseState({}, 3));
+    const article2 = result?.blocks.find((b) => b.heading?.startsWith("ماده ۲"));
+    expect(article2?.paragraphs[0]).toContain("ترم: ۳ ");
+  });
+
+  it("fills the class start date instead of leaving it blank", () => {
+    const result = buildContract(baseState({}, 1));
+    const article2 = result?.blocks.find((b) => b.heading?.startsWith("ماده ۲"));
+    expect(article2?.paragraphs[0]).not.toContain(".........................."); // old placeholder is gone
+    expect(article2?.paragraphs[0]).toMatch(/از تاریخ: [۰-۹]+ .+ ۱۴[۰-۹][۰-۹]/); // a real Jalali date
+  });
+
+  it("leaves term itself blank too when the server didn't return one (e.g. an old cached state)", () => {
     const result = buildContract(baseState());
     const article2 = result?.blocks.find((b) => b.heading?.startsWith("ماده ۲"));
-    expect(article2?.paragraphs[0]).toContain("ترم: ..........");
-    expect(article2?.paragraphs[0]).toContain("از تاریخ: ..........................");
+    expect(article2?.paragraphs[0]).toContain("ترم: .......... ");
   });
 
   it("falls back to placeholder dots for missing optional student fields instead of showing blank/undefined", () => {

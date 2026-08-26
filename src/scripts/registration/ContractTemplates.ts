@@ -13,15 +13,20 @@ pricing on the Review step -- not a second, separately-maintained
 list of which instruments count as "keyboard".
 
 What is NOT auto-filled, and why:
-- ترم (term number): the wizard has no concept of "which term is
-  this" (new vs. returning student) -- inventing a number here
-  could put a wrong value on a legal document.
-- تاریخ in ماده ۲ (the class start date): this depends on the
-  academy's own class calendar/cohort scheduling, which nothing in
-  this codebase tracks (schedules only store a recurring weekday,
-  e.g. "شنبه‌ها", not a specific term's start date).
-Both are left as blank lines, exactly as in the source templates,
-for staff to fill by hand.
+- (nothing left -- see below for how the previously-blank fields are
+  now computed)
+
+ترم (term number) IS auto-filled: src/pages/api/register.ts counts
+this student's prior registrations by national code and returns
+term = count + 1, per Khalil's rule ("هر ترم باید ثبت‌نام کنه").
+That value flows back through RegistrationApi -> RegistrationStore
+(state.term) into buildContract below.
+
+تاریخ in ماده ۲ (class start date) IS auto-filled: per Khalil's
+rule, it's the first upcoming occurrence of the student's chosen
+weekday on or after "now" (registration time) -- e.g. registering
+on شنبه for a پنج‌شنبه class starts that same پنج‌شنبه. See
+computeClassStartDate below.
 
 Architecture:
 - Pure functions only, no DOM access -- RegistrationRenderer is
@@ -32,7 +37,7 @@ Architecture:
 import type { RegistrationState } from "./RegistrationStore";
 import { pricing } from "../../data/pricing";
 import { formatJalaliDate } from "../../utils/format-date";
-import { formatMobileDisplay, toPersianDigits } from "./RegistrationUtils";
+import { formatMobileDisplay, toPersianDigits, WEEKDAY_ORDER } from "./RegistrationUtils";
 
 export interface ContractBlock {
   heading?: string;
@@ -109,6 +114,26 @@ function honorific(gender: RegistrationState["student"]["gender"]): string {
   return "خانم/آقای";
 }
 
+/**
+ * First occurrence of `weekday` on or after `from`, per Khalil's rule:
+ * "اولین جلسه همان هفته پس از ثبت‌نام" -- e.g. registering شنبه for a
+ * پنج‌شنبه class starts that same پنج‌شنبه (5 days later); registering
+ * on a day that already passed this week's occurrence of the target
+ * still resolves forward (never negative/in the past).
+ */
+export function computeClassStartDate(weekday: string | null, from: Date): Date | null {
+  const targetIndex = weekday ? WEEKDAY_ORDER.indexOf(weekday) : -1;
+  if (targetIndex === -1) return null;
+
+  const jsDay = from.getDay(); // 0=Sunday..6=Saturday
+  const todayIndex = (jsDay + 1) % 7; // شنبه=0 .. جمعه=6
+  const offsetDays = (targetIndex - todayIndex + 7) % 7;
+
+  const start = new Date(from);
+  start.setDate(start.getDate() + offsetDays);
+  return start;
+}
+
 /** Builds the fully-filled contract for a completed registration, or null if the state isn't complete enough yet. */
 export function buildContract(state: RegistrationState): ContractResult | null {
   const { instrument } = state.selection;
@@ -122,6 +147,8 @@ export function buildContract(state: RegistrationState): ContractResult | null {
 
   const fullName = `${student.firstName} ${student.lastName}`.trim();
   const signatureDate = formatJalaliDate(new Date());
+  const startDate = computeClassStartDate(state.selection.schedule.weekday, new Date());
+  const startDateText = startDate ? formatJalaliDate(startDate) : "..........................";
 
   const sessionClause = isKeyboardPlan
     ? "۱ ترم ۱۰ جلسه‌ای به میزان هر جلسه ۳۰ دقیقه‌ای در هفته"
@@ -161,8 +188,8 @@ export function buildContract(state: RegistrationState): ContractResult | null {
     {
       heading: "ماده ۲- موضوع و مدت قرارداد:",
       paragraphs: [
-        `آموزش رشته: ${courseSubject(instrument.title)} ترم: .......... بر اساس درس‌های تعیین شده و برنامه آموزشی ` +
-          `اعلام شده توسط آموزشگاه موسیقی فاتح به میزان ${sessionClause} از تاریخ: .......................... ` +
+        `آموزش رشته: ${courseSubject(instrument.title)} ترم: ${state.term ? toPersianDigits(state.term) : ".........."} بر اساس درس‌های تعیین شده و برنامه آموزشی ` +
+          `اعلام شده توسط آموزشگاه موسیقی فاتح به میزان ${sessionClause} از تاریخ: ${startDateText} ` +
           `به مدت ${durationClause} اجرا خواهد شد. و هنرجو آمار حضور خود در جلسات مربوطه از کلاس را که توسط ` +
           "آموزشگاه نوشته شده را تائید می‌کند."
       ]

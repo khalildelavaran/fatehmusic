@@ -15,12 +15,14 @@ import type { RegistrationState } from "./RegistrationStore";
 export interface RegistrationResponse {
   success: boolean;
   trackingCode?: string;
+  term?: number;
   message: string;
 }
 
 interface RawApiResponse {
   success: boolean;
   trackingCode?: string;
+  term?: number;
   message?: string;
   errors?: string[];
 }
@@ -46,6 +48,7 @@ class RegistrationApi {
       return {
         success: true,
         trackingCode: data.trackingCode,
+        term: data.term,
         message: data.message ?? "ثبت نام با موفقیت انجام شد."
       };
     } catch (err) {

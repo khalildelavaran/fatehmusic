@@ -33,3 +33,9 @@ export function formatJalaliTime(value: DateInput): string {
   if (!date) return "—";
   return new Intl.DateTimeFormat("fa-IR", { timeStyle: "medium" }).format(date);
 }
+
+/** Current Jalali year as a plain number (e.g. 1405), for deriving age from birth year. */
+export function getCurrentJalaliYear(): number {
+  const formatted = new Intl.DateTimeFormat("fa-IR-u-nu-latn", { year: "numeric" }).format(new Date());
+  return parseInt(formatted, 10);
+}

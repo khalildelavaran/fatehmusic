@@ -92,7 +92,7 @@ export function formatMobileDisplay(digits: string): string {
   return `${normalized.slice(0, 4)}-${normalized.slice(4, 7)}-${normalized.slice(7)}`;
 }
 
-const WEEKDAY_ORDER = [
+export const WEEKDAY_ORDER = [
   "شنبه",
   "یکشنبه",
   "دوشنبه",

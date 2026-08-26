@@ -963,6 +963,11 @@ section {
    Contract card (قرارداد هنرجویی)
 ========================================== */
 
+.contract-card {
+  direction: rtl;
+  text-align: right;
+}
+
 .contract-card h3 {
   font-size: 16px;
   margin-bottom: 8px;
@@ -983,6 +988,8 @@ section {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--border);
   margin-bottom: 18px;
+  direction: rtl;
+  text-align: right;
 }
 
 .contract-article {
@@ -1010,8 +1017,13 @@ section {
   margin-bottom: 0;
 }
 
+/* Explicit row-direction (rather than relying on inherited page dir)
+   so source order stays predictable under print resets: first column
+   (هنرجو) renders on the RIGHT, second column (آموزشگاه) on the LEFT. */
 .contract-signature {
   display: flex;
+  flex-direction: row;
+  direction: rtl;
   justify-content: space-between;
   gap: 24px;
   margin-top: 24px;
@@ -1025,6 +1037,7 @@ section {
   gap: 10px;
   font-size: 13px;
   color: var(--text-secondary);
+  text-align: right;
 }
 
 .contract-signature-col:last-child {

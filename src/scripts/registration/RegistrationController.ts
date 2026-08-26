@@ -40,6 +40,7 @@ import { courses } from "../../data/courses";
 import { instructors } from "../../data/instructors";
 import { schedules } from "../../data/schedule";
 import { normalizeMobile, normalizeNationalCode, isValidMobile, resolveSingleOption } from "./RegistrationUtils";
+import { getCurrentJalaliYear } from "../../utils/format-date";
 
 type CourseRecord = (typeof courses)[number];
 
@@ -271,7 +272,7 @@ class RegistrationController {
 
   private collectStudent() {
     const scope = document.querySelector('[data-step="student"]');
-    const student: Record<string, string | number> = {};
+    const student: Record<string, string | number | null> = {};
 
     scope?.querySelectorAll<HTMLInputElement>("[data-field]").forEach((input) => {
       const key = input.dataset.field;
@@ -295,8 +296,9 @@ class RegistrationController {
       student[key] = input.value;
     });
 
-    if (student.age) student.age = Number(student.age);
     if (student.birthYear) student.birthYear = Number(student.birthYear);
+    // سن دیگر مستقیم از هنرجو پرسیده نمی‌شود؛ از متولد سال محاسبه می‌شود.
+    student.age = student.birthYear ? getCurrentJalaliYear() - Number(student.birthYear) : null;
     return student;
   }
 
@@ -349,6 +351,7 @@ class RegistrationController {
 
       if (response.success) {
         registrationStore.setTrackingCode(response.trackingCode || "");
+        if (response.term) registrationStore.setTerm(response.term);
         registrationStore.complete();
 
         const completedState = registrationStore.getState();

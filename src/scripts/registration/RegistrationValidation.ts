@@ -43,12 +43,6 @@ class RegistrationValidation {
       errors.push("شماره موبایل صحیح نیست.");
     }
 
-    if (!student.age) {
-      errors.push("سن هنرجو وارد نشده است.");
-    } else if (student.age < 3 || student.age > 100) {
-      errors.push("سن وارد شده معتبر نیست.");
-    }
-
     if (!student.gender) {
       errors.push("لطفاً جنسیت هنرجو را انتخاب کنید.");
     }

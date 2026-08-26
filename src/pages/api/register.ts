@@ -48,6 +48,17 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ success: false, errors: ["سرویس ذخیره‌سازی در دسترس نیست. لطفاً بعداً تلاش کنید."] }, 500);
   }
 
+  let term = 1;
+  try {
+    const priorCount = await db
+      .prepare(`SELECT COUNT(*) as count FROM registrations WHERE student_national_code = ?`)
+      .bind(state.student.nationalCode)
+      .first<{ count: number }>();
+    term = (priorCount?.count ?? 0) + 1;
+  } catch (err) {
+    console.error("Failed to compute term number, defaulting to 1:", err);
+  }
+
   let trackingCode = "";
   let inserted = false;
 
@@ -63,8 +74,9 @@ export const POST: APIRoute = async ({ request }) => {
             instructor_id, instructor_name,
             schedule_id, schedule_weekday, schedule_classroom, schedule_duration,
             student_first_name, student_last_name, student_national_code, student_mobile, student_age, student_gender, has_instrument,
-            student_father_name, student_id_issue_place, student_birth_year, student_occupation, student_address
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+            student_father_name, student_id_issue_place, student_birth_year, student_occupation, student_address,
+            term
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         )
         .bind(
           trackingCode,
@@ -88,7 +100,8 @@ export const POST: APIRoute = async ({ request }) => {
           state.student.idIssuePlace,
           state.student.birthYear,
           state.student.occupation,
-          state.student.address
+          state.student.address,
+          term
         )
         .run();
 
@@ -156,6 +169,7 @@ export const POST: APIRoute = async ({ request }) => {
   return json({
     success: true,
     trackingCode,
+    term,
     message: "ثبت نام با موفقیت انجام شد."
   });
 };

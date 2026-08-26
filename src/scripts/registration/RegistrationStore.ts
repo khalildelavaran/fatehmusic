@@ -77,6 +77,8 @@ export interface RegistrationState {
   selection: RegistrationSelection;
   student: RegistrationStudent;
   trackingCode: string | null;
+  /** Set from the server response after submit; see api/register.ts for how it's computed. */
+  term: number | null;
   completed: boolean;
 }
 
@@ -124,6 +126,7 @@ const createInitialState = (): RegistrationState => ({
     address: ""
   },
   trackingCode: null,
+  term: null,
   completed: false
 });
 
@@ -160,6 +163,10 @@ class RegistrationStore {
 
   setTrackingCode(code: string) {
     this.state.trackingCode = code;
+  }
+
+  setTerm(term: number) {
+    this.state.term = term;
   }
 
   complete() {
