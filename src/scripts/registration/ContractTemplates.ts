@@ -28,6 +28,13 @@ weekday on or after "now" (registration time) -- e.g. registering
 on شنبه for a پنج‌شنبه class starts that same پنج‌شنبه. See
 computeClassStartDate below.
 
+Numeric fields (mobile, tuition amount) are rendered as plain
+contiguous Persian digits with NO separator punctuation (no dashes,
+no commas) -- matching the national code's style. A dashed/grouped
+number (e.g. "0912-345-6789") embedded in RTL text visually reverses
+the group order under the Unicode bidi algorithm; a single
+contiguous digit run does not have this problem.
+
 Architecture:
 - Pure functions only, no DOM access -- RegistrationRenderer is
   responsible for turning a ContractResult into markup.
@@ -37,7 +44,7 @@ Architecture:
 import type { RegistrationState } from "./RegistrationStore";
 import { pricing } from "../../data/pricing";
 import { formatJalaliDate } from "../../utils/format-date";
-import { formatMobileDisplay, toPersianDigits, WEEKDAY_ORDER } from "./RegistrationUtils";
+import { toPersianDigits, WEEKDAY_ORDER } from "./RegistrationUtils";
 
 export interface ContractBlock {
   heading?: string;
@@ -180,7 +187,7 @@ export function buildContract(state: RegistrationState): ContractResult | null {
           `متولد سال: ${student.birthYear ? toPersianDigits(student.birthYear) : "................"} ` +
           `شغل: ${student.occupation || "................"} ` +
           `آدرس: ${student.address || "................"} ` +
-          `شماره همراه: ${student.mobile ? formatMobileDisplay(student.mobile) : "................"} ` +
+          `شماره همراه: ${student.mobile ? toPersianDigits(student.mobile) : "................"} ` +
           "که در این قرارداد هنرجو اطلاق می‌گردد.",
         "طرف دوم آموزشگاه موسیقی فاتح واقع در شوشتر، خیابان امام ضلع غربی، میدان حاج سلیمان به مدیریت آقای رضا فاتح که در این قرارداد آموزشگاه عنوان می‌شود."
       ]
@@ -198,7 +205,7 @@ export function buildContract(state: RegistrationState): ContractResult | null {
       heading: "ماده ۳- مبلغ قرارداد (هزینه هنرجویی):",
       paragraphs: [
         `هنرجو موظف است مبلغ (با حرف: ${amountRial ? `${numberToPersianWords(amountRial)} ریال` : "................"} ` +
-          `/ با عدد: ${amountRial ? toPersianDigits(amountRial.toLocaleString("en-US")) : "................"}) ریال ` +
+          `/ با عدد: ${amountRial ? toPersianDigits(amountRial) : "................"}) ریال ` +
           "را به‌عنوان شهریه یک ترم در مقابل رسید چاپی کارت‌خوان، در هنگام ثبت‌نام به آموزشگاه پرداخت نماید."
       ]
     },

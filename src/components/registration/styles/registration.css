@@ -1049,14 +1049,22 @@ section {
    Base print rules (below) always hide the contract when printing
    the receipt. Clicking "چاپ قرارداد" adds .printing-contract to
    <body>, which flips that: only the contract prints, in full,
-   with no scroll clipping.
+   with no scroll clipping. Sizing/spacing is tightened specifically
+   for print (separate from the on-screen scrollable box) so the
+   whole document fits a single page.
 ========================================== */
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
 
 @media print {
   .contract-card {
     display: none !important;
   }
 
+  body.printing-contract .registration-hero,
   body.printing-contract .registration-progress,
   body.printing-contract .success-mark,
   body.printing-contract .success-step > h2,
@@ -1085,6 +1093,41 @@ section {
     overflow: visible;
     border: none;
     padding: 0;
+    margin-bottom: 10px;
+  }
+
+  body.printing-contract .contract-card h3 {
+    font-size: 13pt;
+    margin-bottom: 10px;
+  }
+
+  body.printing-contract .contract-article {
+    margin-bottom: 7px;
+  }
+
+  body.printing-contract .contract-article h4 {
+    font-size: 9.5pt;
+    margin-bottom: 2px;
+  }
+
+  body.printing-contract .contract-article p {
+    font-size: 9.5pt;
+    line-height: 1.55;
+    margin-bottom: 3px;
+  }
+
+  body.printing-contract .contract-signature {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  body.printing-contract .contract-signature-col {
+    font-size: 9.5pt;
+    gap: 6px;
+  }
+
+  body.printing-contract .contract-signature-col:last-child {
+    padding-top: 20px;
   }
 }
 

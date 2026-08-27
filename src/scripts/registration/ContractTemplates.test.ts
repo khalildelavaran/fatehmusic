@@ -132,12 +132,20 @@ describe("buildContract", () => {
     expect(article2?.paragraphs[0]).toContain("آموزش رشته: سلفژ ");
   });
 
-  it("fills the known tuition amount for a mapped course", () => {
+  it("fills the known tuition amount for a mapped course, as plain digits with no separators", () => {
     const result = buildContract(baseState());
     const article3 = result?.blocks.find((b) => b.heading?.startsWith("ماده ۳"));
     // standard plan fullTerm is 3,200,000 Toman -> 32,000,000 Rial
     expect(article3?.paragraphs[0]).toContain("سی و دو میلیون ریال");
-    expect(article3?.paragraphs[0]).toContain("۳۲,۰۰۰,۰۰۰");
+    expect(article3?.paragraphs[0]).toContain("۳۲۰۰۰۰۰۰");
+    expect(article3?.paragraphs[0]).not.toContain(",");
+  });
+
+  it("renders the mobile number as plain contiguous Persian digits, not the dashed Latin format (which visually reverses in RTL text)", () => {
+    const result = buildContract(baseState());
+    const article1 = result?.blocks.find((b) => b.heading?.startsWith("ماده ۱"));
+    expect(article1?.paragraphs[0]).toContain("۰۹۱۲۱۲۳۴۵۶۷");
+    expect(article1?.paragraphs[0]).not.toContain("-");
   });
 
   it("fills the term number when the server has computed one", () => {
