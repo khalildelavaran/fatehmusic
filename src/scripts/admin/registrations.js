@@ -38,10 +38,12 @@ async function loadRegistrations({ silent = false } = {}) {
             <td>${item.instructor_name}</td>
             <td>${item.schedule_weekday}<br><span class="admin-table-subtext">${item.schedule_duration || ""} دقیقه · ${formatJalaliDate(item.created_at)}</span></td>
             <td><span class="admin-status-pill" data-status="${item.status}">${statusLabels[item.status] || item.status}</span></td>
-            <td class="no-print">
+            <td class="no-print admin-registration-actions">
               <select data-id="${item.id}">
                 ${Object.entries(statusLabels).map(([value, label]) => `<option value="${value}" ${item.status === value ? "selected" : ""}>${label}</option>`).join("")}
               </select>
+              <button type="button" class="admin-document-btn" data-print-contract="${item.id}">چاپ قرارداد</button>
+              <a class="admin-document-btn" href="/admin/certificates?registration_id=${encodeURIComponent(item.id)}">گواهینامه</a>
             </td>
           </tr>`
         )
@@ -67,6 +69,41 @@ document.addEventListener("visibilitychange", () => {
 });
 
 printButton?.addEventListener("click", () => window.print());
+
+body.addEventListener("click", async (event) => {
+  const target = event.target.closest("[data-print-contract]");
+  if (!(target instanceof HTMLButtonElement)) return;
+
+  const registrationId = Number(target.dataset.printContract);
+  if (!registrationId) return;
+  target.disabled = true;
+  const originalText = target.textContent;
+  target.textContent = "در حال تولید...";
+
+  try {
+    const response = await fetch("/api/admin/contract-generate", {
+      method: "POST",
+      headers: headers(),
+      credentials: "same-origin",
+      body: JSON.stringify({ registration_id: registrationId })
+    });
+    if (response.status === 401) { window.location.assign("/admin/login"); return; }
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({ message: "تولید قرارداد شکست خورد." }));
+      setLiveStatus(data.message || "تولید قرارداد شکست خورد.");
+      return;
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setLiveStatus("PDF قرارداد در تب جدید باز شد.");
+  } catch {
+    setLiveStatus("خطای شبکه هنگام تولید قرارداد.");
+  } finally {
+    target.disabled = false;
+    target.textContent = originalText;
+  }
+});
 
 body.addEventListener("change", async (event) => {
   const target = event.target;
