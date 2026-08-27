@@ -1093,41 +1093,51 @@ section {
     overflow: visible;
     border: none;
     padding: 0;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   body.printing-contract .contract-card h3 {
-    font-size: 13pt;
-    margin-bottom: 10px;
+    font-size: 12.5pt;
+    margin-bottom: 8px;
   }
 
   body.printing-contract .contract-article {
-    margin-bottom: 7px;
+    margin-bottom: 6px;
   }
 
   body.printing-contract .contract-article h4 {
-    font-size: 9.5pt;
+    font-size: 9pt;
     margin-bottom: 2px;
   }
 
   body.printing-contract .contract-article p {
-    font-size: 9.5pt;
-    line-height: 1.55;
+    font-size: 9pt;
+    line-height: 1.5;
     margin-bottom: 3px;
   }
 
   body.printing-contract .contract-signature {
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   body.printing-contract .contract-signature-col {
-    font-size: 9.5pt;
-    gap: 6px;
+    font-size: 9pt;
+    gap: 5px;
   }
 
   body.printing-contract .contract-signature-col:last-child {
-    padding-top: 20px;
+    padding-top: 16px;
+  }
+
+  /* Belt-and-suspenders: make sure nothing after the last visible
+     element carries stray height that could tip a near-exact fit
+     into a spurious extra page. */
+  body.printing-contract .contract-card,
+  body.printing-contract .contract-card *:last-child {
+    margin-bottom: 0 !important;
   }
 }
 
