@@ -38,12 +38,16 @@ Values are filled in by RegistrationRenderer.updateSuccess().
   <div class="materials-card" data-materials-container></div>
 
   <div class="contract-card">
-    <h3>قرارداد هنرجویی</h3>
+    <div class="contract-card-heading">
+      <span class="contract-card-kicker">DOCUMENT · FATEH MUSIC</span>
+      <h3>قرارداد هنرجویی</h3>
+      <span class="contract-card-line"></span>
+    </div>
     <p class="contract-note">
-      متن قرارداد بر اساس اطلاعات ثبت‌نام شما تکمیل شده است. «ترم» و «تاریخ شروع» در ماده ۲ توسط آموزشگاه هنگام هماهنگی نهایی تکمیل می‌شود.
+      قرارداد بر اساس اطلاعات ثبت‌نام شما تکمیل شده است. نسخه چاپی برای امضای هنرجو و آموزشگاه آماده است.
     </p>
     <div class="contract-body" data-contract-container hidden></div>
-    <button type="button" class="secondary-btn" data-action="print-contract">
+    <button type="button" class="secondary-btn contract-print-btn" data-action="print-contract">
       چاپ قرارداد
     </button>
   </div>
@@ -63,3 +67,155 @@ Values are filled in by RegistrationRenderer.updateSuccess().
     </button>
   </div>
 </section>
+
+<style is:global>
+  /* Premium contract document — deliberately restrained so the printed
+     document remains formal, legible and economical with ink. */
+  .contract-card {
+    position: relative;
+    margin-top: 32px;
+    padding: 30px;
+    border: 1px solid rgba(212, 175, 55, .28);
+    border-radius: 20px;
+    background: linear-gradient(145deg, rgba(212, 175, 55, .055), rgba(255,255,255,.025) 42%, rgba(255,255,255,.015));
+    overflow: hidden;
+  }
+  .contract-card::before,
+  .contract-card::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    border: 1px solid rgba(212, 175, 55, .12);
+    border-radius: 14px;
+  }
+  .contract-card::before { inset: 9px; }
+  .contract-card::after { inset: 14px; border-style: dashed; opacity: .65; }
+  .contract-card > * { position: relative; z-index: 1; }
+  .contract-card-heading { text-align: center; margin-bottom: 22px; }
+  .contract-card-kicker {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--gold-light);
+    font-size: 9px;
+    letter-spacing: .18em;
+    direction: ltr;
+  }
+  .contract-card-heading h3 { margin: 0; font-size: 27px; }
+  .contract-card-line {
+    display: block;
+    width: 90px;
+    height: 2px;
+    margin: 11px auto 0;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .contract-note {
+    max-width: 760px;
+    margin: 0 auto 25px;
+    padding: 12px 16px;
+    border-inline-start: 2px solid var(--gold-dark);
+    background: rgba(212,175,55,.045);
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.9;
+    text-align: center;
+  }
+  .contract-body {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px 34px;
+    background: #fffdf8;
+    color: #27231d;
+    border: 1px solid #d9cda9;
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgba(0,0,0,.14), inset 0 0 0 6px rgba(212,175,55,.035);
+    direction: rtl;
+  }
+  .contract-body::before {
+    content: "آموزشگاه موسیقی فاتح  •  قرارداد هنرجویی";
+    display: block;
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #b9973e;
+    color: #8b6c20;
+    text-align: center;
+    font-weight: 800;
+    font-size: 14px;
+  }
+  .contract-article {
+    position: relative;
+    padding: 15px 18px;
+    margin-bottom: 10px;
+    border: 1px solid #e7dfc9;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #fffefa, #fcf8ed);
+  }
+  .contract-article:first-child {
+    padding: 5px 0 12px;
+    border: 0;
+    background: transparent;
+    text-align: center;
+  }
+  .contract-article:first-child p { margin: 0; color: #8b6c20; font-weight: 800; font-size: 16px; }
+  .contract-article h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 9px;
+    color: #7a5c16;
+    font-size: 14px;
+  }
+  .contract-article h4::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 20px;
+    border-radius: 3px;
+    background: linear-gradient(#d4af37, #9d7920);
+  }
+  .contract-article p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 2.15;
+    text-align: justify;
+  }
+  .contract-article:nth-child(4) {
+    border-color: #cbb36f;
+    background: linear-gradient(135deg, #fffaf0, #f8f0d9);
+  }
+  .contract-signature {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 20px;
+    padding-top: 22px;
+    border-top: 1px solid #cbbf9f;
+  }
+  .contract-signature-col {
+    min-height: 92px;
+    padding: 14px;
+    border: 1px solid #ded3b7;
+    border-radius: 9px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 7px;
+    text-align: center;
+    color: #6c6250;
+    font-size: 11px;
+  }
+  .contract-signature-col:first-child { border-top: 3px solid #b9973e; }
+  .contract-signature-col:last-child { border-top: 3px solid #3d3830; }
+  .contract-print-btn { display: block; margin: 24px auto 0; min-width: 180px; }
+  @media (max-width: 700px) {
+    .contract-card { padding: 22px 12px; }
+    .contract-body { padding: 22px 14px; }
+    .contract-signature { grid-template-columns: 1fr; }
+  }
+  @media print {
+    .contract-card { background: #fff; border: 0; padding: 0; }
+    .contract-card::before, .contract-card::after, .contract-note, .contract-print-btn { display: none !important; }
+    .contract-body { max-width: none; box-shadow: none; border: 1px solid #b9a46a; border-radius: 0; padding: 18mm 16mm; }
+    .contract-card-heading { margin-bottom: 12mm; }
+    .contract-article { break-inside: avoid; box-shadow: none; }
+  }
+</style>
