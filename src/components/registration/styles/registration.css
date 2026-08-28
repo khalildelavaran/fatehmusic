@@ -1044,6 +1044,22 @@ section {
   padding-top: 32px;
 }
 
+/* Print-only letterhead + footer. Hidden on screen (the on-screen
+   card already has its own "قرارداد هنرجویی" heading); shown only
+   while printing -- see @media print below. */
+.contract-print-header,
+.contract-print-footer {
+  display: none;
+}
+
+/* Isolates an LTR code/number so it can't get visually reordered by
+   the surrounding RTL paragraph's bidi algorithm. */
+.ltr-code {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+}
+
 /* ==========================================
    Contract print mode
    Base print rules (below) always hide the contract when printing
@@ -1094,6 +1110,25 @@ section {
     border: none;
     padding: 0;
     margin-bottom: 8px;
+  }
+
+  body.printing-contract .contract-print-header {
+    display: block;
+    text-align: center;
+    font-size: 12pt;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1.5px solid #000;
+  }
+
+  body.printing-contract .contract-print-footer {
+    display: block;
+    text-align: center;
+    font-size: 8pt;
+    color: #444;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #999;
   }
 
   body.printing-contract .contract-card h3 {
