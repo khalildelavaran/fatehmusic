@@ -1,0 +1,30 @@
+---
+interface Props {
+  id: string;
+  name?: string;
+  value?: string;
+  required?: boolean;
+  placeholder?: string;
+  class?: string;
+}
+const { id, name, value = "", required = false, placeholder = "۱۴۰۵/۰۶/۰۶", class: className = "" } = Astro.props;
+---
+
+<div class={`jalali-date-field ${className}`}>
+  <input
+    id={id}
+    name={name}
+    type="text"
+    value={value}
+    placeholder={placeholder}
+    data-jalali-datepicker
+    required={required}
+    dir="ltr"
+  />
+</div>
+
+<script>
+  import "../../styles/jalali-datepicker.css";
+  import { initJalaliDatePickers } from "../../scripts/jalali-datepicker.js";
+  initJalaliDatePickers();
+</script>
