@@ -1,0 +1,25 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+---
+<MainLayout title="استعلام اصالت گواهینامه | آموزشگاه موسیقی فاتح" description="استعلام عمومی اصالت گواهینامه‌های صادرشده توسط آموزشگاه موسیقی فاتح">
+<main class="verify" dir="rtl">
+  <section class="card">
+    <img src="/logo.webp" alt="آموزشگاه موسیقی فاتح" class="logo" />
+    <span class="eyebrow">FATEH MUSIC ACADEMY</span>
+    <h1>استعلام اصالت گواهینامه</h1>
+    <p>شماره گواهینامه را وارد کنید تا اعتبار آن بررسی شود.</p>
+    <form id="form">
+      <label>شماره گواهینامه<input id="number" required autocomplete="off" /></label>
+      <button>استعلام گواهینامه</button>
+    </form>
+    <div id="result" aria-live="polite"></div>
+  </section>
+</main>
+<style>
+.verify{min-height:75vh;padding:70px 20px;display:grid;place-items:center;background:radial-gradient(circle at 50% 0,#211b0d,#090909 60%);color:#eee}.card{width:min(560px,100%);padding:38px;background:linear-gradient(145deg,#181818,#0e0e0e);border:1px solid rgba(198,158,67,.35);border-radius:22px;box-shadow:0 20px 60px #0008;text-align:center}.logo{width:82px;height:82px;object-fit:contain}.eyebrow{display:block;margin-top:10px;color:#a88943;font-size:12px;letter-spacing:.12em}.card h1{color:#e0bd68;margin:10px 0}.card p{color:#aaa08d;line-height:1.9}.card form{display:grid;gap:12px;margin-top:26px;text-align:right}.card label{color:#d8d0bf}.card input{width:100%;box-sizing:border-box;margin-top:7px;padding:13px;border:1px solid #4a402c;border-radius:10px;background:#0b0b0b;color:#fff;font:inherit}.card button{padding:13px;border:1px solid #c9a652;border-radius:10px;background:#b18a36;color:#090909;font:inherit;font-weight:700;cursor:pointer}.valid,.invalid{margin-top:24px;padding:20px;border-radius:14px;text-align:right}.valid{border:1px solid #75612c;background:#17150e}.invalid{border:1px solid #703c3c;background:#1a1010;color:#e4a6a6}.valid h2{color:#dfbd68;margin-top:0}.details{display:grid;gap:8px;color:#c5bda9}.details strong{color:#eee}
+</style>
+<script>
+const form=document.querySelector('#form');const result=document.querySelector('#result');const esc=(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+form?.addEventListener('submit',async e=>{e.preventDefault();result.innerHTML='<p>در حال بررسی...</p>';const n=document.querySelector('#number').value.trim();try{const r=await fetch(`/api/certificate/verify?number=${encodeURIComponent(n)}`);const d=await r.json();if(!d.valid){result.innerHTML=`<div class="invalid"><strong>گواهینامه معتبر نیست</strong><p>${esc(d.message)}</p></div>`;return}const c=d.certificate;result.innerHTML=`<div class="valid"><h2>✓ گواهینامه معتبر است</h2><div class="details"><div><strong>شماره گواهینامه:</strong> ${esc(c.certNumber)}</div><div><strong>نام هنرجو:</strong> ${esc(c.studentName)}</div><div><strong>دوره:</strong> ${esc(c.discipline)}</div><div><strong>مدرس:</strong> ${esc(c.instructor)}</div><div><strong>تاریخ پایان دوره:</strong> ${esc(c.completionDate)}</div>${c.level?`<div><strong>سطح:</strong> ${esc(c.level)}</div>`:''}</div></div>`}catch{result.innerHTML='<div class="invalid">خطا در ارتباط با سامانه استعلام.</div>'}});
+</script>
+</MainLayout>
