@@ -1,0 +1,24 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/student.css";
+---
+<MainLayout title="ورود هنرجویان | آموزشگاه موسیقی فاتح" noindex={true}>
+  <main class="student-auth" dir="rtl">
+    <section class="student-card">
+      <img src="/logo.webp" alt="آموزشگاه موسیقی فاتح" class="student-logo" />
+      <h1>ورود هنرجویان</h1>
+      <p>نام کاربری و رمز اولیه هر هنرجو، کد ملی اوست.</p>
+      <form id="studentLoginForm">
+        <label>کد ملی<input id="nationalCode" inputmode="numeric" maxlength="10" autocomplete="username" required /></label>
+        <label>رمز عبور<input id="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit">ورود به داشبورد</button>
+        <p id="loginStatus" class="student-status" role="alert"></p>
+      </form>
+    </section>
+  </main>
+  <script>
+    const form=document.querySelector('#studentLoginForm');
+    const status=document.querySelector('#loginStatus');
+    form?.addEventListener('submit',async(e)=>{e.preventDefault();status.textContent='در حال ورود...';const r=await fetch('/api/student/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({national_code:document.querySelector('#nationalCode').value,password:document.querySelector('#password').value})});const d=await r.json().catch(()=>({message:'خطای سرور'}));if(!r.ok){status.textContent=d.message||'ورود ناموفق بود.';return}location.href='/student';});
+  </script>
+</MainLayout>
