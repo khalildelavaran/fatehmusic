@@ -1,0 +1,5 @@
+export const prerender=false;
+import type {APIRoute} from "astro";
+import {env} from "cloudflare:workers";
+import {getStudentSession,hashStudentPassword,json,type StudentEnv} from "../../../server/student-auth";
+export const POST:APIRoute=async({request})=>{const s=await getStudentSession(request,env as StudentEnv);if(!s)return json({success:false,message:"ورود هنرجو معتبر نیست."},401);try{const b=await request.json() as {new_password?:string};const p=(b.new_password??"").trim();if(p.length<6)return json({success:false,message:"رمز جدید باید حداقل ۶ کاراکتر باشد."},422);if(p===s.nationalCode)return json({success:false,message:"رمز جدید نباید کد ملی باشد."},422);const h=await hashStudentPassword(p);await env.DB.prepare("UPDATE student_accounts SET password_hash=?,must_change_password=0,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(h,s.accountId).run();return json({success:true,message:"رمز عبور با موفقیت تغییر کرد."})}catch{return json({success:false,message:"تغییر رمز انجام نشد."},400)}};
