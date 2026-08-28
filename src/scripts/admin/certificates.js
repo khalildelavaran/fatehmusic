@@ -156,4 +156,10 @@ certForm.addEventListener("submit", async (event) => {
   }
 });
 
-loadRegistrations();
+async function init() {
+  await loadRegistrations();
+  const registrationId = new URLSearchParams(window.location.search).get("registration_id");
+  if (registrationId) await selectRegistration(registrationId);
+}
+
+init();

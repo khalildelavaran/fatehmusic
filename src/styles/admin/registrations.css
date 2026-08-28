@@ -7,8 +7,55 @@
     font-size:13px;
 }
 
+.admin-registration-actions{
+    min-width:170px;
+}
+
+.admin-registration-actions select{
+    width:100%;
+    margin-bottom:7px;
+}
+
+.admin-document-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:32px;
+    margin:2px 0;
+    padding:6px 10px;
+    border:1px solid rgba(212,175,55,.35);
+    border-radius:8px;
+    background:rgba(212,175,55,.08);
+    color:var(--gold-light);
+    font:inherit;
+    font-size:12px;
+    font-weight:600;
+    text-decoration:none;
+    cursor:pointer;
+    transition:var(--transition);
+}
+
+.admin-document-btn:hover:not(:disabled),
+.admin-document-btn:focus-visible{
+    border-color:var(--gold);
+    background:rgba(212,175,55,.16);
+    transform:translateY(-1px);
+}
+
+.admin-document-btn:disabled{
+    opacity:.65;
+    cursor:wait;
+}
+
+@media (max-width: 900px){
+    .admin-registration-actions{
+        min-width:145px;
+    }
+}
+
 @media print{
-    .admin-live-status{
+    .admin-live-status,
+    .admin-registration-actions{
         display:none;
     }
 }
