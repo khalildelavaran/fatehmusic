@@ -6,6 +6,7 @@ import "../../styles/admin/base.css";
 import "../../styles/admin/nav.css";
 import "../../styles/admin/posts.css";
 import "../../styles/admin/certificates.css";
+import "../../styles/shared/jalali-date-picker.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
@@ -22,7 +23,6 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
           <h1>صدور گواهی پایان دوره</h1>
           <p>یک ثبت‌نام را پیدا کنید، اطلاعات پایان دوره را وارد کنید و PDF نهایی را بسازید.</p>
         </section>
-
         <section class="admin-panel admin-panel--certificates">
           <div class="admin-form">
             <label>
@@ -32,10 +32,8 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
             <div id="searchResults" class="admin-cert-results"></div>
           </div>
         </section>
-
         <section class="admin-panel admin-panel--certificates" id="certFormSection" hidden>
           <div class="admin-cert-selected" id="selectedSummary"></div>
-
           <form id="certForm" class="admin-form">
             <input type="hidden" id="registrationId" />
             <label>
@@ -45,7 +43,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
             </label>
             <label>
               تاریخ پایان دوره (شمسی)
-              <input type="text" id="completionDate" required placeholder="۱۴۰۵/۰۲/۰۱" />
+              <input type="text" id="completionDate" data-jalali-date-picker required placeholder="۱۴۰۵/۰۲/۰۱" aria-label="تاریخ پایان دوره به شمسی" />
             </label>
             <label>
               سطح (اختیاری)
@@ -59,9 +57,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
             </label>
             <label>
               کتاب (اختیاری)
-              <select id="bookId">
-                <option value="">— بدون ذکر کتاب مشخص —</option>
-              </select>
+              <select id="bookId"><option value="">— بدون ذکر کتاب مشخص —</option></select>
             </label>
             <label>
               توضیح تکمیلی برنامه‌ی درسی (اختیاری)
@@ -79,5 +75,6 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
   </div>
   <script>
     import "../../scripts/admin/certificates.js";
+    import "../../scripts/shared/jalali-date-picker.js";
   </script>
 </MainLayout>
