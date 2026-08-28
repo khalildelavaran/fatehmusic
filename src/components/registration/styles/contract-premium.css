@@ -1,0 +1,25 @@
+/* Premium visual system for the student contract */
+.contract-card{position:relative;margin-top:36px;padding:34px;border:1px solid rgba(212,175,55,.34);border-radius:24px;background:radial-gradient(circle at 50% 0,rgba(212,175,55,.11),transparent 34%),linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.018));overflow:hidden}
+.contract-card:before{content:"";position:absolute;inset:10px;border:1px solid rgba(212,175,55,.16);border-radius:18px;pointer-events:none}
+.contract-card:after{content:"♫";position:absolute;top:18px;right:24px;color:rgba(212,175,55,.22);font-size:42px;line-height:1;pointer-events:none}
+.contract-card-heading{position:relative;text-align:center;margin-bottom:26px;padding-bottom:18px}
+.contract-card-heading:before,.contract-card-heading:after{content:"";position:absolute;bottom:0;width:72px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.contract-card-heading:before{right:calc(50% + 50px)}.contract-card-heading:after{left:calc(50% + 50px)}
+.contract-card-kicker{display:block;margin-bottom:8px;color:var(--gold-light);font-size:10px;letter-spacing:.2em;direction:ltr}
+.contract-card-heading h3{margin:0;color:var(--text);font-size:30px;font-weight:800}
+.contract-card-line{display:block;width:34px;height:3px;margin:12px auto 0;border-radius:99px;background:var(--gold)}
+.contract-note{position:relative;max-width:800px;margin:0 auto 28px;padding:13px 20px;border:1px solid rgba(212,175,55,.16);border-radius:12px;background:rgba(212,175,55,.045);color:var(--text-secondary);font-size:12.5px;line-height:2;text-align:center}
+.contract-body{position:relative;max-width:920px;margin:0 auto;padding:34px 38px;background:linear-gradient(180deg,#fffdf8,#fbf6e9);color:#29251e;border:1px solid #cdbb82;border-radius:16px;box-shadow:0 18px 45px rgba(0,0,0,.18),inset 0 0 0 5px rgba(185,151,62,.035);direction:rtl}
+.contract-body:after{content:"";position:absolute;inset:10px;border:1px solid rgba(185,151,62,.22);border-radius:10px;pointer-events:none}
+.contract-body:before{content:"آموزشگاه موسیقی فاتح  •  قرارداد هنرجویی";display:block;position:relative;z-index:1;padding:0 0 16px;margin-bottom:22px;border-bottom:2px solid #b9973e;color:#805f16;text-align:center;font-weight:800;font-size:17px}
+.contract-article{position:relative;z-index:1;padding:16px 20px;margin-bottom:12px;border:1px solid #e3dac0;border-radius:11px;background:linear-gradient(135deg,#fffefa,#faf4e6);box-shadow:0 3px 12px rgba(90,70,25,.04)}
+.contract-article:first-child{padding:7px 0 14px;border:0;background:transparent;box-shadow:none;text-align:center}.contract-article:first-child p{margin:0;color:#8a681d;font-weight:800;font-size:18px}
+.contract-article h4{display:flex;align-items:center;gap:10px;margin:0 0 10px;color:#765716;font-size:15px;font-weight:800}.contract-article h4:before{content:"";width:5px;height:21px;border-radius:4px;background:linear-gradient(#d4af37,#98731c);flex:0 0 auto}
+.contract-article p{margin:0;font-size:13px;line-height:2.2;text-align:justify}
+.contract-article:nth-child(4){border-color:#c9ae61;background:linear-gradient(135deg,#fff9e9,#f7edd1);box-shadow:inset 0 0 0 1px rgba(185,151,62,.08)}
+.contract-signature{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px;padding-top:24px;border-top:1px solid #cfc2a3}
+.contract-signature-col{min-height:108px;padding:16px;border:1px solid #d8cba9;border-radius:11px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px;text-align:center;color:#685d4b;font-size:11.5px;background:rgba(255,255,255,.38)}
+.contract-signature-col:first-child{border-top:3px solid #b9973e}.contract-signature-col:last-child{border-top:3px solid #51483a}
+.contract-print-btn{position:relative;z-index:2;display:block;margin:26px auto 0;min-width:190px}
+@media(max-width:700px){.contract-card{padding:24px 12px}.contract-body{padding:25px 15px}.contract-signature{grid-template-columns:1fr}.contract-card-heading h3{font-size:25px}}
+@media print{.contract-card{background:#fff;border:0;border-radius:0;padding:0}.contract-card:before,.contract-card:after,.contract-note,.contract-print-btn{display:none!important}.contract-body{max-width:none;box-shadow:none;border:1px solid #b9a46a;border-radius:0;padding:16mm 15mm}.contract-body:after{display:block}.contract-card-heading{margin-bottom:10mm}.contract-article{break-inside:avoid;box-shadow:none}}
