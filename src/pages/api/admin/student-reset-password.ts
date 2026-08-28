@@ -1,0 +1,6 @@
+export const prerender=false;
+import type {APIRoute} from "astro";
+import {env} from "cloudflare:workers";
+import {hashStudentPassword,json,normalizeNationalCode,type StudentEnv} from "../../../server/student-auth";
+import {requireRole,ROLES,type AdminEnv} from "../../../server/admin-auth";
+export const POST:APIRoute=async({request})=>{const denied=await requireRole(request,env as AdminEnv,[ROLES.ADMIN]);if(denied)return denied;try{const b=await request.json() as {national_code?:string};const n=normalizeNationalCode(b.national_code??"");if(!/^\d{10}$/.test(n))return json({success:false,message:"کد ملی معتبر نیست."},422);const r=await env.DB.prepare("SELECT 1 AS found FROM registrations WHERE student_national_code=? LIMIT 1").bind(n).first();if(!r)return json({success:false,message:"هنرجویی با این کد ملی پیدا نشد."},404);const h=await hashStudentPassword(n);await env.DB.prepare("INSERT INTO student_accounts (national_code,password_hash,must_change_password) VALUES (?,?,1) ON CONFLICT(national_code) DO UPDATE SET password_hash=excluded.password_hash,must_change_password=1,is_active=1,updated_at=CURRENT_TIMESTAMP").bind(n,h).run();return json({success:true,message:"رمز هنرجو به کد ملی بازگردانده شد."})}catch{return json({success:false,message:"بازنشانی رمز انجام نشد."},400)}};
