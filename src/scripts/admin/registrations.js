@@ -50,7 +50,7 @@ body.addEventListener("click", async (event) => {
   const originalText = target.textContent;
   target.textContent = "در حال تولید...";
   try {
-    const response = await fetch("/api/admin/registrations", {
+    const response = await fetch("/api/admin/contract-generate", {
       method: "POST", headers: headers(), credentials: "same-origin",
       body: JSON.stringify({ registration_id: registrationId })
     });
@@ -61,7 +61,11 @@ body.addEventListener("click", async (event) => {
     }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener");
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.click();
     setLiveStatus("PDF قرارداد در تب جدید باز شد.");
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
   } catch { setLiveStatus("خطای شبکه هنگام تولید قرارداد."); }
