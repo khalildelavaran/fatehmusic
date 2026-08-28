@@ -1,0 +1,22 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import { getStudentSession, type StudentEnv } from "../../server/student-auth";
+import "../../styles/student.css";
+const session=await getStudentSession(Astro.request,env as StudentEnv);
+if(!session)return Astro.redirect('/student/login');
+---
+<MainLayout title="داشبورد هنرجو | آموزشگاه موسیقی فاتح" noindex={true}>
+<main class="student-dashboard" dir="rtl">
+<header class="student-top"><div><img src="/logo.webp" alt="فاتح"/><div><strong>داشبورد هنرجو</strong><span>کد ملی: {session.nationalCode}</span></div></div><button id="logout">خروج</button></header>
+<div id="studentApp"><p class="student-loading">در حال بارگذاری اطلاعات...</p></div>
+</main>
+<script>
+const app=document.querySelector('#studentApp');
+const esc=(v)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+async function load(){const r=await fetch('/api/student/me',{credentials:'same-origin'});if(r.status===401){location.href='/student/login';return}const d=await r.json();if(!d.success){app.innerHTML=`<p>${esc(d.message)}</p>`;return}const s=d.student||{};app.innerHTML=`<section class="student-welcome"><h1>سلام ${esc(s.student_first_name)} ${esc(s.student_last_name)}</h1><p>مدارک و دوره‌های آموزشی شما در این بخش قابل دسترسی است.</p></section>${d.must_change_password?`<section class="student-alert"><strong>توجه:</strong> رمز اولیه شما کد ملی است. برای امنیت حساب، رمز دلخواه خود را تعیین کنید.</section>`:''}<section class="student-section"><h2>دوره‌های من</h2><div class="student-grid">${d.registrations.length?d.registrations.map(x=>`<article class="student-item"><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p><p>زمان: ${esc(x.schedule_weekday)}${x.schedule_duration?` · ${esc(x.schedule_duration)} دقیقه`:''}</p><div class="student-actions"><button data-contract="${x.id}">چاپ قرارداد</button></div></article>`).join(''):'<p>دوره‌ای برای این کد ملی ثبت نشده است.</p>'}</div></section><section class="student-section"><h2>گواهینامه‌های صادرشده</h2><div class="student-grid">${d.certificates.length?d.certificates.map(x=>`<article class="student-item"><h3>گواهی پایان دوره</h3><p>شماره گواهی: ${esc(x.cert_number)}</p><p>تاریخ پایان: ${esc(x.completion_date_jalali)}</p><div class="student-actions"><a href="/api/student/certificate?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">چاپ گواهینامه</a></div></article>`).join(''):'<p>هنوز گواهینامه‌ای برای شما صادر نشده است.</p>'}</div></section><section class="student-section"><h2>تغییر رمز عبور</h2><form id="passwordForm" class="student-password"><input id="newPassword" type="password" minlength="6" placeholder="رمز جدید، حداقل ۶ کاراکتر" required/><input id="repeatPassword" type="password" minlength="6" placeholder="تکرار رمز جدید" required/><button>ذخیره رمز جدید</button><p id="passwordStatus" class="student-status"></p></form></section>`;}
+app?.addEventListener('click',async e=>{const b=e.target.closest('[data-contract]');if(!b)return;const tab=window.open('about:blank','_blank');if(!tab)return;b.disabled=true;try{const r=await fetch('/api/admin/contract-generate',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({registration_id:Number(b.dataset.contract)})});if(!r.ok){tab.close();return}const u=URL.createObjectURL(await r.blob());tab.location=u;setTimeout(()=>URL.revokeObjectURL(u),60000)}finally{b.disabled=false}});
+app?.addEventListener('submit',async e=>{if(e.target.id!=='passwordForm')return;e.preventDefault();const status=document.querySelector('#passwordStatus');const p=document.querySelector('#newPassword').value;if(p!==document.querySelector('#repeatPassword').value){status.textContent='تکرار رمز یکسان نیست.';return}const r=await fetch('/api/student/password',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({new_password:p})});const d=await r.json();status.textContent=d.message||'انجام شد.';if(r.ok)document.querySelector('#passwordForm').reset()});
+document.querySelector('#logout')?.addEventListener('click',async()=>{await fetch('/api/student/logout',{method:'POST',credentials:'same-origin'});location.href='/student/login'});load();
+</script>
+</MainLayout>
