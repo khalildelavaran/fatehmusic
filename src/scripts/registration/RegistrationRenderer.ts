@@ -245,7 +245,11 @@ class RegistrationRenderer {
     }
 
     container.hidden = false;
-    container.innerHTML = contract.blocks.map((block) => `
+    container.innerHTML = `
+        <div class="contract-print-header">
+          <strong>آموزشگاه موسیقی فاتح</strong>
+        </div>` +
+      contract.blocks.map((block) => `
         <div class="contract-article">
           ${block.heading ? `<h4>${escapeHtml(block.heading)}</h4>` : ""}
           ${block.paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
@@ -259,6 +263,9 @@ class RegistrationRenderer {
           <div class="contract-signature-col">
             <span>محل امضاء آموزشگاه</span>
           </div>
+        </div>
+        <div class="contract-print-footer">
+          <span>کد پیگیری: <span class="ltr-code">${escapeHtml(state.trackingCode || "-")}</span></span>
         </div>`;
   }
 
