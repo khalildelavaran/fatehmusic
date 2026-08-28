@@ -10,9 +10,12 @@ interface RegistrationRow { tracking_code:string; instrument_title:string; instr
 interface BookRow { title:string; author:string|null; cover_image:string|null; }
 function honorificFor(gender:string|null):"آقای"|"خانم" { const g=(gender??"").trim().toLowerCase(); return g==="female"||g==="زن"||g==="دختر"?"خانم":"آقای"; }
 
-async function imageUrlToDataUrl(url:string):Promise<string>{
-  const response=await fetch(url);
-  if(!response.ok)throw new Error(`دریافت تصویر ساز ناموفق بود (${response.status})`);
+async function assetImageToDataUrl(request:Request,path:string):Promise<string>{
+  const assets=(env as unknown as {ASSETS?:{fetch:(input:RequestInfo|URL)=>Promise<Response>}}).ASSETS;
+  if(!assets?.fetch)throw new Error("ASSETS binding در Worker تنظیم نشده است.");
+  const url=new URL(path,request.url);
+  const response=await assets.fetch(new Request(url.toString(),{method:"GET"}));
+  if(!response.ok)throw new Error(`فایل تصویر ساز پیدا نشد (${response.status}): ${path}`);
   const contentType=response.headers.get("content-type")||"image/png";
   const buffer=await response.arrayBuffer();
   let binary=""; const bytes=new Uint8Array(buffer); const chunkSize=0x8000;
@@ -30,9 +33,9 @@ export const POST: APIRoute = async ({ request }) => {
   const registration=await db.prepare(`SELECT tracking_code,instrument_title,instrument_slug,instructor_name,student_first_name,student_last_name,student_gender FROM registrations WHERE id = ?`).bind(body.registration_id).first<RegistrationRow>();
   if(!registration)return json({success:false,message:"ثبت‌نامی با این شناسه پیدا نشد."},404);
   let book:BookRow|null=null; if(body.book_id)book=await db.prepare("SELECT title,author,cover_image FROM course_books WHERE id = ?").bind(body.book_id).first<BookRow>();
-  const instrumentPhotoUrl=`https://fatehmusic.ir/images/cert-photos/${registration.instrument_slug}.png`;
+  const instrumentPath=`/images/cert-photos/${registration.instrument_slug}.png`;
   let instrumentPhotoDataUrl:string;
-  try { instrumentPhotoDataUrl=await imageUrlToDataUrl(instrumentPhotoUrl); }
+  try { instrumentPhotoDataUrl=await assetImageToDataUrl(request,instrumentPath); }
   catch(err) { const detail=err instanceof Error?err.message:String(err); return json({success:false,message:`بارگذاری تصویر ساز شکست خورد: ${detail}`},502); }
   const data:CertificateData={title:"گواهی پایان دوره",disciplineLine:`نوازندگی ${registration.instrument_title.replace(/^آموزش\s+/,"")}${body.level?" دوره "+levelLabel(body.level):""}`,certNumber:registration.tracking_code,level:body.level??null,honorific:honorificFor(registration.student_gender),studentName:`${registration.student_first_name} ${registration.student_last_name}`.trim(),nationalId:body.national_id,completionDateJalali:body.completion_date_jalali,bookTitle:book?.title??null,bookAuthor:book?.author??null,curriculumNote:body.curriculum_note??null,bookCoverUrl:book?.cover_image?`https://fatehmusic.ir/images/books/${book.cover_image}`:null,instructorLabel:`مدرس ${registration.instrument_title.replace(/^آموزش\s+/,"")}`,instructorName:registration.instructor_name,instrumentPhotoUrl:instrumentPhotoDataUrl,logoUrl:"https://fatehmusic.ir/logo.png"};
   const html=buildCertificateHtml(data);
