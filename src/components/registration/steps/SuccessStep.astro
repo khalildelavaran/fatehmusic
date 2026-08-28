@@ -68,9 +68,7 @@ Values are filled in by RegistrationRenderer.updateSuccess().
   </div>
 </section>
 
-<style is:global>
-  /* Premium contract document — deliberately restrained so the printed
-     document remains formal, legible and economical with ink. */
+<style is="global">
   .contract-card {
     position: relative;
     margin-top: 32px;
@@ -212,10 +210,163 @@ Values are filled in by RegistrationRenderer.updateSuccess().
     .contract-signature { grid-template-columns: 1fr; }
   }
   @media print {
-    .contract-card { background: #fff; border: 0; padding: 0; }
-    .contract-card::before, .contract-card::after, .contract-note, .contract-print-btn { display: none !important; }
-    .contract-body { max-width: none; box-shadow: none; border: 1px solid #b9a46a; border-radius: 0; padding: 18mm 16mm; }
-    .contract-card-heading { margin-bottom: 12mm; }
-    .contract-article { break-inside: avoid; box-shadow: none; }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    html, body {
+      width: 210mm !important;
+      height: 297mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+      overflow: hidden !important;
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    body.printing-contract * { visibility: hidden !important; }
+    body.printing-contract .contract-card,
+    body.printing-contract .contract-card * { visibility: visible !important; }
+
+    body.printing-contract .contract-card {
+      display: block !important;
+      position: relative !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+      overflow: hidden !important;
+    }
+
+    body.printing-contract .contract-card > .contract-card-heading,
+    body.printing-contract .contract-card > .contract-note,
+    body.printing-contract .contract-card > .contract-print-btn {
+      display: none !important;
+    }
+
+    body.printing-contract .contract-body {
+      position: relative !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      max-width: none !important;
+      max-height: none !important;
+      margin: 0 !important;
+      padding: 38mm 16mm 24mm !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: #fffdf8 !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+      page-break-after: avoid !important;
+      break-after: avoid-page !important;
+    }
+
+    body.printing-contract .contract-body::before {
+      content: "" !important;
+      position: absolute !important;
+      top: 10mm !important;
+      right: 16mm !important;
+      left: 16mm !important;
+      height: 20mm !important;
+      margin: 0 !important;
+      padding: 0 0 3mm 26mm !important;
+      border: 0 !important;
+      border-bottom: .45mm solid #b9973e !important;
+      background-image: url('/logo.png') !important;
+      background-repeat: no-repeat !important;
+      background-position: right center !important;
+      background-size: 18mm 18mm !important;
+      color: #8b6c20 !important;
+      content: "آموزشگاه موسیقی فاتح     |     قرارداد هنرجویی" !important;
+      font-family: Vazirmatn, sans-serif !important;
+      font-size: 17pt !important;
+      font-weight: 800 !important;
+      line-height: 18mm !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      box-sizing: border-box !important;
+    }
+
+    body.printing-contract .contract-body::after {
+      content: "آدرس آموزشگاه موسیقی فاتح  |  تلفن: ۰۶۱-۳۶۲۲xxxx  |  Instagram: guitar.shushtar  |  WhatsApp" !important;
+      position: absolute !important;
+      right: 16mm !important;
+      left: 16mm !important;
+      bottom: 8mm !important;
+      height: 12mm !important;
+      padding-top: 3mm !important;
+      border-top: .35mm solid #b9973e !important;
+      color: #6f6655 !important;
+      font-family: Vazirmatn, sans-serif !important;
+      font-size: 7.5pt !important;
+      line-height: 7mm !important;
+      text-align: center !important;
+      white-space: nowrap !important;
+      box-sizing: border-box !important;
+    }
+
+    body.printing-contract .contract-article {
+      margin-bottom: 5px !important;
+      padding: 9px 12px !important;
+      border-radius: 6px !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+      box-shadow: none !important;
+    }
+
+    body.printing-contract .contract-article:first-child {
+      padding: 0 0 7px !important;
+      margin-bottom: 5px !important;
+    }
+
+    body.printing-contract .contract-article:first-child p {
+      font-size: 12pt !important;
+      line-height: 1.35 !important;
+    }
+
+    body.printing-contract .contract-article h4 {
+      margin: 0 0 3px !important;
+      font-size: 9pt !important;
+      line-height: 1.25 !important;
+    }
+
+    body.printing-contract .contract-article h4::before {
+      width: 3px !important;
+      height: 13px !important;
+    }
+
+    body.printing-contract .contract-article p {
+      font-size: 8.2pt !important;
+      line-height: 1.42 !important;
+      margin: 0 !important;
+    }
+
+    body.printing-contract .contract-signature {
+      margin-top: 7px !important;
+      padding-top: 7px !important;
+      gap: 14px !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    body.printing-contract .contract-signature-col {
+      min-height: 55px !important;
+      padding: 7px !important;
+      gap: 3px !important;
+      border-radius: 5px !important;
+      font-size: 8pt !important;
+    }
+
+    body.printing-contract .contract-signature-col:last-child {
+      padding-top: 7px !important;
+    }
   }
 </style>
