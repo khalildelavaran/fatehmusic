@@ -102,3 +102,4 @@ export { buildFaqSchema } from "./schema/faq.js";
 export { buildBreadcrumbSchema } from "./schema/breadcrumb.js";
 export { buildItemListSchema } from "./schema/itemlist.js";
 export { buildAboutPageSchema } from "./schema/aboutpage.js";
+export { buildContactPageSchema } from "./schema/contactpage.js";
