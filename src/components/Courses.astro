@@ -5,29 +5,14 @@ import { courses } from "../data/courses";
 import { instructors } from "../data/instructors";
 import { schedules } from "../data/schedule";
 
-
-// -------------------------------------------------
-// Typed Data
-// -------------------------------------------------
-
 const typedCourses = courses as Course[];
 
-
-// -------------------------------------------------
-// Course Cards
-// Multi Instructor Compatible Schema
-// -------------------------------------------------
-
 const courseCards = typedCourses.map((course: Course) => {
-
-
   const instructorIds = course.instructors ?? [];
-
 
   const courseInstructors: Instructor[] = instructors.filter(
     (i) => instructorIds.includes(i.id)
   );
-
 
   const courseSchedules = schedules.filter(
     (s) =>
@@ -35,93 +20,48 @@ const courseCards = typedCourses.map((course: Course) => {
       instructorIds.includes(s.instructorId)
   );
 
-
   const days: string[] = [
-    ...new Set(
-      courseSchedules.map((s) => s.weekday)
-    )
+    ...new Set(courseSchedules.map((s) => s.weekday))
   ];
-
 
   return {
     ...course,
-
     instructors: courseInstructors,
-
     schedules: courseSchedules,
-
     days
   };
-
 });
-
 ---
 
-
-<section
-  class="courses"
-  data-reveal="fade-up"
->
-
+<section class="courses" data-reveal="fade-up">
   <div class="container">
-
-
-    <div
-      class="section-header"
-      data-reveal-group
-    >
-
-      <span
-        class="section-badge"
-        data-reveal
-        data-reveal-delay="1"
-      >
+    <div class="section-header" data-reveal-group>
+      <span class="section-badge" data-reveal data-reveal-delay="1">
         دوره‌های آموزشی
       </span>
 
-
-      <h2
-        class="section-title"
-        data-reveal
-        data-reveal-delay="2"
-      >
+      <h2 class="section-title" data-reveal data-reveal-delay="2">
         یادگیری موسیقی با بهترین اساتید
       </h2>
 
-
-      <p
-        data-reveal
-        data-reveal-delay="3"
-      >
+      <p data-reveal data-reveal-delay="3">
         دوره‌های آموزشی برای تمامی سنین، از مبتدی تا پیشرفته.
       </p>
-
-
     </div>
 
-
-
-    <div
-      class="courses-grid"
-      data-reveal-group
-    >
-
-
+    <div class="courses-grid" data-reveal-group>
       {courseCards.map((course) => (
-
-
         <div class="course-card">
-
-
           <div class="course-image">
-
             <a
               href={`/courses/${course.slug}`}
               class="course-image-link"
             >
               <img
                 src={course.media.image}
-                alt={course.title}
+                alt={`${course.title} در آموزشگاه موسیقی فاتح شوشتر`}
+                width="800"
+                height="450"
                 loading="lazy"
                 decoding="async"
               />
@@ -134,89 +74,45 @@ const courseCards = typedCourses.map((course: Course) => {
             >
               ثبت‌نام
             </a>
-
           </div>
 
-
-
           <div class="course-content">
-
-
             <a
               href={`/courses/${course.slug}`}
               class="course-title-link"
             >
-              <h3 class="course-title">
-                {course.title}
-              </h3>
+              <h3 class="course-title">{course.title}</h3>
             </a>
-
-
 
             <span class="course-subtitle">
               {course.content.excerpt}
             </span>
 
-
-
-
             {course.instructors.length > 0 && (
-
               <div class="course-instructors">
-
                 {course.instructors.map((instructor: Instructor) => (
-
                   <div class="course-instructor">
                     {instructor.name}
                   </div>
-
                 ))}
-
               </div>
-
             )}
 
-
-
-
             {course.days.length > 0 && (
-
               <div class="days-tags">
-
                 {course.days.map((day: string) => (
-
                   <span
                     class="day-tag"
                     aria-label={`روز برگزاری ${day}`}
                   >
                     {day}
                   </span>
-
                 ))}
-
               </div>
-
             )}
-
-
-
           </div>
-
-
-
         </div>
-
-
-
       ))}
-
-
     </div>
-
-
-
   </div>
-
-
-
 </section>
