@@ -53,6 +53,9 @@ export const SCHEMA_TYPES = Object.freeze({
     COURSE_INSTANCE:
     "CourseInstance",
 
+    ARTICLE:
+    "Article",
+
     PERSON:
     "Person",
 
