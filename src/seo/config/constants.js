@@ -20,6 +20,7 @@ export const SCHEMA_TYPES = Object.freeze({
     EDUCATIONAL_ORGANIZATION: "EducationalOrganization",
     ORGANIZATION: "Organization",
     WEBSITE: "WebSite",
+    WEB_PAGE: "WebPage",
     COURSE: "Course",
     COURSE_INSTANCE: "CourseInstance",
     ARTICLE: "Article",
