@@ -25,7 +25,6 @@ import {
 import { instructors } from "../data/instructors.js";
 
 const title = "درباره آموزشگاه موسیقی فاتح";
-
 const description =
     "آموزشگاه موسیقی فاتح در شوشتر، مرکز آموزش خصوصی گیتار، پیانو، ویولن، سنتور، تار، دف، آواز و ۲۳ رشته موسیقی با ۱۴ مدرس متخصص، برای همه سنین و سطوح.";
 
@@ -35,15 +34,17 @@ const instructorSchemas = instructors
     .filter((instructor) => instructor.active)
     .map((instructor) => {
         const resolved = resolveInstructor(instructor, site);
-
-        return resolved
-            ? buildPersonSchema(resolved, { site })
-            : null;
+        return resolved ? buildPersonSchema(resolved, { site }) : null;
     })
     .filter((item): item is object => item !== null);
 
 const schema = [
-    buildAboutPageSchema({ title, description, site }),
+    buildAboutPageSchema({
+        title,
+        description,
+        image: site.image,
+        site
+    }),
     buildBreadcrumbSchema(
         [
             { name: "خانه", path: "/" },
@@ -59,9 +60,9 @@ const schema = [
 <MainLayout
     title={title}
     description={description}
+    canonical={`${site.url}/about`}
     schema={schema}
 >
-
     <Header />
 
     <PageHero
@@ -71,23 +72,14 @@ const schema = [
     />
 
     <main>
-
         <AboutOverview />
-
         <AboutMission />
-
         <AboutTeachers />
-
         <AboutCourses />
-
         <AboutFacilities />
-
         <AboutFAQ />
-
     </main>
 
     <CTA />
-
     <Footer />
-
 </MainLayout>
