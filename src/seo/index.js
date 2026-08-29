@@ -20,6 +20,7 @@ import { buildOrganizationSchema } from "./schema/organization.js";
 import { buildWebsiteSchema } from "./schema/website.js";
 import { buildSchemaGraph } from "./schema/graph.js";
 import { absoluteUrl } from "./helpers/url.js";
+import { isPrivateRoute } from "./helpers/private-route.js";
 
 /**
  * @typedef {Object} SEOResult
@@ -65,7 +66,18 @@ export function buildSEO({
 } = {}) {
     const site = resolveSite();
 
-    const metadata = buildMetadata({ site, title, description, keywords, noindex });
+    // Private application areas are never indexable, even if a page
+    // accidentally omits `noindex={true}`. Explicit noindex remains supported
+    // for other non-public pages that need the same treatment.
+    const effectiveNoindex = Boolean(noindex || isPrivateRoute(path));
+
+    const metadata = buildMetadata({
+        site,
+        title,
+        description,
+        keywords,
+        noindex: effectiveNoindex
+    });
     const canonicalUrl = buildCanonical({ site, path, override: canonical });
     const resolvedImage = absoluteUrl(image || site.image, site.url);
 
@@ -103,3 +115,4 @@ export { buildBreadcrumbSchema } from "./schema/breadcrumb.js";
 export { buildItemListSchema } from "./schema/itemlist.js";
 export { buildAboutPageSchema } from "./schema/aboutpage.js";
 export { buildContactPageSchema } from "./schema/contactpage.js";
+export { isPrivateRoute } from "./helpers/private-route.js";
