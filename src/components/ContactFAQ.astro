@@ -1,7 +1,7 @@
 ---
 import "../styles/ContactFAQ.css";
 
-const faqs = [
+export const faqs = [
 
     {
         question: "آیا قبل از ثبت‌نام امکان مشاوره وجود دارد؟",
@@ -43,51 +43,28 @@ const faqs = [
         <div class="section-header">
 
             <span class="badge">
-
                 سوالات متداول
-
             </span>
 
             <h2>
-
                 پرسش‌های پرتکرار
-
             </h2>
 
             <p>
-
                 پاسخ برخی از سوالاتی که هنرجویان پیش از ثبت‌نام بیشتر مطرح می‌کنند.
-
             </p>
 
         </div>
 
         <div class="faq-list">
-
             {
-
                 faqs.map((faq) => (
-
                     <details class="card faq-item">
-
-                        <summary>
-
-                            {faq.question}
-
-                        </summary>
-
-                        <p>
-
-                            {faq.answer}
-
-                        </p>
-
+                        <summary>{faq.question}</summary>
+                        <p>{faq.answer}</p>
                     </details>
-
                 ))
-
             }
-
         </div>
 
     </div>
