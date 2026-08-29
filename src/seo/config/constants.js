@@ -9,139 +9,40 @@
  */
 
 export const MAX_TITLE_LENGTH = 60;
-
 export const MAX_DESCRIPTION_LENGTH = 160;
-
 export const MAX_KEYWORDS = 15;
+export const TWITTER_CARD_TYPE = "summary_large_image";
+export const DEFAULT_OG_TYPE = "website";
+export const DEFAULT_LOCALE = "fa_IR";
 
-
-export const TWITTER_CARD_TYPE =
-"summary_large_image";
-
-export const DEFAULT_OG_TYPE =
-"website";
-
-export const DEFAULT_LOCALE =
-"fa_IR";
-
-
-/**
- * Schema.org type strings
- */
 export const SCHEMA_TYPES = Object.freeze({
-
-    // Main Entity
-
-    LOCAL_EDUCATION_BUSINESS:
-    "LocalBusiness",
-
-    EDUCATIONAL_ORGANIZATION:
-    "EducationalOrganization",
-
-    ORGANIZATION:
-    "Organization",
-
-    WEBSITE:
-    "WebSite",
-
-
-    // Content Entities
-
-    COURSE:
-    "Course",
-
-    COURSE_INSTANCE:
-    "CourseInstance",
-
-    ARTICLE:
-    "Article",
-
-    PERSON:
-    "Person",
-
-    EVENT:
-    "Event",
-
-
-    // Geographic
-
-    ADMINISTRATIVE_AREA:
-    "AdministrativeArea",
-
-    PLACE:
-    "Place",
-
-
-    // Commercial
-
-    OFFER:
-    "Offer",
-
-
-    // Audience
-
-    AUDIENCE:
-    "Audience",
-
-
-    // FAQ
-
-    FAQ_PAGE:
-    "FAQPage",
-
-    QUESTION:
-    "Question",
-
-    ANSWER:
-    "Answer",
-
-
-    // Navigation
-
-    BREADCRUMB_LIST:
-    "BreadcrumbList",
-
-    LIST_ITEM:
-    "ListItem",
-
-
-    // Address
-
-    POSTAL_ADDRESS:
-    "PostalAddress",
-
-    COUNTRY:
-    "Country",
-
-    CITY:
-    "City",
-
-
-    // Geo
-
-    GEO_COORDINATES:
-    "GeoCoordinates",
-
-
-    // Business hours
-
-    OPENING_HOURS_SPEC:
-    "OpeningHoursSpecification",
-
-
-    // Pages
-
-    ABOUT_PAGE:
-    "AboutPage"
-
+    LOCAL_EDUCATION_BUSINESS: "LocalBusiness",
+    EDUCATIONAL_ORGANIZATION: "EducationalOrganization",
+    ORGANIZATION: "Organization",
+    WEBSITE: "WebSite",
+    COURSE: "Course",
+    COURSE_INSTANCE: "CourseInstance",
+    ARTICLE: "Article",
+    PERSON: "Person",
+    EVENT: "Event",
+    ADMINISTRATIVE_AREA: "AdministrativeArea",
+    PLACE: "Place",
+    OFFER: "Offer",
+    AUDIENCE: "Audience",
+    FAQ_PAGE: "FAQPage",
+    QUESTION: "Question",
+    ANSWER: "Answer",
+    BREADCRUMB_LIST: "BreadcrumbList",
+    LIST_ITEM: "ListItem",
+    POSTAL_ADDRESS: "PostalAddress",
+    COUNTRY: "Country",
+    CITY: "City",
+    GEO_COORDINATES: "GeoCoordinates",
+    OPENING_HOURS_SPEC: "OpeningHoursSpecification",
+    ABOUT_PAGE: "AboutPage",
+    CONTACT_PAGE: "ContactPage"
 });
 
-
-
-/**
- * Saturday-first week order,
- * matching Iranian calendar
- */
 export const WEEKDAY_ORDER = [
     "شنبه",
     "یکشنبه",
@@ -152,28 +53,12 @@ export const WEEKDAY_ORDER = [
     "جمعه"
 ];
 
-
 export const WEEKDAY_SCHEMA_MAP = Object.freeze({
-
-    شنبه:
-    "Saturday",
-
-    یکشنبه:
-    "Sunday",
-
-    دوشنبه:
-    "Monday",
-
-    سهشنبه:
-    "Tuesday",
-
-    چهارشنبه:
-    "Wednesday",
-
-    پنجشنبه:
-    "Thursday",
-
-    جمعه:
-    "Friday"
-
+    شنبه: "Saturday",
+    یکشنبه: "Sunday",
+    دوشنبه: "Monday",
+    سهشنبه: "Tuesday",
+    چهارشنبه: "Wednesday",
+    پنجشنبه: "Thursday",
+    جمعه: "Friday"
 });
