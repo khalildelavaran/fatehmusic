@@ -18,6 +18,7 @@ import { buildOpenGraph } from "./builders/openGraph.js";
 import { buildTwitter } from "./builders/twitter.js";
 import { buildOrganizationSchema } from "./schema/organization.js";
 import { buildWebsiteSchema } from "./schema/website.js";
+import { buildWebPageSchema } from "./schema/webpage.js";
 import { buildSchemaGraph } from "./schema/graph.js";
 import { absoluteUrl } from "./helpers/url.js";
 import { isPrivateRoute } from "./helpers/private-route.js";
@@ -89,9 +90,19 @@ export function buildSEO({
     });
     const twitter = buildTwitter({ metadata, image: resolvedImage });
 
+    const webPageSchema = buildWebPageSchema({
+        url: canonicalUrl,
+        title: metadata.title,
+        description: metadata.description,
+        image: resolvedImage,
+        extraSchema,
+        site
+    });
+
     const schemaGraph = buildSchemaGraph([
         buildOrganizationSchema(site),
         buildWebsiteSchema(site),
+        webPageSchema,
         ...extraSchema
     ]);
 
@@ -115,4 +126,5 @@ export { buildBreadcrumbSchema } from "./schema/breadcrumb.js";
 export { buildItemListSchema } from "./schema/itemlist.js";
 export { buildAboutPageSchema } from "./schema/aboutpage.js";
 export { buildContactPageSchema } from "./schema/contactpage.js";
+export { buildWebPageSchema } from "./schema/webpage.js";
 export { isPrivateRoute } from "./helpers/private-route.js";
