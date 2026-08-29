@@ -6,8 +6,8 @@
  * from this engine. buildSEO() returns everything a page needs
  * for <head>: metadata, canonical, OpenGraph, Twitter, and one
  * JSON-LD @graph. Entity-specific schema (Course/Person/FAQ/
- * Breadcrumb) is built separately by pages and passed in via
- * `extraSchema` so the graph stays a single source per page.
+ * Breadcrumb/Article) is built separately by pages and passed in
+ * via `extraSchema` so the graph stays a single source per page.
  * --------------------------------------------------------
  */
 
@@ -97,6 +97,7 @@ export { resolveCourse } from "./resolvers/course.js";
 export { resolveInstructor } from "./resolvers/instructor.js";
 export { buildCourseSchema } from "./schema/course.js";
 export { buildPersonSchema } from "./schema/person.js";
+export { buildArticleSchema } from "./schema/article.js";
 export { buildFaqSchema } from "./schema/faq.js";
 export { buildBreadcrumbSchema } from "./schema/breadcrumb.js";
 export { buildAboutPageSchema } from "./schema/aboutpage.js";
