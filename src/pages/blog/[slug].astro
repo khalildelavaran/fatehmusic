@@ -3,7 +3,8 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
-import { getPublishedPost, getPublishedPosts } from "../../server/blog";
+import { buildArticleSchema, resolveSite } from "../../seo/index.js";
+import { getPublishedPost } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
 
@@ -12,11 +13,20 @@ const post = await getPublishedPost(Astro.params.slug ?? "");
 if (!post) {
   return Astro.rewrite("/404");
 }
+
+const site = resolveSite();
+const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
+const articleSchema = buildArticleSchema(post, {
+  site,
+  url: canonicalUrl
+});
 ---
 
 <MainLayout
   title={post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`}
   description={post.meta_description || post.excerpt}
+  canonical={canonicalUrl}
+  schema={[articleSchema]}
 >
   <Header />
 
