@@ -26,7 +26,7 @@ export function buildContactPageSchema({ title, description, site }) {
         isPartOf: { "@id": `${site.url}/#website` },
         about: { "@id": `${site.url}/#organization` },
         mainEntity: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@type": "WebPage", "@id": url },
+        mainEntityOfPage: { "@id": `${url}#webpage` },
         publisher: { "@id": `${site.url}/#organization` },
         primaryImageOfPage: site.image
             ? {
