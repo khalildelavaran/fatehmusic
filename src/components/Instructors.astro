@@ -2,12 +2,7 @@
 import { instructors } from "../data/instructors";
 import { schedules } from "../data/schedule";
 
-// -------------------------------------------------
-//    Instructor Cards
-// --------------------------------------------------
-
 const instructorCards = instructors.map((ins) => {
-
   const instructorSchedules = schedules.filter(
     (s) =>
       s.active &&
@@ -15,9 +10,7 @@ const instructorCards = instructors.map((ins) => {
   );
 
   const days = [
-    ...new Set(
-      instructorSchedules.map((s) => s.weekday)
-    )
+    ...new Set(instructorSchedules.map((s) => s.weekday))
   ];
 
   return {
@@ -25,105 +18,52 @@ const instructorCards = instructors.map((ins) => {
     schedules: instructorSchedules,
     days
   };
-
 });
 ---
 
-<section
-  class="instructors"
-  data-reveal="fade-up"
->
-
+<section class="instructors" data-reveal="fade-up">
   <div class="container">
-
-
-    <!-- ===========================
-         Section Header
-    ============================ -->
-
-    <div
-      class="section-header"
-      data-reveal-group
-    >
-
-      <span
-        class="section-badge"
-        data-reveal
-        data-reveal-delay="1"
-      >
+    <div class="section-header" data-reveal-group>
+      <span class="section-badge" data-reveal data-reveal-delay="1">
         اساتید آموزشگاه
       </span>
 
-
-		<h2
-		  class="section-title"
-		  data-reveal
-		  data-reveal-delay="2"
-		>
-		  تیم حرفه‌ای مدرسین موسیقی
-		</h2>
-
-      <p
+      <h2
+        class="section-title"
         data-reveal
-        data-reveal-delay="3"
+        data-reveal-delay="2"
       >
+        تیم حرفه‌ای مدرسین موسیقی
+      </h2>
+
+      <p data-reveal data-reveal-delay="3">
         آموزش توسط اساتید با تجربه در حوزه موسیقی کلاسیک و مدرن
       </p>
-
-
     </div>
 
-
-
-
-    <!-- ===========================
-         Instructor Cards
-    ============================ -->
-
-
-    <div
-      class="instructors-grid"
-      data-reveal-group
-    >
-
-
+    <div class="instructors-grid" data-reveal-group>
       {instructorCards.map((ins) => (
-
-
         <div class="instructor-card">
-
-
           <div class="instructor-image">
-
-
             <a
               href={`/instructors/${ins.slug}`}
               class="instructor-image-link"
             >
-
               <img
                 src={ins.media.images.profile}
-                alt={ins.name}
+                alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`}
+                width="1200"
+                height="1500"
                 loading="lazy"
                 decoding="async"
               />
-
             </a>
 
-
-
             {ins.id === 1 && (
-
-
               <span class="badge">
-
                 مدیر آموزشگاه
-
               </span>
-
-
             )}
-
 
             <a
               href={`/register?instructor=${ins.slug}`}
@@ -132,80 +72,33 @@ const instructorCards = instructors.map((ins) => {
             >
               ثبت‌نام
             </a>
-
-
           </div>
 
-
-
           <div class="instructor-content">
-
-
             <a
               href={`/instructors/${ins.slug}`}
               class="instructor-title-link"
             >
-              <h3>
-
-                {ins.name}
-
-              </h3>
+              <h3>{ins.name}</h3>
             </a>
 
-
-
-            <p>
-
-              {ins.position}
-
-            </p>
-
-
-
+            <p>{ins.position}</p>
 
             {ins.days.length > 0 && (
-
-
               <div class="days-tags">
-
-
                 {ins.days.map((day) => (
-
-
                   <span
                     class="day-tag"
                     aria-label={`روز حضور ${day}`}
                   >
-
                     {day}
-
                   </span>
-
-
                 ))}
-
-
               </div>
-
-
             )}
-
-
-
           </div>
-
-
-
         </div>
-
-
       ))}
-
-
     </div>
-
-
   </div>
-
-
 </section>
