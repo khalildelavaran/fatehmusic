@@ -7,11 +7,31 @@ import Footer from "../components/Footer.astro";
 import Courses from "../components/Courses.astro";
 import CTA from "../components/CTA.astro";
 import PageHero from "../components/PageHero.astro";
+import { courses } from "../data/courses";
+import { resolveSite, buildItemListSchema } from "../seo/index.js";
+
+const site = resolveSite();
+const canonical = `${site.url}/courses`;
+
+const activeCourses = courses.filter((course) => course.active !== false);
+
+const courseListSchema = buildItemListSchema({
+    name: "دوره‌های آموزش موسیقی آموزشگاه موسیقی فاتح",
+    url: canonical,
+    itemType: "Course",
+    items: activeCourses.map((course) => ({
+        name: course.title,
+        url: `${site.url}/courses/${course.slug}`,
+        id: `${site.url}/courses/${course.slug}/#course`
+    }))
+});
 ---
 
 <MainLayout
     title="دوره‌های آموزش موسیقی | آموزشگاه موسیقی فاتح"
     description="آموزش تخصصی گیتار، پیانو، ویولون، آواز و سایر سازهای موسیقی در آموزشگاه موسیقی فاتح شوشتر."
+    canonical={canonical}
+    schema={[courseListSchema].filter(Boolean)}
 >
 
     <Header />
