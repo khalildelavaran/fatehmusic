@@ -1,0 +1,68 @@
+# آموزشگاه موسیقی فاتح
+
+> آموزشگاه موسیقی فاتح یک آموزشگاه موسیقی در شوشتر، استان خوزستان، ایران است و دوره‌های آموزش ساز، آواز، تئوری موسیقی و موسیقی کودک ارائه می‌کند.
+
+## About
+
+- آموزشگاه: آموزشگاه موسیقی فاتح
+- شهر: شوشتر
+- استان: خوزستان
+- کشور: ایران
+- وب‌سایت: https://fatehmusic.ir/
+- صفحه درباره ما: https://fatehmusic.ir/about
+- صفحه تماس: https://fatehmusic.ir/contact
+- صفحه ثبت‌نام: https://fatehmusic.ir/register
+
+## Courses
+
+فهرست دوره‌ها و آموزش‌های موسیقی:
+
+- https://fatehmusic.ir/courses
+
+## Instructors
+
+فهرست مدرس‌ها و استادان آموزشگاه:
+
+- https://fatehmusic.ir/instructors
+
+## Blog
+
+مقالات و محتوای آموزشی موسیقی:
+
+- https://fatehmusic.ir/blog
+- https://fatehmusic.ir/sitemap-blog.xml
+
+## Location & Local Entity
+
+- Entity اصلی: آموزشگاه موسیقی فاتح
+- نوع کسب‌وکار: آموزشگاه موسیقی / مؤسسه آموزشی موسیقی
+- محدوده خدمات: شوشتر و مناطق پیرامون
+- اطلاعات تماس و نشانی رسمی در صفحه تماس سایت قرار دارد.
+- https://fatehmusic.ir/contact
+
+## Entity Relationships
+
+- آموزشگاه موسیقی فاتح → ارائه‌دهنده دوره‌های موسیقی
+- آموزشگاه موسیقی فاتح → دارای مدرس‌های موسیقی
+- دوره‌ها → مرتبط با آموزشگاه موسیقی فاتح
+- مقالات → محتوای آموزشی مرتبط با موسیقی و در صورت وجود، مرتبط با دوره یا موضوع مشخص
+- صفحات تماس و درباره ما → منابع رسمی معرفی و اعتبارسنجی Entity اصلی آموزشگاه
+
+## Important URLs
+
+- Home: https://fatehmusic.ir/
+- Courses: https://fatehmusic.ir/courses
+- Instructors: https://fatehmusic.ir/instructors
+- Blog: https://fatehmusic.ir/blog
+- About: https://fatehmusic.ir/about
+- Contact: https://fatehmusic.ir/contact
+- Registration: https://fatehmusic.ir/register
+- Student Login: https://fatehmusic.ir/student/login
+
+## Crawling Guidance
+
+صفحات عمومی، دوره‌ها، مدرس‌ها، مقالات، درباره ما و تماس منابع اصلی اطلاعات عمومی سایت هستند. صفحات ورود هنرجویان، داشبورد هنرجویان، مدیریت و APIها عمومی نیستند و نباید به‌عنوان منبع محتوای عمومی استفاده شوند.
+
+## Source of Truth
+
+برای اطلاعات رسمی درباره آموزشگاه، دوره‌ها، مدرس‌ها، آدرس و راه‌های تماس، صفحات رسمی همین وب‌سایت منبع اصلی هستند. اطلاعات پویا و مرتبط با مقالات و دوره‌ها باید از صفحات مقصد آن‌ها خوانده شود.
