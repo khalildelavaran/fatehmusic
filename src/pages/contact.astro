@@ -8,13 +8,30 @@ import PageHero from "../components/PageHero.astro";
 import ContactOverview from "../components/ContactOverview.astro";
 import ContactQuickMessage from "../components/ContactQuickMessage.astro";
 import ContactFAQ from "../components/ContactFAQ.astro";
+import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema, buildFaqSchema } from "../seo/index.js";
+import { faqs } from "../components/ContactFAQ.astro";
+
+const site = resolveSite();
+const title = "تماس با آموزشگاه موسیقی فاتح";
+const description = "راه‌های ارتباط با آموزشگاه موسیقی فاتح در شوشتر، آدرس، موقعیت روی نقشه، شماره تماس، ساعات کاری و مسیرهای ارتباطی برای ثبت‌نام و مشاوره.";
+const canonical = `${site.url}/contact`;
+
+const schema = [
+    buildContactPageSchema({ title, description, site }),
+    buildBreadcrumbSchema([
+        { name: "خانه", path: "/" },
+        { name: "تماس با ما", path: "/contact" }
+    ], site),
+    buildFaqSchema(faqs)
+].filter(Boolean);
 ---
 
 <MainLayout
-    title="تماس با آموزشگاه موسیقی فاتح"
-    description="راه‌های ارتباط با آموزشگاه موسیقی فاتح، آدرس، موقعیت، ساعات کاری و پاسخ به سوالات متداول."
+    title={title}
+    description={description}
+    canonical={canonical}
+    schema={schema}
 >
-
     <Header />
     <PageHero
         badge="تماس با ما"
@@ -22,15 +39,9 @@ import ContactFAQ from "../components/ContactFAQ.astro";
         description="آدرس، شماره تماس، مسیر دسترسی و راه‌های ارتباط با آموزشگاه موسیقی فاتح برای ثبت‌نام و مشاوره دوره‌های موسیقی در شوشتر."
     />
     <main>
-
         <ContactOverview />
-
         <ContactQuickMessage />
-
         <ContactFAQ />
-
     </main>
-
     <Footer />
-
 </MainLayout>
