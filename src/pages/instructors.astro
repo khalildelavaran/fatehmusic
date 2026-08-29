@@ -7,11 +7,31 @@ import Footer from "../components/Footer.astro";
 import Instructors from "../components/Instructors.astro";
 import CTA from "../components/CTA.astro";
 import PageHero from "../components/PageHero.astro";
+import { instructors } from "../data/instructors";
+import { resolveSite, buildItemListSchema } from "../seo/index.js";
+
+const site = resolveSite();
+const canonical = `${site.url}/instructors`;
+
+const activeInstructors = instructors.filter((instructor) => instructor.active !== false);
+
+const instructorListSchema = buildItemListSchema({
+    name: "مدرسین آموزشگاه موسیقی فاتح",
+    url: canonical,
+    itemType: "Person",
+    items: activeInstructors.map((instructor) => ({
+        name: instructor.name,
+        url: `${site.url}/instructors/${instructor.slug}`,
+        id: `${site.url}/instructors/${instructor.slug}/#person`
+    }))
+});
 ---
 
 <MainLayout
     title="اساتید آموزشگاه موسیقی فاتح | مدرسین موسیقی در شوشتر"
     description="آشنایی با اساتید آموزشگاه موسیقی فاتح؛ مدرسین مجرب گیتار، پیانو، ویولون، آواز و سازهای ایرانی."
+    canonical={canonical}
+    schema={[instructorListSchema].filter(Boolean)}
 >
 
     <Header />
