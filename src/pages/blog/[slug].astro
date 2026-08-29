@@ -3,7 +3,13 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
-import { buildArticleSchema, buildBreadcrumbSchema, resolveSite } from "../../seo/index.js";
+import {
+  buildArticleSchema,
+  buildBreadcrumbSchema,
+  buildCourseSchema,
+  resolveCourse,
+  resolveSite
+} from "../../seo/index.js";
 import { getPublishedPost } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
@@ -16,10 +22,18 @@ if (!post) {
 
 const site = resolveSite();
 const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
+
+// Reuse the canonical Course resolver so the blog article and course page
+// reference the same Course entity, provider, and instructor entities.
+const relatedCourse = post.related_course_slug
+  ? resolveCourse(post.related_course_slug, site)
+  : null;
+
 const articleSchema = buildArticleSchema(post, {
   site,
   url: canonicalUrl
 });
+
 const breadcrumbSchema = buildBreadcrumbSchema(
   [
     { name: "خانه", path: "/" },
@@ -28,13 +42,17 @@ const breadcrumbSchema = buildBreadcrumbSchema(
   ],
   site
 );
+
+const courseSchema = relatedCourse
+  ? buildCourseSchema(relatedCourse, { site })
+  : null;
 ---
 
 <MainLayout
   title={post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`}
   description={post.meta_description || post.excerpt}
   canonical={canonicalUrl}
-  schema={[articleSchema, breadcrumbSchema].filter(Boolean)}
+  schema={[articleSchema, breadcrumbSchema, courseSchema].filter(Boolean)}
 >
   <Header />
 
@@ -61,7 +79,7 @@ const breadcrumbSchema = buildBreadcrumbSchema(
 
       <footer class="article-links">
         <a href="/">آموزشگاه موسیقی فاتح</a>
-        {post.related_course_slug && <a href={`/courses/${post.related_course_slug}`}>دوره مرتبط: {post.related_course_title}</a>}
+        {relatedCourse && <a href={`/courses/${relatedCourse.slug}`}>دوره مرتبط: {relatedCourse.title}</a>}
         <a href="/register">ثبت‌نام و مشاوره</a>
         <a href="/contact">تماس با آموزشگاه</a>
       </footer>
