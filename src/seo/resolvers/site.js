@@ -20,7 +20,6 @@ import {
 
 import { SCHEMA_TYPES } from "../config/constants.js";
 
-
 /**
  * @typedef {Object} ResolvedSite
  * @property {string[]} schemaType
@@ -37,6 +36,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {string} telephone
  * @property {string} mobile
  * @property {string} email
+ * @property {string|undefined} googlePlaceId
  * @property {Object} address
  * @property {Object} geo
  * @property {Object[]} openingHoursSpecification
@@ -47,252 +47,133 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {string} facebookId
  */
 
-
 /**
  * Builds normalized Site contract.
  *
  * @returns {ResolvedSite}
  */
 export function resolveSite() {
-
     return Object.freeze({
-
         schemaType:
             site.schemaType || [
                 SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
                 SCHEMA_TYPES.EDUCATIONAL_ORGANIZATION
             ],
 
+        name: site.name,
+        alternateName: site.alternateName || site.shortName,
+        shortName: site.shortName,
+        legalName: site.legalName,
+        url: site.url,
 
-        name:
-            site.name,
+        logo: absoluteUrl(site.logo, site.url),
+        image: absoluteUrl(site.image, site.url),
+        favicon: site.favicon,
 
+        description: site.description,
+        keywords: site.keywords || [],
 
-        alternateName:
-            site.alternateName ||
-            site.shortName,
+        telephone: normalizePhone(contact.phones.landline.raw),
+        mobile: normalizePhone(contact.phones.mobile.raw),
+        email: site.email,
 
-
-        shortName:
-            site.shortName,
-
-
-        legalName:
-            site.legalName,
-
-
-        url:
-            site.url,
-
-
-        logo:
-            absoluteUrl(
-                site.logo,
-                site.url
-            ),
-
-
-        image:
-            absoluteUrl(
-                site.image,
-                site.url
-            ),
-
-
-        favicon:
-            site.favicon,
-
-
-        description:
-            site.description,
-
-
-        keywords:
-            site.keywords || [],
-
-
-        telephone:
-            normalizePhone(
-                contact.phones.landline.raw
-            ),
-
-
-        mobile:
-            normalizePhone(
-                contact.phones.mobile.raw
-            ),
-
-
-        email:
-            site.email,
-
+        // Stable Google Business Profile / Place identifier.
+        // Kept in the normalized SEO contract so schema builders can
+        // consistently expose the same local entity identifier.
+        googlePlaceId: site.googlePlaceId || undefined,
 
         address: {
             ...site.address,
-            addressCountry:
-                "IR"
+            addressCountry: "IR"
         },
-
 
         geo: {
             ...site.geo
         },
 
+        areaServed: buildAreaServed(site.areaServed),
 
-        areaServed:
-            buildAreaServed(
-                site.areaServed
-            ),
-
-
-        priceRange:
-            site.priceRange ||
-            "1,000,000 - 1,600,000 تومان",
-
+        priceRange: site.priceRange || "1,000,000 - 1,600,000 تومان",
 
         openingHoursSpecification:
-            buildOpeningHoursSpecification(
-                contact.workingHours
-            ),
+            buildOpeningHoursSpecification(contact.workingHours),
 
+        mapUrl:
+            site.mapUrl ||
+            contact.map?.google ||
+            undefined,
 
-   mapUrl:
-       site.mapUrl ||
-       contact.map?.google ||
-       undefined,
-
-
-   sameAs:
-       dedupeSameAs(
-           site.socials
-       ),
-
-
-   facebookId:
-       site.socials?.facebookId || undefined
-
+        sameAs: dedupeSameAs(site.socials),
+        facebookId: site.socials?.facebookId || undefined
     });
-
 }
 
-
-
-/**
- * Normalize Iranian phone numbers
- */
+/** Normalize Iranian phone numbers */
 function normalizePhone(rawPhone) {
-
     const digitsOnly =
         toLatinDigits(rawPhone)
-        .replace(/\D/g, "");
-
+            .replace(/\D/g, "");
 
     return digitsOnly.startsWith("0")
         ? `+98${digitsOnly.slice(1)}`
         : `+${digitsOnly}`;
-
 }
 
-
-
-/**
- * Convert working hours to Schema.org format
- */
-function buildOpeningHoursSpecification(
-    workingHours
-) {
-
+/** Convert working hours to Schema.org format */
+function buildOpeningHoursSpecification(workingHours) {
     return (workingHours || []).map((entry) => {
-
-        const [
-            opensRaw,
-            closesRaw
-        ] = entry.value
+        const [opensRaw, closesRaw] = entry.value
             .split("تا")
-            .map(
-                (part) =>
-                    part.trim()
-            );
-
+            .map((part) => part.trim());
 
         return {
-
-            "@type":
-                SCHEMA_TYPES.OPENING_HOURS_SPEC,
-
-
-            dayOfWeek:
-                expandWeekdayRange(
-                    entry.title
-                ),
-
-
-            opens:
-                toLatinDigits(
-                    opensRaw
-                ),
-
-
-            closes:
-                toLatinDigits(
-                    closesRaw
-                )
-
+            "@type": SCHEMA_TYPES.OPENING_HOURS_SPEC,
+            dayOfWeek: expandWeekdayRange(entry.title),
+            opens: toLatinDigits(opensRaw),
+            closes: toLatinDigits(closesRaw)
         };
-
     });
-
 }
 
-
-
-/**
- * Normalize service areas into Schema.org Place objects.
- */
+/** Normalize service areas into Schema.org Place objects. */
 function buildAreaServed(areas) {
-  if (!Array.isArray(areas)) {
-    return [];
-  }
+    if (!Array.isArray(areas)) {
+        return [];
+    }
 
-  return areas
-    .filter(Boolean)
-    .map((area) => ({
-      "@type": SCHEMA_TYPES.ADMINISTRATIVE_AREA,
-      name: area
-    }));
+    return areas
+        .filter(Boolean)
+        .map((area) => ({
+            "@type": SCHEMA_TYPES.ADMINISTRATIVE_AREA,
+            name: area
+        }));
 }
 
 /**
  * Remove duplicate social links.
- *
  * Only social profile URLs belong in sameAs.
  * Facebook Page ID must never be included.
  */
 function dedupeSameAs(socials) {
-
     if (!socials) {
         return [];
     }
 
-
     return [
-
         socials.facebook,
         socials.instagram,
         socials.youtube,
         socials.x,
         socials.telegram,
         socials.aparat
-
     ]
-    .filter(
-        (value) =>
-            typeof value === "string" &&
-            value.trim().length > 0
-    )
-    .filter(
-        (value, index, array) =>
-            array.indexOf(value) === index
-    );
-
+        .filter(
+            (value) =>
+                typeof value === "string" &&
+                value.trim().length > 0
+        )
+        .filter(
+            (value, index, array) =>
+                array.indexOf(value) === index
+        );
 }
