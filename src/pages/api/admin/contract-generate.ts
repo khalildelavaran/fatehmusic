@@ -17,7 +17,16 @@ export const POST:APIRoute=async({request})=>{
  const student=await getStudentSession(request,env as StudentEnv);
  if(adminDenied && !student)return adminDenied;
  const db=env.DB,browser=(env as unknown as {BROWSER?:unknown}).BROWSER;if(!db)return json({success:false,message:"دیتابیس در دسترس نیست."},503);if(!browser)return json({success:false,message:"BROWSER binding تنظیم نشده است."},503);
- const body=(await request.json().catch(()=>({}))) as {registration_id?:number};if(!body.registration_id)return json({success:false,message:"شناسه ثبت‌نام الزامی است."},422);
+ let body:{registration_id?:number}={};
+ const contentType=request.headers.get("content-type")??"";
+ if(contentType.includes("application/json")){
+   body=(await request.json().catch(()=>({}))) as {registration_id?:number};
+ }else if(contentType.includes("application/x-www-form-urlencoded")||contentType.includes("multipart/form-data")){
+   const form=await request.formData();
+   const raw=form.get("registration_id");
+   body={registration_id:raw?Number(raw):undefined};
+ }
+ if(!body.registration_id)return json({success:false,message:"شناسه ثبت‌نام الزامی است."},422);
  const r=await db.prepare(`SELECT id,tracking_code,instrument_title,instrument_slug,instrument_type,instructor_name,instructor_id,schedule_id,schedule_weekday,schedule_duration,schedule_classroom,schedule_class_mode,student_first_name,student_last_name,student_national_code,student_mobile,student_age,student_gender,student_has_instrument,student_father_name,student_id_issue_place,student_birth_year,student_occupation,student_address FROM registrations WHERE id=?`).bind(body.registration_id).first<RegistrationRow>();
  if(!r)return json({success:false,message:"ثبت‌نامی با این شناسه پیدا نشد."},404);if(student&&r.student_national_code!==student.nationalCode)return json({success:false,message:"دسترسی به این قرارداد مجاز نیست."},403);
  const prior=r.student_national_code?await db.prepare("SELECT COUNT(*) AS count FROM registrations WHERE student_national_code=? AND id<=?").bind(r.student_national_code,r.id).first<{count:number}>():null;const term=Math.max(1,Number(prior?.count??1));
