@@ -100,24 +100,47 @@ class RegistrationController {
   private goToStep(step: RegistrationStep) { registrationStore.setStep(step); this.showStep(step); this.renderer.updateProgress(step); document.querySelector(".registration-container")?.scrollIntoView({ block: "start", behavior: "smooth" }); }
   private showStep(step: string) { document.querySelectorAll<HTMLElement>("[data-step]").forEach((section) => { section.hidden = section.dataset.step !== step; }); }
 
-  /** Uses a hidden iframe instead of window.open, so popup blockers cannot interfere with printing. */
-  private printContract() {
-    const source = document.querySelector<HTMLElement>("[data-contract-container]"); if (!source || !source.innerHTML.trim()) return;
+  /**
+   * Fetches the real, server-rendered contract PDF (env.BROWSER via
+   * api/contract-pdf.ts -- see that file for why a tracking code alone is
+   * enough, this early in the flow) and opens it in a new tab. Opens the
+   * blank tab synchronously, on the click itself, so popup blockers can't
+   * interfere; swaps in the PDF once it's ready. Same pattern the admin
+   * panel's own "چاپ قرارداد" button already uses.
+   */
+  private async printContract() {
     const state = registrationStore.getState();
-    const date = this.toPersianDigits(String(state.term?.completionDate ?? state.term?.date ?? new Date().toLocaleDateString("fa-IR")));
-    const esc = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
-    const frame = document.createElement("iframe"); frame.setAttribute("aria-hidden", "true"); frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
-    document.body.appendChild(frame);
-    const doc = frame.contentDocument; if (!doc) { frame.remove(); return; }
-    doc.open();
-    doc.write(`<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><title>قرارداد هنرجویی</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><style>
-      @page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0!important;padding:0!important;width:210mm!important;height:297mm!important;background:#fff!important;color:#000!important;font-family:Vazirmatn,Tahoma,sans-serif!important}body{overflow:hidden!important}.sheet{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;padding:32mm 15mm 25mm;border:.35mm solid #c8a94e}.sheet:before{content:"";position:absolute;inset:4.5mm;border:.18mm solid #dfcf9b;pointer-events:none}.print-header{position:absolute;top:7mm;right:12mm;left:12mm;height:22mm;display:grid;grid-template-columns:42mm 1fr 42mm;direction:rtl;align-items:center;border-bottom:.45mm solid #b9973e}.header-logo-wrap{display:flex;align-items:center;justify-content:flex-start;height:19mm}.header-logo{display:block!important;width:18mm!important;height:18mm!important;max-width:18mm!important;max-height:18mm!important;min-width:0!important;min-height:0!important;object-fit:contain!important}.header-title{text-align:center;font-size:18pt;font-weight:900;color:#000}.header-date{text-align:left;font-size:9pt;font-weight:700;color:#000;direction:rtl}.contract-content{width:100%;height:100%;overflow:hidden;color:#000!important}.contract-content,.contract-content *{color:#000!important;-webkit-text-fill-color:#000!important;text-shadow:none!important}.contract-content p,.contract-content span,.contract-content strong,.contract-content h1,.contract-content h2,.contract-content h3,.contract-content h4,.contract-content div{color:#000!important}.contract-article,.contract-signature{break-inside:avoid;page-break-inside:avoid}.contract-article{margin-bottom:5px!important}.contract-article h4{color:#000!important}.contract-article p{color:#000!important}.print-footer{position:absolute;right:12mm;left:12mm;bottom:6mm;height:15mm;border-top:.4mm solid #b9973e;display:grid;grid-template-columns:1.85fr 1fr 1.2fr 1.15fr;direction:rtl;gap:2mm;align-items:center;color:#000}.footer-item{min-width:0;padding:0 2mm;text-align:center;border-left:.2mm solid #d7c78f;color:#000;font-size:6.4pt;line-height:1.55;white-space:nowrap}.footer-item:last-child{border-left:0}.footer-label{font-weight:800;color:#000}.footer-value{font-weight:500;color:#000}
-    </style></head><body><main class="sheet"><header class="print-header"><div class="header-logo-wrap"><img class="header-logo" src="/logo.png" alt="آموزشگاه موسیقی فاتح"></div><div class="header-title">قرارداد هنرجویی</div><div class="header-date">تاریخ: ${esc(date)}</div></header><section class="contract-content">${source.innerHTML}</section><footer class="print-footer"><div class="footer-item"><span class="footer-label">آدرس:</span> <span class="footer-value">خیابان امام شرقی، پس از پاساژ مهستان، محوطه دوم پارکینگ حاج سلیمان</span></div><div class="footer-item"><span class="footer-label">تلفن:</span> <span class="footer-value">۰۶۱-۳۶۲۲۱۱۷۴</span></div><div class="footer-item"><span class="footer-label">موبایل / WhatsApp:</span> <span class="footer-value">۰۹۳۳-۳۱۳-۹۳۱۹</span></div><div class="footer-item"><span class="footer-label">Instagram:</span> <span class="footer-value">fateh.music.academy</span></div></footer></main></body></html>`);
-    doc.close();
-    const cleanup = () => { frame.remove(); };
-    const print = () => { try { frame.contentWindow?.focus(); frame.contentWindow?.print(); } finally { setTimeout(cleanup, 1500); } };
-    if (doc.fonts?.ready) doc.fonts.ready.then(() => setTimeout(print, 100)); else setTimeout(print, 300);
+    if (!state.trackingCode) return;
+
+    const button = document.querySelector<HTMLButtonElement>('[data-action="print-contract"]');
+    const tab = window.open("about:blank", "_blank");
+    if (tab) {
+      tab.document.title = "در حال آماده‌سازی قرارداد...";
+      tab.document.body.innerHTML = '<div style="font-family:Tahoma,sans-serif;direction:rtl;text-align:center;padding:48px">در حال تولید PDF قرارداد...</div>';
+    }
+    button?.setAttribute("disabled", "true");
+
+    try {
+      const response = await fetch("/api/contract-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tracking_code: state.trackingCode })
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({ message: "تولید قرارداد شکست خورد." }))) as { message?: string };
+        tab?.close();
+        window.alert(data.message ?? "تولید قرارداد شکست خورد.");
+        return;
+      }
+      const url = URL.createObjectURL(await response.blob());
+      if (tab) { tab.location.replace(url); tab.focus(); } else { window.open(url, "_blank"); }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      tab?.close();
+      window.alert("خطای شبکه هنگام تولید قرارداد.");
+    } finally {
+      button?.removeAttribute("disabled");
+    }
   }
-  private toPersianDigits(value: string) { return value.replace(/[0-9]/g, (digit) => "۰۱۲۳۴۵۶۷۸۹"[Number(digit)]); }
 }
 export { RegistrationController };

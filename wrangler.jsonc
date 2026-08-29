@@ -36,10 +36,11 @@
         "binding": "AI"
     },
 
-    // Cloudflare Browser Run (formerly Browser Rendering) -- used only by
-    // the certificate PDF generator (env.BROWSER.quickAction("pdf", ...)).
-    // Requires compatibility_date >= 2026-03-24 (already satisfied above).
-    // See doc/ADR/ADR-012 — Certificate Issuance System.md.
+    // Cloudflare Browser Run (formerly Browser Rendering) -- used by the
+    // certificate PDF generator AND the contract PDF pipeline (both call
+    // env.BROWSER.quickAction("pdf", ...); see src/server/certificates/ and
+    // src/server/contracts/). Requires compatibility_date >= 2026-03-24
+    // (already satisfied above). See doc/ADR/ADR-012 — Certificate Issuance System.md.
     "browser": {
         "binding": "BROWSER"
     },
