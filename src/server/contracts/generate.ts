@@ -47,21 +47,19 @@ interface RegistrationRow {
   instrument_id: number | null;
   instrument_title: string;
   instrument_slug: string;
-  instrument_type: string | null;
   instructor_id: number | null;
   instructor_name: string;
   schedule_id: number | null;
   schedule_weekday: string | null;
   schedule_duration: number | null;
   schedule_classroom: string | number | null;
-  schedule_class_mode: string | null;
   student_first_name: string;
   student_last_name: string;
   student_national_code: string | null;
   student_mobile: string;
   student_age: number | null;
   student_gender: string | null;
-  student_has_instrument: string | null;
+  has_instrument: string | null;
   student_father_name: string | null;
   student_id_issue_place: string | null;
   student_birth_year: number | null;
@@ -69,8 +67,17 @@ interface RegistrationRow {
   student_address: string | null;
 }
 
+// Column list intentionally explicit (not SELECT *) so a schema/name
+// mismatch fails loudly at query time instead of silently landing as
+// `undefined` on the row -- verified 1:1 against migrations/0001,
+// 0007, and 0008 rather than assumed. Two fields the old, pre-unification
+// code referenced (instrument_type, schedule_class_mode) turned out not
+// to exist as columns under any name; buildContract() never reads
+// selection.instrument.type or selection.schedule.classMode, so those
+// two are passed through as null in toRegistrationState() below rather
+// than invented as columns.
 const ROW_COLUMNS =
-  "id,tracking_code,instrument_id,instrument_title,instrument_slug,instrument_type,instructor_id,instructor_name,schedule_id,schedule_weekday,schedule_duration,schedule_classroom,schedule_class_mode,student_first_name,student_last_name,student_national_code,student_mobile,student_age,student_gender,student_has_instrument,student_father_name,student_id_issue_place,student_birth_year,student_occupation,student_address";
+  "id,tracking_code,instrument_id,instrument_title,instrument_slug,instructor_id,instructor_name,schedule_id,schedule_weekday,schedule_duration,schedule_classroom,student_first_name,student_last_name,student_national_code,student_mobile,student_age,student_gender,has_instrument,student_father_name,student_id_issue_place,student_birth_year,student_occupation,student_address";
 
 function normalizeGender(value: string | null): RegistrationState["student"]["gender"] {
   const g = (value ?? "").trim().toLowerCase();
@@ -106,14 +113,14 @@ function toRegistrationState(row: RegistrationRow, term: number): RegistrationSt
   return {
     currentStep: "success",
     selection: {
-      instrument: { id: row.instrument_id, slug: row.instrument_slug, title: row.instrument_title, type: row.instrument_type },
+      instrument: { id: row.instrument_id, slug: row.instrument_slug, title: row.instrument_title, type: null },
       instructor: { id: row.instructor_id, name: row.instructor_name, auto: false },
       schedule: {
         id: row.schedule_id,
         weekday: row.schedule_weekday,
         sessionDuration: row.schedule_duration,
         classroom: row.schedule_classroom,
-        classMode: row.schedule_class_mode,
+        classMode: null,
         auto: false
       }
     },
@@ -124,7 +131,7 @@ function toRegistrationState(row: RegistrationRow, term: number): RegistrationSt
       mobile: row.student_mobile,
       age: row.student_age,
       gender: normalizeGender(row.student_gender),
-      hasInstrument: row.student_has_instrument === "yes" ? "yes" : row.student_has_instrument === "no" ? "no" : null,
+      hasInstrument: row.has_instrument === "yes" ? "yes" : row.has_instrument === "no" ? "no" : null,
       fatherName: row.student_father_name ?? "",
       idIssuePlace: row.student_id_issue_place ?? "",
       birthYear: row.student_birth_year,
