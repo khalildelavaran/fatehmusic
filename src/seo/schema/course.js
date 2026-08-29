@@ -32,6 +32,7 @@ export function buildCourseSchema(course, { site }) {
         description: course.description,
         image: course.image,
         provider: { "@id": `${site.url}/#organization` },
+        mainEntityOfPage: { "@id": `${course.url}/#webpage` },
         educationalLevel: course.level.join("، "),
         audience: course.ageGroup.length
             ? {
