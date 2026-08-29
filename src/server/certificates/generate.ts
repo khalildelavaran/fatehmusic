@@ -1,0 +1,24 @@
+import {buildCertificateHtml,type CertificateData} from "./template";
+
+type Db=any;
+type Browser=any;
+type Assets={fetch:(request:Request)=>Promise<Response>};
+export interface CertificateGenerateInput{registration_id:number;national_id:string;completion_date_jalali:string;level?:string|null;book_id?:number|null;curriculum_note?:string|null;}
+interface Registration{tracking_code:string;instrument_title:string;instrument_slug:string;instructor_name:string;student_first_name:string;student_last_name:string;student_gender:string|null;student_national_code:string|null}
+interface Book{title:string;author:string|null;cover_image:string|null}
+function honor(g:string|null):"آقای"|"خانم"{return ["female","زن","دختر"].includes((g??"").trim().toLowerCase())?"خانم":"آقای"}
+function level(l:string){return ({"1":"مقدماتی","2":"متوسط","3":"پیشرفته","4":"عالی"} as Record<string,string>)[l]||"مقدماتی"}
+async function image(request:Request,assets:Assets,path:string){const u=new URL(path,request.url),res=await assets.fetch(new Request(u));if(!res.ok)throw Error(`تصویر ساز پیدا نشد (${res.status})`);const bytes=new Uint8Array(await res.arrayBuffer());let s="";for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return `data:${res.headers.get("content-type")||"image/png"};base64,${btoa(s)}`}
+async function qrCodeDataUrl(verificationUrl:string){const res=await fetch(`https://quickchart.io/qr?text=${encodeURIComponent(verificationUrl)}&size=360&margin=2&ecLevel=H`);if(!res.ok)throw Error(`تولید QR Code شکست خورد (${res.status})`);const bytes=new Uint8Array(await res.arrayBuffer());let s="";for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return `data:${res.headers.get("content-type")||"image/png"};base64,${btoa(s)}`}
+export async function generateCertificatePdf(request:Request,db:Db,browser:Browser,assets:Assets,b:CertificateGenerateInput){
+ if(!b.registration_id||!b.national_id||!b.completion_date_jalali)throw Object.assign(new Error("شناسه ثبت‌نام، کد ملی و تاریخ پایان دوره الزامی هستند."),{status:422});
+ const r=await db.prepare("SELECT tracking_code,instrument_title,instrument_slug,instructor_name,student_first_name,student_last_name,student_gender,student_national_code FROM registrations WHERE id=?").bind(b.registration_id).first<Registration>();
+ if(!r)throw Object.assign(new Error("ثبت‌نامی پیدا نشد."),{status:404});
+ if(r.student_national_code&&r.student_national_code!==b.national_id)throw Object.assign(new Error("کد ملی با اطلاعات هنرجو مطابقت ندارد."),{status:422});
+ let book:Book|null=null;if(b.book_id)book=await db.prepare("SELECT title,author,cover_image FROM course_books WHERE id=?").bind(b.book_id).first<Book>();
+ const photo=await image(request,assets,`/images/cert-photos/${r.instrument_slug}.png`);
+ const qr=await qrCodeDataUrl(`https://fatehmusic.ir/certificate/verify?number=${encodeURIComponent(r.tracking_code)}`);
+ const data:CertificateData={title:"گواهی پایان دوره",disciplineLine:`نوازندگی ${r.instrument_title.replace(/^آموزش\s+/,"")}${b.level?" دوره "+level(b.level):""}`,certNumber:r.tracking_code,level:b.level??null,honorific:honor(r.student_gender),studentName:`${r.student_first_name} ${r.student_last_name}`.trim(),nationalId:b.national_id,completionDateJalali:b.completion_date_jalali,bookTitle:book?.title??null,bookAuthor:book?.author??null,curriculumNote:b.curriculum_note??null,bookCoverUrl:book?.cover_image?`https://fatehmusic.ir/images/books/${book.cover_image}`:null,instructorLabel:`مدرس ${r.instrument_title.replace(/^آموزش\s+/,"")}`,instructorName:r.instructor_name,instrumentPhotoUrl:photo,logoUrl:"https://fatehmusic.ir/logo.png",qrCodeUrl:qr};
+ await db.prepare("INSERT INTO issued_certificates (registration_id,national_code,cert_number,completion_date_jalali,level,book_id,curriculum_note) VALUES (?,?,?,?,?,?,?) ON CONFLICT(cert_number) DO UPDATE SET national_code=excluded.national_code,completion_date_jalali=excluded.completion_date_jalali,level=excluded.level,book_id=excluded.book_id,curriculum_note=excluded.curriculum_note").bind(b.registration_id,b.national_id,r.tracking_code,b.completion_date_jalali,b.level??null,b.book_id??null,b.curriculum_note??null).run();
+ const pdf=await browser.quickAction("pdf",{html:buildCertificateHtml(data),pdfOptions:{format:"a4",landscape:true,margin:{top:0,bottom:0,left:0,right:0},printBackground:true,preferCSSPageSize:false,displayHeaderFooter:false,scale:1}});const bytes:ArrayBuffer=pdf instanceof Response?await pdf.arrayBuffer():pdf;return new Response(bytes,{status:200,headers:{"Content-Type":"application/pdf","Content-Disposition":`inline; filename="certificate-${r.tracking_code}.pdf"`}});
+}
