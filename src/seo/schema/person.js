@@ -22,6 +22,7 @@ export function buildPersonSchema(instructor, { site }) {
         description: instructor.bio,
         image: instructor.image,
         worksFor: { "@id": `${site.url}/#organization` },
+        mainEntityOfPage: { "@id": `${instructor.url}/#webpage` },
         sameAs: instructor.sameAs && instructor.sameAs.length ? instructor.sameAs : undefined
     });
 }
