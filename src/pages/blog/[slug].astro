@@ -3,7 +3,7 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
-import { buildArticleSchema, resolveSite } from "../../seo/index.js";
+import { buildArticleSchema, buildBreadcrumbSchema, resolveSite } from "../../seo/index.js";
 import { getPublishedPost } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
@@ -20,13 +20,21 @@ const articleSchema = buildArticleSchema(post, {
   site,
   url: canonicalUrl
 });
+const breadcrumbSchema = buildBreadcrumbSchema(
+  [
+    { name: "خانه", path: "/" },
+    { name: "وبلاگ", path: "/blog" },
+    { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
+  ],
+  site
+);
 ---
 
 <MainLayout
   title={post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`}
   description={post.meta_description || post.excerpt}
   canonical={canonicalUrl}
-  schema={[articleSchema]}
+  schema={[articleSchema, breadcrumbSchema].filter(Boolean)}
 >
   <Header />
 
@@ -35,6 +43,8 @@ const articleSchema = buildArticleSchema(post, {
       <a href="/">خانه</a>
       <span>/</span>
       <a href="/blog">وبلاگ</a>
+      <span>/</span>
+      <span aria-current="page">{post.title}</span>
     </nav>
 
     <article>
