@@ -13,24 +13,38 @@ if (!session) return Astro.redirect("/admin/login");
 const isAdmin = session.role === ROLES.ADMIN;
 const db = (env as AdminEnv).DB;
 
-const regRows = db
-  ? (await db.prepare("SELECT status, COUNT(*) as count FROM registrations GROUP BY status").all<{ status: string; count: number }>()).results
-  : [];
+async function safeAll<T>(sql: string): Promise<T[]> {
+  if (!db) return [];
+  try {
+    return (await db.prepare(sql).all<T>()).results ?? [];
+  } catch (error) {
+    console.error("[admin/dashboard] D1 query failed:", sql, error);
+    return [];
+  }
+}
+
+async function safeFirst<T>(sql: string): Promise<T | null> {
+  if (!db) return null;
+  try {
+    return await db.prepare(sql).first<T>();
+  } catch (error) {
+    console.error("[admin/dashboard] D1 query failed:", sql, error);
+    return null;
+  }
+}
+
+const regRows = await safeAll<{ status: string; count: number }>("SELECT status, COUNT(*) as count FROM registrations GROUP BY status");
 const regByStatus: Record<string, number> = Object.fromEntries(regRows.map((r) => [r.status, r.count]));
 const regTotal = regRows.reduce((sum, r) => sum + r.count, 0);
 const regPending = regByStatus.pending ?? 0;
 
 const regStatusLabels: Record<string, string> = { pending: "در انتظار", contacted: "تماس گرفته شد", confirmed: "تأیید شد", cancelled: "لغو شد" };
 
-const studentRows = db
-  ? (await db.prepare("SELECT status, COUNT(*) as count FROM students GROUP BY status").all<{ status: string; count: number }>()).results
-  : [];
+const studentRows = await safeAll<{ status: string; count: number }>("SELECT status, COUNT(*) as count FROM students GROUP BY status");
 const studentsTotal = studentRows.reduce((sum, r) => sum + r.count, 0);
 const studentsActive = studentRows.find((r) => r.status === "active")?.count ?? 0;
 
-const instructorRows = db
-  ? (await db.prepare("SELECT is_active, COUNT(*) as count FROM instructors GROUP BY is_active").all<{ is_active: number; count: number }>()).results
-  : [];
+const instructorRows = await safeAll<{ is_active: number; count: number }>("SELECT is_active, COUNT(*) as count FROM instructors GROUP BY is_active");
 const instructorsTotal = instructorRows.reduce((sum, r) => sum + r.count, 0);
 const instructorsActive = instructorRows.find((r) => r.is_active === 1)?.count ?? 0;
 
@@ -38,14 +52,14 @@ let postsTotal = 0;
 let postsPublished = 0;
 let postsDraft = 0;
 let aiDraftsPending = 0;
-if (isAdmin && db) {
-  const postRows = (await db.prepare("SELECT status, COUNT(*) as count FROM blog_posts GROUP BY status").all<{ status: string; count: number }>()).results;
+if (isAdmin) {
+  const postRows = await safeAll<{ status: string; count: number }>("SELECT status, COUNT(*) as count FROM blog_posts GROUP BY status");
   for (const row of postRows) {
     postsTotal += row.count;
     if (row.status === "published") postsPublished = row.count;
     if (row.status === "draft") postsDraft = row.count;
   }
-  const aiRow = await db.prepare("SELECT COUNT(*) as count FROM blog_posts WHERE is_ai_generated = 1 AND status = 'draft'").first<{ count: number }>();
+  const aiRow = await safeFirst<{ count: number }>("SELECT COUNT(*) as count FROM blog_posts WHERE is_ai_generated = 1 AND status = 'draft'");
   aiDraftsPending = aiRow?.count ?? 0;
 }
 ---
