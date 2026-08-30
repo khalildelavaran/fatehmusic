@@ -39,7 +39,22 @@ export function buildOrganizationSchema(site) {
         ? { "@type": "PropertyValue", propertyID: "Google Place ID", value: site.googlePlaceId }
         : undefined
     ].filter(Boolean),
-    founder: { "@type": SCHEMA_TYPES.PERSON, name: "خلیل دلاوران" },
+    founder: {
+      "@type": SCHEMA_TYPES.PERSON,
+      name: "خلیل دلاوران",
+      "@id": `${site.url}/instructors/khalil-delavaran#person`
+    },
+    knowsAbout: [
+      "آموزش موسیقی",
+      "آموزش گیتار",
+      "آموزش پیانو",
+      "آموزش ویولن",
+      "آموزش تار و سه تار",
+      "آموزش سنتور و کمانچه",
+      "آموزش آواز",
+      "سلفژ و تئوری موسیقی",
+      "موسیقی کودک"
+    ],
     contactPoint: [{
       "@type": "ContactPoint",
       telephone: site.telephone,

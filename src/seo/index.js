@@ -95,6 +95,7 @@ export function buildSEO({
         title: metadata.title,
         description: metadata.description,
         image: resolvedImage,
+        keywords: metadata.keywords,
         extraSchema,
         site
     });

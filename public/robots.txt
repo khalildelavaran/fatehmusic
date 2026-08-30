@@ -4,16 +4,24 @@
 # https://fatehmusic.ir
 # ============================================
 
+# Public content is crawlable by default.
 User-agent: *
-
 Allow: /
-
-# Private application routes
 Disallow: /api/
 Disallow: /admin/
+Disallow: /student/
+Disallow: /dashboard/
+Disallow: /.git/
 
-# Development files
+# AI crawlers: public content is allowed; application/private routes remain blocked.
+User-agent: OAI-SearchBot
+User-agent: GPTBot
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /student/
+Disallow: /dashboard/
 Disallow: /.git/
 
 Sitemap: https://fatehmusic.ir/sitemap-index.xml
-Sitemap: https://fatehmusic.ir/sitemap-blog.xml

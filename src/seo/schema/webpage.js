@@ -17,6 +17,7 @@ import { absoluteUrl } from "../helpers/url.js";
  * @param {string} params.title
  * @param {string} params.description
  * @param {string} [params.image]
+ * @param {string[]} [params.keywords]
  * @param {Object[]} [params.extraSchema]
  * @param {import("../resolvers/site.js").ResolvedSite} params.site
  * @returns {Object}
@@ -26,6 +27,7 @@ export function buildWebPageSchema({
     title,
     description,
     image,
+    keywords = [],
     extraSchema = [],
     site
 }) {
@@ -37,6 +39,7 @@ export function buildWebPageSchema({
         url,
         name: title,
         description,
+        keywords,
         inLanguage: "fa-IR",
         isPartOf: { "@id": `${site.url}/#website` },
         about: { "@id": `${site.url}/#organization` },
