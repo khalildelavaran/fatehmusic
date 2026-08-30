@@ -10,6 +10,10 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
+import {
+    buildCourseInstructorRefs,
+    buildCourseRef
+} from "../geo/graph.js";
 
 /**
  * @param {Object} course - a resolved course (from resolveCourse)
@@ -18,15 +22,13 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @returns {Object}
  */
 export function buildCourseSchema(course, { site }) {
-    const instructorRefs = (course.instructors || []).map((instructor) => ({
-        "@id": `${site.url}/instructors/${instructor.slug}/#person`
-    }));
+    const instructorRefs = buildCourseInstructorRefs(course);
 
     const courseInstance = buildCourseInstance(course, instructorRefs);
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.COURSE,
-        "@id": `${course.url}/#course`,
+        "@id": buildCourseRef(course)["@id"],
         url: course.url,
         name: course.title,
         description: course.description,
@@ -50,6 +52,7 @@ function buildCourseInstance(course, instructorRefs) {
         "@type": SCHEMA_TYPES.COURSE_INSTANCE,
         "@id": `${course.url}/#course-instance`,
         courseMode: course.classType,
+        about: buildCourseRef(course),
         instructor: instructorRefs.length ? instructorRefs : undefined
     };
 
