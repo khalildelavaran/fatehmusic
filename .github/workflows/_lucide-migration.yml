@@ -1,0 +1,68 @@
+name: Temporary Lucide Migration Audit
+
+on:
+  push:
+    branches:
+      - chore/lucide-astro-migration
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Run dependency audit
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > npm-audit-full.json
+          full_code=$?
+          npm audit --omit=dev --json > npm-audit-production.json
+          prod_code=$?
+          node - <<'NODE'
+          const fs = require('fs');
+          for (const file of ['npm-audit-full.json', 'npm-audit-production.json']) {
+            const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+            const v = data.metadata?.vulnerabilities || {};
+            console.log(`${file}: info=${v.info||0} low=${v.low||0} moderate=${v.moderate||0} high=${v.high||0} critical=${v.critical||0}`);
+            for (const [name, item] of Object.entries(data.vulnerabilities || {})) {
+              if ((item.severity === 'high' || item.severity === 'critical')) {
+                console.log(`HIGH/CRITICAL ${name} ${item.severity} ${item.range || ''} via ${(item.via || []).map(x => typeof x === 'string' ? x : x.title || x.source || '').join('; ')}`);
+              }
+            }
+          }
+          NODE
+          printf 'FULL_AUDIT_EXIT=%s\nPROD_AUDIT_EXIT=%s\n' "$full_code" "$prod_code" > audit-exit.txt
+
+      - name: Verify migration references
+        run: |
+          ! grep -R 'lucide-astro' --exclude-dir=.git --exclude='_lucide-migration.yml' .
+          grep -R '@lucide/astro' package.json src
+
+      - name: Commit generated lockfile and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f npm-audit-full.json npm-audit-production.json audit-exit.txt
+          rm -f .github/workflows/_lucide-migration.yml
+          git add package-lock.json .github/workflows/_lucide-migration.yml
+          if git diff --cached --quiet; then
+            echo "No lockfile/workflow changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: regenerate lockfile for lucide migration"
+          git push
