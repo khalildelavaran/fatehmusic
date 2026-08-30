@@ -161,10 +161,21 @@ export async function listInstructors(db: D1Database, rawParams: InstructorListP
     .bind(...bind)
     .first<{ count: number }>();
 
+  // registrations.instructor_id exists since migration 0001. Do not use
+  // registrations.student_id here: that column is introduced by migration
+  // 0011 and the instructor roster must remain readable even when a
+  // production database is one migration behind. The list only needs the
+  // number of registrations/students, so the stable instructor_id relation
+  // is sufficient and keeps instructor names from disappearing because of a
+  // newer student-management migration.
   const rows = await db
     .prepare(
       `SELECT ${INSTRUCTOR_COLUMNS},
-        (SELECT COUNT(DISTINCT r.student_id) FROM registrations r WHERE r.instructor_id = instructors.id AND r.student_id IS NOT NULL) as student_count
+        (SELECT COUNT(DISTINCT r.student_national_code)
+           FROM registrations r
+          WHERE r.instructor_id = instructors.id
+            AND r.student_national_code IS NOT NULL
+            AND r.student_national_code != '') as student_count
        FROM instructors
        ${whereSql}
        ORDER BY is_active DESC, first_name, last_name
@@ -194,8 +205,8 @@ export interface InstructorStudentSummary {
   studentStatus: string;
   course: string;
   termCount: number;
-  startDate: string; // earliest registration with this instructor for this course
-  lastActivity: string; // most recent one
+  startDate: string;
+  lastActivity: string;
 }
 
 export interface InstructorProfile {
@@ -250,9 +261,7 @@ export async function getInstructorProfile(db: D1Database, id: number): Promise<
 }
 
 // ------------------------------------------------------------------
-// Validation (Section 51) -- deliberately self-contained rather than
-// sharing students.ts's email check, to avoid touching already-shipped
-// Phase 1 code for the sake of one regex line.
+// Validation
 // ------------------------------------------------------------------
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -274,7 +283,6 @@ export interface ValidationResult {
   errors: string[];
 }
 
-/** Pure validation, independent of the DB call -- see instructors.test.ts. */
 export function validateInstructorInput(input: InstructorInput, { isCreate = false }: { isCreate?: boolean } = {}): ValidationResult {
   const errors: string[] = [];
 
@@ -292,8 +300,7 @@ export function validateInstructorInput(input: InstructorInput, { isCreate = fal
 }
 
 // ------------------------------------------------------------------
-// Create / Update / Deactivate (Section 7: Create, Read, Update,
-// Deactivate -- no hard delete once there is teaching history)
+// Create / Update / Deactivate
 // ------------------------------------------------------------------
 
 function slugify(firstName: string, lastName: string): string {
