@@ -28,6 +28,12 @@ const studentRows = db
 const studentsTotal = studentRows.reduce((sum, r) => sum + r.count, 0);
 const studentsActive = studentRows.find((r) => r.status === "active")?.count ?? 0;
 
+const instructorRows = db
+  ? (await db.prepare("SELECT is_active, COUNT(*) as count FROM instructors GROUP BY is_active").all<{ is_active: number; count: number }>()).results
+  : [];
+const instructorsTotal = instructorRows.reduce((sum, r) => sum + r.count, 0);
+const instructorsActive = instructorRows.find((r) => r.is_active === 1)?.count ?? 0;
+
 let postsTotal = 0;
 let postsPublished = 0;
 let postsDraft = 0;
@@ -93,6 +99,17 @@ if (isAdmin && db) {
             </span>
           </a>
 
+          <a href="/admin/instructors" class="admin-stat-card">
+            <span class="admin-stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 8c0-2-1-3.5-3-4"/></svg>
+            </span>
+            <span class="admin-stat-value">{instructorsTotal}</span>
+            <span class="admin-stat-label">مدرس</span>
+            <span class="admin-stat-breakdown">
+              <span>{instructorsActive} فعال</span>
+            </span>
+          </a>
+
           <a href="/admin/registration" class="admin-stat-card">
             <span class="admin-stat-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -121,6 +138,7 @@ if (isAdmin && db) {
             <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
           )}
           <a href="/admin/students"><strong>پرونده هنرجویان</strong><span>مشاهده و ویرایش اطلاعات کامل هنرجویان آموزشگاه</span></a>
+          <a href="/admin/instructors"><strong>مدیریت مدرسان</strong><span>افزودن، ویرایش و مشاهده‌ی هنرجویان هر مدرس</span></a>
           <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
         </nav>
       </div>

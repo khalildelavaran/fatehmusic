@@ -1,0 +1,162 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import "../../styles/admin/registrations.css";
+import "../../styles/admin/students.css";
+import "../../styles/admin/instructors.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { getInstructorProfile } from "../../server/instructors";
+import { formatJalaliDate } from "../../utils/format-date";
+import { courses } from "../../data/courses.js";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
+if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
+
+const db = (env as AdminEnv).DB;
+const idParam = Astro.url.searchParams.get("id");
+const isNew = Astro.url.searchParams.has("new");
+const numericId = idParam ? Number(idParam) : null;
+const profile = numericId && db ? await getInstructorProfile(db, numericId) : null;
+
+const courseTitleBySlug: Record<string, string> = Object.fromEntries(courses.map((c: { slug: string; title: string }) => [c.slug, c.title]));
+const selectedInstruments = new Set(profile?.instructor.instruments ?? []);
+
+const pageTitle = profile ? `پروفایل ${profile.instructor.firstName} ${profile.instructor.lastName} | آموزشگاه موسیقی فاتح` : isNew ? "افزودن مدرس | آموزشگاه موسیقی فاتح" : "مدرسان | آموزشگاه موسیقی فاتح";
+---
+<MainLayout title={pageTitle} noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="instructors" />
+    <main class="admin-main">
+      <div class="admin-shell" data-admin-instructors>
+
+        {idParam && !profile && (
+          <section class="admin-hero">
+            <p>مدرس یافت نشد</p>
+            <h1>مدرسی با این شناسه وجود ندارد</h1>
+            <p><a href="/admin/instructors">بازگشت به فهرست مدرسان</a></p>
+          </section>
+        )}
+
+        {(profile || isNew) && (
+          <Fragment>
+            <section class="admin-hero">
+              <p><a href="/admin/instructors">← فهرست مدرسان</a></p>
+              <h1>{profile ? `${profile.instructor.firstName} ${profile.instructor.lastName}` : "افزودن مدرس جدید"}</h1>
+              {profile && <p class="admin-student-code">{profile.instructor.specialty || "—"}</p>}
+              {profile && profile.instructor.instruments.length > 0 && (
+                <p class="admin-table-subtext">
+                  سازها: {profile.instructor.instruments.map((slug) => courseTitleBySlug[slug] ?? slug).join("، ")}
+                </p>
+              )}
+            </section>
+
+            <div class="admin-profile-grid">
+              <section class="admin-card">
+                <h2>{profile ? "ویرایش اطلاعات مدرس" : "اطلاعات مدرس جدید"}</h2>
+                <form id="instructorForm" class="admin-form" data-id={profile?.instructor.id ?? ""}>
+                  <label>نام<input name="firstName" value={profile?.instructor.firstName ?? ""} required /></label>
+                  <label>نام خانوادگی<input name="lastName" value={profile?.instructor.lastName ?? ""} required /></label>
+                  <label>موبایل<input name="phone" dir="ltr" value={profile?.instructor.phone ?? ""} /></label>
+                  <label>ایمیل<input name="email" type="email" dir="ltr" value={profile?.instructor.email ?? ""} /></label>
+                  <label>تخصص<input name="specialty" value={profile?.instructor.specialty ?? ""} placeholder="مثلاً: مدرس گیتار و دروس پایه موسیقی" /></label>
+
+                  <fieldset class="admin-instrument-fieldset">
+                    <legend>سازها / دوره‌های آموزشی</legend>
+                    <div class="admin-instrument-grid">
+                      {courses.map((course: { slug: string; title: string }) => (
+                        <label class="admin-instrument-option">
+                          <input type="checkbox" name="instruments" value={course.slug} checked={selectedInstruments.has(course.slug)} />
+                          {course.title}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+
+                  <label>بیوگرافی<textarea name="biography" rows="3">{profile?.instructor.biography ?? ""}</textarea></label>
+                  <label>یادداشت داخلی<textarea name="notes" rows="2">{profile?.instructor.notes ?? ""}</textarea></label>
+
+                  {profile && (
+                    <label class="admin-instructor-active">
+                      <input type="checkbox" name="isActive" checked={profile.instructor.isActive} />
+                      مدرس فعال است
+                    </label>
+                  )}
+
+                  <div class="admin-form-actions">
+                    <button type="submit">{profile ? "ذخیره تغییرات" : "ثبت مدرس"}</button>
+                    <span id="instructorFormStatus" class="admin-live-status"></span>
+                  </div>
+                </form>
+              </section>
+            </div>
+
+            {profile && (
+              <Fragment>
+                <div class="admin-section-title"><h2>هنرجویان این مدرس ({profile.students.length})</h2></div>
+                <section class="admin-table-wrap">
+                  <table class="admin-table">
+                    <thead><tr><th>هنرجو</th><th>کد ملی</th><th>دوره</th><th>تعداد ترم</th><th>شروع همکاری</th><th>آخرین فعالیت</th></tr></thead>
+                    <tbody>
+                      {profile.students.length === 0 ? (
+                        <tr><td colspan="6" class="admin-table-empty">هنوز هنرجویی برای این مدرس ثبت نشده است.</td></tr>
+                      ) : (
+                        profile.students.map((s) => (
+                          <tr>
+                            <td><a href={`/admin/students?id=${encodeURIComponent(s.studentId)}`}>{s.firstName} {s.lastName}</a></td>
+                            <td dir="ltr">{s.nationalCode || "-"}</td>
+                            <td>{s.course}</td>
+                            <td>{s.termCount}</td>
+                            <td>{formatJalaliDate(s.startDate)}</td>
+                            <td>{formatJalaliDate(s.lastActivity)}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </section>
+              </Fragment>
+            )}
+          </Fragment>
+        )}
+
+        {!idParam && !isNew && (
+          <Fragment>
+            <section class="admin-hero no-print">
+              <p>مدرسان</p>
+              <h1>مدیریت مدرسان</h1>
+              <p>فهرست مدرسان آموزشگاه، تخصص و هنرجویان هر مدرس.</p>
+            </section>
+
+            <section class="admin-students-filters no-print">
+              <input type="search" id="instructorSearch" placeholder="جست‌وجو بر اساس نام، تخصص یا موبایل..." />
+              <select id="instructorStatusFilter">
+                <option value="">همه وضعیت‌ها</option>
+                <option value="active">فعال</option>
+                <option value="inactive">غیرفعال</option>
+              </select>
+              <a href="/admin/instructors?new=1" class="admin-document-btn">افزودن مدرس جدید</a>
+            </section>
+
+            <section class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>نام</th><th>تخصص</th><th>موبایل</th><th>تعداد هنرجو</th><th>وضعیت</th></tr></thead>
+                <tbody id="instructorsBody"><tr><td colspan="5" class="admin-table-empty">در حال بارگذاری...</td></tr></tbody>
+              </table>
+            </section>
+
+            <section class="admin-pagination no-print" id="instructorsPagination"></section>
+          </Fragment>
+        )}
+
+      </div>
+    </main>
+  </div>
+  {(profile || isNew) && <script>import "../../scripts/admin/instructor-profile.js";</script>}
+  {!idParam && !isNew && <script>import "../../scripts/admin/instructors.js";</script>}
+</MainLayout>

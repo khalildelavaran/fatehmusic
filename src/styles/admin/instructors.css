@@ -1,0 +1,44 @@
+/* Instructors-page-specific tweaks. Profile grid/cards, filters bar,
+   pagination, and status-pill variants are already covered by
+   students.css (imported alongside this file) -- this file only adds
+   the instrument checkbox fieldset and the active-toggle row. */
+
+.admin-shell .admin-form > .admin-instrument-fieldset {
+  grid-column: 1 / -1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 0;
+}
+
+.admin-instrument-fieldset legend {
+  padding: 0 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.admin-instrument-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 8px 16px;
+}
+
+.admin-instrument-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.admin-instrument-option input {
+  width: auto;
+}
+
+.admin-shell .admin-form > .admin-instructor-active {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+}
