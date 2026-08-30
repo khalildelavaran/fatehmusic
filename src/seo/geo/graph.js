@@ -3,30 +3,12 @@
  * Fateh Music Academy — SEO Engine
  * Module: GEO Entity Graph
  * --------------------------------------------------------
- * Canonical relationship layer shared by GEO and JSON-LD.
- * Core Organization/WebSite entities are owned by their Schema builders;
- * this module must not create competing copies of those entities.
+ * Canonical relationship helpers shared by GEO and JSON-LD.
+ * Core Organization/WebSite entities are owned by their Schema builders.
+ * --------------------------------------------------------
  */
 
-import { courseEntityId, instructorEntityId, entityRef } from "./entity.js";
-
-/**
- * Returns GEO relationship nodes for core entities.
- * Organization and WebSite are defined by their Schema builders.
- *
- * @param {Object} site
- * @returns {Array<Object>}
- */
-export function buildCoreEntityGraph(site) {
-    const base = String(site.url).replace(/\/$/, "");
-
-    return [
-        {
-            "@id": `${base}/#website`,
-            publisher: entityRef(base, "organization")
-        }
-    ];
-}
+import { courseEntityId, instructorEntityId } from "./entity.js";
 
 /**
  * Build canonical Course → Instructor references from the resolved Course.
