@@ -80,6 +80,10 @@ export interface ValidationResult {
   errors: string[];
 }
 
+export interface InstructorValidationOptions {
+  isCreate?: boolean;
+}
+
 var COLUMNS = "id, slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active, created_at, updated_at";
 var DEFAULT_PAGE_SIZE = 20;
 var MAX_PAGE_SIZE = 100;
@@ -341,7 +345,7 @@ export async function getInstructorProfile(db: D1Database, id: number): Promise<
   };
 }
 
-export function validateInstructorInput(input: InstructorInput, options: { isCreate?: boolean } = {}): ValidationResult {
+export function validateInstructorInput(input: InstructorInput, options: InstructorValidationOptions = {}): ValidationResult {
   var errors: string[] = [];
   var isCreate = options.isCreate === true;
   var firstName = typeof input.firstName === "string" ? input.firstName.trim() : "";
