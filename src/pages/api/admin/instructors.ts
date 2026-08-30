@@ -11,6 +11,7 @@ import {
   validateInstructorInput,
   type InstructorInput
 } from "../../../server/instructors";
+import { instructors as staticInstructors } from "../../../data/instructors.js";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -34,14 +35,55 @@ export const GET: APIRoute = async ({ request }) => {
     return json({ success: true, profile });
   }
 
-  const result = await listInstructors(db, {
-    search: url.searchParams.get("search"),
-    status: url.searchParams.get("status"),
-    page: url.searchParams.get("page") ? Number(url.searchParams.get("page")) : undefined,
-    pageSize: url.searchParams.get("pageSize") ? Number(url.searchParams.get("pageSize")) : undefined
-  });
+  try {
+    const result = await listInstructors(db, {
+      search: url.searchParams.get("search"),
+      status: url.searchParams.get("status"),
+      page: url.searchParams.get("page") ? Number(url.searchParams.get("page")) : undefined,
+      pageSize: url.searchParams.get("pageSize") ? Number(url.searchParams.get("pageSize")) : undefined
+    });
 
-  return json({ success: true, ...result });
+    if (result.instructors.length > 0 || staticInstructors.length === 0) {
+      return json({ success: true, ...result });
+    }
+  } catch (error) {
+    console.error("[admin/instructors] D1 list failed; using static roster", error);
+  }
+
+  const search = (url.searchParams.get("search") ?? "").trim().toLocaleLowerCase("fa-IR");
+  const status = url.searchParams.get("status") ?? "";
+  const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(url.searchParams.get("pageSize") ?? 20) || 20));
+
+  const filtered = staticInstructors
+    .filter((inst: any) => inst.active !== false)
+    .filter((inst: any) => {
+      if (!search) return true;
+      const haystack = `${inst.name ?? ""} ${inst.identity?.firstName ?? ""} ${inst.identity?.lastName ?? ""} ${inst.position ?? ""}`.toLocaleLowerCase("fa-IR");
+      return haystack.includes(search);
+    })
+    .filter((inst: any) => status !== "inactive");
+
+  const total = filtered.length;
+  const start = (page - 1) * pageSize;
+  const rows = filtered.slice(start, start + pageSize).map((inst: any) => ({
+    id: Number(inst.id),
+    slug: inst.slug ?? "",
+    firstName: inst.identity?.firstName ?? inst.name?.split(" ")[0] ?? "",
+    lastName: inst.identity?.lastName ?? inst.name?.split(" ").slice(1).join(" ") ?? "",
+    phone: "",
+    email: "",
+    specialty: inst.position ?? inst.content?.excerpt ?? "",
+    instruments: Array.isArray(inst.relations?.courses) ? inst.relations.courses : [],
+    biography: inst.content?.biography ?? "",
+    notes: "",
+    isActive: inst.active !== false,
+    createdAt: "",
+    updatedAt: "",
+    studentCount: 0
+  }));
+
+  return json({ success: true, instructors: rows, total, page, pageSize });
 };
 
 export const POST: APIRoute = async ({ request }) => {
