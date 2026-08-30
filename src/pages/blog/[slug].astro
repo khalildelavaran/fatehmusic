@@ -10,9 +10,10 @@ import {
   resolveCourse,
   resolveSite,
   answersFromFaq,
-  resolveTopics
+  resolveTopics,
+  buildArticleClusterLinks
 } from "../../seo/index.js";
-import { getPublishedPost } from "../../server/blog";
+import { getPublishedPost, getPublishedPosts } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
 
@@ -21,6 +22,9 @@ if (!post) return Astro.rewrite("/404");
 
 const site = resolveSite();
 const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
+const allPosts = await getPublishedPosts();
+const clusterEntry = buildArticleClusterLinks(allPosts, 4).find((item) => item.slug === post.slug);
+const relatedPosts = clusterEntry?.related ?? [];
 const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
 const title = post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`;
 const description = post.meta_description || post.excerpt;
@@ -35,6 +39,7 @@ const breadcrumbSchema = buildBreadcrumbSchema([
 const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) : null;
 const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
+const internalLinkCount = 6 + relatedPosts.length;
 const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
 ---
 
@@ -47,7 +52,8 @@ const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
   entityType="Article"
   lastModified={post.updated_at ?? post.published_at ?? post.created_at}
   answerBlocks={answerBlocks}
-  auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount: relatedCourse ? 4 : 3 }}
+  articlePosts={allPosts}
+  auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount }}
   schema={schema}
 >
   <Header />
@@ -67,6 +73,31 @@ const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
       <div class="article-content">
         {post.content.split("\n").filter(Boolean).map((paragraph) => <p>{paragraph}</p>)}
       </div>
+
+      {relatedPosts.length > 0 && (
+        <section class="related-articles" aria-labelledby="related-articles-title">
+          <header>
+            <p class="eyebrow">ادامه مسیر یادگیری</p>
+            <h2 id="related-articles-title">مقالات مرتبط با این موضوع</h2>
+            <p>این مقاله‌ها بر اساس موضوع، هدف جستجو و ارتباط با دوره‌های آموزشگاه به‌صورت خودکار انتخاب شده‌اند.</p>
+          </header>
+
+          <div class="blog-grid related-articles-grid">
+            {relatedPosts.map((related) => (
+              <article class="blog-card">
+                <div>
+                  <span>{related.sharedTopics.join("، ")}</span>
+                  <h3><a href={`/blog/${related.slug}`}>{related.title}</a></h3>
+                  <p>ارتباط معنایی: {related.score} امتیاز</p>
+                </div>
+                <footer>
+                  <a class="read-more" href={`/blog/${related.slug}`}>مطالعه مقاله</a>
+                </footer>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <footer class="article-links">
         <a href="/">آموزشگاه موسیقی فاتح</a>
