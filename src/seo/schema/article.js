@@ -1,28 +1,18 @@
 /**
- * --------------------------------------------------------
  * Fateh Music Academy — Article Entity Schema
- * --------------------------------------------------------
+ * ------------------------------------------------------------
  */
-
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { absoluteUrl } from "../helpers/url.js";
 import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
 
-/**
- * @param {Object} post
- * @param {Object} params
- * @param {import("../resolvers/site.js").ResolvedSite} params.site
- * @param {string} params.url
- * @param {string[]} [params.keywords]
- * @param {{slug:string,name:string}[]} [params.topics]
- */
 export function buildArticleSchema(post, { site, url, keywords = [], topics = [] }) {
     const publishedAt = post.published_at || post.created_at;
     const modifiedAt = post.updated_at || post.modified_at || publishedAt;
     const description = post.meta_description || post.excerpt || post.title;
     const image = absoluteUrl(post.image || post.cover_image || post.featured_image || site.image, site.url);
-
     const topicRefs = topics.map((topic) => ({ "@id": `${site.url}/#topic-${topic.slug}` }));
+
     const schema = {
         "@type": SCHEMA_TYPES.ARTICLE,
         "@id": articleEntityId(url),
@@ -39,16 +29,13 @@ export function buildArticleSchema(post, { site, url, keywords = [], topics = []
         publisher: { "@id": `${site.url}/#organization` },
         mainEntityOfPage: { "@id": `${url}/#webpage` },
         isPartOf: { "@id": `${site.url}/#website` },
+        about: post.related_course_slug
+            ? { "@id": courseEntityId(absoluteUrl(`/courses/${post.related_course_slug}`, site.url)) }
+            : topicRefs[0],
         mentions: topicRefs.length ? topicRefs : undefined
     };
 
     if (post.content) schema.wordCount = countWords(post.content);
-
-    if (post.related_course_slug) {
-        const courseUrl = absoluteUrl(`/courses/${post.related_course_slug}`, site.url);
-        schema.about = { "@id": courseEntityId(courseUrl) };
-    }
-
     return pruneEmpty(schema);
 }
 
