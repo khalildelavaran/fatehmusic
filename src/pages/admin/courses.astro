@@ -1,0 +1,156 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { courses } from "../../data/courses.js";
+import { instructors } from "../../data/instructors.js";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+
+const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
+if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
+
+const instructorById = new Map(instructors.map((instructor: any) => [instructor.id, instructor.name]));
+const courseRows = courses.map((course: any) => ({
+  ...course,
+  instructorNames: (course.instructors ?? []).map((id: number) => instructorById.get(id) ?? `مدرس ${id}`),
+}));
+const activeCourses = courseRows.filter((course: any) => course.active).length;
+const featuredCourses = courseRows.filter((course: any) => course.featured).length;
+const categories = [...new Set(courseRows.map((course: any) => course.category).filter(Boolean))].sort();
+---
+<MainLayout title="مدیریت دوره‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="courses" />
+    <main class="admin-main">
+      <div class="admin-shell">
+        <section class="admin-hero">
+          <span class="admin-hero-label">دوره‌های آموزشی</span>
+          <h1>مدیریت دوره‌ها</h1>
+          <p>فهرست دوره‌های آموزشی سایت، وضعیت انتشار، مدرس و دسته‌بندی هر دوره.</p>
+        </section>
+
+        <div class="admin-grid course-stats">
+          <div class="admin-stat-card"><span class="admin-stat-value">{courseRows.length}</span><span class="admin-stat-label">کل دوره‌ها</span></div>
+          <div class="admin-stat-card"><span class="admin-stat-value">{activeCourses}</span><span class="admin-stat-label">دوره فعال</span></div>
+          <div class="admin-stat-card"><span class="admin-stat-value">{featuredCourses}</span><span class="admin-stat-label">دوره ویژه</span></div>
+          <div class="admin-stat-card"><span class="admin-stat-value">{categories.length}</span><span class="admin-stat-label">دسته‌بندی</span></div>
+        </div>
+
+        <section class="admin-card course-management-card">
+          <div class="course-toolbar">
+            <input id="courseSearch" type="search" placeholder="جست‌وجوی نام دوره یا مدرس..." aria-label="جست‌وجوی دوره" />
+            <select id="courseCategory" aria-label="فیلتر دسته‌بندی">
+              <option value="">همه دسته‌بندی‌ها</option>
+              {categories.map((category) => <option value={category}>{category}</option>)}
+            </select>
+            <select id="courseStatus" aria-label="فیلتر وضعیت">
+              <option value="">همه وضعیت‌ها</option>
+              <option value="active">فعال</option>
+              <option value="inactive">غیرفعال</option>
+              <option value="featured">ویژه</option>
+            </select>
+          </div>
+        </section>
+
+        <section class="admin-table-wrap">
+          <table class="admin-table" id="coursesTable">
+            <thead>
+              <tr>
+                <th>دوره</th>
+                <th>دسته‌بندی</th>
+                <th>مدرس</th>
+                <th>سطح</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courseRows.map((course: any) => (
+                <tr data-course-row data-title={`${course.title} ${course.slug}`.toLowerCase()} data-instructors={course.instructorNames.join(" ").toLowerCase()} data-category={course.category ?? ""} data-status={course.active ? "active" : "inactive"} data-featured={course.featured ? "featured" : ""}>
+                  <td>
+                    <strong>{course.title}</strong>
+                    <small dir="ltr">{course.slug}</small>
+                  </td>
+                  <td>{course.category ?? "—"}</td>
+                  <td>{course.instructorNames.length ? course.instructorNames.join("، ") : "بدون مدرس"}</td>
+                  <td>{(course.level ?? []).join("، ") || "—"}</td>
+                  <td>
+                    <span class={`course-status ${course.active ? "is-active" : "is-inactive"}`}>{course.active ? "فعال" : "غیرفعال"}</span>
+                    {course.featured && <span class="course-featured">ویژه</span>}
+                  </td>
+                  <td class="course-actions">
+                    <a href={`/courses/${course.slug}`} target="_blank" rel="noreferrer">مشاهده</a>
+                    <a href={`/register?course=${course.slug}"`}>ثبت‌نام</a>
+                  </td>
+                </tr>
+              ))}
+              <tr id="courseEmpty" hidden><td colspan="6" class="admin-table-empty">دوره‌ای با این فیلتر پیدا نشد.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="admin-card course-note">
+          <h2>نکته</h2>
+          <p>دوره‌های فعلی پروژه از فایل داده‌ی مرکزی سایت بارگذاری می‌شوند. این صفحه مدیریت و پایش دوره‌ها را در پنل فراهم می‌کند و منبع اصلی داده را تغییر نمی‌دهد.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const search = document.querySelector('#courseSearch');
+    const category = document.querySelector('#courseCategory');
+    const status = document.querySelector('#courseStatus');
+    const rows = [...document.querySelectorAll('[data-course-row]')];
+    const empty = document.querySelector('#courseEmpty');
+
+    function filterCourses() {
+      const q = (search?.value ?? '').trim().toLowerCase();
+      const cat = category?.value ?? '';
+      const stat = status?.value ?? '';
+      let visible = 0;
+
+      rows.forEach((row) => {
+        const matchesQuery = !q || `${row.getAttribute('data-title') ?? ''} ${row.getAttribute('data-instructors') ?? ''}`.includes(q);
+        const matchesCategory = !cat || row.getAttribute('data-category') === cat;
+        const matchesStatus = !stat || row.getAttribute('data-status') === stat || row.getAttribute('data-featured') === stat;
+        const show = matchesQuery && matchesCategory && matchesStatus;
+        row.toggleAttribute('hidden', !show);
+        if (show) visible++;
+      });
+      empty?.toggleAttribute('hidden', visible !== 0);
+    }
+
+    search?.addEventListener('input', filterCourses);
+    category?.addEventListener('change', filterCourses);
+    status?.addEventListener('change', filterCourses);
+  </script>
+
+  <style>
+    .course-stats { margin-bottom: 22px; }
+    .course-management-card { margin-bottom: 18px; }
+    .course-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) 220px 180px; gap: 12px; }
+    .course-toolbar input, .course-toolbar select { min-height: 44px; padding: 10px 12px; }
+    .admin-table td strong { display: block; }
+    .admin-table td small { display: block; margin-top: 4px; opacity: .55; font-size: 11px; }
+    .course-status, .course-featured { display: inline-flex; align-items: center; margin-inline-end: 6px; padding: 4px 9px; border-radius: 999px; font-size: 12px; }
+    .course-status.is-active { background: rgba(80, 180, 110, .12); color: #75d18e; }
+    .course-status.is-inactive { background: rgba(180, 180, 180, .12); color: #aaa; }
+    .course-featured { background: rgba(212, 175, 55, .13); color: var(--primary); }
+    .course-actions { white-space: nowrap; }
+    .course-actions a { margin-inline-end: 10px; }
+    .course-note { margin-top: 22px; }
+    .course-note h2 { margin-top: 0; }
+    .course-note p { margin-bottom: 0; opacity: .78; line-height: 1.9; }
+    @media (max-width: 760px) {
+      .course-toolbar { grid-template-columns: 1fr; }
+      .course-actions { white-space: normal; }
+    }
+  </style>
+</MainLayout>
