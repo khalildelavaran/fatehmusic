@@ -4,6 +4,7 @@
  */
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
+import { buildContentStrategy } from "./content-strategy.js";
 
 function profile(post) {
   const keywords = [post.topic, post.title, post.excerpt].filter(Boolean);
@@ -39,10 +40,19 @@ export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS) {
   return [...byTopic.values()].map((entry) => ({ topic: entry.topic, coveredIntents: [...entry.intents], missingIntents: requiredIntents.filter((intent) => !entry.intents.has(intent)), articleCount: entry.articles.length, articleSlugs: entry.articles })).sort((a, b) => b.missingIntents.length - a.missingIntents.length || a.articleCount - b.articleCount);
 }
 
-export function buildContentClusterReport(posts = []) {
+export function buildContentClusterReport(posts = [], { courses = [] } = {}) {
   const profiles = buildArticleProfiles(posts);
   const topics = [...new Set(profiles.flatMap((item) => item.topics))];
-  return Object.freeze({ articleCount: profiles.length, topicCount: topics.length, topics, profiles, links: buildArticleClusterLinks(posts), gaps: findContentGaps(posts) });
+  const gaps = findContentGaps(posts);
+  return Object.freeze({
+    articleCount: profiles.length,
+    topicCount: topics.length,
+    topics,
+    profiles,
+    links: buildArticleClusterLinks(posts),
+    gaps,
+    strategy: buildContentStrategy(gaps, courses)
+  });
 }
 
 export function buildArticleLinkCandidates(posts = [], siteUrl) {
