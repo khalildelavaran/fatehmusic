@@ -14,31 +14,18 @@ const LIMITS = Object.freeze({
 });
 
 /**
- * @param {Object} input
- * @param {Object} input.metadata
- * @param {string} [input.url]
- * @param {Object} [input.schemaGraph]
- * @param {number} [input.wordCount]
- * @param {number} [input.h1Count]
- * @param {number} [input.missingImageAlt]
- * @param {number} [input.internalLinkCount]
- * @param {boolean} [input.indexable]
- * @param {string[]} [input.topicSlugs]
- * @param {string} [input.primaryIntent]
- * @param {{status:string}} [input.freshness]
+ * Only evaluate optional page metrics when the caller explicitly provides
+ * them. This prevents false warnings from a head-only buildSEO() call.
  */
 export function auditPage({
     metadata = {},
     url = "",
     schemaGraph = {},
-    wordCount = 0,
-    h1Count = 0,
-    missingImageAlt = 0,
-    internalLinkCount = 0,
     indexable = true,
     topicSlugs = [],
     primaryIntent = "",
-    freshness = { status: "unknown" }
+    freshness = { status: "unknown" },
+    ...context
 } = {}) {
     const checks = [];
     const pass = (id, label, points) => checks.push({ id, label, status: "pass", points });
@@ -65,18 +52,26 @@ export function auditPage({
     if (graphNodes.length >= 3) pass("schema", "JSON-LD graph populated", 10);
     else warn("schema", "JSON-LD graph is sparse", 5);
 
-    if (h1Count === 1) pass("h1", "exactly one H1", 10);
-    else if (h1Count === 0) fail("h1", "H1 missing");
-    else warn("h1", "multiple H1 elements", 5);
+    if ("h1Count" in context) {
+        if (context.h1Count === 1) pass("h1", "exactly one H1", 10);
+        else if (context.h1Count === 0) fail("h1", "H1 missing");
+        else warn("h1", "multiple H1 elements", 5);
+    }
 
-    if (missingImageAlt === 0) pass("image-alt", "images have alt text", 5);
-    else warn("image-alt", `${missingImageAlt} images missing alt text`, 2);
+    if ("missingImageAlt" in context) {
+        if (context.missingImageAlt === 0) pass("image-alt", "images have alt text", 5);
+        else warn("image-alt", `${context.missingImageAlt} images missing alt text`, 2);
+    }
 
-    if (wordCount >= LIMITS.minWords) pass("content-depth", "sufficient visible content", 10);
-    else warn("content-depth", "visible content is thin", 4);
+    if ("wordCount" in context) {
+        if (context.wordCount >= LIMITS.minWords) pass("content-depth", "sufficient visible content", 10);
+        else warn("content-depth", "visible content is thin", 4);
+    }
 
-    if (internalLinkCount >= 3) pass("internal-links", "strong internal linking", 10);
-    else warn("internal-links", "few internal links", 4);
+    if ("internalLinkCount" in context) {
+        if (context.internalLinkCount >= 3) pass("internal-links", "strong internal linking", 10);
+        else warn("internal-links", "few internal links", 4);
+    }
 
     if (topicSlugs.length >= 1) pass("topics", "topic signals resolved", 5);
     else warn("topics", "no topic signals resolved", 0);
@@ -89,7 +84,12 @@ export function auditPage({
     else if (freshness?.status === "stale") warn("freshness", "content is stale", 0);
     else warn("freshness", "freshness signal unavailable", 0);
 
-    const score = Math.round(Math.min(100, checks.reduce((sum, item) => sum + item.points, 0)));
+    const applicablePoints = checks.reduce((sum, item) => sum + item.points, 0);
+    const theoreticalPoints = checks.reduce((sum, item) => {
+        const max = { title: 10, description: 10, indexability: 10, canonical: 10, schema: 10, h1: 10, "image-alt": 5, "content-depth": 10, "internal-links": 10, topics: 5, intent: 5, freshness: 5 }[item.id] || item.points;
+        return sum + max;
+    }, 0);
+    const score = theoreticalPoints ? Math.round((applicablePoints / theoreticalPoints) * 100) : 0;
     const errors = checks.filter((item) => item.status === "fail");
     const warnings = checks.filter((item) => item.status === "warn");
 
