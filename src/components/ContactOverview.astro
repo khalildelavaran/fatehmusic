@@ -9,7 +9,6 @@ import {
     Clock3,
     Phone,
     Navigation,
-    Instagram,
     MessageCircle,
     Send
 } from "@lucide/astro";
@@ -125,29 +124,29 @@ import {
 
                             </span>
 
-\t\t\t\t\t\t\t<div class="working-hours">
+                            <div class="working-hours">
 
-\t\t\t\t\t\t\t\t{
-\t\t\t\t\t\t\t\t\tcontact.workingHours.map((item) => (
-\t\t\t\t\t\t\t\t\t\t<div class="working-row">
+                                {
+                                    contact.workingHours.map((item) => (
+                                        <div class="working-row">
 
-\t\t\t\t\t\t\t\t\t\t\t<strong>
+                                            <strong>
 
-\t\t\t\t\t\t\t\t\t\t\t\t{item.title}
+                                                {item.title}
 
-\t\t\t\t\t\t\t\t\t\t\t</strong>
+                                            </strong>
 
-\t\t\t\t\t\t\t\t\t\t\t<span>
+                                            <span>
 
-\t\t\t\t\t\t\t\t\t\t\t\t{item.value}
+                                                {item.value}
 
-\t\t\t\t\t\t\t\t\t\t\t</span>
+                                            </span>
 
-\t\t\t\t\t\t\t\t\t\t</div>
-\t\t\t\t\t\t\t\t\t))
-\t\t\t\t\t\t\t\t}
+                                        </div>
+                                    ))
+                                }
 
-\t\t\t\t\t\t\t</div>
+                            </div>
                         </div>
 
                     </div>
@@ -174,7 +173,7 @@ import {
 
                                 <div class="social-icon">
 
-                                    <Instagram />
+                                    <img src="/icons/instagram.svg" alt="اینستاگرام" aria-hidden="true" />
 
                                 </div>
 
@@ -268,17 +267,19 @@ import {
 
                         <!-- پیامک -->
 
-\t\t\t\t\t\t<a
-\t\t\t\t\t\t\thref={contact.contact.sms}
-\t\t\t\t\t\t\tclass="action-card">
+                        <a
+                            href={contact.contact.sms}
+                            class="action-card">
 
-\t\t\t\t\t\t\t<Send />
+                            <Send />
 
-\t\t\t\t\t\t\t<span>
-\t\t\t\t\t\t\t\tپیامک
-\t\t\t\t\t\t\t</span>
+                            <span>
 
-\t\t\t\t\t\t</a>
+                                پیامک
+
+                            </span>
+
+                        </a>
 
                         <!-- مسیریابی -->
 
@@ -336,41 +337,42 @@ import {
                     </p>
 
                     <div class="map-actions">
-\t\t\t\t\t<a
-\t\t\t\t\t\thref={contact.map.google}
-\t\t\t\t\t\ttarget="_blank"
-\t\t\t\t\t\trel="noopener noreferrer"
-\t\t\t\t\t\tclass="btn btn-primary">
 
-\t\t\t\t\t\t<img src="/icons/google-maps.svg" alt="Google Maps" />
+                        <a
+                            href={contact.map.google}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-primary">
 
-\t\t\t\t\t\t<span>Google Maps</span>
+                            <img src="/icons/google-maps.svg" alt="Google Maps" />
 
-\t\t\t\t\t</a>
+                            <span>Google Maps</span>
 
-\t\t\t\t\t<a
-\t\t\t\t\t\thref={contact.map.balad}
-\t\t\t\t\t\ttarget="_blank"
-\t\t\t\t\t\trel="noopener noreferrer"
-\t\t\t\t\t\tclass="btn btn-outline">
+                        </a>
 
-\t\t\t\t\t\t<img src="/icons/balad.svg" alt="بلد" />
+                        <a
+                            href={contact.map.balad}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-outline">
 
-\t\t\t\t\t\t<span>بلد</span>
+                            <img src="/icons/balad.svg" alt="بلد" />
 
-\t\t\t\t\t</a>
+                            <span>بلد</span>
 
-\t\t\t\t\t<a
-\t\t\t\t\t\thref={contact.map.neshan}
-\t\t\t\t\t\ttarget="_blank"
-\t\t\t\t\t\trel="noopener noreferrer"
-\t\t\t\t\t\tclass="btn btn-outline">
+                        </a>
 
-\t\t\t\t\t\t<img src="/icons/neshan.svg" alt="نشان" />
+                        <a
+                            href={contact.map.neshan}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="btn btn-outline">
 
-\t\t\t\t\t\t<span>نشان</span>
+                            <img src="/icons/neshan.svg" alt="نشان" />
 
-\t\t\t\t\t</a>
+                            <span>نشان</span>
+
+                        </a>
 
                     </div>
 
