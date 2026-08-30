@@ -1,0 +1,164 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import "../../styles/admin/registrations.css";
+import "../../styles/admin/students.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { getStudentProfile, STUDENT_STATUSES } from "../../server/students";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
+if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
+
+const db = (env as AdminEnv).DB;
+const idParam = Astro.url.searchParams.get("id");
+const numericId = idParam ? Number(idParam) : null;
+const profile = numericId && db ? await getStudentProfile(db, numericId) : null;
+
+const STATUS_LABELS_FA: Record<string, string> = { active: "فعال", inactive: "غیرفعال", graduated: "فارغ‌التحصیل" };
+const REGISTRATION_STATUS_LABELS_FA: Record<string, string> = { pending: "در انتظار", contacted: "تماس گرفته شد", confirmed: "تأیید شد", cancelled: "لغو شد" };
+
+const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile.student.lastName} | آموزشگاه موسیقی فاتح` : "هنرجویان | آموزشگاه موسیقی فاتح";
+---
+<MainLayout title={pageTitle} noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="students" />
+    <main class="admin-main">
+      <div class="admin-shell" data-admin-students>
+
+        {idParam && !profile && (
+          <section class="admin-hero">
+            <p>هنرجو یافت نشد</p>
+            <h1>پرونده‌ای با این شناسه وجود ندارد</h1>
+            <p><a href="/admin/students">بازگشت به فهرست هنرجویان</a></p>
+          </section>
+        )}
+
+        {profile && (
+          <Fragment>
+            <section class="admin-hero">
+              <p><a href="/admin/students">← فهرست هنرجویان</a></p>
+              <h1>{profile.student.firstName} {profile.student.lastName}</h1>
+              <p dir="ltr" class="admin-student-code">کد ملی: {profile.student.nationalCode}</p>
+            </section>
+
+            <div class="admin-profile-grid">
+              <section class="admin-card">
+                <h2>اطلاعات هنرجو</h2>
+                <form id="studentEditForm" class="admin-form" data-id={profile.student.id}>
+                  <label>نام<input name="firstName" value={profile.student.firstName} required /></label>
+                  <label>نام خانوادگی<input name="lastName" value={profile.student.lastName} required /></label>
+                  <label>نام پدر<input name="fatherName" value={profile.student.fatherName} /></label>
+                  <label>سال تولد (شمسی)<input name="birthYear" type="number" min="1300" max="1500" value={profile.student.birthYear ?? ""} /></label>
+                  <label>موبایل<input name="phone" dir="ltr" value={profile.student.phone} required /></label>
+                  <label>ایمیل<input name="email" type="email" dir="ltr" value={profile.student.email} /></label>
+                  <label>شغل<input name="occupation" value={profile.student.occupation} /></label>
+                  <label>محل صدور کد ملی<input name="idIssuePlace" value={profile.student.idIssuePlace} /></label>
+                  <label>تماس اضطراری<input name="emergencyContact" value={profile.student.emergencyContact} /></label>
+                  <label>وضعیت
+                    <select name="status">
+                      {STUDENT_STATUSES.map((status) => (
+                        <option value={status} selected={status === profile.student.status}>{STATUS_LABELS_FA[status]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>آدرس<textarea name="address" rows="2">{profile.student.address}</textarea></label>
+                  <label>یادداشت داخلی<textarea name="notes" rows="2">{profile.student.notes}</textarea></label>
+                  <div class="admin-form-actions">
+                    <button type="submit">ذخیره تغییرات</button>
+                    <span id="studentEditStatus" class="admin-live-status"></span>
+                  </div>
+                </form>
+              </section>
+
+              <section class="admin-card admin-card-slim">
+                <h2>پنل هنرجو</h2>
+                <p class:list={["admin-status-pill", profile.hasPortalAccount ? "is-good" : "is-neutral"]}>
+                  {profile.hasPortalAccount ? "دارای حساب کاربری" : "هنوز وارد پنل نشده"}
+                </p>
+                <p class="admin-table-subtext">
+                  رمز اولیه ورود، کد ملی هنرجوست. بازنشانی رمز از صفحه‌ی «ثبت‌نام‌ها» در دسترس است.
+                </p>
+              </section>
+            </div>
+
+            <div class="admin-section-title"><h2>سوابق ثبت‌نام ({profile.registrations.length} ترم)</h2></div>
+            <section class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>ترم</th><th>کد پیگیری</th><th>دوره</th><th>استاد</th><th>روز کلاس</th><th>وضعیت</th><th>تاریخ</th></tr></thead>
+                <tbody>
+                  {profile.registrations.length === 0 ? (
+                    <tr><td colspan="7" class="admin-table-empty">ثبت‌نامی برای این هنرجو یافت نشد.</td></tr>
+                  ) : (
+                    profile.registrations.map((r) => (
+                      <tr>
+                        <td>{r.term}</td>
+                        <td dir="ltr">{r.trackingCode}</td>
+                        <td>{r.instrumentTitle}</td>
+                        <td>{r.instructorName}</td>
+                        <td>{r.scheduleWeekday}</td>
+                        <td><span class="admin-status-pill" data-status={r.status}>{REGISTRATION_STATUS_LABELS_FA[r.status] ?? r.status}</span></td>
+                        <td>{r.createdAt}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            <div class="admin-section-title"><h2>گواهینامه‌ها ({profile.certificates.length})</h2></div>
+            <section class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>شماره گواهینامه</th><th>سطح</th><th>تاریخ اتمام</th><th>تاریخ صدور</th></tr></thead>
+                <tbody>
+                  {profile.certificates.length === 0 ? (
+                    <tr><td colspan="4" class="admin-table-empty">گواهینامه‌ای صادر نشده است.</td></tr>
+                  ) : (
+                    profile.certificates.map((c) => (
+                      <tr><td dir="ltr">{c.certNumber}</td><td>{c.level ?? "-"}</td><td>{c.completionDateJalali}</td><td>{c.issuedAt}</td></tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+          </Fragment>
+        )}
+
+        {!idParam && (
+          <Fragment>
+            <section class="admin-hero no-print">
+              <p>هنرجویان</p>
+              <h1>پرونده هنرجویان</h1>
+              <p>مشاهده و مدیریت اطلاعات کامل هنرجویان آموزشگاه.</p>
+            </section>
+
+            <section class="admin-students-filters no-print">
+              <input type="search" id="studentSearch" placeholder="جست‌وجو بر اساس نام، کد ملی یا موبایل..." />
+              <select id="studentStatusFilter">
+                <option value="">همه وضعیت‌ها</option>
+                {STUDENT_STATUSES.map((status) => <option value={status}>{STATUS_LABELS_FA[status]}</option>)}
+              </select>
+            </section>
+
+            <section class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>نام</th><th>کد ملی</th><th>موبایل</th><th>تعداد ترم</th><th>آخرین ثبت‌نام</th><th>وضعیت</th></tr></thead>
+                <tbody id="studentsBody"><tr><td colspan="6" class="admin-table-empty">در حال بارگذاری...</td></tr></tbody>
+              </table>
+            </section>
+
+            <section class="admin-pagination no-print" id="studentsPagination"></section>
+          </Fragment>
+        )}
+
+      </div>
+    </main>
+  </div>
+  {profile && <script>import "../../scripts/admin/student-profile.js";</script>}
+  {!idParam && <script>import "../../scripts/admin/students.js";</script>}
+</MainLayout>

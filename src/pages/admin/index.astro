@@ -22,6 +22,12 @@ const regPending = regByStatus.pending ?? 0;
 
 const regStatusLabels: Record<string, string> = { pending: "در انتظار", contacted: "تماس گرفته شد", confirmed: "تأیید شد", cancelled: "لغو شد" };
 
+const studentRows = db
+  ? (await db.prepare("SELECT status, COUNT(*) as count FROM students GROUP BY status").all<{ status: string; count: number }>()).results
+  : [];
+const studentsTotal = studentRows.reduce((sum, r) => sum + r.count, 0);
+const studentsActive = studentRows.find((r) => r.status === "active")?.count ?? 0;
+
 let postsTotal = 0;
 let postsPublished = 0;
 let postsDraft = 0;
@@ -76,6 +82,17 @@ if (isAdmin && db) {
             </a>
           )}
 
+          <a href="/admin/students" class="admin-stat-card">
+            <span class="admin-stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><circle cx="11" cy="9" r="2"/><path d="M8 15c.5-1.5 1.7-2 3-2s2.5.5 3 2"/></svg>
+            </span>
+            <span class="admin-stat-value">{studentsTotal}</span>
+            <span class="admin-stat-label">پرونده هنرجو</span>
+            <span class="admin-stat-breakdown">
+              <span>{studentsActive} فعال</span>
+            </span>
+          </a>
+
           <a href="/admin/registration" class="admin-stat-card">
             <span class="admin-stat-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -103,6 +120,7 @@ if (isAdmin && db) {
           {isAdmin && (
             <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
           )}
+          <a href="/admin/students"><strong>پرونده هنرجویان</strong><span>مشاهده و ویرایش اطلاعات کامل هنرجویان آموزشگاه</span></a>
           <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
         </nav>
       </div>

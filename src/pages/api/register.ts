@@ -21,6 +21,7 @@ import { env } from "cloudflare:workers";
 import type { RegistrationState } from "../../scripts/registration/RegistrationStore";
 import { registrationValidation } from "../../scripts/registration/RegistrationValidation";
 import { sendRegistrationNotifications } from "../../server/notifications";
+import { findOrCreateStudentForRegistration } from "../../server/students";
 
 function generateTrackingCode(): string {
   const year = new Date().getFullYear();
@@ -59,6 +60,28 @@ export const POST: APIRoute = async ({ request }) => {
     console.error("Failed to compute term number, defaulting to 1:", err);
   }
 
+  // Keeps the "students" table (migrations/0011) in sync with every new
+  // signup, the same way it was backfilled from historical registrations.
+  // Never blocks a successful registration: same resilience rule already
+  // applied to notifications below -- storage of the registration itself
+  // always comes first.
+  let studentId: number | null = null;
+  try {
+    studentId = await findOrCreateStudentForRegistration(db, {
+      nationalCode: state.student.nationalCode,
+      firstName: state.student.firstName,
+      lastName: state.student.lastName,
+      fatherName: state.student.fatherName,
+      birthYear: state.student.birthYear || null,
+      phone: state.student.mobile,
+      address: state.student.address,
+      idIssuePlace: state.student.idIssuePlace,
+      occupation: state.student.occupation
+    });
+  } catch (err) {
+    console.error("Failed to find/create student record, continuing without student_id:", err);
+  }
+
   let trackingCode = "";
   let inserted = false;
 
@@ -75,8 +98,8 @@ export const POST: APIRoute = async ({ request }) => {
             schedule_id, schedule_weekday, schedule_classroom, schedule_duration,
             student_first_name, student_last_name, student_national_code, student_mobile, student_age, student_gender, has_instrument,
             student_father_name, student_id_issue_place, student_birth_year, student_occupation, student_address,
-            term
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+            term, student_id
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         )
         .bind(
           trackingCode,
@@ -101,7 +124,8 @@ export const POST: APIRoute = async ({ request }) => {
           state.student.birthYear,
           state.student.occupation,
           state.student.address,
-          term
+          term,
+          studentId
         )
         .run();
 
