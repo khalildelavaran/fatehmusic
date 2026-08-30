@@ -16,428 +16,151 @@ import {
   resolveSite,
   resolveInstructor,
   buildPersonSchema,
-  buildBreadcrumbSchema
+  buildBreadcrumbSchema,
+  answersFromFaq
 } from "../../seo/index.js";
 
-
 export async function getStaticPaths() {
-
   return instructors.map((teacher) => ({
-    params:{
-      slug: teacher.slug
-    },
-    props:{
-      teacher
-    }
+    params: { slug: teacher.slug },
+    props: { teacher }
   }));
-
 }
-
-
 
 const { teacher } = Astro.props;
-
-
 const site = resolveSite();
-
-
-const resolvedInstructor = resolveInstructor(
-  teacher,
-  site
-);
-
-
+const resolvedInstructor = resolveInstructor(teacher, site);
 
 if (!resolvedInstructor) {
-  throw new Error(
-    `Instructor not found: ${teacher.slug}`
-  );
+  throw new Error(`Instructor not found: ${teacher.slug}`);
 }
-
-
 
 type InstructorSeoContent = {
   quickSummary: string;
-
   teachingPhilosophy: string[];
-
-  methodBySubject: {
-    subject: string;
-    description: string;
-  }[];
-
+  methodBySubject: { subject: string; description: string }[];
   whoShouldStudyWithThem: string[];
-
   typicalProgression: string[];
-
-commonStudentMistakes: {
-  mistake: string;
-  fix: string;
-}[];
-
+  commonStudentMistakes: { mistake: string; fix: string }[];
   whyStudentsChooseThem: string[];
 };
 
-
-const seoContent =
-  resolvedInstructor.seoContent as InstructorSeoContent | null;
-
-
-
-const personSchema = buildPersonSchema(
-  resolvedInstructor,
-  {
-    site
-  }
+const seoContent = resolvedInstructor.seoContent as InstructorSeoContent | null;
+const personSchema = buildPersonSchema(resolvedInstructor, { site });
+const breadcrumbSchema = buildBreadcrumbSchema([
+  { name: "خانه", path: "/" },
+  { name: "اساتید", path: "/instructors" },
+  { name: teacher.name, path: `/instructors/${teacher.slug}` }
+], site);
+const schema: object[] = [personSchema, breadcrumbSchema].filter(
+  (item): item is object => item !== null
 );
 
+const teacherCourses: ResolvedCourse[] = resolvedInstructor.courses as ResolvedCourse[];
+const linkCandidates = teacherCourses.map((course) => ({
+  url: `${site.url}/courses/${course.slug}`,
+  title: course.title,
+  type: "Course",
+  topics: [course.instrument, course.category, ...course.seo.keywords],
+  priority: 30,
+  local: true
+}));
 
-
-const breadcrumbSchema = buildBreadcrumbSchema(
-  [
-    {
-      name:"خانه",
-      path:"/"
-    },
-    {
-      name:"اساتید",
-      path:"/instructors"
-    },
-    {
-      name:teacher.name,
-      path:`/instructors/${teacher.slug}`
-    }
-  ],
-  site
+const answerBlocks = answersFromFaq(
+  resolvedInstructor.faqs,
+  `${site.url}/instructors/${teacher.slug}`,
+  `${site.url}/instructors/${teacher.slug}#person`
 );
 
-
-
-const schema: object[] = [
-  personSchema,
-  breadcrumbSchema
-
-].filter(
-  (item): item is object =>
-    item !== null
-);
-
-
-
-const teacherCourses: ResolvedCourse[] =
-  resolvedInstructor.courses as ResolvedCourse[];
+const auditText = [
+  teacher.content.biography,
+  ...(teacherCourses.map((course) => course.content.description)),
+  seoContent?.quickSummary || "",
+  ...(seoContent?.teachingPhilosophy || []),
+  ...(seoContent?.typicalProgression || [])
+].filter(Boolean).join(" ");
+const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
+const internalLinkCount = teacherCourses.length + 1;
 
 ---
 
 <MainLayout
   title={`${teacher.name} | آموزشگاه موسیقی فاتح`}
   description={teacher.content.biography}
+  keywords={teacher.seo.keywords}
+  topics={[...teacher.professional.roles, "شوشتر"]}
+  entityType="Person"
+  answerBlocks={answerBlocks}
+  linkCandidates={linkCandidates}
+  auditContext={{
+    h1Count: 1,
+    missingImageAlt: 0,
+    wordCount,
+    internalLinkCount
+  }}
   schema={schema}
 >
-
-
 <Header />
 
-
 <section class="teacher-hero">
-
 <div class="container">
-
 <div class="teacher-grid">
-
-
 <div class="teacher-content">
-
-
-<span class="section-badge">
-مدرس آموزشگاه موسیقی فاتح
-</span>
-
-
-<h1>
-{teacher.name}
-</h1>
-
-
-<h2>
-{teacher.position}
-</h2>
-
-
-<p>
-{teacher.content.biography}
-</p>
-
-
-
+<span class="section-badge">مدرس آموزشگاه موسیقی فاتح</span>
+<h1>{teacher.name}</h1>
+<h2>{teacher.position}</h2>
+<p>{teacher.content.biography}</p>
 <div class="teacher-meta">
-
-
-<div class="meta-card">
-
-<strong>
-{teacher.professional.experienceYears}
-</strong>
-
-<span>
-سابقه تدریس
-</span>
-
+<div class="meta-card"><strong>{teacher.professional.experienceYears}</strong><span>سابقه تدریس</span></div>
+<div class="meta-card"><strong>{teacherCourses.length}</strong><span>دوره آموزشی</span></div>
 </div>
-
-
-
-<div class="meta-card">
-
-<strong>
-{teacherCourses.length}
-</strong>
-
-<span>
-دوره آموزشی
-</span>
-
+<a href={`/register?instructor=${teacher.slug}`} class="btn btn-primary">ثبت‌نام با {teacher.name}</a>
 </div>
-
-
+<div class="teacher-image"><img src={teacher.media.images.profile} alt={teacher.name} loading="eager" decoding="async" /></div>
 </div>
-
-
-<a
-href={`/register?instructor=${teacher.slug}`}
-class="btn btn-primary"
->
-ثبت‌نام با {teacher.name}
-</a>
-
-
 </div>
-
-
-
-<div class="teacher-image">
-
-<img
-src={teacher.media.images.profile}
-alt={teacher.name}
-loading="eager"
-decoding="async"
-/>
-
-</div>
-
-
-</div>
-
-</div>
-
 </section>
-
-
-
-
 
 <section class="teacher-courses">
-
 <div class="container">
-
-
 <div class="section-header">
-
-<span class="section-badge">
-دوره‌های آموزشی
-</span>
-
-
-<h2>
-کلاس‌های {teacher.name}
-</h2>
-
-
-<p>
-دوره‌هایی که توسط این مدرس در آموزشگاه موسیقی فاتح برگزار می‌شود.
-</p>
-
+<span class="section-badge">دوره‌های آموزشی</span>
+<h2>کلاس‌های {teacher.name}</h2>
+<p>دوره‌هایی که توسط این مدرس در آموزشگاه موسیقی فاتح برگزار می‌شود.</p>
 </div>
-
-
-
-{
-teacherCourses.length > 0 ? (
-
+{teacherCourses.length > 0 ? (
 <div class="courses-grid">
-
-
-{
-teacherCourses.map(
-(course: ResolvedCourse)=>(
-
-
-<a
-href={`/courses/${course.slug}`}
-class="course-card"
->
-
-
-<img
-src={course.media.image}
-alt={course.title}
-loading="lazy"
-decoding="async"
-/>
-
-
-<div class="course-content">
-
-
-<h3>
-{course.title}
-</h3>
-
-
-<p>
-{course.content.excerpt}
-</p>
-
-
-<span class="course-link">
-مشاهده دوره
-</span>
-
-
-</div>
-
-
+{teacherCourses.map((course: ResolvedCourse) => (
+<a href={`/courses/${course.slug}`} class="course-card">
+<img src={course.media.image} alt={course.title} loading="lazy" decoding="async" />
+<div class="course-content"><h3>{course.title}</h3><p>{course.content.excerpt}</p><span class="course-link">مشاهده دوره</span></div>
 </a>
-
-
-)
-)
-
-}
-
-
+))}
 </div>
-
-
 ) : (
-
-<div class="empty-state">
-
-<p>
-هنوز دوره‌ای برای این مدرس ثبت نشده است.
-</p>
-
+<div class="empty-state"><p>هنوز دوره‌ای برای این مدرس ثبت نشده است.</p></div>
+)}
 </div>
-
-)
-
-}
-
-
-</div>
-
 </section>
-
-
-
-
 
 <section class="teacher-about">
-
 <div class="container">
-
-
-<div class="section-header">
-
-<span class="section-badge">
-درباره مدرس
-</span>
-
-
-<h2>
-آشنایی بیشتر با {teacher.name}
-</h2>
-
-
-</div>
-
-
-
+<div class="section-header"><span class="section-badge">درباره مدرس</span><h2>آشنایی بیشتر با {teacher.name}</h2></div>
 <div class="teacher-about-box">
-
-
-<p>
-{teacher.content.biography}
-</p>
-
-
-
-<div class="teacher-info">
-
-
-<div class="info-item">
-
-
-<strong>
-تحصیلات
-</strong>
-
-<span>
-{teacher.professional.education}
-</span>
-
-
-
-<strong>
-سابقه تدریس
-</strong>
-
-<span>
-{teacher.professional.experienceYears}
-</span>
-
-
+<p>{teacher.content.biography}</p>
+<div class="teacher-info"><div class="info-item"><strong>تحصیلات</strong><span>{teacher.professional.education}</span><strong>سابقه تدریس</strong><span>{teacher.professional.experienceYears}</span></div></div>
 </div>
-
-
 </div>
-
-
-</div>
-
-
-</div>
-
 </section>
 
-
-
-
-
-<InstructorSeoContent
-  instructorName={teacher.name}
-  seoContent={seoContent}
-/>
-
-
+<InstructorSeoContent instructorName={teacher.name} seoContent={seoContent} />
 
 <FAQSection
-
-title={`سوالات متداول درباره ${teacher.name}`}
-
-subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام می‌پرسند."
-
-items={resolvedInstructor.faqs}
-
+  title={`سوالات متداول درباره ${teacher.name}`}
+  subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام می‌پرسند."
+  items={resolvedInstructor.faqs}
 />
 
-
-
 <CTA />
-
-
 <Footer />
-
-
 </MainLayout>
