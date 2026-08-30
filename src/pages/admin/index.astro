@@ -6,12 +6,15 @@ import "../../styles/admin/base.css";
 import "../../styles/admin/nav.css";
 import "../../styles/admin/dashboard.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { courses } from "../../data/courses.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/admin/login");
 
 const isAdmin = session.role === ROLES.ADMIN;
 const db = (env as AdminEnv).DB;
+const totalCourses = courses.length;
+const activeCourses = courses.filter((course: { active?: boolean }) => course.active).length;
 
 async function safeAll<T>(sql: string): Promise<T[]> {
   if (!db) return [];
@@ -102,6 +105,17 @@ if (isAdmin) {
             </a>
           )}
 
+          <a href="/admin/courses" class="admin-stat-card">
+            <span class="admin-stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 17.5v-12Z"/><path d="M4 17.5A2.5 2.5 0 0 0 6.5 20H20"/><path d="M8 7h8M8 11h6"/></svg>
+              </span>
+              <span class="admin-stat-value">{totalCourses}</span>
+              <span class="admin-stat-label">دوره آموزشی</span>
+              <span class="admin-stat-breakdown">
+                <span>{activeCourses} فعال</span>
+              </span>
+            </a>
+
           <a href="/admin/students" class="admin-stat-card">
             <span class="admin-stat-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/><circle cx="11" cy="9" r="2"/><path d="M8 15c.5-1.5 1.7-2 3-2s2.5.5 3 2"/></svg>
@@ -151,6 +165,7 @@ if (isAdmin) {
           {isAdmin && (
             <a href="/admin/posts"><strong>مدیریت نوشته‌ها</strong><span>ایجاد، ویرایش، انتشار و پیش‌نویس مقاله‌های وبلاگ</span></a>
           )}
+          <a href="/admin/courses"><strong>مدیریت دوره‌ها</strong><span>مشاهده دوره‌ها، مدرس، دسته‌بندی، سطح و وضعیت فعال بودن دوره‌ها</span></a>
           <a href="/admin/students"><strong>پرونده هنرجویان</strong><span>مشاهده و ویرایش اطلاعات کامل هنرجویان آموزشگاه</span></a>
           <a href="/admin/instructors"><strong>مدیریت مدرسان</strong><span>افزودن، ویرایش و مشاهده‌ی هنرجویان هر مدرس</span></a>
           <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
