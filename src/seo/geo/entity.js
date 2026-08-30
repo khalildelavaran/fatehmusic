@@ -4,7 +4,7 @@
  * Module: GEO Entity References
  * --------------------------------------------------------
  * Centralizes canonical @id generation so Organization, Course,
- * Instructor, Article and Branch relationships remain stable across
+ * Instructor and Article relationships remain stable across
  * JSON-LD and future GEO features.
  */
 
