@@ -80,30 +80,27 @@ export interface ValidationResult {
   errors: string[];
 }
 
-const COLUMNS =
-  "id, slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active, created_at, updated_at";
-const DEFAULT_PAGE_SIZE = 20;
-const MAX_PAGE_SIZE = 100;
+var COLUMNS = "id, slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active, created_at, updated_at";
+var DEFAULT_PAGE_SIZE = 20;
+var MAX_PAGE_SIZE = 100;
 
-function parseInstruments(value: unknown): string[] {
+function parseInstruments(value: any): string[] {
   if (typeof value !== "string") {
     return [];
   }
-
   try {
-    const parsed: unknown = JSON.parse(value);
+    var parsed = JSON.parse(value);
     if (!Array.isArray(parsed)) {
       return [];
     }
-
-    const result: string[] = [];
-    for (const item of parsed) {
-      if (typeof item === "string") {
-        result.push(item);
+    var result: string[] = [];
+    for (var i = 0; i < parsed.length; i++) {
+      if (typeof parsed[i] === "string") {
+        result.push(parsed[i]);
       }
     }
     return result;
-  } catch {
+  } catch (error) {
     return [];
   }
 }
@@ -127,24 +124,19 @@ function mapDbInstructor(row: any): InstructorRecord {
 }
 
 function mapStaticInstructor(item: any): InstructorRecord {
-  const name = typeof item.name === "string" ? item.name.trim() : "";
-  const parts = name ? name.split(/\s+/) : [];
-  const identity = item.identity || {};
-  const content = item.content || {};
-  const relations = item.relations || {};
-
-  const firstName = String(
-    identity.firstName || (parts.length > 0 ? parts[0] : "")
-  );
-  const lastName = String(
-    identity.lastName || parts.slice(1).join(" ")
-  );
+  var name = typeof item.name === "string" ? item.name.trim() : "";
+  var parts = name ? name.split(/\s+/) : [];
+  var identity = item.identity || {};
+  var content = item.content || {};
+  var relations = item.relations || {};
+  var firstName = identity.firstName || (parts.length > 0 ? parts[0] : "");
+  var lastName = identity.lastName || parts.slice(1).join(" ");
 
   return {
     id: Number(item.id),
     slug: String(item.slug || ""),
-    firstName,
-    lastName,
+    firstName: String(firstName),
+    lastName: String(lastName),
     phone: String(item.phone || ""),
     email: String(item.email || ""),
     specialty: String(item.position || content.excerpt || ""),
@@ -157,45 +149,40 @@ function mapStaticInstructor(item: any): InstructorRecord {
   };
 }
 
-export function normalizeInstructorListParams(
-  params: InstructorListParams
-): NormalizedInstructorListParams {
-  const search = String(params.search || "").trim();
+export function normalizeInstructorListParams(params: InstructorListParams): NormalizedInstructorListParams {
+  var search = String(params.search || "").trim();
+  var isActive: boolean | null = null;
+  var pageNumber = Number(params.page);
+  var sizeNumber = Number(params.pageSize);
+  var page = 1;
+  var pageSize = DEFAULT_PAGE_SIZE;
 
-  let isActive: boolean | null = null;
   if (params.status === "active") {
     isActive = true;
   } else if (params.status === "inactive") {
     isActive = false;
   }
 
-  const pageNumber = Number(params.page);
-  const sizeNumber = Number(params.pageSize);
-
-  const page = Number.isFinite(pageNumber)
-    ? Math.max(1, Math.floor(pageNumber))
-    : 1;
-
-  const pageSize = Number.isFinite(sizeNumber)
-    ? Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(sizeNumber)))
-    : DEFAULT_PAGE_SIZE;
+  if (Number.isFinite(pageNumber)) {
+    page = Math.max(1, Math.floor(pageNumber));
+  }
+  if (Number.isFinite(sizeNumber)) {
+    pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(sizeNumber)));
+  }
 
   return {
-    search,
-    isActive,
-    page,
-    pageSize,
+    search: search,
+    isActive: isActive,
+    page: page,
+    pageSize: pageSize,
     offset: (page - 1) * pageSize
   };
 }
 
-export async function listInstructors(
-  db: D1Database,
-  params: InstructorListParams
-): Promise<InstructorListResult> {
-  const normalized = normalizeInstructorListParams(params);
-  const where: string[] = [];
-  const bindings: any[] = [];
+export async function listInstructors(db: D1Database, params: InstructorListParams): Promise<InstructorListResult> {
+  var normalized = normalizeInstructorListParams(params);
+  var where: string[] = [];
+  var bindings: any[] = [];
 
   if (normalized.isActive !== null) {
     where.push("is_active = ?");
@@ -203,55 +190,47 @@ export async function listInstructors(
   }
 
   if (normalized.search) {
-    where.push(
-      "((first_name || ' ' || last_name) LIKE ? OR specialty LIKE ? OR phone LIKE ?)"
-    );
-    const term = `%${normalized.search}%`;
+    where.push("((first_name || ' ' || last_name) LIKE ? OR specialty LIKE ? OR phone LIKE ?)");
+    var term = "%" + normalized.search + "%";
     bindings.push(term, term, term);
   }
 
-  const whereSql = where.length > 0 ? `WHERE ${where.join(" AND ")}` : "";
+  var whereSql = where.length > 0 ? "WHERE " + where.join(" AND ") : "";
 
   try {
-    const totalStatement = db.prepare(
-      `SELECT COUNT(*) AS count FROM instructors ${whereSql}`
-    );
-    const totalRow: any = await totalStatement.bind(...bindings).first();
-
-    const sql = `
-      SELECT ${COLUMNS},
-        (
-          SELECT COUNT(DISTINCT r.student_national_code)
-          FROM registrations r
-          WHERE r.instructor_id = instructors.id
-            AND r.student_national_code IS NOT NULL
-            AND r.student_national_code != ''
-        ) AS student_count
-      FROM instructors
-      ${whereSql}
-      ORDER BY is_active DESC, first_name, last_name
-      LIMIT ? OFFSET ?
-    `;
-
-    const rowStatement = db.prepare(sql);
-    const rows: any = await rowStatement
-      .bind(...bindings, normalized.pageSize, normalized.offset)
-      .all();
+    var totalSql = "SELECT COUNT(*) AS count FROM instructors " + whereSql;
+    var totalRow: any = await db.prepare(totalSql).bind.apply(null, bindings).first();
+    var sql = "SELECT " + COLUMNS + ", (SELECT COUNT(DISTINCT r.student_national_code) FROM registrations r WHERE r.instructor_id = instructors.id AND r.student_national_code IS NOT NULL AND r.student_national_code != '') AS student_count FROM instructors " + whereSql + " ORDER BY is_active DESC, first_name, last_name LIMIT ? OFFSET ?";
+    var queryBindings = bindings.slice();
+    queryBindings.push(normalized.pageSize);
+    queryBindings.push(normalized.offset);
+    var rows: any = await db.prepare(sql).bind.apply(null, queryBindings).all();
 
     if (rows && Array.isArray(rows.results)) {
-      const instructors: InstructorListItem[] = [];
-
-      for (const row of rows.results) {
-        const instructor = mapDbInstructor(row);
+      var instructors: InstructorListItem[] = [];
+      for (var i = 0; i < rows.results.length; i++) {
+        var row = rows.results[i];
+        var instructor = mapDbInstructor(row);
         instructors.push({
-          ...instructor,
+          id: instructor.id,
+          slug: instructor.slug,
+          firstName: instructor.firstName,
+          lastName: instructor.lastName,
+          phone: instructor.phone,
+          email: instructor.email,
+          specialty: instructor.specialty,
+          instruments: instructor.instruments,
+          biography: instructor.biography,
+          notes: instructor.notes,
+          isActive: instructor.isActive,
+          createdAt: instructor.createdAt,
+          updatedAt: instructor.updatedAt,
           studentCount: Number(row.student_count) || 0
         });
       }
-
       return {
-        instructors,
-        total: Number(totalRow?.count) || 0,
+        instructors: instructors,
+        total: Number(totalRow && totalRow.count) || 0,
         page: normalized.page,
         pageSize: normalized.pageSize
       };
@@ -260,71 +239,68 @@ export async function listInstructors(
     console.error("[admin/instructors] list query failed", error);
   }
 
-  const filtered: any[] = [];
-
-  for (const item of staticInstructors) {
-    const identity = item.identity || {};
-    const fallbackName = `${identity.firstName || ""} ${identity.lastName || ""}`.trim();
-    const name = String(item.name || fallbackName);
-    const position = String(item.position || "");
-
-    const matchesSearch =
-      !normalized.search ||
-      name.includes(normalized.search) ||
-      position.includes(normalized.search);
-
-    const matchesStatus =
-      normalized.isActive === null || item.active === normalized.isActive;
+  var filtered: any[] = [];
+  for (var j = 0; j < staticInstructors.length; j++) {
+    var item: any = staticInstructors[j];
+    var identity = item.identity || {};
+    var fallbackName = String(identity.firstName || "") + " " + String(identity.lastName || "");
+    var name = String(item.name || fallbackName).trim();
+    var position = String(item.position || "");
+    var matchesSearch = !normalized.search || name.indexOf(normalized.search) >= 0 || position.indexOf(normalized.search) >= 0;
+    var matchesStatus = normalized.isActive === null || item.active === normalized.isActive;
 
     if (matchesSearch && matchesStatus) {
       filtered.push(item);
     }
   }
 
-  const pageItems = filtered.slice(
-    normalized.offset,
-    normalized.offset + normalized.pageSize
-  );
-
-  const instructors: InstructorListItem[] = pageItems.map((item) => ({
-    ...mapStaticInstructor(item),
-    studentCount: 0
-  }));
+  var pageItems = filtered.slice(normalized.offset, normalized.offset + normalized.pageSize);
+  var resultInstructors: InstructorListItem[] = [];
+  for (var k = 0; k < pageItems.length; k++) {
+    var mapped = mapStaticInstructor(pageItems[k]);
+    resultInstructors.push({
+      id: mapped.id,
+      slug: mapped.slug,
+      firstName: mapped.firstName,
+      lastName: mapped.lastName,
+      phone: mapped.phone,
+      email: mapped.email,
+      specialty: mapped.specialty,
+      instruments: mapped.instruments,
+      biography: mapped.biography,
+      notes: mapped.notes,
+      isActive: mapped.isActive,
+      createdAt: mapped.createdAt,
+      updatedAt: mapped.updatedAt,
+      studentCount: 0
+    });
+  }
 
   return {
-    instructors,
+    instructors: resultInstructors,
     total: filtered.length,
     page: normalized.page,
     pageSize: normalized.pageSize
   };
 }
 
-export async function getInstructorProfile(
-  db: D1Database,
-  id: number
-): Promise<InstructorProfile | null> {
-  let instructor: InstructorRecord | null = null;
+export async function getInstructorProfile(db: D1Database, id: number): Promise<InstructorProfile | null> {
+  var instructor: InstructorRecord | null = null;
 
   try {
-    const statement = db.prepare(
-      `SELECT ${COLUMNS} FROM instructors WHERE id = ?`
-    );
-    const row: any = await statement.bind(id).first();
-
+    var statement = db.prepare("SELECT " + COLUMNS + " FROM instructors WHERE id = ?");
+    var row: any = await statement.bind(id).first();
     if (row) {
       instructor = mapDbInstructor(row);
     }
   } catch (error) {
-    console.error(
-      "[admin/instructors] profile instructor query failed",
-      error
-    );
+    console.error("[admin/instructors] profile instructor query failed", error);
   }
 
   if (!instructor) {
-    for (const item of staticInstructors) {
-      if (Number(item.id) === Number(id)) {
-        instructor = mapStaticInstructor(item);
+    for (var i = 0; i < staticInstructors.length; i++) {
+      if (Number(staticInstructors[i].id) === Number(id)) {
+        instructor = mapStaticInstructor(staticInstructors[i]);
         break;
       }
     }
@@ -334,124 +310,84 @@ export async function getInstructorProfile(
     return null;
   }
 
-  const students: InstructorStudentSummary[] = [];
+  var students: InstructorStudentSummary[] = [];
 
   try {
-    const sql = `
-      SELECT
-        s.id AS student_id,
-        s.first_name,
-        s.last_name,
-        s.national_code,
-        s.status AS student_status,
-        r.instrument_title AS course,
-        COUNT(*) AS term_count,
-        MIN(r.created_at) AS start_date,
-        MAX(r.created_at) AS last_activity
-      FROM registrations r
-      JOIN students s ON s.id = r.student_id
-      WHERE r.instructor_id = ?
-      GROUP BY s.id, r.instrument_title
-      ORDER BY last_activity DESC
-    `;
-
-    const result: any = await db.prepare(sql).bind(id).all();
-
+    var sql = "SELECT s.id AS student_id, s.first_name, s.last_name, s.national_code, s.status AS student_status, r.instrument_title AS course, COUNT(*) AS term_count, MIN(r.created_at) AS start_date, MAX(r.created_at) AS last_activity FROM registrations r JOIN students s ON s.id = r.student_id WHERE r.instructor_id = ? GROUP BY s.id, r.instrument_title ORDER BY last_activity DESC";
+    var result: any = await db.prepare(sql).bind(id).all();
     if (result && Array.isArray(result.results)) {
-      for (const row of result.results) {
+      for (var j = 0; j < result.results.length; j++) {
+        var studentRow = result.results[j];
         students.push({
-          studentId: Number(row.student_id),
-          firstName: String(row.first_name || ""),
-          lastName: String(row.last_name || ""),
-          nationalCode: String(row.national_code || ""),
-          studentStatus: String(row.student_status || ""),
-          course: String(row.course || ""),
-          termCount: Number(row.term_count) || 0,
-          startDate: String(row.start_date || ""),
-          lastActivity: String(row.last_activity || "")
+          studentId: Number(studentRow.student_id),
+          firstName: String(studentRow.first_name || ""),
+          lastName: String(studentRow.last_name || ""),
+          nationalCode: String(studentRow.national_code || ""),
+          studentStatus: String(studentRow.student_status || ""),
+          course: String(studentRow.course || ""),
+          termCount: Number(studentRow.term_count) || 0,
+          startDate: String(studentRow.start_date || ""),
+          lastActivity: String(studentRow.last_activity || "")
         });
       }
     }
   } catch (error) {
-    console.error(
-      "[admin/instructors] profile student query failed",
-      error
-    );
+    console.error("[admin/instructors] profile student query failed", error);
   }
 
   return {
-    instructor,
-    students
+    instructor: instructor,
+    students: students
   };
 }
 
-export function validateInstructorInput(
-  input: InstructorInput,
-  options: { isCreate?: boolean } = {}
-): ValidationResult {
-  const errors: string[] = [];
-  const isCreate = options.isCreate === true;
-
-  const firstName =
-    typeof input.firstName === "string" ? input.firstName.trim() : "";
-  const lastName =
-    typeof input.lastName === "string" ? input.lastName.trim() : "";
+export function validateInstructorInput(input: InstructorInput, options: { isCreate?: boolean } = {}): ValidationResult {
+  var errors: string[] = [];
+  var isCreate = options.isCreate === true;
+  var firstName = typeof input.firstName === "string" ? input.firstName.trim() : "";
+  var lastName = typeof input.lastName === "string" ? input.lastName.trim() : "";
 
   if (isCreate && !firstName) {
     errors.push("نام مدرس الزامی است.");
   }
-
   if (isCreate && !lastName) {
     errors.push("نام خانوادگی مدرس الزامی است.");
   }
-
   if (input.email !== undefined && input.email !== "") {
-    const email = String(input.email);
-    const at = email.indexOf("@");
-    const dot = email.lastIndexOf(".");
-
+    var email = String(input.email);
+    var at = email.indexOf("@");
+    var dot = email.lastIndexOf(".");
     if (at <= 0 || dot <= at + 1 || dot >= email.length - 1) {
       errors.push("ایمیل معتبر نیست.");
     }
   }
-
   if (input.instruments !== undefined && !Array.isArray(input.instruments)) {
     errors.push("فهرست سازهای آموزشی معتبر نیست.");
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors: errors
   };
 }
 
 function slugify(firstName: string, lastName: string): string {
-  const raw = `${firstName}-${lastName}`.trim().toLowerCase();
-  let result = "";
-
-  for (const character of raw) {
-    const code = character.charCodeAt(0);
-
-    if (
-      (code >= 97 && code <= 122) ||
-      (code >= 48 && code <= 57) ||
-      character === "-" ||
-      (code >= 0x0600 && code <= 0x06ff)
-    ) {
+  var raw = (firstName + "-" + lastName).trim().toLowerCase();
+  var result = "";
+  for (var i = 0; i < raw.length; i++) {
+    var character = raw.charAt(i);
+    var code = character.charCodeAt(0);
+    if ((code >= 97 && code <= 122) || (code >= 48 && code <= 57) || character === "-" || (code >= 0x0600 && code <= 0x06ff)) {
       result += character;
     } else if (/\s/.test(character)) {
       result += "-";
     }
   }
-
-  return result || `instructor-${Date.now()}`;
+  return result || "instructor-" + Date.now();
 }
 
-export async function createInstructor(
-  db: D1Database,
-  input: InstructorInput
-): Promise<number> {
-  const values = [
+export async function createInstructor(db: D1Database, input: InstructorInput): Promise<number> {
+  var values = [
     slugify(input.firstName || "", input.lastName || ""),
     input.firstName || "",
     input.lastName || "",
@@ -463,31 +399,17 @@ export async function createInstructor(
     input.notes || ""
   ];
 
-  const sql = `
-    INSERT INTO instructors
-      (slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-  `;
+  var sql = "INSERT INTO instructors (slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+  var result: any = await db.prepare(sql).bind.apply(null, values).run();
 
-  const result: any = await db.prepare(sql).bind(...values).run();
-
-  if (
-    !result ||
-    !result.meta ||
-    typeof result.meta.last_row_id !== "number"
-  ) {
+  if (!result || !result.meta || typeof result.meta.last_row_id !== "number") {
     throw new Error("Failed to create instructor");
   }
-
   return result.meta.last_row_id;
 }
 
-export async function updateInstructor(
-  db: D1Database,
-  id: number,
-  patch: InstructorInput
-): Promise<boolean> {
-  const columnMap: Record<string, string> = {
+export async function updateInstructor(db: D1Database, id: number, patch: InstructorInput): Promise<boolean> {
+  var columnMap: { [key: string]: string } = {
     firstName: "first_name",
     lastName: "last_name",
     phone: "phone",
@@ -496,15 +418,15 @@ export async function updateInstructor(
     biography: "biography",
     notes: "notes"
   };
+  var setClauses: string[] = [];
+  var bindings: any[] = [];
+  var keys = Object.keys(columnMap);
 
-  const setClauses: string[] = [];
-  const bindings: any[] = [];
-
-  for (const key of Object.keys(columnMap)) {
-    const value = (patch as Record<string, unknown>)[key];
-
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var value = (patch as any)[key];
     if (value !== undefined) {
-      setClauses.push(`${columnMap[key]} = ?`);
+      setClauses.push(columnMap[key] + " = ?");
       bindings.push(value);
     }
   }
@@ -513,24 +435,16 @@ export async function updateInstructor(
     setClauses.push("instruments = ?");
     bindings.push(JSON.stringify(patch.instruments));
   }
-
   if (patch.isActive !== undefined) {
     setClauses.push("is_active = ?");
     bindings.push(patch.isActive ? 1 : 0);
   }
-
   if (setClauses.length === 0) {
     return true;
   }
 
-  const sql = `
-    UPDATE instructors
-    SET ${setClauses.join(", ")}, updated_at = datetime('now')
-    WHERE id = ?
-  `;
-
+  var sql = "UPDATE instructors SET " + setClauses.join(", ") + ", updated_at = datetime('now') WHERE id = ?";
   bindings.push(id);
-
-  const result: any = await db.prepare(sql).bind(...bindings).run();
+  var result: any = await db.prepare(sql).bind.apply(null, bindings).run();
   return Boolean(result && result.success);
 }
