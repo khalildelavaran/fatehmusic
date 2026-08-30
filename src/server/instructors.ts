@@ -211,11 +211,17 @@ export async function listInstructors(
     const rows: any = await rowStatement.all();
 
     if (rows && Array.isArray(rows.results)) {
-      return {
-        instructors: rows.results.map((row) => ({
-          ...mapDbInstructor(row),
+      const instructors: InstructorListItem[] = [];
+      for (const row of rows.results) {
+        const instructor = mapDbInstructor(row);
+        instructors.push({
+          ...instructor,
           studentCount: Number(row.student_count) || 0
-        })),
+        });
+      }
+
+      return {
+        instructors,
         total: Number(totalRow && totalRow.count) || 0,
         page: normalized.page,
         pageSize: normalized.pageSize
@@ -241,13 +247,21 @@ export async function listInstructors(
     return matchesSearch && matchesStatus;
   });
 
+  const pageItems = filtered.slice(
+    normalized.offset,
+    normalized.offset + normalized.pageSize
+  );
+  const instructors: InstructorListItem[] = [];
+  for (const item of pageItems) {
+    const instructor = mapStaticInstructor(item);
+    instructors.push({
+      ...instructor,
+      studentCount: 0
+    });
+  }
+
   return {
-    instructors: filtered
-      .slice(normalized.offset, normalized.offset + normalized.pageSize)
-      .map((item) => ({
-        ...mapStaticInstructor(item),
-        studentCount: 0
-      })),
+    instructors,
     total: filtered.length,
     page: normalized.page,
     pageSize: normalized.pageSize
