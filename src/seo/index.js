@@ -20,6 +20,7 @@ import { buildOrganizationSchema } from "./schema/organization.js";
 import { buildWebsiteSchema } from "./schema/website.js";
 import { buildWebPageSchema } from "./schema/webpage.js";
 import { buildSchemaGraph } from "./schema/graph.js";
+import { buildCoreEntityGraph } from "./geo/graph.js";
 import { absoluteUrl } from "./helpers/url.js";
 import { isPrivateRoute } from "./helpers/private-route.js";
 
@@ -103,6 +104,7 @@ export function buildSEO({
         buildOrganizationSchema(site),
         buildWebsiteSchema(site),
         webPageSchema,
+        ...buildCoreEntityGraph(site),
         ...extraSchema
     ]);
 
