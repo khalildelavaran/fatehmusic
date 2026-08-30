@@ -1,9 +1,10 @@
 /**
- * Fateh Music Academy — SEO/GEO Engine v2 public entry point.
+ * --------------------------------------------------------
+ * Fateh Music Academy — SEO/GEO Engine v2
+ * Public entry point.
  */
+
 import { resolveSite } from "./resolvers/site.js";
-import { resolveCourse } from "./resolvers/course.js";
-import { resolveInstructor } from "./resolvers/instructor.js";
 import { buildMetadata } from "./builders/metadata.js";
 import { buildCanonical } from "./builders/canonical.js";
 import { buildOpenGraph } from "./builders/openGraph.js";
@@ -14,6 +15,17 @@ import { buildWebPageSchema } from "./schema/webpage.js";
 import { buildSchemaGraph } from "./schema/graph.js";
 import { buildTopicSchemas } from "./schema/topic.js";
 import { buildLocalPlaceSchema } from "./schema/local-place.js";
+import { absoluteUrl } from "./helpers/url.js";
+import { isPrivateRoute } from "./helpers/private-route.js";
+import { resolveTopics, topicSlugs } from "./v2/topics.js";
+import { classifyIntent } from "./v2/intents.js";
+import { getFreshness } from "./v2/freshness.js";
+import { buildInternalLinkPlan } from "./v2/internal-links.js";
+import { buildAnswerBlocks } from "./v2/answers.js";
+import { buildSiteLinkCandidates } from "./v2/site-graph.js";
+import { auditPage } from "./v2/audit.js";
+import { resolveCourse } from "./resolvers/course.js";
+import { resolveInstructor } from "./resolvers/instructor.js";
 import { buildCourseSchema } from "./schema/course.js";
 import { buildPersonSchema } from "./schema/person.js";
 import { buildArticleSchema } from "./schema/article.js";
@@ -22,15 +34,6 @@ import { buildBreadcrumbSchema } from "./schema/breadcrumb.js";
 import { buildItemListSchema } from "./schema/itemlist.js";
 import { buildAboutPageSchema } from "./schema/aboutpage.js";
 import { buildContactPageSchema } from "./schema/contactpage.js";
-import { absoluteUrl } from "./helpers/url.js";
-import { isPrivateRoute } from "./helpers/private-route.js";
-import { resolveTopics, topicSlugs } from "./v2/topics.js";
-import { classifyIntent } from "./v2/intents.js";
-import { getFreshness } from "./v2/freshness.js";
-import { buildInternalLinkPlan, buildLinkGraph } from "./v2/internal-links.js";
-import { buildAnswerBlocks, answersFromFaq } from "./v2/answers.js";
-import { buildSiteLinkCandidates } from "./v2/site-graph.js";
-import { auditPage } from "./v2/audit.js";
 
 export function buildSEO({ path, title, description, image, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates = [], auditContext = {}, extraSchema = [] } = {}) {
     const site = resolveSite();
@@ -51,4 +54,4 @@ export function buildSEO({ path, title, description, image, canonical, noindex =
     return Object.freeze({ metadata, canonical: canonicalUrl, openGraph, twitter, schemaGraph, geo: Object.freeze({ topics: topicsResolved, intent, freshness, internalLinks: links, answerBlocks: answers, audit }) });
 }
 
-export { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildPersonSchema, buildArticleSchema, buildFaqSchema, buildBreadcrumbSchema, buildItemListSchema, buildAboutPageSchema, buildContactPageSchema, buildWebPageSchema, buildLocalPlaceSchema, resolveTopics, topicSlugs, classifyIntent, getFreshness, buildInternalLinkPlan, buildLinkGraph, buildAnswerBlocks, answersFromFaq, buildSiteLinkCandidates, auditPage, isPrivateRoute };
+export { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildPersonSchema, buildArticleSchema, buildFaqSchema, buildBreadcrumbSchema, buildItemListSchema, buildAboutPageSchema, buildContactPageSchema, buildWebPageSchema, buildLocalPlaceSchema, buildSiteLinkCandidates, resolveTopics, topicSlugs, classifyIntent, getFreshness, buildInternalLinkPlan, buildAnswerBlocks, buildLinkGraph, answersFromFaq, auditPage, isPrivateRoute } from "./exports-v2.js";
