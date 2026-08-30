@@ -3,60 +3,48 @@
  * Fateh Music Academy — SEO Engine
  * Module: GEO Entity Graph
  * --------------------------------------------------------
- * Stable entity relationships shared by GEO and JSON-LD.
+ * Canonical relationship layer shared by GEO and JSON-LD.
+ * Core Organization/WebSite entities are owned by their Schema builders;
+ * this module must not create competing copies of those entities.
  */
 
-import {
-    buildCoreEntityIds,
-    entityRef,
-    courseEntityId,
-    instructorEntityId
-} from "./entity.js";
+import { courseEntityId, instructorEntityId, entityRef } from "./entity.js";
 
+/**
+ * Returns GEO relationship nodes for core entities.
+ * Organization and WebSite are defined by their Schema builders.
+ *
+ * @param {Object} site
+ * @returns {Array<Object>}
+ */
 export function buildCoreEntityGraph(site) {
-    const ids = buildCoreEntityIds(site);
+    const base = String(site.url).replace(/\/$/, "");
 
     return [
         {
-            "@id": ids.organization,
-            "@type": "MusicSchool",
-            url: site.url,
-            name: site.name
-        },
-        {
-            "@id": ids.website,
-            "@type": "WebSite",
-            url: site.url,
-            name: site.name,
-            publisher: entityRef(site.url, "organization")
+            "@id": `${base}/#website`,
+            publisher: entityRef(base, "organization")
         }
     ];
 }
 
 /**
- * Build the canonical Course ↔ Instructor references from the already
- * resolved Course/Instructor contracts. The resolver remains the single
- * source of truth for the relationship; this layer only converts it into
- * stable entity references.
+ * Build canonical Course → Instructor references from the resolved Course.
+ * The resolver remains the single source of truth for this relationship.
  *
- * @param {Object} course - resolved course
+ * @param {Object} course
  * @returns {Array<{"@id": string}>}
  */
 export function buildCourseInstructorRefs(course) {
     return (course?.instructors || [])
         .filter((instructor) => instructor?.url)
-        .map((instructor) => ({
-            "@id": instructorEntityId(instructor.url)
-        }));
+        .map((instructor) => ({ "@id": instructorEntityId(instructor.url) }));
 }
 
 /**
- * Build the canonical Course reference for a CourseInstance. `about` is a
- * schema.org-supported relationship on CourseInstance/Event and makes the
- * CourseInstance node explicitly point back to its Course entity, while the
- * existing `instructor` property points to the Person entity.
+ * Canonical Course reference used by CourseInstance relationships.
  *
- * @param {Object} course - resolved course
+ * @param {Object} course
  * @returns {{"@id": string}}
  */
 export function buildCourseRef(course) {
@@ -76,9 +64,7 @@ export function withEntityReferences(node, refs = {}) {
 
 /**
  * Merge nodes sharing the same @id while preserving the first node's
- * properties. Later nodes only fill missing properties. This prevents the
- * GEO layer from creating duplicate Organization/WebSite entities when it is
- * combined with the existing Schema builders.
+ * properties. Later nodes only fill missing properties.
  */
 export function mergeEntityNodes(nodes = []) {
     const byId = new Map();
