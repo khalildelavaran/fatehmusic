@@ -9,6 +9,7 @@ import "../../styles/admin/registrations.css";
 import "../../styles/admin/students.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getStudentProfile, STUDENT_STATUSES } from "../../server/students";
+import { formatJalaliDate } from "../../utils/format-date";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/admin/login");
@@ -103,7 +104,7 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
                         <td>{r.instructorName}</td>
                         <td>{r.scheduleWeekday}</td>
                         <td><span class="admin-status-pill" data-status={r.status}>{REGISTRATION_STATUS_LABELS_FA[r.status] ?? r.status}</span></td>
-                        <td>{r.createdAt}</td>
+                        <td>{formatJalaliDate(r.createdAt)}</td>
                       </tr>
                     ))
                   )}
@@ -120,7 +121,7 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
                     <tr><td colspan="4" class="admin-table-empty">گواهینامه‌ای صادر نشده است.</td></tr>
                   ) : (
                     profile.certificates.map((c) => (
-                      <tr><td dir="ltr">{c.certNumber}</td><td>{c.level ?? "-"}</td><td>{c.completionDateJalali}</td><td>{c.issuedAt}</td></tr>
+                      <tr><td dir="ltr">{c.certNumber}</td><td>{c.level ?? "-"}</td><td>{c.completionDateJalali}</td><td>{formatJalaliDate(c.issuedAt)}</td></tr>
                     ))
                   )}
                 </tbody>
