@@ -1,7 +1,8 @@
 /**
- * Fateh Music Academy — Content Strategy Engine
- * Turns topical content gaps and scored topic candidates into one
- * deterministic content-opportunity queue.
+ * Fateh Music Academy — Unified Content Intelligence
+ * Resolves AI topic candidates and SEO/GEO gaps into one decision queue.
+ * The topic engine discovers candidates; the SEO/GEO layer decides what
+ * action is most valuable: create, optimize, or merge.
  */
 import { TOPICS } from "./topics.js";
 
@@ -54,6 +55,9 @@ function buildTargetEntity(topic, course, isLocal, baseUrl) {
   if (course) return { type: "Course", id: `${baseUrl}/#course-${course.slug}`, name: course.title, url: `${baseUrl}/courses/${course.slug}` };
   return { type: "Thing", id: `${baseUrl}/#topic-${topic.slug}`, name: topic.name, url: `${baseUrl}/courses` };
 }
+function buildRecommendedLinks(targetEntity, baseUrl) {
+  return Object.freeze([...new Set([targetEntity.url, `${baseUrl}/locations/shushter`, `${baseUrl}/register`, `${baseUrl}/blog`])]);
+}
 function buildBrief(gap, courses = [], siteUrl) {
   const topic = findTopic(gap.topic);
   const intent = gap.missingIntents?.[0];
@@ -62,15 +66,19 @@ function buildBrief(gap, courses = [], siteUrl) {
   const course = findCourseForTopic(topic, courses);
   const isLocal = intent === "local" || topic.slug === "shushtar";
   const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
+  const articleCount = Number(gap.articleCount) || 0;
+  const action = articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT";
   return Object.freeze({
-    source: "gap", action: "NEW_CONTENT", topic: topic.slug, topicName: topic.name, searchIntent: intent,
+    source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent,
     title: buildTitle(topic, intent, course), suggestedSlug: `${topic.slug}-${intent}`, targetEntity,
     course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null,
-    priority: buildPriority(intent, gap.articleCount, course, isLocal), articleCount: gap.articleCount,
+    priority: buildPriority(intent, articleCount, course, isLocal), articleCount,
     existingArticleSlugs: gap.articleSlugs || [],
-    rationale: `پوشش intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ با ${gap.articleCount} مقاله فعلی، ایجاد یک محتوای هدفمند می‌تواند این شکاف را پوشش دهد.`,
+    rationale: action === "OPTIMIZE_EXISTING"
+      ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ به‌جای ساخت صفحه رقیب، محتوای موجود باید برای پوشش این intent تقویت شود.`
+      : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`,
     queryAngles: buildQueryAngles(topic, intent, course),
-    recommendedLinks: Object.freeze([targetEntity.url, `${baseUrl}/locations/shushtar`, `${baseUrl}/register`, `${baseUrl}/blog`])
+    recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl)
   });
 }
 export function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) {
@@ -79,11 +87,11 @@ export function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) {
 }
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const baseUrl = normalizeBaseUrl(siteUrl);
-  const topic = resolveTopicFromTitle(candidate.title);
+  const topic = resolveTopicFromTitle(candidate.title, candidate.instrumentKey || null);
   const course = candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : findCourseForTopic(topic, courses);
   const intent = candidate.intent || "informational";
   const isLocal = candidate.modifierType === "local_shushtar" || normalize(candidate.title).includes("شوشتر");
-  const safeTopic = topic || { slug: "music-education", name: candidate.relatedCourseTitle || "آموزش موسیقی" };
+  const safeTopic = topic || { slug: "music-education", name: candidate.relatedCourseTitle || "آموزش موسیقی", aliases: [] };
   const targetEntity = buildTargetEntity(safeTopic, course, isLocal, baseUrl);
   return Object.freeze({
     source: "topic-engine", action: "NEW_CONTENT", topic: safeTopic.slug, topicName: safeTopic.name, searchIntent: intent,
@@ -94,31 +102,53 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
     priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)), articleCount: 0, existingArticleSlugs: [],
     rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.",
     queryAngles: buildQueryAngles(safeTopic, intent, course),
-    recommendedLinks: Object.freeze([targetEntity.url, `${baseUrl}/locations/shushtar`, `${baseUrl}/register`, `${baseUrl}/blog`]),
+    recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl),
     modifierType: candidate.modifierType, scoreBreakdown: candidate.scoreBreakdown || null,
     topicId: candidate.id ?? null, topicStatus: candidate.status || null
   });
 }
 function opportunityKey(item) { return `${item.topic}|${item.searchIntent}|${item.course?.slug || item.targetEntity?.type || "general"}`; }
+function mergeOpportunity(candidate, gap) {
+  const gapPriority = gap.priority;
+  const candidatePriority = candidate.priority;
+  const priority = Math.min(100, Math.round(Math.max(candidatePriority, gapPriority) + Math.min(10, Math.abs(candidatePriority - gapPriority) * 0.15)));
+  return Object.freeze({
+    ...candidate,
+    source: "topic-engine+gap",
+    priority,
+    gapDetected: true,
+    gapPriority,
+    gapArticleCount: gap.articleCount,
+    existingArticleSlugs: gap.existingArticleSlugs,
+    action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT",
+    rationale: `${candidate.rationale} هم‌زمان، تحلیل SEO/GEO این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}`
+  });
+}
 
-/** Merge both engines into one dashboard-ready decision queue. The persisted
- * Content Intelligence candidates are authoritative when the same topic,
- * intent and entity already exist; uncovered cluster gaps fill the remainder. */
+/**
+ * The single decision queue consumed by the admin dashboard.
+ * Candidate generation and gap analysis remain independent producers;
+ * this resolver is the only layer allowed to decide what the dashboard sees.
+ */
 export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl } = {}) {
   const byKey = new Map();
+  const gapItems = buildContentStrategyFromGaps(gaps, courses, siteUrl);
+
   for (const candidate of topicCandidates) {
     if (!candidate?.title) continue;
     const item = buildCandidateBrief(candidate, courses, siteUrl);
     const key = opportunityKey(item);
     const previous = byKey.get(key);
-    if (!previous || item.priority > previous.priority || previous.source !== "topic-engine") byKey.set(key, item);
+    if (!previous || item.priority > previous.priority) byKey.set(key, item);
   }
-  for (const gap of gaps) for (const intent of gap.missingIntents || []) {
-    const item = buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl);
-    if (!item) continue;
-    const key = opportunityKey(item);
-    if (!byKey.has(key)) byKey.set(key, item);
+
+  for (const gap of gapItems) {
+    const key = opportunityKey(gap);
+    const candidate = byKey.get(key);
+    if (candidate) byKey.set(key, mergeOpportunity(candidate, gap));
+    else byKey.set(key, gap);
   }
+
   const opportunities = [...byKey.values()].sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title, "fa"));
   return Object.freeze({
     opportunityCount: opportunities.length,
@@ -129,6 +159,7 @@ export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = 
     opportunities: Object.freeze(opportunities)
   });
 }
+
 export function buildContentStrategy(gaps = [], courses = [], { siteUrl } = {}) {
   const briefs = buildContentStrategyFromGaps(gaps, courses, siteUrl);
   return Object.freeze({ briefCount: briefs.length, highPriorityCount: briefs.filter((item) => item.priority >= 85).length, briefs: Object.freeze(briefs) });
