@@ -6,7 +6,7 @@ import "../../styles/admin/base.css";
 import "../../styles/admin/nav.css";
 import "../../styles/admin/dashboard.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
-import { courses } from "../../data/courses.js";
+import { listCourses } from "../../server/courses";
 import { instructors } from "../../data/instructors.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
@@ -16,7 +16,7 @@ const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
 if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
 
 const instructorById = new Map(instructors.map((instructor: any) => [instructor.id, instructor.name]));
-const courseRows = courses.map((course: any) => ({
+const courseRows = (await listCourses(env.DB)).map((course: any) => ({
   ...course,
   instructorNames: (course.instructors ?? []).map((id: number) => instructorById.get(id) ?? `مدرس ${id}`),
 }));
@@ -85,6 +85,7 @@ const categories = [...new Set(courseRows.map((course: any) => course.category).
                     {course.featured && <span class="course-featured">ویژه</span>}
                   </td>
                   <td class="course-actions">
+                    <a href={`/admin/course-edit?id=${course.id}`}>ویرایش</a>
                     <a href={`/courses/${course.slug}`} target="_blank" rel="noreferrer">مشاهده</a>
                     <a href={`/register?course=${course.slug}`}>ثبت‌نام</a>
                   </td>
@@ -96,8 +97,8 @@ const categories = [...new Set(courseRows.map((course: any) => course.category).
         </section>
 
         <section class="admin-card course-note">
-          <h2>نکته</h2>
-          <p>دوره‌های فعلی پروژه از فایل داده‌ی مرکزی سایت بارگذاری می‌شوند. این صفحه مدیریت و پایش دوره‌ها را در پنل فراهم می‌کند و منبع اصلی داده را تغییر نمی‌دهد.</p>
+          <h2>مدیریت محتوا</h2>
+          <p>تغییرات دوره از طریق پنل در دیتابیس عملیاتی ذخیره می‌شود و داده اصلی فایل کاتالوگ ثابت سایت دست‌نخورده باقی می‌ماند.</p>
         </section>
       </div>
     </main>
