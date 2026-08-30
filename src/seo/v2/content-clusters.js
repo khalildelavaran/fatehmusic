@@ -40,7 +40,7 @@ export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS) {
   return [...byTopic.values()].map((entry) => ({ topic: entry.topic, coveredIntents: [...entry.intents], missingIntents: requiredIntents.filter((intent) => !entry.intents.has(intent)), articleCount: entry.articles.length, articleSlugs: entry.articles })).sort((a, b) => b.missingIntents.length - a.missingIntents.length || a.articleCount - b.articleCount);
 }
 
-export function buildContentClusterReport(posts = [], { courses = [] } = {}) {
+export function buildContentClusterReport(posts = [], { courses = [], siteUrl } = {}) {
   const profiles = buildArticleProfiles(posts);
   const topics = [...new Set(profiles.flatMap((item) => item.topics))];
   const gaps = findContentGaps(posts);
@@ -51,7 +51,7 @@ export function buildContentClusterReport(posts = [], { courses = [] } = {}) {
     profiles,
     links: buildArticleClusterLinks(posts),
     gaps,
-    strategy: buildContentStrategy(gaps, courses)
+    strategy: buildContentStrategy(gaps, courses, { siteUrl })
   });
 }
 
