@@ -54,10 +54,10 @@ if (isAdmin && db) {
     <AdminNav session={session} active="dashboard" />
     <main class="admin-main">
       <div class="admin-shell">
-        <section class="admin-hero">
-          <p>داشبورد داخلی</p>
+        <section class="admin-hero" aria-label="خلاصه داشبورد">
+          <span class="admin-hero-label">داشبورد داخلی</span>
           <h1>خوش آمدید، {session.username}</h1>
-          <p>نمای کلی از وضعیت {isAdmin ? "محتوا و ثبت‌نام‌های" : "ثبت‌نام‌های"} آموزشگاه موسیقی فاتح.</p>
+          <span class="admin-hero-description">نمای کلی {isAdmin ? "محتوا و ثبت‌نام‌های" : "ثبت‌نام‌های"} آموزشگاه موسیقی فاتح</span>
         </section>
 
         <div class="admin-section-title">
