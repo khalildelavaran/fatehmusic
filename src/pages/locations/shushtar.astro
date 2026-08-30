@@ -1,0 +1,96 @@
+---
+export const prerender = true;
+
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CTA from "../../components/CTA.astro";
+import { courses } from "../../data/courses";
+import { instructors } from "../../data/instructors";
+import { resolveSite, buildBreadcrumbSchema, buildSiteLinkCandidates, buildInternalLinkPlan } from "../../seo/index.js";
+import { buildLocalPlaceSchema } from "../../seo/schema/local-place.js";
+
+const site = resolveSite();
+const canonical = `${site.url}/locations/shushtar`;
+const title = "آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح";
+const description = "آموزش موسیقی در شوشتر در آموزشگاه موسیقی فاتح؛ معرفی دوره‌های ساز و آواز، مدرس‌ها، نشانی، مسیر دسترسی و ثبت‌نام.";
+const placeSchema = buildLocalPlaceSchema({ site, title, description, url: canonical });
+const breadcrumbSchema = buildBreadcrumbSchema([
+  { name: "خانه", path: "/" },
+  { name: "آموزش موسیقی در شوشتر", path: "/locations/shushtar" }
+], site);
+const candidates = buildSiteLinkCandidates(site);
+const links = buildInternalLinkPlan({
+  currentUrl: canonical,
+  currentTopics: ["shushtar", "music-education"],
+  currentType: "Place",
+  candidates,
+  limit: 8
+});
+const activeCourses = courses.filter((course) => course.active !== false).slice(0, 12);
+const activeInstructors = instructors.filter((teacher) => teacher.active !== false).slice(0, 12);
+---
+
+<MainLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  keywords={["آموزش موسیقی شوشتر", "کلاس موسیقی شوشتر", "آموزشگاه موسیقی شوشتر"]}
+  topics={["shushtar", "music-education"]}
+  entityType="Place"
+  answerBlocks={[
+    { question: "آموزشگاه موسیقی فاتح کجاست؟", answer: `${site.name} در ${site.address.addressLocality}، ${site.address.addressRegion} قرار دارد.`, sourceUrl: canonical, entityId: `${canonical}#place` },
+    { question: "چه دوره‌هایی در شوشتر ارائه می‌شود؟", answer: "دوره‌های متنوع آموزش ساز، آواز، سلفژ، تئوری موسیقی و موسیقی کودک در سایت آموزشگاه معرفی شده‌اند.", sourceUrl: `${site.url}/courses`, entityId: `${site.url}/#organization` }
+  ]}
+  linkCandidates={candidates}
+  auditContext={{ h1Count: 1, wordCount: 700, internalLinkCount: links.length, missingImageAlt: 0 }}
+  schema={[placeSchema, breadcrumbSchema]}
+>
+  <Header />
+  <main>
+    <section class="container">
+      <span class="section-badge">شوشتر</span>
+      <h1>{title}</h1>
+      <p>{description}</p>
+      <p>موقعیت: {site.address.addressLocality}، {site.address.addressRegion}، ایران</p>
+      <p>آدرس: {site.address.streetAddress}</p>
+      <p>تلفن: {site.telephone}</p>
+      <a href={site.mapUrl}>مشاهده موقعیت روی نقشه</a>
+    </section>
+
+    <section class="container">
+      <h2>دوره‌های آموزش موسیقی در شوشتر</h2>
+      <div class="courses-grid">
+        {activeCourses.map((course) => (
+          <a href={`/courses/${course.slug}`} class="course-card">
+            <h3>{course.title}</h3>
+            <p>{course.content.excerpt}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="container">
+      <h2>مدرس‌های آموزشگاه موسیقی فاتح</h2>
+      <div class="courses-grid">
+        {activeInstructors.map((teacher) => (
+          <a href={`/instructors/${teacher.slug}`} class="course-card">
+            <h3>{teacher.name}</h3>
+            <p>{teacher.content.biography}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="container">
+      <h2>صفحات مرتبط</h2>
+      <div class="courses-grid">
+        {links.map((link) => (
+          <a href={link.url.replace(site.url, "")} class="course-card"><h3>{link.title}</h3></a>
+        ))}
+      </div>
+    </section>
+  </main>
+  <CTA />
+  <Footer />
+</MainLayout>
