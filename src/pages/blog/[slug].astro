@@ -3,68 +3,67 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
-import {
-  buildArticleSchema,
-  buildBreadcrumbSchema,
-  buildCourseSchema,
-  resolveCourse,
-  resolveSite
-} from "../../seo/index.js";
+import { buildArticleSchema, buildBreadcrumbSchema, buildCourseSchema, resolveCourse, resolveSite, answersFromFaq, buildSiteLinkCandidates, buildInternalLinkPlan, resolveTopics, classifyIntent } from "../../seo/index.js";
 import { getPublishedPost } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
 
 const post = await getPublishedPost(Astro.params.slug ?? "");
-
-if (!post) {
-  return Astro.rewrite("/404");
-}
+if (!post) return Astro.rewrite("/404");
 
 const site = resolveSite();
 const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
+const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
+const articleSchema = buildArticleSchema(post, { site, url: canonicalUrl });
+const breadcrumbSchema = buildBreadcrumbSchema([
+  { name: "خانه", path: "/" },
+  { name: "وبلاگ", path: "/blog" },
+  { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
+], site);
+const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) : null;
 
-// Reuse the canonical Course resolver so the blog article and course page
-// reference the same Course entity, provider, and instructor entities.
-const relatedCourse = post.related_course_slug
-  ? resolveCourse(post.related_course_slug, site)
-  : null;
-
-const articleSchema = buildArticleSchema(post, {
-  site,
-  url: canonicalUrl
+const articleTopics = resolveTopics({
+  title: post.title,
+  keywords: [post.topic, ...(post.keywords || [])],
+  path: "/blog/" + (Astro.params.slug ?? "")
 });
+const articleIntent = classifyIntent({
+  path: "/blog/" + (Astro.params.slug ?? ""),
+  title: post.title,
+  keywords: [post.topic, ...(post.keywords || [])],
+  entityType: "Article"
+});
+const answerBlocks = answersFromFaq(post.faqs || [], canonicalUrl, `${canonicalUrl}#article`);
+const linkCandidates = buildSiteLinkCandidates(site);
+const semanticLinks = buildInternalLinkPlan({
+  currentUrl: canonicalUrl,
+  currentTopics: articleTopics.map((topic) => topic.slug),
+  currentType: "Article",
+  candidates: linkCandidates
+});
+const articleText = [post.excerpt, post.content || ""].filter(Boolean).join(" ");
+const wordCount = articleText.trim() ? articleText.trim().split(/\s+/).length : 0;
 
-const breadcrumbSchema = buildBreadcrumbSchema(
-  [
-    { name: "خانه", path: "/" },
-    { name: "وبلاگ", path: "/blog" },
-    { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
-  ],
-  site
-);
-
-const courseSchema = relatedCourse
-  ? buildCourseSchema(relatedCourse, { site })
-  : null;
 ---
 
 <MainLayout
   title={post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`}
   description={post.meta_description || post.excerpt}
   canonical={canonicalUrl}
+  keywords={[post.topic, ...(post.keywords || [])]}
+  topics={articleTopics.map((topic) => topic.slug)}
+  entityType="Article"
+  lastModified={post.updated_at || post.modified_at || post.published_at || post.created_at}
+  answerBlocks={answerBlocks}
+  linkCandidates={linkCandidates}
+  auditContext={{ h1Count: 1, wordCount, internalLinkCount: semanticLinks.length, missingImageAlt: 0 }}
   schema={[articleSchema, breadcrumbSchema, courseSchema].filter(Boolean)}
 >
   <Header />
-
   <main class="blog-article">
     <nav class="breadcrumb" aria-label="مسیر صفحه">
-      <a href="/">خانه</a>
-      <span>/</span>
-      <a href="/blog">وبلاگ</a>
-      <span>/</span>
-      <span aria-current="page">{post.title}</span>
+      <a href="/">خانه</a><span>/</span><a href="/blog">وبلاگ</a><span>/</span><span aria-current="page">{post.title}</span>
     </nav>
-
     <article>
       <header>
         <p class="eyebrow">{post.topic}</p>
@@ -72,20 +71,18 @@ const courseSchema = relatedCourse
         <p class="blog-date">{formatJalaliDate(post.published_at ?? post.created_at)}</p>
         <p>{post.excerpt}</p>
       </header>
-
       <div class="article-content">
         {post.content.split("\n").filter(Boolean).map((paragraph) => <p>{paragraph}</p>)}
       </div>
-
       <footer class="article-links">
         <a href="/">آموزشگاه موسیقی فاتح</a>
         {relatedCourse && <a href={`/courses/${relatedCourse.slug}`}>دوره مرتبط: {relatedCourse.title}</a>}
+        {semanticLinks.slice(0, 4).map((link) => <a href={link.url.replace(site.url, "")}><span>{link.title}</span></a>)}
         <a href="/register">ثبت‌نام و مشاوره</a>
         <a href="/contact">تماس با آموزشگاه</a>
       </footer>
     </article>
   </main>
-
   <CTA />
   <Footer />
 </MainLayout>
