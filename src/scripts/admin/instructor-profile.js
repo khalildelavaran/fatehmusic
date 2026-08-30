@@ -35,7 +35,7 @@ form?.addEventListener("submit", async (event) => {
     const response = await fetch("/api/admin/instructors", {
       method: id ? "PATCH" : "POST",
       credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify(body)
     });
 
@@ -44,9 +44,17 @@ form?.addEventListener("submit", async (event) => {
       return;
     }
 
-    const result = await response.json();
-    if (!result.success) {
-      setStatus(result.message || "ذخیره‌سازی با خطا مواجه شد.", true);
+    const contentType = response.headers.get("content-type") || "";
+    let result;
+    if (contentType.includes("application/json")) {
+      result = await response.json();
+    } else {
+      const text = await response.text();
+      result = { success: false, message: text || `خطای سرور (${response.status})` };
+    }
+
+    if (!response.ok || !result.success) {
+      setStatus(result.message || `ذخیره‌سازی انجام نشد (${response.status}).`, true);
       return;
     }
 
@@ -55,9 +63,10 @@ form?.addEventListener("submit", async (event) => {
       return;
     }
 
-    setStatus("تغییرات ذخیره شد.");
-  } catch {
-    setStatus("خطای شبکه هنگام ذخیره‌سازی.", true);
+    setStatus("تغییرات و دوره‌های مدرس با موفقیت ذخیره شد.");
+  } catch (error) {
+    console.error("[admin/instructors] save failed", error);
+    setStatus("ارتباط با سرور برقرار نشد. اتصال اینترنت و وضعیت سرور را بررسی کنید.", true);
   } finally {
     submitButton?.removeAttribute("disabled");
   }
