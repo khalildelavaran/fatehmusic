@@ -6,7 +6,12 @@
  * Stable entity relationships shared by GEO and JSON-LD.
  */
 
-import { buildCoreEntityIds, entityRef } from "./entity.js";
+import {
+    buildCoreEntityIds,
+    entityRef,
+    courseEntityId,
+    instructorEntityId
+} from "./entity.js";
 
 export function buildCoreEntityGraph(site) {
     const ids = buildCoreEntityIds(site);
@@ -26,6 +31,36 @@ export function buildCoreEntityGraph(site) {
             publisher: entityRef(site.url, "organization")
         }
     ];
+}
+
+/**
+ * Build the canonical Course ↔ Instructor references from the already
+ * resolved Course/Instructor contracts. The resolver remains the single
+ * source of truth for the relationship; this layer only converts it into
+ * stable entity references.
+ *
+ * @param {Object} course - resolved course
+ * @returns {Array<{"@id": string}>}
+ */
+export function buildCourseInstructorRefs(course) {
+    return (course?.instructors || [])
+        .filter((instructor) => instructor?.url)
+        .map((instructor) => ({
+            "@id": instructorEntityId(instructor.url)
+        }));
+}
+
+/**
+ * Build the canonical Course reference for a CourseInstance. `about` is a
+ * schema.org-supported relationship on CourseInstance/Event and makes the
+ * CourseInstance node explicitly point back to its Course entity, while the
+ * existing `instructor` property points to the Person entity.
+ *
+ * @param {Object} course - resolved course
+ * @returns {{"@id": string}}
+ */
+export function buildCourseRef(course) {
+    return { "@id": courseEntityId(course.url) };
 }
 
 export function withEntityReferences(node, refs = {}) {
