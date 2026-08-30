@@ -10,6 +10,7 @@
 
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { absoluteUrl } from "../helpers/url.js";
+import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
 
 /**
  * @param {Object} post - published blog post
@@ -29,7 +30,7 @@ export function buildArticleSchema(post, { site, url }) {
 
     const schema = {
         "@type": SCHEMA_TYPES.ARTICLE,
-        "@id": `${url}/#article`,
+        "@id": articleEntityId(url),
         url,
         headline: post.title,
         description,
@@ -49,9 +50,8 @@ export function buildArticleSchema(post, { site, url }) {
     }
 
     if (post.related_course_slug) {
-        schema.about = {
-            "@id": absoluteUrl(`/courses/${post.related_course_slug}`, site.url)
-        };
+        const courseUrl = absoluteUrl(`/courses/${post.related_course_slug}`, site.url);
+        schema.about = { "@id": courseEntityId(courseUrl) };
     }
 
     return pruneEmpty(schema);
@@ -63,7 +63,7 @@ function resolveAuthor(post) {
             "@type": SCHEMA_TYPES.PERSON,
             "@id": post.author_url.endsWith("#person")
                 ? post.author_url
-                : `${post.author_url}/#person`,
+                : instructorEntityId(post.author_url),
             name: post.author_name
         };
     }
