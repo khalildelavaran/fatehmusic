@@ -4,15 +4,21 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import CTA from "../components/CTA.astro";
 import { getPublishedPosts } from "../server/blog";
+import { buildContentClusterReport } from "../seo/index.js";
 import { formatJalaliDate } from "../utils/format-date";
 import "../styles/blog.css";
 
 const posts = await getPublishedPosts();
+const clusterReport = buildContentClusterReport(posts);
 ---
 
 <MainLayout
   title="وبلاگ آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح"
   description="مقالات آموزشی آموزشگاه موسیقی فاتح برای انتخاب ساز، تمرین موسیقی و آشنایی با دوره‌های موسیقی در شوشتر."
+  entityType="CollectionPage"
+  topics={["آموزش موسیقی", "شوشتر"]}
+  articlePosts={posts}
+  auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount: posts.reduce((sum, post) => sum + post.content.split(/\s+/).filter(Boolean).length, 0), internalLinkCount: posts.length + 3 }}
 >
   <Header />
 
@@ -27,6 +33,10 @@ const posts = await getPublishedPosts();
         <a href="/courses">مشاهده دوره‌ها</a>
         <a href="/register">مشاوره و ثبت‌نام</a>
       </div>
+    </section>
+
+    <section aria-label="خوشه‌های محتوایی">
+      <p>این مجموعه تاکنون {clusterReport.articleCount} مقاله در {clusterReport.topicCount} موضوع محوری دارد.</p>
     </section>
 
     <section class="blog-grid" aria-label="فهرست مقالات">
