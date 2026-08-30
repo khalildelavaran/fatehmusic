@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-    buildCoreEntityGraph,
     buildCourseInstructorRefs,
     buildCourseRef,
     mergeEntityNodes
@@ -8,23 +7,7 @@ import {
 import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
 import { buildSchemaGraph } from "../schema/graph.js";
 
-const site = {
-    url: "https://fatehmusic.ir",
-    name: "آموزشگاه موسیقی فاتح"
-};
-
 describe("GEO entity graph", () => {
-    it("adds only the core WebSite relationship node", () => {
-        const nodes = buildCoreEntityGraph(site);
-
-        expect(nodes).toEqual([
-            {
-                "@id": "https://fatehmusic.ir/#website",
-                publisher: { "@id": "https://fatehmusic.ir/#organization" }
-            }
-        ]);
-    });
-
     it("deduplicates nodes with the same @id", () => {
         const nodes = mergeEntityNodes([
             { "@id": "https://fatehmusic.ir/#organization", "@type": "Organization" },
@@ -64,9 +47,10 @@ describe("GEO entity graph", () => {
 
     it("returns one graph with duplicate entities removed", () => {
         const graph = buildSchemaGraph([
-            ...buildCoreEntityGraph(site),
             { "@id": "https://fatehmusic.ir/#organization", "@type": "Organization", logo: "x" },
-            { "@id": "https://fatehmusic.ir/#website", "@type": "WebSite", inLanguage: "fa-IR" }
+            { "@id": "https://fatehmusic.ir/#website", "@type": "WebSite", inLanguage: "fa-IR" },
+            { "@id": "https://fatehmusic.ir/#organization", name: "آموزشگاه موسیقی فاتح" },
+            { "@id": "https://fatehmusic.ir/#website", publisher: { "@id": "https://fatehmusic.ir/#organization" } }
         ]);
 
         expect(graph["@graph"]).toHaveLength(2);
