@@ -8,61 +8,52 @@ import {
   buildBreadcrumbSchema,
   buildCourseSchema,
   resolveCourse,
-  resolveSite
+  resolveSite,
+  answersFromFaq,
+  resolveTopics
 } from "../../seo/index.js";
 import { getPublishedPost } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
 
 const post = await getPublishedPost(Astro.params.slug ?? "");
-
-if (!post) {
-  return Astro.rewrite("/404");
-}
+if (!post) return Astro.rewrite("/404");
 
 const site = resolveSite();
 const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
-
-// Reuse the canonical Course resolver so the blog article and course page
-// reference the same Course entity, provider, and instructor entities.
-const relatedCourse = post.related_course_slug
-  ? resolveCourse(post.related_course_slug, site)
-  : null;
-
-const articleSchema = buildArticleSchema(post, {
-  site,
-  url: canonicalUrl
-});
-
-const breadcrumbSchema = buildBreadcrumbSchema(
-  [
-    { name: "خانه", path: "/" },
-    { name: "وبلاگ", path: "/blog" },
-    { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
-  ],
-  site
-);
-
-const courseSchema = relatedCourse
-  ? buildCourseSchema(relatedCourse, { site })
-  : null;
+const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
+const title = post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`;
+const description = post.meta_description || post.excerpt;
+const keywords = [post.topic, ...(relatedCourse?.seo?.metadata?.keywords || [])].filter(Boolean);
+const topics = resolveTopics({ title: post.title, keywords, path: "/blog" });
+const articleSchema = buildArticleSchema(post, { site, url: canonicalUrl, keywords, topics });
+const breadcrumbSchema = buildBreadcrumbSchema([
+  { name: "خانه", path: "/" },
+  { name: "وبلاگ", path: "/blog" },
+  { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
+], site);
+const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) : null;
+const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
+const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
+const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
 ---
 
 <MainLayout
-  title={post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`}
-  description={post.meta_description || post.excerpt}
+  title={title}
+  description={description}
   canonical={canonicalUrl}
-  schema={[articleSchema, breadcrumbSchema, courseSchema].filter(Boolean)}
+  keywords={keywords}
+  topics={topics.map((topic) => topic.slug)}
+  entityType="Article"
+  lastModified={post.updated_at ?? post.published_at ?? post.created_at}
+  answerBlocks={answerBlocks}
+  auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount: relatedCourse ? 4 : 3 }}
+  schema={schema}
 >
   <Header />
-
   <main class="blog-article">
     <nav class="breadcrumb" aria-label="مسیر صفحه">
-      <a href="/">خانه</a>
-      <span>/</span>
-      <a href="/blog">وبلاگ</a>
-      <span>/</span>
-      <span aria-current="page">{post.title}</span>
+      <a href="/">خانه</a><span>/</span><a href="/blog">وبلاگ</a><span>/</span><span aria-current="page">{post.title}</span>
     </nav>
 
     <article>
@@ -79,13 +70,14 @@ const courseSchema = relatedCourse
 
       <footer class="article-links">
         <a href="/">آموزشگاه موسیقی فاتح</a>
+        <a href="/locations/shushtar">آموزش موسیقی در شوشتر</a>
         {relatedCourse && <a href={`/courses/${relatedCourse.slug}`}>دوره مرتبط: {relatedCourse.title}</a>}
+        <a href="/courses">همه دوره‌ها</a>
         <a href="/register">ثبت‌نام و مشاوره</a>
         <a href="/contact">تماس با آموزشگاه</a>
       </footer>
     </article>
   </main>
-
   <CTA />
   <Footer />
 </MainLayout>

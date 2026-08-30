@@ -1,0 +1,81 @@
+---
+export const prerender = true;
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import PageHero from "../../components/PageHero.astro";
+import CTA from "../../components/CTA.astro";
+import { courses } from "../../data/courses.js";
+import { instructors } from "../../data/instructors.js";
+import {
+  resolveSite,
+  buildLocalPlaceSchema,
+  buildBreadcrumbSchema
+} from "../../seo/index.js";
+
+const site = resolveSite();
+const title = "آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح";
+const description = "راهنمای آموزش موسیقی در شوشتر؛ معرفی آموزشگاه موسیقی فاتح، دوره‌های ساز و آواز، مدرس‌ها، موقعیت و راه‌های ثبت‌نام و مشاوره.";
+const locationUrl = `${site.url}/locations/shushtar`;
+const activeCourses = courses.filter((course) => course.active !== false);
+const activeInstructors = instructors.filter((instructor) => instructor.active !== false);
+const schema = [
+  buildLocalPlaceSchema(site),
+  buildBreadcrumbSchema([
+    { name: "خانه", path: "/" },
+    { name: "موقعیت و شهرها", path: "/locations/shushtar" },
+    { name: "آموزش موسیقی در شوشتر", path: "/locations/shushtar" }
+  ], site)
+].filter(Boolean);
+---
+
+<MainLayout title={title} description={description} canonical={locationUrl} keywords={["آموزش موسیقی شوشتر", "کلاس موسیقی شوشتر", "آموزشگاه موسیقی شوشتر"]} topics={["shushtar", "music-education"]} entityType="Place" schema={schema}>
+  <Header />
+  <PageHero badge="شوشتر" title="آموزش موسیقی در شوشتر" description="معرفی آموزشگاه موسیقی فاتح، دوره‌های آموزشی، مدرس‌ها و اطلاعات دسترسی برای هنرجویان شوشتر و مناطق پیرامون." />
+  <main>
+    <section class="container" style="padding: 48px 0;">
+      <h2>آموزشگاه موسیقی فاتح در شوشتر</h2>
+      <p>آموزشگاه موسیقی فاتح یک مجموعه آموزش موسیقی حضوری در شوشتر است. دوره‌های آموزشی شامل ساز، آواز و دروس پایه موسیقی هستند و اطلاعات هر دوره و مدرس در صفحه اختصاصی آن منتشر می‌شود.</p>
+      <p><strong>آدرس:</strong> {site.address.streetAddress}، {site.address.addressLocality}، {site.address.addressRegion}</p>
+    </section>
+
+    <section class="container" style="padding: 20px 0 48px;">
+      <h2>دوره‌های آموزش موسیقی</h2>
+      <div class="courses-grid">
+        {activeCourses.map((course) => (
+          <a href={`/courses/${course.slug}`} class="course-card">
+            <img src={course.media.image} alt={course.title} loading="lazy" />
+            <div class="course-content">
+              <h3>{course.title}</h3>
+              <p>{course.content.excerpt}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="container" style="padding: 20px 0 60px;">
+      <h2>مدرس‌های آموزشگاه</h2>
+      <div class="courses-grid">
+        {activeInstructors.map((teacher) => (
+          <a href={`/instructors/${teacher.slug}`} class="course-card">
+            <h3>{teacher.name}</h3>
+            <p>{teacher.position}</p>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <section class="container" style="padding: 20px 0 60px;">
+      <h2>موقعیت و تماس</h2>
+      <p>برای مشاهده نقشه، شماره تماس، ساعات کاری و راه‌های ارتباطی به صفحه تماس مراجعه کنید.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/contact" class="btn btn-primary">تماس و موقعیت</a>
+        <a href="/register" class="btn btn-outline">ثبت‌نام و مشاوره</a>
+        <a href="/courses" class="btn btn-outline">همه دوره‌ها</a>
+      </div>
+    </section>
+  </main>
+  <CTA />
+  <Footer />
+</MainLayout>

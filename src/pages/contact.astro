@@ -1,6 +1,5 @@
 ---
 export const prerender = true;
-
 import MainLayout from "../layouts/MainLayout.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -15,7 +14,6 @@ const site = resolveSite();
 const title = "تماس با آموزشگاه موسیقی فاتح";
 const description = "راه‌های ارتباط با آموزشگاه موسیقی فاتح در شوشتر، آدرس، موقعیت روی نقشه، شماره تماس، ساعات کاری و مسیرهای ارتباطی برای ثبت‌نام و مشاوره.";
 const canonical = `${site.url}/contact`;
-
 const schema = [
     buildContactPageSchema({ title, description, site }),
     buildBreadcrumbSchema([
@@ -30,6 +28,10 @@ const schema = [
     title={title}
     description={description}
     canonical={canonical}
+    keywords={["تماس آموزشگاه موسیقی فاتح", "آدرس آموزشگاه موسیقی شوشتر", "آموزش موسیقی شوشتر"]}
+    topics={["shushtar", "music-education"]}
+    entityType="ContactPage"
+    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: 5 }}
     schema={schema}
 >
     <Header />
@@ -42,6 +44,11 @@ const schema = [
         <ContactOverview />
         <ContactQuickMessage />
         <ContactFAQ />
+        <section class="container" style="padding: 20px 0 70px;">
+            <h2>اطلاعات محلی آموزشگاه در شوشتر</h2>
+            <p>برای مطالعه اطلاعات محلی، دوره‌ها و مدرس‌های مرتبط با آموزش موسیقی در شوشتر، صفحه اختصاصی موقعیت آموزشگاه را ببینید.</p>
+            <a href="/locations/shushtar" class="btn btn-primary">آموزش موسیقی در شوشتر</a>
+        </section>
     </main>
     <Footer />
 </MainLayout>
