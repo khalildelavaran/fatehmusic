@@ -12,7 +12,7 @@ import {
     Instagram,
     MessageCircle,
     Send
-} from "lucide-astro";
+} from "@lucide/astro";
 ---
 <section class="contact-overview section">
 
@@ -125,25 +125,29 @@ import {
 
                             </span>
 
-							<div class="working-hours">
+\t\t\t\t\t\t\t<div class="working-hours">
 
-								{
-									contact.workingHours.map((item) => (
-										<div class="working-row">
+\t\t\t\t\t\t\t\t{
+\t\t\t\t\t\t\t\t\tcontact.workingHours.map((item) => (
+\t\t\t\t\t\t\t\t\t\t<div class="working-row">
 
-											<strong>
-												{item.title}
-											</strong>
+\t\t\t\t\t\t\t\t\t\t\t<strong>
 
-											<span>
-												{item.value}
-											</span>
+\t\t\t\t\t\t\t\t\t\t\t\t{item.title}
 
-										</div>
-									))
-								}
+\t\t\t\t\t\t\t\t\t\t\t</strong>
 
-							</div>
+\t\t\t\t\t\t\t\t\t\t\t<span>
+
+\t\t\t\t\t\t\t\t\t\t\t\t{item.value}
+
+\t\t\t\t\t\t\t\t\t\t\t</span>
+
+\t\t\t\t\t\t\t\t\t\t</div>
+\t\t\t\t\t\t\t\t\t))
+\t\t\t\t\t\t\t\t}
+
+\t\t\t\t\t\t\t</div>
                         </div>
 
                     </div>
@@ -264,17 +268,17 @@ import {
 
                         <!-- پیامک -->
 
-						<a
-							href={contact.contact.sms}
-							class="action-card">
+\t\t\t\t\t\t<a
+\t\t\t\t\t\t\thref={contact.contact.sms}
+\t\t\t\t\t\t\tclass="action-card">
 
-							<Send />
+\t\t\t\t\t\t\t<Send />
 
-							<span>
-								پیامک
-							</span>
+\t\t\t\t\t\t\t<span>
+\t\t\t\t\t\t\t\tپیامک
+\t\t\t\t\t\t\t</span>
 
-						</a>
+\t\t\t\t\t\t</a>
 
                         <!-- مسیریابی -->
 
@@ -332,41 +336,41 @@ import {
                     </p>
 
                     <div class="map-actions">
-					<a
-						href={contact.map.google}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="btn btn-primary">
+\t\t\t\t\t<a
+\t\t\t\t\t\thref={contact.map.google}
+\t\t\t\t\t\ttarget="_blank"
+\t\t\t\t\t\trel="noopener noreferrer"
+\t\t\t\t\t\tclass="btn btn-primary">
 
-						<img src="/icons/google-maps.svg" alt="Google Maps" />
+\t\t\t\t\t\t<img src="/icons/google-maps.svg" alt="Google Maps" />
 
-						<span>Google Maps</span>
+\t\t\t\t\t\t<span>Google Maps</span>
 
-					</a>
+\t\t\t\t\t</a>
 
-					<a
-						href={contact.map.balad}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="btn btn-outline">
+\t\t\t\t\t<a
+\t\t\t\t\t\thref={contact.map.balad}
+\t\t\t\t\t\ttarget="_blank"
+\t\t\t\t\t\trel="noopener noreferrer"
+\t\t\t\t\t\tclass="btn btn-outline">
 
-						<img src="/icons/balad.svg" alt="بلد" />
+\t\t\t\t\t\t<img src="/icons/balad.svg" alt="بلد" />
 
-						<span>بلد</span>
+\t\t\t\t\t\t<span>بلد</span>
 
-					</a>
+\t\t\t\t\t</a>
 
-					<a
-						href={contact.map.neshan}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="btn btn-outline">
+\t\t\t\t\t<a
+\t\t\t\t\t\thref={contact.map.neshan}
+\t\t\t\t\t\ttarget="_blank"
+\t\t\t\t\t\trel="noopener noreferrer"
+\t\t\t\t\t\tclass="btn btn-outline">
 
-						<img src="/icons/neshan.svg" alt="نشان" />
+\t\t\t\t\t\t<img src="/icons/neshan.svg" alt="نشان" />
 
-						<span>نشان</span>
+\t\t\t\t\t\t<span>نشان</span>
 
-					</a>
+\t\t\t\t\t</a>
 
                     </div>
 
