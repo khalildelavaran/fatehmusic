@@ -1,13 +1,11 @@
 /**
  * --------------------------------------------------------
- * Fateh Music Academy — SEO Engine
- * Module: Public Entry Point
- * Description: The only file pages and layouts should import
- * from this engine. buildSEO() returns everything a page needs
- * for <head>: metadata, canonical, OpenGraph, Twitter, and one
- * JSON-LD @graph. Entity-specific schema (Course/Person/FAQ/
- * Breadcrumb/Article/ItemList) is built separately by pages and passed in
- * via `extraSchema` so the graph stays a single source per page.
+ * Fateh Music Academy — SEO/GEO Engine v2
+ * Public entry point.
+ *
+ * v2 adds deterministic semantic signals to the existing SEO pipeline:
+ * topic resolution, intent classification, freshness, internal-link planning,
+ * answer blocks, and a build-time audit score.
  * --------------------------------------------------------
  */
 
@@ -20,12 +18,18 @@ import { buildOrganizationSchema } from "./schema/organization.js";
 import { buildWebsiteSchema } from "./schema/website.js";
 import { buildWebPageSchema } from "./schema/webpage.js";
 import { buildSchemaGraph } from "./schema/graph.js";
+import { buildTopicSchemas } from "./schema/topic.js";
 import { absoluteUrl } from "./helpers/url.js";
 import { isPrivateRoute } from "./helpers/private-route.js";
+import { resolveTopics, topicSlugs } from "./v2/topics.js";
+import { classifyIntent } from "./v2/intents.js";
+import { getFreshness } from "./v2/freshness.js";
+import { buildInternalLinkPlan } from "./v2/internal-links.js";
+import { auditPage } from "./v2/audit.js";
+import { buildAnswerBlocks } from "./v2/answers.js";
 
 /**
  * @typedef {Object} SEOResult
- *
  * @property {Object} metadata
  * @property {string} metadata.title
  * @property {string} metadata.description
@@ -33,14 +37,17 @@ import { isPrivateRoute } from "./helpers/private-route.js";
  * @property {string} metadata.robots
  * @property {string} metadata.author
  * @property {string} metadata.themeColor
- *
  * @property {string} canonical
- *
  * @property {Record<string,string>} openGraph
- *
  * @property {Record<string,string>} twitter
- *
  * @property {Object} schemaGraph
+ * @property {Object} geo
+ * @property {Object} geo.intent
+ * @property {Object[]} geo.topics
+ * @property {Object} geo.freshness
+ * @property {Object[]} geo.internalLinks
+ * @property {Object[]} geo.answerBlocks
+ * @property {Object} geo.audit
  */
 
 /**
@@ -52,6 +59,12 @@ import { isPrivateRoute } from "./helpers/private-route.js";
  * @param {string} [params.canonical]
  * @param {boolean} [params.noindex]
  * @param {string[]} [params.keywords]
+ * @param {string[]} [params.topics]
+ * @param {string} [params.entityType]
+ * @param {string|Date} [params.lastModified]
+ * @param {{question:string,answer:string,sourceUrl?:string,entityId?:string,priority?:number}[]} [params.answerBlocks]
+ * @param {Object[]} [params.linkCandidates]
+ * @param {Object} [params.auditContext]
  * @param {Object[]} [params.extraSchema] - page-specific JSON-LD nodes
  * @returns {SEOResult}
  */
@@ -63,13 +76,15 @@ export function buildSEO({
     canonical,
     noindex = false,
     keywords = [],
+    topics = [],
+    entityType = "",
+    lastModified,
+    answerBlocks = [],
+    linkCandidates = [],
+    auditContext = {},
     extraSchema = []
 } = {}) {
     const site = resolveSite();
-
-    // Private application areas are never indexable, even if a page
-    // accidentally omits `noindex={true}`. Explicit noindex remains supported
-    // for other non-public pages that need the same treatment.
     const effectiveNoindex = Boolean(noindex || isPrivateRoute(path));
 
     const metadata = buildMetadata({
@@ -81,6 +96,27 @@ export function buildSEO({
     });
     const canonicalUrl = buildCanonical({ site, path, override: canonical });
     const resolvedImage = absoluteUrl(image || site.image, site.url);
+
+    const topicsResolved = resolveTopics({
+        title: metadata.title,
+        keywords: metadata.keywords,
+        path,
+        explicit: topics
+    });
+    const intent = classifyIntent({
+        path,
+        title: metadata.title,
+        keywords: metadata.keywords,
+        entityType
+    });
+    const freshness = getFreshness(lastModified);
+    const links = buildInternalLinkPlan({
+        currentUrl: canonicalUrl,
+        currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }),
+        currentType: entityType,
+        candidates: linkCandidates
+    });
+    const answers = buildAnswerBlocks(answerBlocks);
 
     const openGraph = buildOpenGraph({
         site,
@@ -96,6 +132,7 @@ export function buildSEO({
         description: metadata.description,
         image: resolvedImage,
         keywords: metadata.keywords,
+        topics: topicsResolved,
         extraSchema,
         site
     });
@@ -104,15 +141,35 @@ export function buildSEO({
         buildOrganizationSchema(site),
         buildWebsiteSchema(site),
         webPageSchema,
+        ...buildTopicSchemas(topicsResolved, { site }),
         ...extraSchema
     ]);
+
+    const audit = auditPage({
+        metadata,
+        url: canonicalUrl,
+        schemaGraph,
+        indexable: !effectiveNoindex,
+        topicSlugs: topicsResolved.map((topic) => topic.slug),
+        primaryIntent: intent.primary,
+        freshness,
+        ...auditContext
+    });
 
     return Object.freeze({
         metadata,
         canonical: canonicalUrl,
         openGraph,
         twitter,
-        schemaGraph
+        schemaGraph,
+        geo: Object.freeze({
+            topics: topicsResolved,
+            intent,
+            freshness,
+            internalLinks: links,
+            answerBlocks: answers,
+            audit
+        })
     });
 }
 
@@ -128,4 +185,11 @@ export { buildItemListSchema } from "./schema/itemlist.js";
 export { buildAboutPageSchema } from "./schema/aboutpage.js";
 export { buildContactPageSchema } from "./schema/contactpage.js";
 export { buildWebPageSchema } from "./schema/webpage.js";
+export { buildTopicSchemas } from "./schema/topic.js";
+export { resolveTopics, topicSlugs } from "./v2/topics.js";
+export { classifyIntent } from "./v2/intents.js";
+export { getFreshness, toIsoDate, daysSince } from "./v2/freshness.js";
+export { buildInternalLinkPlan, buildLinkGraph } from "./v2/internal-links.js";
+export { buildAnswerBlocks, answersFromFaq } from "./v2/answers.js";
+export { auditPage } from "./v2/audit.js";
 export { isPrivateRoute } from "./helpers/private-route.js";
