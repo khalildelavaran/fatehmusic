@@ -11,6 +11,13 @@ export interface Props {
   canonical?: string;
   noindex?: boolean;
   schema?: object[];
+  keywords?: string[];
+  topics?: string[];
+  entityType?: string;
+  lastModified?: string | Date;
+  answerBlocks?: { question: string; answer: string; sourceUrl?: string; entityId?: string; priority?: number }[];
+  linkCandidates?: object[];
+  auditContext?: object;
 }
 
 const {
@@ -19,7 +26,14 @@ const {
   image,
   canonical,
   noindex = false,
-  schema = []
+  schema = [],
+  keywords = [],
+  topics = [],
+  entityType = "",
+  lastModified,
+  answerBlocks = [],
+  linkCandidates = [],
+  auditContext = {}
 } = Astro.props;
 
 const seo = buildSEO({
@@ -29,6 +43,13 @@ const seo = buildSEO({
   image,
   canonical,
   noindex,
+  keywords,
+  topics,
+  entityType,
+  lastModified,
+  answerBlocks,
+  linkCandidates,
+  auditContext,
   extraSchema: schema
 });
 ---
@@ -78,16 +99,10 @@ const seo = buildSEO({
     content={Astro.generator}
   />
 
-
-  <!-- Canonical -->
-
   <link
     rel="canonical"
     href={seo.canonical}
   />
-
-
-  <!-- Favicon -->
 
   <link
     rel="icon"
@@ -99,9 +114,6 @@ const seo = buildSEO({
     rel="apple-touch-icon"
     href="/logo.svg"
   />
-
-
-  <!-- Fonts -->
 
   <link
     rel="preconnect"
@@ -119,127 +131,58 @@ const seo = buildSEO({
     rel="stylesheet"
   />
 
-
   <!-- Open Graph -->
-
-  <meta
-    property="og:type"
-    content={seo.openGraph["og:type"]}
-  />
-
-  <meta
-    property="og:locale"
-    content={seo.openGraph["og:locale"]}
-  />
-
-  <meta
-    property="og:site_name"
-    content={seo.openGraph["og:site_name"]}
-  />
-
-  <meta
-    property="og:title"
-    content={seo.openGraph["og:title"]}
-  />
-
-  <meta
-    property="og:description"
-    content={seo.openGraph["og:description"]}
-  />
-
-  <meta
-    property="og:url"
-    content={seo.openGraph["og:url"]}
-  />
-
-  <meta
-    property="og:image"
-    content={seo.openGraph["og:image"]}
-  />
-
+  <meta property="og:type" content={seo.openGraph["og:type"]} />
+  <meta property="og:locale" content={seo.openGraph["og:locale"]} />
+  <meta property="og:site_name" content={seo.openGraph["og:site_name"]} />
+  <meta property="og:title" content={seo.openGraph["og:title"]} />
+  <meta property="og:description" content={seo.openGraph["og:description"]} />
+  <meta property="og:url" content={seo.openGraph["og:url"]} />
+  <meta property="og:image" content={seo.openGraph["og:image"]} />
 
   <!-- Twitter Card -->
+  <meta name="twitter:card" content={seo.twitter["twitter:card"]} />
+  <meta name="twitter:title" content={seo.twitter["twitter:title"]} />
+  <meta name="twitter:description" content={seo.twitter["twitter:description"]} />
+  <meta name="twitter:image" content={seo.twitter["twitter:image"]} />
 
-  <meta
-    name="twitter:card"
-    content={seo.twitter["twitter:card"]}
+  <!-- Schema.org JSON-LD -->
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(seo.schemaGraph)}
   />
 
-  <meta
-    name="twitter:title"
-    content={seo.twitter["twitter:title"]}
-  />
-
-  <meta
-    name="twitter:description"
-    content={seo.twitter["twitter:description"]}
-  />
-
-  <meta
-    name="twitter:image"
-    content={seo.twitter["twitter:image"]}
-  />
-
-
-<!-- Schema.org JSON-LD -->
-
-<script
-  is:inline
-  type="application/ld+json"
-  set:html={JSON.stringify(seo.schemaGraph)}
-/>
-
-
-<!-- Google Analytics 4 -->
-
-<script
-  is:inline
-  async
-  src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"
-></script>
-
+  <!-- Google Analytics 4 -->
+  <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"></script>
   <script is:inline>
     window.dataLayer = window.dataLayer || [];
-
-    function gtag() {
-      window.dataLayer.push(arguments);
-    }
-
+    function gtag() { window.dataLayer.push(arguments); }
     gtag("js", new Date());
-
-    gtag("config", "G-YKFKP4QH45", {
-      send_page_view: true
-    });
+    gtag("config", "G-YKFKP4QH45", { send_page_view: true });
   </script>
-<!-- Meta Pixel -->
 
-<script is:inline>
-  !function(f,b,e,v,n,t,s)
-  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-  n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];
-  s.parentNode.insertBefore(t,s)}(window, document,'script',
-  'https://connect.facebook.net/en_US/fbevents.js');
+  <!-- Meta Pixel -->
+  <script is:inline>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
 
-  fbq('init', '830226966747297');
-  fbq('track', 'PageView');
-</script>
+    fbq('init', '830226966747297');
+    fbq('track', 'PageView');
+  </script>
 
 </head>
 
-
 <body>
-
   <slot />
-
-
-  <!-- Global Client Script -->
-
-	<script src="../scripts/reveal.js"></script>
-    <script src="../scripts/analytics.js"></script>
-
+  <script src="../scripts/reveal.js"></script>
+  <script src="../scripts/analytics.js"></script>
 </body>
 
 </html>

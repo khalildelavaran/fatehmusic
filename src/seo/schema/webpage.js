@@ -1,37 +1,27 @@
 /**
  * --------------------------------------------------------
- * Fateh Music Academy — SEO Engine
+ * Fateh Music Academy — SEO/GEO Engine v2
  * Module: WebPage Schema
- * Description: Builds the canonical WebPage node for every
- * public page and links it to the site's WebSite, Organization,
- * and the page's primary entity when one is available.
  * --------------------------------------------------------
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { absoluteUrl } from "../helpers/url.js";
 
-/**
- * @param {Object} params
- * @param {string} params.url - canonical page URL
- * @param {string} params.title
- * @param {string} params.description
- * @param {string} [params.image]
- * @param {string[]} [params.keywords]
- * @param {Object[]} [params.extraSchema]
- * @param {import("../resolvers/site.js").ResolvedSite} params.site
- * @returns {Object}
- */
 export function buildWebPageSchema({
     url,
     title,
     description,
     image,
     keywords = [],
+    topics = [],
     extraSchema = [],
     site
 }) {
     const mainEntity = resolveMainEntity(extraSchema);
+    const topicRefs = topics.map((topic) => ({
+        "@id": `${site.url}/#topic-${topic.slug}`
+    }));
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.WEB_PAGE,
@@ -44,6 +34,7 @@ export function buildWebPageSchema({
         isPartOf: { "@id": `${site.url}/#website` },
         about: { "@id": `${site.url}/#organization` },
         publisher: { "@id": `${site.url}/#organization` },
+        mentions: topicRefs.length ? topicRefs : undefined,
         mainEntity: mainEntity ? { "@id": mainEntity } : { "@id": `${site.url}/#organization` },
         primaryImageOfPage: image
             ? {

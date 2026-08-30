@@ -1,11 +1,7 @@
 /**
  * --------------------------------------------------------
- * Fateh Music Academy — SEO Engine
- * Module: Course Schema
- * Description: Takes an already-resolved course (see
- * resolvers/course.js) and produces its Course JSON-LD node.
- * Instructors are attached to CourseInstance rather than
- * Course, because schema.org defines instructor on CourseInstance.
+ * Fateh Music Academy — SEO/GEO Engine v2
+ * Course Schema
  * --------------------------------------------------------
  */
 
@@ -23,8 +19,13 @@ import {
  */
 export function buildCourseSchema(course, { site }) {
     const instructorRefs = buildCourseInstructorRefs(course);
-
     const courseInstance = buildCourseInstance(course, instructorRefs);
+    const courseTopics = [
+        course.instrument,
+        course.title,
+        course.category,
+        ...(course.seo?.keywords || [])
+    ].filter(Boolean);
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.COURSE,
@@ -33,6 +34,7 @@ export function buildCourseSchema(course, { site }) {
         name: course.title,
         description: course.description,
         image: course.image,
+        keywords: [...new Set(courseTopics)],
         provider: { "@id": `${site.url}/#organization` },
         mainEntityOfPage: { "@id": `${course.url}/#webpage` },
         educationalLevel: course.level.join("، "),
@@ -41,6 +43,13 @@ export function buildCourseSchema(course, { site }) {
                   "@type": SCHEMA_TYPES.AUDIENCE,
                   audienceType: course.ageGroup.join("، ")
               }
+            : undefined,
+        coursePrerequisites: course.seoContent?.prerequisites,
+        subjectOf: course.seoContent?.localContext?.length
+            ? course.seoContent.localContext.map((text) => ({
+                  "@type": "CreativeWork",
+                  text
+              }))
             : undefined,
         hasCourseInstance: courseInstance,
         offers: buildOffers(course.plan, site)
@@ -67,9 +76,8 @@ function buildOffers(plan, site) {
     return Object.values(plan.paymentOptions).map((option) => ({
         "@type": SCHEMA_TYPES.OFFER,
         name: option.title,
-        // pricing.js stores Toman (the currency shown to visitors
-        // everywhere else on the site); schema.org's priceCurrency is
-        // ISO 4217 only, so this is the one place that converts to Rial.
+        // pricing.js stores Toman; Schema.org priceCurrency requires ISO 4217,
+        // so convert to Rial for structured data only.
         price: option.amount * 10,
         priceCurrency: "IRR",
         availability: "https://schema.org/InStock",
@@ -79,6 +87,10 @@ function buildOffers(plan, site) {
 
 function pruneEmpty(node) {
     return Object.fromEntries(
-        Object.entries(node).filter(([, value]) => value !== undefined)
+        Object.entries(node).filter(([, value]) => {
+            if (value === undefined || value === null) return false;
+            if (Array.isArray(value) && value.length === 0) return false;
+            return true;
+        })
     );
 }
