@@ -7,26 +7,21 @@
 # Public content is crawlable by default.
 User-agent: *
 Allow: /
-
-# OpenAI Search crawler: required for ChatGPT search discovery.
-User-agent: OAI-SearchBot
-Allow: /
-
-# OpenAI general crawler: allow public content to be discovered.
-User-agent: GPTBot
-Allow: /
-
-# Anthropic crawler: allow public content.
-User-agent: ClaudeBot
-Allow: /
-
-# Private application routes
 Disallow: /api/
 Disallow: /admin/
 Disallow: /student/
 Disallow: /dashboard/
+Disallow: /.git/
 
-# Development / repository files
+# AI crawlers: public content is allowed; application/private routes remain blocked.
+User-agent: OAI-SearchBot
+User-agent: GPTBot
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /student/
+Disallow: /dashboard/
 Disallow: /.git/
 
 Sitemap: https://fatehmusic.ir/sitemap-index.xml
