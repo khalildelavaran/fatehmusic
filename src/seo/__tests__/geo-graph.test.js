@@ -14,12 +14,14 @@ const site = {
 };
 
 describe("GEO entity graph", () => {
-    it("creates stable core Organization and WebSite IDs", () => {
+    it("adds only the core WebSite relationship node", () => {
         const nodes = buildCoreEntityGraph(site);
 
-        expect(nodes.map((node) => node["@id"])).toEqual([
-            "https://fatehmusic.ir/#organization",
-            "https://fatehmusic.ir/#website"
+        expect(nodes).toEqual([
+            {
+                "@id": "https://fatehmusic.ir/#website",
+                publisher: { "@id": "https://fatehmusic.ir/#organization" }
+            }
         ]);
     });
 
