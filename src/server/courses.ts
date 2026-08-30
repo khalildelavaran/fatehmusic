@@ -1,4 +1,3 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { courses as staticCourses } from "../data/courses.js";
 
 export type Course = Record<string, any>;
