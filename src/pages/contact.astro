@@ -8,20 +8,17 @@ import PageHero from "../components/PageHero.astro";
 import ContactOverview from "../components/ContactOverview.astro";
 import ContactQuickMessage from "../components/ContactQuickMessage.astro";
 import ContactFAQ from "../components/ContactFAQ.astro";
-import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema, buildFaqSchema } from "../seo/index.js";
+import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema, buildFaqSchema, buildSiteLinkCandidates } from "../seo/index.js";
 import { faqs } from "../components/ContactFAQ.astro";
 
 const site = resolveSite();
-const title = "تماس با آموزشگاه موسیقی فاتح";
+const title = "تماس با آموزشگاه موسیقی فاتح در شوشتر";
 const description = "راه‌های ارتباط با آموزشگاه موسیقی فاتح در شوشتر، آدرس، موقعیت روی نقشه، شماره تماس، ساعات کاری و مسیرهای ارتباطی برای ثبت‌نام و مشاوره.";
 const canonical = `${site.url}/contact`;
-
+const linkCandidates = buildSiteLinkCandidates(site);
 const schema = [
     buildContactPageSchema({ title, description, site }),
-    buildBreadcrumbSchema([
-        { name: "خانه", path: "/" },
-        { name: "تماس با ما", path: "/contact" }
-    ], site),
+    buildBreadcrumbSchema([{ name: "خانه", path: "/" }, { name: "تماس با ما", path: "/contact" }], site),
     buildFaqSchema(faqs)
 ].filter(Boolean);
 ---
@@ -30,18 +27,28 @@ const schema = [
     title={title}
     description={description}
     canonical={canonical}
+    keywords={["تماس آموزشگاه موسیقی فاتح", "آدرس آموزشگاه موسیقی شوشتر", "آموزشگاه موسیقی شوشتر"]}
+    topics={["shushtar"]}
+    entityType="ContactPage"
+    answerBlocks={faqs.map((faq) => ({ ...faq, sourceUrl: canonical, entityId: `${canonical}#contactpage` }))}
+    linkCandidates={linkCandidates}
+    auditContext={{ h1Count: 1, wordCount: 500, internalLinkCount: 6, missingImageAlt: 0 }}
     schema={schema}
 >
     <Header />
-    <PageHero
-        badge="تماس با ما"
-        title="تماس با آموزشگاه موسیقی فاتح در شوشتر"
-        description="آدرس، شماره تماس، مسیر دسترسی و راه‌های ارتباط با آموزشگاه موسیقی فاتح برای ثبت‌نام و مشاوره دوره‌های موسیقی در شوشتر."
-    />
+    <PageHero badge="تماس با ما" title="تماس با آموزشگاه موسیقی فاتح در شوشتر" description="آدرس، شماره تماس، مسیر دسترسی و راه‌های ارتباط با آموزشگاه موسیقی فاتح برای ثبت‌نام و مشاوره دوره‌های موسیقی در شوشتر." />
     <main>
         <ContactOverview />
         <ContactQuickMessage />
         <ContactFAQ />
+        <section class="container">
+            <h2>صفحات مرتبط</h2>
+            <div class="courses-grid">
+                {linkCandidates.filter((link) => link.url !== canonical).slice(0, 6).map((link) => (
+                    <a href={link.url.replace(site.url, "")} class="course-card"><h3>{link.title}</h3></a>
+                ))}
+            </div>
+        </section>
     </main>
     <Footer />
 </MainLayout>
