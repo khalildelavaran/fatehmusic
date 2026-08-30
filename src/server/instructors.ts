@@ -212,12 +212,10 @@ export async function listInstructors(
 
     if (rows && Array.isArray(rows.results)) {
       return {
-        instructors: rows.results.map((row: any) => {
-          return {
-            ...mapDbInstructor(row),
-            studentCount: Number(row.student_count) || 0
-          };
-        }),
+        instructors: rows.results.map((row) => ({
+          ...mapDbInstructor(row),
+          studentCount: Number(row.student_count) || 0
+        })),
         total: Number(totalRow && totalRow.count) || 0,
         page: normalized.page,
         pageSize: normalized.pageSize
@@ -246,12 +244,10 @@ export async function listInstructors(
   return {
     instructors: filtered
       .slice(normalized.offset, normalized.offset + normalized.pageSize)
-      .map((item: any) => {
-        return {
-          ...mapStaticInstructor(item),
-          studentCount: 0
-        };
-      }),
+      .map((item) => ({
+        ...mapStaticInstructor(item),
+        studentCount: 0
+      })),
     total: filtered.length,
     page: normalized.page,
     pageSize: normalized.pageSize
