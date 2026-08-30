@@ -33,6 +33,10 @@ function findTopic(topicSlug) {
   return TOPICS.find((topic) => topic.slug === topicSlug) || null;
 }
 
+function normalizeBaseUrl(siteUrl) {
+  return String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, "");
+}
+
 function findCourseForTopic(topic, courses = []) {
   if (!topic) return null;
   const aliases = [topic.name, ...(topic.aliases || [])].map(normalize).filter(Boolean);
@@ -61,36 +65,16 @@ function buildQueryAngles(topic, intent, course) {
   const name = topic?.name || "آموزش موسیقی";
   const courseTitle = course?.title || name;
   const queries = {
-    informational: [
-      `چگونه ${name} را شروع کنیم`,
-      `سرفصل های ${name}`,
-      `اشتباهات رایج در ${name}`
-    ],
-    commercial: [
-      `بهترین دوره ${name}`,
-      `${name} مناسب چه کسانی است`,
-      `مقایسه کلاس ${name}`
-    ],
-    transactional: [
-      `هزینه کلاس ${name}`,
-      `قیمت دوره ${name}`,
-      `ثبت نام ${name}`
-    ],
-    local: [
-      `${name} در شوشتر`,
-      `کلاس ${name} شوشتر`,
-      `آموزشگاه ${name} در شوشتر`
-    ],
-    navigational: [
-      `${courseTitle} آموزشگاه موسیقی فاتح`,
-      `${name} فاتح`,
-      `آدرس آموزشگاه موسیقی فاتح`
-    ]
+    informational: [`چگونه ${name} را شروع کنیم`, `سرفصل های ${name}`, `اشتباهات رایج در ${name}`],
+    commercial: [`بهترین دوره ${name}`, `${name} مناسب چه کسانی است`, `مقایسه کلاس ${name}`],
+    transactional: [`هزینه کلاس ${name}`, `قیمت دوره ${name}`, `ثبت نام ${name}`],
+    local: [`${name} در شوشتر`, `کلاس ${name} شوشتر`, `آموزشگاه ${name} در شوشتر`],
+    navigational: [`${courseTitle} آموزشگاه موسیقی فاتح`, `${name} فاتح`, `آدرس آموزشگاه موسیقی فاتح`]
   };
   return Object.freeze(queries[intent] || queries.informational);
 }
 
-function buildPriority(topic, intent, articleCount, course, isLocal) {
+function buildPriority(intent, articleCount, course, isLocal) {
   const base = INTENT_PRIORITY[intent] ?? 60;
   const scarcity = Math.min(20, Math.max(0, 3 - articleCount) * 8);
   const entityBoost = course ? 12 : 0;
@@ -98,64 +82,50 @@ function buildPriority(topic, intent, articleCount, course, isLocal) {
   return Math.min(100, base + scarcity + entityBoost + localBoost);
 }
 
-function buildBrief(gap, courses = []) {
+function buildBrief(gap, courses = [], siteUrl) {
   const topic = findTopic(gap.topic);
   const intent = gap.missingIntents?.[0];
   if (!topic || !intent) return null;
 
+  const baseUrl = normalizeBaseUrl(siteUrl);
   const course = findCourseForTopic(topic, courses);
   const isLocal = intent === "local" || topic.slug === "shushtar";
   const targetEntity = isLocal
-    ? { type: "Place", id: "https://fatehmusic.ir/#place-shushtar", name: "آموزش موسیقی در شوشتر", url: "https://fatehmusic.ir/locations/shushtar" }
+    ? { type: "Place", id: `${baseUrl}/#place-shushtar`, name: "آموزش موسیقی در شوشتر", url: `${baseUrl}/locations/shushtar` }
     : course
-      ? { type: "Course", id: `https://fatehmusic.ir/#course-${course.slug}`, name: course.title, url: `https://fatehmusic.ir/courses/${course.slug}` }
-      : { type: "Thing", id: `https://fatehmusic.ir/#topic-${topic.slug}`, name: topic.name, url: "https://fatehmusic.ir/courses" };
-
-  const priority = buildPriority(topic, intent, gap.articleCount, course, isLocal);
-  const title = buildTitle(topic, intent, course);
-  const slugBase = `${topic.slug}-${intent}`;
+      ? { type: "Course", id: `${baseUrl}/#course-${course.slug}`, name: course.title, url: `${baseUrl}/courses/${course.slug}` }
+      : { type: "Thing", id: `${baseUrl}/#topic-${topic.slug}`, name: topic.name, url: `${baseUrl}/courses` };
 
   return Object.freeze({
     topic: topic.slug,
     topicName: topic.name,
     searchIntent: intent,
-    title,
-    suggestedSlug: slugBase,
+    title: buildTitle(topic, intent, course),
+    suggestedSlug: `${topic.slug}-${intent}`,
     targetEntity,
-    course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `https://fatehmusic.ir/courses/${course.slug}` }) : null,
-    priority,
+    course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null,
+    priority: buildPriority(intent, gap.articleCount, course, isLocal),
     articleCount: gap.articleCount,
     existingArticleSlugs: gap.articleSlugs || [],
     rationale: `پوشش intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ با ${gap.articleCount} مقاله فعلی، ایجاد یک محتوای هدفمند می‌تواند این شکاف را پوشش دهد.`,
     queryAngles: buildQueryAngles(topic, intent, course),
     recommendedLinks: Object.freeze([
       targetEntity.url,
-      "https://fatehmusic.ir/locations/shushtar",
-      "https://fatehmusic.ir/register",
-      "https://fatehmusic.ir/blog"
+      `${baseUrl}/locations/shushtar`,
+      `${baseUrl}/register`,
+      `${baseUrl}/blog`
     ])
   });
 }
 
-/**
- * Convert findContentGaps() output into deterministic production briefs.
- * The function never invents a course URL: it only uses a supplied course catalog.
- * @param {{topic:string,missingIntents:string[],articleCount:number,articleSlugs?:string[]}[]} gaps
- * @param {Array<object>} courses
- */
-export function buildContentStrategyFromGaps(gaps = [], courses = []) {
+export function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) {
   return gaps
-    .flatMap((gap) => {
-      const remaining = { ...gap };
-      return (gap.missingIntents || [])
-        .map((intent) => buildBrief({ ...remaining, missingIntents: [intent] }, courses))
-        .filter(Boolean);
-    })
+    .flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean))
     .sort((a, b) => b.priority - a.priority || a.topic.localeCompare(b.topic, "fa") || a.searchIntent.localeCompare(b.searchIntent));
 }
 
-export function buildContentStrategy(gaps = [], courses = []) {
-  const briefs = buildContentStrategyFromGaps(gaps, courses);
+export function buildContentStrategy(gaps = [], courses = [], { siteUrl } = {}) {
+  const briefs = buildContentStrategyFromGaps(gaps, courses, siteUrl);
   return Object.freeze({
     briefCount: briefs.length,
     highPriorityCount: briefs.filter((item) => item.priority >= 85).length,
