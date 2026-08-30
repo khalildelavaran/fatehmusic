@@ -1,0 +1,182 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { getCourse } from "../../server/courses";
+import { instructors } from "../../data/instructors.js";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+if (![ROLES.ADMIN, ROLES.REGISTRAR].includes(session.role)) return Astro.redirect("/admin");
+
+const id = Number(Astro.url.searchParams.get("id"));
+const course = Number.isInteger(id) && id > 0 ? await getCourse(env.DB, id) : null;
+const pageTitle = course ? `ویرایش ${course.title} | آموزشگاه موسیقی فاتح` : "ویرایش دوره | آموزشگاه موسیقی فاتح";
+---
+<MainLayout title={pageTitle} noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="courses" />
+    <main class="admin-main">
+      <div class="admin-shell">
+        {!course ? (
+          <section class="admin-hero">
+            <p><a href="/admin/courses">← فهرست دوره‌ها</a></p>
+            <h1>دوره یافت نشد</h1>
+            <p>شناسه دوره معتبر نیست یا این دوره در کاتالوگ سایت وجود ندارد.</p>
+          </section>
+        ) : (
+          <>
+            <section class="admin-hero">
+              <p><a href="/admin/courses">← فهرست دوره‌ها</a></p>
+              <span class="admin-hero-label">مدیریت دوره</span>
+              <h1>ویرایش {course.title}</h1>
+              <p dir="ltr">{course.slug}</p>
+            </section>
+
+            <section class="admin-card">
+              <form id="courseForm" class="admin-form" data-id={course.id}>
+                <div class="course-form-grid">
+                  <label>عنوان دوره<input name="title" value={course.title ?? ""} required /></label>
+                  <label>دسته‌بندی<input name="category" value={course.category ?? ""} required /></label>
+                  <label>ساز / موضوع<input name="instrument" value={course.instrument ?? ""} dir="ltr" /></label>
+                  <label>نوع کلاس<input name="classType" value={course.classType ?? ""} /></label>
+                  <label>مدت دوره<input name="duration" value={course.duration ?? ""} /></label>
+                  <label>اولویت<input name="priority" type="number" min="0" value={course.priority ?? 0} /></label>
+                </div>
+
+                <fieldset>
+                  <legend>مدرس دوره</legend>
+                  <div class="course-check-grid">
+                    {instructors.map((instructor: any) => (
+                      <label><input type="checkbox" name="instructors" value={instructor.id} checked={(course.instructors ?? []).includes(instructor.id)} /> {instructor.name}</label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <fieldset>
+                  <legend>سطح</legend>
+                  <div class="course-check-grid">
+                    {['مبتدی', 'متوسط', 'پیشرفته'].map((item) => (
+                      <label><input type="checkbox" name="level" value={item} checked={(course.level ?? []).includes(item)} /> {item}</label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <fieldset>
+                  <legend>گروه سنی</legend>
+                  <div class="course-check-grid">
+                    {['کودک', 'نوجوان', 'بزرگسال'].map((item) => (
+                      <label><input type="checkbox" name="ageGroup" value={item} checked={(course.ageGroup ?? []).includes(item)} /> {item}</label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <div class="course-form-toggles">
+                  <label><input type="checkbox" name="active" checked={course.active !== false} /> دوره فعال است</label>
+                  <label><input type="checkbox" name="featured" checked={course.featured === true} /> دوره ویژه است</label>
+                </div>
+
+                <label>خلاصه دوره<textarea name="excerpt" rows="2">{course.content?.excerpt ?? ""}</textarea></label>
+                <label>توضیحات دوره<textarea name="description" rows="5">{course.content?.description ?? ""}</textarea></label>
+
+                <fieldset>
+                  <legend>SEO</legend>
+                  <label>عنوان SEO<input name="seoTitle" value={course.seo?.title ?? ""} /></label>
+                  <label>توضیحات SEO<textarea name="seoDescription" rows="3">{course.seo?.description ?? ""}</textarea></label>
+                  <label>کلمات کلیدی<input name="seoKeywords" value={(course.seo?.keywords ?? []).join('، ')} /></label>
+                </fieldset>
+
+                <fieldset>
+                  <legend>رسانه</legend>
+                  <label>مسیر تصویر<input name="image" value={course.media?.image ?? ""} dir="ltr" /></label>
+                  <label>مسیر کاور<input name="cover" value={course.media?.cover ?? ""} dir="ltr" /></label>
+                </fieldset>
+
+                <div class="admin-form-actions">
+                  <button type="submit">ذخیره تغییرات</button>
+                  <a class="admin-document-btn" href={`/courses/${course.slug}`} target="_blank" rel="noreferrer">مشاهده دوره</a>
+                  <span id="courseFormStatus" class="admin-live-status"></span>
+                </div>
+              </form>
+            </section>
+          </>
+        )}
+      </div>
+    </main>
+  </div>
+
+  {course && (
+    <script>
+      const form = document.querySelector('#courseForm');
+      const status = document.querySelector('#courseFormStatus');
+
+      const values = (name) => [...form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+      const checked = (name) => form.querySelector(`input[name="${name}"]`)?.checked === true;
+
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (status) status.textContent = 'در حال ذخیره...';
+
+        const data = {
+          id: Number(form.dataset.id),
+          title: form.elements.title.value.trim(),
+          category: form.elements.category.value.trim(),
+          instrument: form.elements.instrument.value.trim(),
+          classType: form.elements.classType.value.trim(),
+          duration: form.elements.duration.value.trim(),
+          priority: Number(form.elements.priority.value || 0),
+          instructors: values('instructors').map(Number),
+          level: values('level'),
+          ageGroup: values('ageGroup'),
+          active: checked('active'),
+          featured: checked('featured'),
+          content: {
+            excerpt: form.elements.excerpt.value.trim(),
+            description: form.elements.description.value.trim()
+          },
+          seo: {
+            title: form.elements.seoTitle.value.trim(),
+            description: form.elements.seoDescription.value.trim(),
+            keywords: form.elements.seoKeywords.value.split(/[،,]/).map((item) => item.trim()).filter(Boolean)
+          },
+          media: {
+            image: form.elements.image.value.trim(),
+            cover: form.elements.cover.value.trim()
+          }
+        };
+
+        try {
+          const response = await fetch('/api/admin/courses', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) throw new Error(result.message || 'ذخیره انجام نشد');
+          if (status) status.textContent = 'تغییرات با موفقیت ذخیره شد.';
+        } catch (error) {
+          if (status) status.textContent = error instanceof Error ? error.message : 'ذخیره تغییرات ناموفق بود.';
+        }
+      });
+    </script>
+  )}
+
+  <style>
+    .course-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .course-check-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 16px; }
+    .course-check-grid label, .course-form-toggles label { display: flex; align-items: center; gap: 8px; }
+    fieldset { border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 16px; margin: 18px 0; }
+    legend { padding: 0 8px; opacity: .8; }
+    .course-form-toggles { display: flex; gap: 24px; margin: 18px 0; }
+    .admin-form-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .admin-document-btn { display: inline-flex; align-items: center; min-height: 42px; padding: 8px 14px; border-radius: 8px; text-decoration: none; }
+    @media (max-width: 760px) {
+      .course-form-grid, .course-check-grid { grid-template-columns: 1fr; }
+      .course-form-toggles { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</MainLayout>
