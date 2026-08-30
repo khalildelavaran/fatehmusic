@@ -1,6 +1,6 @@
 /**
  * --------------------------------------------------------
- * Fateh Music Academy — SEO Engine
+ * Fateh Music Academy — SEO/GEO Engine v2
  * Module: WebPage Schema
  * --------------------------------------------------------
  */
@@ -8,17 +8,6 @@
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { absoluteUrl } from "../helpers/url.js";
 
-/**
- * @param {Object} params
- * @param {string} params.url
- * @param {string} params.title
- * @param {string} params.description
- * @param {string} [params.image]
- * @param {string[]} [params.keywords]
- * @param {{slug:string,name:string}[]} [params.topics]
- * @param {Object[]} [params.extraSchema]
- * @param {import("../resolvers/site.js").ResolvedSite} params.site
- */
 export function buildWebPageSchema({
     url,
     title,
@@ -31,7 +20,7 @@ export function buildWebPageSchema({
 }) {
     const mainEntity = resolveMainEntity(extraSchema);
     const topicRefs = topics.map((topic) => ({
-        "@id": `${site.url}/topics/${topic.slug}/#topic`
+        "@id": `${site.url}/#topic-${topic.slug}`
     }));
 
     return pruneEmpty({
