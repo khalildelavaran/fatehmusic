@@ -14,9 +14,8 @@
 export function buildTopicSchemas(topics = [], { site }) {
     return topics.map((topic) => ({
         "@type": "Thing",
-        "@id": `${site.url}/topics/${topic.slug}/#topic`,
+        "@id": `${site.url}/#topic-${topic.slug}`,
         name: topic.name,
-        url: `${site.url}/topics/${topic.slug}`,
         inLanguage: "fa-IR"
     }));
 }
