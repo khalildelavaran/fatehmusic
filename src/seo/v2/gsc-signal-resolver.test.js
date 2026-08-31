@@ -21,9 +21,35 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBeGreaterThan(0);
   });
 
-  it("detects query cannibalization across pages", () => {
+  it("detects a potential conflict when multiple pages share a query", () => {
     const conflicts = detectSearchCannibalization(rows);
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0].pages).toHaveLength(2);
+    expect(conflicts[0].actionable).toBe(true);
+  });
+
+  it("uses semantic evidence before escalating cannibalization", () => {
+    const conflicts = detectSearchCannibalization(rows, {
+      similarityThreshold: 0.55,
+      pageSemantics: [
+        { url: "https://fatehmusic.ir/blog/guitar", topics: ["guitar"], intent: "local", entity: "Article" },
+        { url: "https://fatehmusic.ir/blog/guitar-guide", topics: ["piano"], intent: "informational", entity: "Article" }
+      ]
+    });
+    expect(conflicts).toHaveLength(0);
+  });
+
+  it("retains a high-severity conflict when semantic evidence confirms the same intent/topic", () => {
+    const conflicts = detectSearchCannibalization(rows, {
+      similarityThreshold: 0.55,
+      pageSemantics: [
+        { url: "https://fatehmusic.ir/blog/guitar", topics: ["guitar"], intent: "local", entity: "Article" },
+        { url: "https://fatehmusic.ir/blog/guitar-guide", topics: ["guitar"], intent: "local", entity: "Article" }
+      ]
+    });
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].severity).toBe("HIGH");
+    expect(conflicts[0].semanticEvidence).toBe(true);
+    expect(conflicts[0].semanticSimilarity).toBeGreaterThanOrEqual(0.55);
   });
 });

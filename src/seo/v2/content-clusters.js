@@ -57,5 +57,19 @@ export function buildContentClusterReport(posts = [], { courses = [], siteUrl } 
 
 export function buildArticleLinkCandidates(posts = [], siteUrl) {
   const base = String(siteUrl || "").replace(/\/$/, "");
-  return posts.filter((post) => post?.slug && post?.title).map((post) => ({ url: `${base}/blog/${encodeURIComponent(post.slug)}`, title: post.title, type: "Article", topics: [post.topic, post.title, post.excerpt].filter(Boolean), priority: 12, local: true }));
+  return posts.filter((post) => post?.slug && post?.title).map((post) => {
+    const keywords = [post.topic, post.title, post.excerpt].filter(Boolean);
+    const topics = resolveTopics({ title: post.title, keywords, path: `/blog/${post.slug}` });
+    const intent = classifyIntent({ path: `/blog/${post.slug}`, title: post.title, keywords, entityType: "Article" });
+    return {
+      url: `${base}/blog/${encodeURIComponent(post.slug)}`,
+      title: post.title,
+      type: "Article",
+      topics: topics.map((item) => item.slug),
+      topicDetails: topics,
+      intent: intent.primary,
+      priority: 12,
+      local: true
+    };
+  });
 }

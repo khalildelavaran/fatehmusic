@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildArticleProfiles, scoreArticleRelation, buildArticleClusterLinks, findContentGaps, buildContentClusterReport } from "../v2/content-clusters.js";
+import { buildArticleProfiles, scoreArticleRelation, buildArticleClusterLinks, findContentGaps, buildContentClusterReport, buildArticleLinkCandidates } from "../v2/content-clusters.js";
 import { buildContentStrategy, buildUnifiedContentOpportunities } from "../v2/content-strategy.js";
 
 describe("Content Cluster Engine", () => {
@@ -37,5 +37,13 @@ describe("Content Cluster Engine", () => {
     expect(transactional).toHaveLength(1);
     expect(transactional[0].source).toBe("topic-engine");
     expect(unified.opportunityCount).toBe(unified.opportunities.length);
+  });
+  it("emits canonical topic slugs for article link candidates", () => {
+    const candidates = buildArticleLinkCandidates(posts, "https://fatehmusic.ir");
+    const guitar = candidates.find((item) => item.url.endsWith("/blog/guitar-basics"));
+    const piano = candidates.find((item) => item.url.endsWith("/blog/piano-start"));
+    expect(guitar.topics).toContain("guitar");
+    expect(guitar.topics).not.toContain("آموزش گیتار برای مبتدیان در شوشتر");
+    expect(piano.topics).toContain("piano");
   });
 });
