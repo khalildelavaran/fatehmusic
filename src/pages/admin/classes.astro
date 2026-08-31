@@ -1,0 +1,190 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import "../../styles/admin/registrations.css";
+import "../../styles/admin/students.css";
+import "../../styles/admin/instructors.css";
+import "../../styles/admin/classes.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { getClassProfile, CLASS_TYPES, CLASS_STATUSES } from "../../server/classes";
+import { listCourses } from "../../server/courses";
+import { formatJalaliDate } from "../../utils/format-date";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
+if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
+
+const db = (env as AdminEnv).DB;
+const idParam = Astro.url.searchParams.get("id");
+const isNew = Astro.url.searchParams.has("new");
+const numericId = idParam ? Number(idParam) : null;
+const profile = numericId && db ? await getClassProfile(db, numericId) : null;
+
+const courses = db ? await listCourses(db) : [];
+const activeInstructors = db
+  ? (await db.prepare("SELECT id, first_name, last_name FROM instructors WHERE is_active = 1 ORDER BY first_name, last_name").all<{ id: number; first_name: string; last_name: string }>()).results
+  : [];
+
+const CLASS_TYPE_LABELS_FA: Record<string, string> = { individual: "خصوصی", group: "گروهی", workshop: "کارگاه", online: "آنلاین" };
+const CLASS_STATUS_LABELS_FA: Record<string, string> = { active: "فعال", completed: "پایان‌یافته", cancelled: "لغوشده" };
+const ENROLLMENT_STATUS_LABELS_FA: Record<string, string> = { active: "فعال", completed: "پایان‌یافته", withdrawn: "انصراف‌داده" };
+
+const pageTitle = profile ? `کلاس ${profile.class.title} | آموزشگاه موسیقی فاتح` : isNew ? "افزودن کلاس | آموزشگاه موسیقی فاتح" : "کلاس‌ها | آموزشگاه موسیقی فاتح";
+---
+<MainLayout title={pageTitle} noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="classes" />
+    <main class="admin-main">
+      <div class="admin-shell" data-admin-classes>
+
+        {idParam && !profile && (
+          <section class="admin-hero">
+            <p>کلاس یافت نشد</p>
+            <h1>کلاسی با این شناسه وجود ندارد</h1>
+            <p><a href="/admin/classes">بازگشت به فهرست کلاس‌ها</a></p>
+          </section>
+        )}
+
+        {(profile || isNew) && (
+          <Fragment>
+            <section class="admin-hero">
+              <p><a href="/admin/classes">← فهرست کلاس‌ها</a></p>
+              <h1>{profile ? profile.class.title : "افزودن کلاس جدید"}</h1>
+              {profile && <p class="admin-student-code">{profile.courseTitle} · {profile.instructorName}</p>}
+            </section>
+
+            <div class="admin-profile-grid">
+              <section class="admin-card">
+                <h2>{profile ? "ویرایش کلاس" : "اطلاعات کلاس جدید"}</h2>
+                <form id="classForm" class="admin-form" data-id={profile?.class.id ?? ""}>
+                  <label>عنوان کلاس<input name="title" value={profile?.class.title ?? ""} required /></label>
+
+                  <label>دوره
+                    <select name="courseId" required disabled={Boolean(profile)}>
+                      {courses.map((c) => (
+                        <option value={c.id} selected={profile ? profile.class.courseId === c.id : false}>{c.title}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>مدرس
+                    <select name="instructorId" required disabled={Boolean(profile)}>
+                      {activeInstructors.map((inst) => (
+                        <option value={inst.id} selected={profile ? profile.class.instructorId === inst.id : false}>{inst.first_name} {inst.last_name}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>نوع کلاس
+                    <select name="classType">
+                      {CLASS_TYPES.map((t) => <option value={t} selected={(profile?.class.classType ?? "individual") === t}>{CLASS_TYPE_LABELS_FA[t]}</option>)}
+                    </select>
+                  </label>
+
+                  <label>ظرفیت<input name="capacity" type="number" min="1" value={profile?.class.capacity ?? 1} /></label>
+                  <label>اتاق<input name="room" value={profile?.class.room ?? ""} /></label>
+                  <label>سطح<input name="level" value={profile?.class.level ?? ""} placeholder="مثلاً: مبتدی" /></label>
+
+                  {profile && (
+                    <label>وضعیت
+                      <select name="status">
+                        {CLASS_STATUSES.map((s) => <option value={s} selected={profile.class.status === s}>{CLASS_STATUS_LABELS_FA[s]}</option>)}
+                      </select>
+                    </label>
+                  )}
+
+                  <label>تاریخ شروع<input name="startDate" type="date" value={profile?.class.startDate ?? ""} /></label>
+                  <label>تاریخ پایان<input name="endDate" type="date" value={profile?.class.endDate ?? ""} /></label>
+
+                  <label>یادداشت<textarea name="notes" rows="2">{profile?.class.notes ?? ""}</textarea></label>
+
+                  <div class="admin-form-actions">
+                    <button type="submit">{profile ? "ذخیره تغییرات" : "ثبت کلاس"}</button>
+                    <span id="classFormStatus" class="admin-live-status"></span>
+                  </div>
+                </form>
+              </section>
+            </div>
+
+            {profile && (
+              <Fragment>
+                <div class="admin-section-title">
+                  <h2>هنرجویان ثبت‌نام‌شده ({profile.students.filter((s) => s.status === "active").length} / {profile.class.capacity})</h2>
+                </div>
+
+                <section class="admin-card admin-enroll-widget">
+                  <label>افزودن هنرجو به این کلاس
+                    <input type="search" id="enrollStudentSearch" placeholder="جست‌وجو بر اساس نام یا کد ملی..." data-class-id={profile.class.id} />
+                  </label>
+                  <div id="enrollStudentResults" class="admin-enroll-results"></div>
+                  <span id="enrollStatus" class="admin-live-status"></span>
+                </section>
+
+                <section class="admin-table-wrap">
+                  <table class="admin-table">
+                    <thead><tr><th>هنرجو</th><th>کد ملی</th><th>تاریخ ثبت‌نام</th><th>وضعیت</th><th></th></tr></thead>
+                    <tbody id="classStudentsBody" data-class-id={profile.class.id}>
+                      {profile.students.length === 0 ? (
+                        <tr><td colspan="5" class="admin-table-empty">هنوز هنرجویی در این کلاس ثبت‌نام نکرده است.</td></tr>
+                      ) : (
+                        profile.students.map((s) => (
+                          <tr>
+                            <td><a href={`/admin/students?id=${encodeURIComponent(s.studentId)}`}>{s.firstName} {s.lastName}</a></td>
+                            <td dir="ltr">{s.nationalCode || "-"}</td>
+                            <td>{formatJalaliDate(s.enrollmentDate)}</td>
+                            <td><span class="admin-status-pill" data-status={s.status}>{ENROLLMENT_STATUS_LABELS_FA[s.status]}</span></td>
+                            <td>
+                              {s.status === "active" && (
+                                <button type="button" class="admin-withdraw-btn" data-student-id={s.studentId}>انصراف</button>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </section>
+              </Fragment>
+            )}
+          </Fragment>
+        )}
+
+        {!idParam && !isNew && (
+          <Fragment>
+            <section class="admin-hero no-print">
+              <p>کلاس‌ها</p>
+              <h1>مدیریت کلاس‌ها</h1>
+              <p>کلاس‌های فعال آموزشگاه، مدرس هر کلاس و ظرفیت باقی‌مانده.</p>
+            </section>
+
+            <section class="admin-students-filters no-print">
+              <input type="search" id="classSearch" placeholder="جست‌وجو بر اساس عنوان یا اتاق..." />
+              <select id="classStatusFilter">
+                <option value="">همه وضعیت‌ها</option>
+                {CLASS_STATUSES.map((s) => <option value={s}>{CLASS_STATUS_LABELS_FA[s]}</option>)}
+              </select>
+              <a href="/admin/classes?new=1" class="admin-document-btn">افزودن کلاس جدید</a>
+            </section>
+
+            <section class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>عنوان</th><th>دوره</th><th>مدرس</th><th>نوع</th><th>ثبت‌نام</th><th>وضعیت</th></tr></thead>
+                <tbody id="classesBody"><tr><td colspan="6" class="admin-table-empty">در حال بارگذاری...</td></tr></tbody>
+              </table>
+            </section>
+
+            <section class="admin-pagination no-print" id="classesPagination"></section>
+          </Fragment>
+        )}
+
+      </div>
+    </main>
+  </div>
+  {(profile || isNew) && <script>import "../../scripts/admin/class-profile.js";</script>}
+  {!idParam && !isNew && <script>import "../../scripts/admin/classes.js";</script>}
+</MainLayout>

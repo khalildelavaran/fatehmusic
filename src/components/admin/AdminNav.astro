@@ -3,7 +3,7 @@ import { ROLES, ROLE_LABELS_FA } from "../../server/admin-auth";
 
 export interface Props {
   session: { username: string; role: string };
-  active: "dashboard" | "posts" | "topics" | "books" | "certificates" | "courses" | "registration" | "students" | "instructors" | "content-strategy";
+  active: "dashboard" | "posts" | "topics" | "books" | "certificates" | "courses" | "registration" | "students" | "instructors" | "classes" | "content-strategy";
 }
 
 const { session, active } = Astro.props;
@@ -73,6 +73,11 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
     <a href="/admin/instructors" class:list={["admin-nav-link", active === "instructors" && "is-active"]} aria-current={active === "instructors" ? "page" : undefined}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/><path d="M19 8c0-2-1-3.5-3-4"/></svg>
       مدرسان
+    </a>
+
+    <a href="/admin/classes" class:list={["admin-nav-link", active === "classes" && "is-active"]} aria-current={active === "classes" ? "page" : undefined}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 3v3"/><path d="M16 3v3"/></svg>
+      کلاس‌ها
     </a>
 
     <a href="/admin/registration" class:list={["admin-nav-link", active === "registration" && "is-active"]} aria-current={active === "registration" ? "page" : undefined}>

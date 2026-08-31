@@ -1,0 +1,56 @@
+/* Classes-page-specific tweaks. Profile grid/cards, form grid, filters
+   bar, pagination and status pills are already covered by
+   students.css/instructors.css (imported alongside this file) -- this
+   file only adds the enroll-student widget. */
+
+.admin-enroll-widget label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.admin-enroll-widget input[type="search"] {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text);
+  font-family: inherit;
+  margin-top: 6px;
+}
+
+.admin-enroll-results {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-enroll-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.admin-enroll-result button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.admin-withdraw-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.admin-withdraw-btn:hover {
+  color: #e08080;
+  border-color: #e08080;
+}

@@ -51,6 +51,12 @@ const instructorRows = await safeAll<{ is_active: number; count: number }>("SELE
 const instructorsTotal = instructorRows.reduce((sum, r) => sum + r.count, 0);
 const instructorsActive = instructorRows.find((r) => r.is_active === 1)?.count ?? 0;
 
+const classRows = db
+  ? (await db.prepare("SELECT status, COUNT(*) as count FROM classes GROUP BY status").all<{ status: string; count: number }>()).results
+  : [];
+const classesTotal = classRows.reduce((sum, r) => sum + r.count, 0);
+const classesActive = classRows.find((r) => r.status === "active")?.count ?? 0;
+
 let postsTotal = 0;
 let postsPublished = 0;
 let postsDraft = 0;
@@ -138,6 +144,17 @@ if (isAdmin) {
             </span>
           </a>
 
+          <a href="/admin/classes" class="admin-stat-card">
+            <span class="admin-stat-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 3v3"/><path d="M16 3v3"/></svg>
+            </span>
+            <span class="admin-stat-value">{classesTotal}</span>
+            <span class="admin-stat-label">کلاس</span>
+            <span class="admin-stat-breakdown">
+              <span>{classesActive} فعال</span>
+            </span>
+          </a>
+
           <a href="/admin/registration" class="admin-stat-card">
             <span class="admin-stat-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -168,6 +185,7 @@ if (isAdmin) {
           <a href="/admin/courses"><strong>مدیریت دوره‌ها</strong><span>مشاهده دوره‌ها، مدرس، دسته‌بندی، سطح و وضعیت فعال بودن دوره‌ها</span></a>
           <a href="/admin/students"><strong>پرونده هنرجویان</strong><span>مشاهده و ویرایش اطلاعات کامل هنرجویان آموزشگاه</span></a>
           <a href="/admin/instructors"><strong>مدیریت مدرسان</strong><span>افزودن، ویرایش و مشاهده‌ی هنرجویان هر مدرس</span></a>
+          <a href="/admin/classes"><strong>مدیریت کلاس‌ها</strong><span>ایجاد کلاس، تعیین مدرس و ثبت‌نام هنرجو در کلاس</span></a>
           <a href="/admin/registration"><strong>ثبت‌نام‌های سایت</strong><span>نمایش، پیگیری و پرینت ثبت‌نام‌های ثبت‌شده در سایت</span></a>
         </nav>
       </div>
