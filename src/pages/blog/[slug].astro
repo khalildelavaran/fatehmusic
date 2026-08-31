@@ -198,7 +198,6 @@ const articleHtml = renderArticleContent(post.content);
             {relatedPosts.map((related) => (
               <article class="blog-card">
                 <div>
-                  <span>{related.sharedTopics.join("، ")}</span>
                   <h3><a href={`/blog/${related.slug}`}>{related.title}</a></h3>
                 </div>
                 <footer>
