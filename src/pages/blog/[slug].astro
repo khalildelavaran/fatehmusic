@@ -28,7 +28,20 @@ const relatedPosts = clusterEntry?.related ?? [];
 const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
 const title = post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`;
 const description = post.meta_description || post.excerpt;
-const keywords = [post.topic, ...(relatedCourse?.seo?.metadata?.keywords || [])].filter(Boolean);
+const keywords = [
+  post.topic,
+  "آموزش موسیقی در شوشتر",
+  "کلاس آموزش موسیقی شوشتر",
+  "آموزشگاه آموزش موسیقی در شوشتر",
+  "کلاس موسیقی در شوشتر",
+  "آموزش موسیقی کودک در شوشتر",
+  "آموزش آواز در شوشتر",
+  "آموزش گیتار در شوشتر",
+  "آموزش پیانو در شوشتر",
+  "آموزش ویولن در شوشتر",
+  "آموزش سازهای ایرانی در شوشتر",
+  ...(relatedCourse?.seo?.metadata?.keywords || [])
+].filter(Boolean);
 const topics = resolveTopics({ title: post.title, keywords, path: "/blog" });
 const articleSchema = buildArticleSchema(post, { site, url: canonicalUrl, keywords, topics });
 const breadcrumbSchema = buildBreadcrumbSchema([
@@ -41,6 +54,100 @@ const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`)
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
 const internalLinkCount = 6 + relatedPosts.length;
 const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function inlineMarkdown(value) {
+  let html = escapeHtml(value);
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>');
+  return html;
+}
+
+function renderArticleContent(markdown) {
+  const lines = markdown.replace(/\r/g, "").split("\n");
+  const blocks = [];
+  let paragraph = [];
+  let list = [];
+  let listType = null;
+
+  const flushParagraph = () => {
+    if (paragraph.length) {
+      blocks.push(`<p>${inlineMarkdown(paragraph.join(" "))}</p>`);
+      paragraph = [];
+    }
+  };
+  const flushList = () => {
+    if (!list.length) return;
+    const tag = listType === "ol" ? "ol" : "ul";
+    blocks.push(`<${tag}>${list.map((item) => `<li>${inlineMarkdown(item)}</li>`).join("")}</${tag}>`);
+    list = [];
+    listType = null;
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    const heading = line.match(/^(#{2,4})\s+(.+)$/);
+    if (heading) {
+      flushParagraph();
+      flushList();
+      const level = Math.min(4, heading[1].length);
+      const id = heading[2].toLowerCase()
+        .replace(/[^\u0600-\u06ff\u200c\w\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-");
+      blocks.push(`<h${level} id="${escapeHtml(id)}">${inlineMarkdown(heading[2])}</h${level}>`);
+      continue;
+    }
+
+    if (/^#\s+/.test(line)) {
+      flushParagraph();
+      flushList();
+      blocks.push(`<h2>${inlineMarkdown(line.replace(/^#\s+/, ""))}</h2>`);
+      continue;
+    }
+
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    const numbered = line.match(/^\d+\.\s+(.+)$/);
+    if (bullet || numbered) {
+      flushParagraph();
+      const nextType = numbered ? "ol" : "ul";
+      if (listType && listType !== nextType) flushList();
+      listType = nextType;
+      list.push((bullet || numbered)[1]);
+      continue;
+    }
+
+    if (/^---+$/.test(line)) {
+      flushParagraph();
+      flushList();
+      blocks.push("<hr>");
+      continue;
+    }
+
+    flushList();
+    paragraph.push(line);
+  }
+
+  flushParagraph();
+  flushList();
+  return blocks.join("\n");
+}
+
+const articleHtml = renderArticleContent(post.content);
 ---
 
 <MainLayout
@@ -70,9 +177,7 @@ const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
         <p>{post.excerpt}</p>
       </header>
 
-      <div class="article-content">
-        {post.content.split("\n").filter(Boolean).map((paragraph) => <p>{paragraph}</p>)}
-      </div>
+      <div class="article-content" id="article" set:html={articleHtml}></div>
 
       {relatedPosts.length > 0 && (
         <section class="related-articles" aria-labelledby="related-articles-title">
