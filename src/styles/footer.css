@@ -3,40 +3,21 @@
 ========================================== */
 
 .footer{
-
     position:relative;
-
     margin-top:1rem;
-
     padding:1rem 0 1rem;
-
     background:var(--surface);
-
     overflow:hidden;
-
 }
 
 .footer::before{
-
     content:"";
-
     position:absolute;
-
     top:0;
-
     left:0;
-
     width:100%;
-
     height:1px;
-
-    background:linear-gradient(
-        90deg,
-        transparent,
-        rgba(212,175,55,.55),
-        transparent
-    );
-
+    background:linear-gradient(90deg, transparent, rgba(212,175,55,.55), transparent);
 }
 
 /* ==========================================
@@ -44,23 +25,16 @@
 ========================================== */
 
 .footer-grid{
-
     display:grid;
-
     grid-template-columns:45% 20% 35%;
-
     gap:2.5rem;
-
     align-items:start;
-
 }
 
 .footer-about,
 .footer-links,
 .footer-contact{
-
     min-width:0;
-
 }
 
 /* ==========================================
@@ -69,28 +43,18 @@
 
 .footer-links,
 .footer-contact{
-
     position:relative;
-
 }
 
 .footer-links::before,
 .footer-contact::before{
-
     content:"";
-
     position:absolute;
-
     top:0;
-
     bottom:0;
-
     right:-1.25rem;
-
     width:1px;
-
     background:rgba(212,175,55,.12);
-
 }
 
 /* ==========================================
@@ -98,51 +62,31 @@
 ========================================== */
 
 .footer-logo{
-
     display:flex;
-
     align-items:center;
-
     gap:1rem;
-
     text-decoration:none;
-
     margin-bottom:1.25rem;
-
 }
 
 .footer-logo img{
-
     width:80px;
-
     height:80px;
-
     object-fit:contain;
-
     flex-shrink:0;
-
     transition:.3s;
-
 }
 
 .footer-logo:hover img{
-
     transform:scale(1.04);
-
 }
 
 .footer-logo h2{
-
     margin:0;
-
     color:var(--text);
-
     font-size:1.45rem;
-
     line-height:1.45;
-
     letter-spacing:-.2px;
-
 }
 
 /* ==========================================
@@ -150,58 +94,37 @@
 ========================================== */
 
 .footer-about p{
-
     margin:0;
-
     color:var(--text-secondary);
-
     line-height:2.1;
-
     text-align:right;
-
 }
+
 /* ==========================================
    TITLES
 ========================================== */
 
 .footer-links h3,
 .footer-contact h3{
-
     position:relative;
-
     display:inline-block;
-
     margin:0 0 1.5rem;
-
     padding-bottom:.6rem;
-
     color:var(--gold);
-
     font-size:1.05rem;
-
     font-weight:700;
-
 }
 
 .footer-links h3::after,
 .footer-contact h3::after{
-
     content:"";
-
     position:absolute;
-
     right:0;
-
     bottom:0;
-
     width:58px;
-
     height:2px;
-
     border-radius:999px;
-
     background:var(--gold);
-
 }
 
 /* ==========================================
@@ -209,102 +132,81 @@
 ========================================== */
 
 .footer-links{
-
     display:flex;
     flex-direction:column;
     gap:.5rem;
     margin-top:0;
-	margin-bottom:0 !important;
+    margin-bottom:0 !important;
 }
 
 .footer-links a{
-
     display:flex;
     align-items:center;
     gap:.85rem;
-
     padding:.45rem .6rem;
-
     text-decoration:none;
-
     color:var(--text-secondary);
-
     border-radius:12px;
-
     transition:all .25s ease;
-
 }
 
 .footer-links a:hover{
-
     color:var(--gold);
-
     background:rgba(212,175,55,.05);
-
 }
 
 .footer-links h3{
     margin-top:0;
-	margin-bottom:0;
+    margin-bottom:0;
 }
+
 /* ==========================================
    CONTACT
 ========================================== */
 
 .footer-contact{
-
     display:flex;
     flex-direction:column;
     gap:.5rem;
     padding-top:0;
     padding-bottom:.1rem;
     margin-top:0;
-	margin-bottom:0;
+    margin-bottom:0;
 }
+
 .footer-contact h3{
     margin-top:0;
-	margin-bottom:0;
+    margin-bottom:0;
 }
-.footer-contact a{
 
+.footer-contact a{
     display:flex;
     align-items:center;
     gap:.85rem;
-
     padding:.45rem .6rem;
-
     text-decoration:none;
-
     color:var(--text-secondary);
-
     border-radius:12px;
-
     transition:all .25s ease;
-
 }
 
 .footer-contact a:hover{
-
     color:var(--gold);
-
     background:rgba(212,175,55,.05);
-
 }
 
 .footer-contact span{
-
     line-height:1.9;
-
 }
 
-/* Brand icon: keep Instagram visually consistent with Lucide icons. */
+/* Brand icon: match Lucide icon size and gold color. */
 .footer-contact .social-brand-icon{
-
     width:20px;
     height:20px;
     flex:0 0 20px;
     object-fit:contain;
-
+    color:var(--gold);
+    fill:var(--gold);
 }
 
 /* ==========================================
@@ -312,50 +214,27 @@
 ========================================== */
 
 .footer-bottom{
-
     position:relative;
-
     margin-top:0rem;
-
     padding-top:1rem;
-
     text-align:center;
-
 }
 
 .footer-bottom::before{
-
     content:"";
-
     position:absolute;
-
     top:0;
-
     left:0;
-
     width:100%;
-
     height:1px;
-
-    background:linear-gradient(
-        90deg,
-        transparent,
-        rgba(212,175,55,.28),
-        transparent
-    );
-
+    background:linear-gradient(90deg, transparent, rgba(212,175,55,.28), transparent);
 }
 
 .footer-bottom p{
-
     margin:0;
-
     color:var(--text-secondary);
-
     font-size:.9rem;
-
     line-height:1.8;
-
 }
 
 /* ==========================================
@@ -363,214 +242,140 @@
 ========================================== */
 
 @media (max-width:1100px){
-
     .footer-grid{
-
         grid-template-columns:1fr;
-
         gap:2.5rem;
-
     }
 
     .footer-links::before,
     .footer-contact::before{
-
         display:none;
-
     }
 
     .footer-about,
     .footer-links,
     .footer-contact{
-
         width:100%;
-
     }
-
 }
 
 @media (max-width:768px){
-
     .footer{
-
         padding:2rem 0 1rem;
-
     }
 
     .footer-grid{
-
         gap:2rem;
-
     }
 
     .footer-logo{
-
         flex-direction:column;
-
         justify-content:center;
-
         text-align:center;
-
         gap:.75rem;
-
     }
 
     .footer-logo img{
-
         width:70px;
-
         height:70px;
-
     }
 
     .footer-logo h2{
-
         font-size:1.25rem;
-
     }
 
     .footer-about{
-
         text-align:center;
-
     }
 
     .footer-about p{
-
         text-align:center;
-
         line-height:2;
-
     }
 
     .footer-links h3,
     .footer-contact h3{
-
         display:block;
-
         text-align:center;
-
     }
 
     .footer-links h3::after,
     .footer-contact h3::after{
-
         right:50%;
-
         transform:translateX(50%);
-
     }
 
     .footer-links{
-
         gap:1rem;
-
     }
 
     .footer-links a{
-
         justify-content:center;
-
     }
 
     .footer-contact{
-
         gap:1rem;
-
     }
 
     .footer-contact a{
-
         align-items:center;
-
     }
 
     .footer-contact span{
-
         margin-top:0;
-
     }
 
     .footer-bottom{
-
         margin-top:1.5rem;
-
         padding-top:1rem;
-
     }
-
 }
 
 @media (max-width:480px){
-
     .footer{
-
         padding:1.5rem 0 1rem;
-
     }
 
     .footer-logo img{
-
         width:60px;
-
         height:60px;
-
     }
 
     .footer-logo h2{
-
         font-size:1.1rem;
-
     }
 
     .footer-about p{
-
         font-size:.95rem;
-
     }
 
     .footer-links a,
     .footer-contact a{
-
         font-size:.95rem;
-
     }
 
     .footer-contact a svg{
-
         width:16px;
         height:16px;
         padding:8px;
-
     }
 
     .footer-bottom p{
-
         font-size:.82rem;
-
     }
-
 }
+
 .footer-links a svg,
 .footer-contact a svg{
-
     width:20px;
     height:20px;
-
     flex-shrink:0;
-
     color:var(--gold);
-
-    transition:
-        color .25s ease,
-        transform .25s ease;
-
+    transition:color .25s ease, transform .25s ease;
 }
+
 .footer-links a:hover svg,
 .footer-contact a:hover svg{
-
     color:var(--gold-light);
-
     transform:translateY(-2px);
-
 }
