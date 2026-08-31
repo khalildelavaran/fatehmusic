@@ -1,0 +1,1 @@
+The unified orchestrator composes existing SEO/GEO engines and is the single composition layer intended for the admin content-strategy dashboard.
