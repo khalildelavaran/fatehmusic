@@ -296,6 +296,17 @@
     line-height:1.9;
 
 }
+
+/* Brand icon: keep Instagram visually consistent with Lucide icons. */
+.footer-contact .social-brand-icon{
+
+    width:20px;
+    height:20px;
+    flex:0 0 20px;
+    object-fit:contain;
+
+}
+
 /* ==========================================
    FOOTER BOTTOM
 ========================================== */
@@ -528,9 +539,7 @@
     .footer-contact a svg{
 
         width:16px;
-
         height:16px;
-
         padding:8px;
 
     }
