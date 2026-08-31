@@ -4,6 +4,8 @@ const INTENT_PRIORITY = Object.freeze({ transactional: 100, local: 92, commercia
 const INTENT_SUFFIX = Object.freeze({ informational: "راهنمای جامع", commercial: "راهنمای انتخاب", transactional: "هزینه و ثبت‌نام", local: "در شوشتر", navigational: "معرفی و مسیر دسترسی" });
 function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").trim().toLowerCase(); }
 function findTopic(slug) { return TOPICS.find((topic) => topic.slug === slug) || null; }
+function isShushtarTopic(topic) { return topic?.slug === "shushtar" || normalize(topic?.name).includes("شوشتر"); }
+function localTopicName(topic) { return isShushtarTopic(topic) ? "آموزش موسیقی" : (topic?.name || "آموزش موسیقی"); }
 function resolveTopicFromTitle(title, fallback = null) {
   const normalized = normalize(title);
   const titleTopic = TOPICS.map((topic) => ({ topic, score: (topic.aliases || []).filter((alias) => normalized.includes(normalize(alias))).length })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
@@ -26,12 +28,12 @@ function resolveCandidateTopic(candidate, course) {
 }
 function normalizeBaseUrl(siteUrl) { return String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, ""); }
 function findCourseForTopic(topic, courses = []) {
-  if (!topic) return null;
+  if (!topic || isShushtarTopic(topic)) return null;
   const aliases = [topic.name, ...(topic.aliases || [])].map(normalize).filter(Boolean);
   return courses.find((course) => aliases.some((alias) => normalize([course?.slug, course?.title, course?.instrument, course?.description].filter(Boolean).join(" | ")).includes(alias))) || null;
 }
 function buildTitle(topic, intent, course) {
-  const name = topic?.name || "آموزش موسیقی";
+  const name = localTopicName(topic);
   if (intent === "local") return `${name} در شوشتر | راهنمای کلاس و انتخاب دوره`;
   if (intent === "transactional") return `${name}: هزینه، شرایط و ثبت‌نام در دوره`;
   if (intent === "commercial") return `${name}: راهنمای انتخاب دوره مناسب`;
@@ -39,21 +41,26 @@ function buildTitle(topic, intent, course) {
   return course?.title ? `${name}: ${INTENT_SUFFIX[intent]} برای شروع یادگیری` : `${name}: ${INTENT_SUFFIX[intent]} یادگیری و تمرین`;
 }
 function buildQueryAngles(topic, intent, course) {
-  const name = topic?.name || "آموزش موسیقی", courseTitle = course?.title || name;
-  const queries = { informational: [`چگونه ${name} را شروع کنیم`, `سرفصل های ${name}`, `اشتباهات رایج در ${name}`], commercial: [`بهترین دوره ${name}`, `${name} مناسب چه کسانی است`, `مقایسه کلاس ${name}`], transactional: [`هزینه کلاس ${name}`, `قیمت دوره ${name}`, `ثبت نام ${name}`], local: [`${name} در شوشتر`, `کلاس ${name} شوشتر`, `آموزشگاه ${name} در شوشتر`], navigational: [`${courseTitle} آموزشگاه موسیقی فاتح`, `${name} فاتح`, `آدرس آموزشگاه موسیقی فاتح`] };
+  const name = localTopicName(topic), courseTitle = course?.title || name;
+  const queries = {
+    informational: [`چگونه ${name} را شروع کنیم`, `سرفصل های ${name}`, `اشتباهات رایج در ${name}`],
+    commercial: [`بهترین دوره ${name}`, `${name} مناسب چه کسانی است`, `مقایسه کلاس ${name}`],
+    transactional: [`هزینه کلاس ${name}`, `قیمت دوره ${name}`, `ثبت نام ${name}`],
+    local: [`${name} در شوشتر`, `کلاس ${name} شوشتر`, `آموزشگاه ${name} در شوشتر`],
+    navigational: [`${courseTitle} آموزشگاه موسیقی فاتح`, `${name} فاتح`, `آدرس آموزشگاه موسیقی فاتح`]
+  };
   return Object.freeze(queries[intent] || queries.informational);
 }
 function buildPriority(intent, articleCount, course, isLocal) { return Math.min(100, (INTENT_PRIORITY[intent] ?? 60) + Math.min(20, Math.max(0, 3 - articleCount) * 8) + (course ? 12 : 0) + (isLocal ? 8 : 0)); }
 function buildTargetEntity(topic, course, isLocal, baseUrl) {
-  if (isLocal) return { type: "Place", id: `${baseUrl}/#place-shushtar`, name: "آموزش موسیقی در شوشتر", url: `${baseUrl}/locations/shushtar` };
+  if (isLocal || isShushtarTopic(topic)) return { type: "Place", id: `${baseUrl}/#place-shushtar`, name: "آموزش موسیقی در شوشتر", url: `${baseUrl}/locations/shushtar` };
   if (course) return { type: "Course", id: `${baseUrl}/#course-${course.slug}`, name: course.title, url: `${baseUrl}/courses/${course.slug}` };
   return { type: "Thing", id: `${baseUrl}/#topic-${topic.slug}`, name: topic.name, url: `${baseUrl}/courses` };
 }
 function buildRecommendedLinks(targetEntity, baseUrl) { return Object.freeze([...new Set([targetEntity.url, `${baseUrl}/locations/shushtar`, `${baseUrl}/register`, `${baseUrl}/blog`])]); }
 function buildBrief(gap, courses = [], siteUrl) {
   const topic = findTopic(gap.topic), intent = gap.missingIntents?.[0]; if (!topic || !intent) return null;
-  const baseUrl = normalizeBaseUrl(siteUrl), course = findCourseForTopic(topic, courses), isLocal = intent === "local" || topic.slug === "shushtar";
-  const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl), articleCount = Number(gap.articleCount) || 0;
+  const baseUrl = normalizeBaseUrl(siteUrl), isLocal = intent === "local" || isShushtarTopic(topic), course = isLocal ? null : findCourseForTopic(topic, courses), targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl), articleCount = Number(gap.articleCount) || 0;
   const action = articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT";
   return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, title: buildTitle(topic, intent, course), suggestedSlug: `${topic.slug}-${intent}`, targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl) });
 }
@@ -63,9 +70,9 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const explicitCourse = candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : null;
   const topic = resolveCandidateTopic(candidate, explicitCourse);
   if (!topic) return null;
-  const course = explicitCourse || findCourseForTopic(topic, courses);
   const intent = candidate.intent || "informational";
-  const isLocal = candidate.modifierType === "local_shushtar" || normalize(candidate.title).includes("شوشتر");
+  const isLocal = candidate.modifierType === "local_shushtar" || normalize(candidate.title).includes("شوشتر") || isShushtarTopic(topic);
+  const course = isLocal ? null : (explicitCourse || findCourseForTopic(topic, courses));
   const safeTopic = topic;
   const targetEntity = buildTargetEntity(safeTopic, course, isLocal, baseUrl);
   return Object.freeze({ source: "topic-engine", action: "NEW_CONTENT", topic: safeTopic.slug, topicName: safeTopic.name, searchIntent: intent, title: candidate.title, suggestedSlug: normalize(candidate.title).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 90), targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)), articleCount: 0, existingArticleSlugs: [], rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.", queryAngles: buildQueryAngles(safeTopic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: candidate.modifierType, scoreBreakdown: candidate.scoreBreakdown || null, topicId: candidate.id ?? null, topicStatus: candidate.status || null });
@@ -78,9 +85,9 @@ function mergeOpportunity(candidate, gap, siteUrl) {
   const priority = Math.min(100, Math.round(Math.max(candidate.priority, gap.priority) + Math.min(10, Math.abs(candidate.priority - gap.priority) * 0.15)));
   const course = candidate.course?.slug ? { slug: candidate.course.slug, title: candidate.course.title } : null;
   const searchIntent = gap.searchIntent || candidate.searchIntent;
-  const isLocal = searchIntent === "local";
-  const targetEntity = buildTargetEntity(topic, course ? coursesForMergeCourse(course, baseUrl) : null, isLocal, baseUrl);
-  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority, gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: gap.existingArticleSlugs, action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", searchIntent, queryAngles: buildQueryAngles(topic, searchIntent, course), targetEntity, rationale: `${candidate.rationale} تحلیل SEO/GEO نیز این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}` });
+  const isLocal = searchIntent === "local" || isShushtarTopic(topic);
+  const targetEntity = buildTargetEntity(topic, isLocal ? null : (course ? coursesForMergeCourse(course, baseUrl) : null), isLocal, baseUrl);
+  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority, gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: gap.existingArticleSlugs, action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", searchIntent, queryAngles: buildQueryAngles(topic, searchIntent, isLocal ? null : course), targetEntity, course: isLocal ? null : candidate.course, rationale: `${candidate.rationale} تحلیل SEO/GEO نیز این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}` });
 }
 function coursesForMergeCourse(course, baseUrl) { return course ? { slug: course.slug, title: course.title } : null; }
 export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl } = {}) {
