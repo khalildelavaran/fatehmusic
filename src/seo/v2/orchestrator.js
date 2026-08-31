@@ -35,7 +35,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const pageNodes = pages.map((page) => ({ url: page.url, title: page.title, type: "Article", topics: page.topics, priority: 12, local: true }));
   const gscIndex = buildGscSignalIndex(gscRows);
   const cannibalization = detectSearchCannibalization(gscRows, { pageSemantics: pages });
-  const temporalCannibalization = detectTemporalCannibalization(gscRows);
+  const temporalCannibalization = search.temporalCannibalization || detectTemporalCannibalization(gscRows);
   const opportunities = scoreOpportunities(search.opportunities);
 
   return Object.freeze({
