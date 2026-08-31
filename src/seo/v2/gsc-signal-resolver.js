@@ -15,11 +15,15 @@ function normalizeText(value) {
 }
 
 function aggregate(rows = []) {
-  const total = rows.reduce((acc, row) => ({
-    clicks: acc.clicks + Math.max(0, Number(row.clicks) || 0),
-    impressions: acc.impressions + Math.max(0, Number(row.impressions) || 0),
-    weightedPosition: acc.weightedPosition + (Math.max(0, Number(row.impressions) || 0) * Math.max(0, Number(row.position) || 0))
-  }), { clicks: 0, impressions: 0, weightedPosition: 0 });
+  const total = rows.reduce((acc, row) => {
+    const impressions = Math.max(0, Number(row.impressions) || 0);
+    const clicks = Math.max(0, Number(row.clicks) || 0);
+    return {
+      clicks: acc.clicks + clicks,
+      impressions: acc.impressions + impressions,
+      weightedPosition: acc.weightedPosition + impressions * Math.max(0, Number(row.position) || 0)
+    };
+  }, { clicks: 0, impressions: 0, weightedPosition: 0 });
   return {
     available: total.impressions > 0 || total.clicks > 0,
     impressions: total.impressions,
@@ -48,13 +52,9 @@ function scoreRow(row) {
   return Math.min(100, score);
 }
 
-/**
- * Build maps keyed by canonical page and normalized query.
- * Multiple GSC rows for one page/query are aggregated instead of overwriting.
- */
 export function buildGscSignalIndex(rows = []) {
-  const byPage = new Map();
-  const byQuery = new Map();
+  const pageRows = new Map();
+  const queryRows = new Map();
   const opportunities = [];
 
   for (const row of rows) {
@@ -69,14 +69,14 @@ export function buildGscSignalIndex(rows = []) {
       ctr: Number(row.ctr) || 0,
       position: Number(row.position) || 0
     };
-    if (page) byPage.set(page, aggregate([...(byPage.get(page)?.rows || []), item]));
-    if (query) byQuery.set(query, aggregate([...(byQuery.get(query)?.rows || []), item]));
+    if (page) pageRows.set(page, [...(pageRows.get(page) || []), item]);
+    if (query) queryRows.set(query, [...(queryRows.get(query) || []), item]);
     opportunities.push(Object.freeze({ ...item, opportunitySignalScore: scoreRow(item) }));
   }
 
   return Object.freeze({
-    byPage,
-    byQuery,
+    byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
+    byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
     opportunities: Object.freeze(opportunities.sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore))
   });
 }
@@ -92,19 +92,17 @@ function queryMatches(item, query) {
   return haystack.includes(normalizedQuery) || normalizedQuery.split(/\s+/).some((token) => token.length >= 3 && haystack.includes(token));
 }
 
-/** Attach the strongest available page/query signal to each unified opportunity. */
 export function resolveOpportunitySearchSignals(opportunities = [], index) {
   if (!index) return opportunities;
   return opportunities.map((item) => {
     const pageSignals = getCandidatePages(item).map((page) => index.byPage.get(page)).filter(Boolean);
-    const querySignals = index.opportunities.filter((row) => queryMatches(item, row.query)).slice(0, 10).map((row) => row);
+    const querySignals = index.opportunities.filter((row) => queryMatches(item, row.query)).slice(0, 10);
     const candidates = [...pageSignals, aggregate(querySignals)];
     const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null };
     return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none" });
   });
 }
 
-/** Flag pages/queries competing for the same normalized intent. */
 export function detectSearchCannibalization(rows = [], { minImpressions = 50 } = {}) {
   const groups = new Map();
   for (const row of rows) {
