@@ -2,13 +2,13 @@ import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals } from "./gsc-signal-resolver.js";
 
 /** Enrich the unified content queue with real GSC signals when available. */
-export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = []) {
+export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
   const index = buildGscSignalIndex(rows);
-  const conflicts = detectSearchCannibalization(rows);
+  const conflicts = detectSearchCannibalization(rows, options);
   const conflictByPage = new Map();
   for (const conflict of conflicts) {
     for (const page of conflict.pages) {
-      conflictByPage.set(page.page, { query: conflict.query, severity: conflict.severity, confidence: conflict.confidence });
+      conflictByPage.set(page.page, { query: conflict.query, severity: conflict.severity, confidence: conflict.confidence, semanticSimilarity: conflict.semanticSimilarity, semanticEvidence: conflict.semanticEvidence, actionable: conflict.actionable });
     }
   }
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
