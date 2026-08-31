@@ -3,7 +3,7 @@ import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 const DEFAULT_PAGE_SIZE = 25000;
 const DEFAULT_MAX_ROWS = 100000;
 
-function toRow(keys = [], dimensions = ["query", "page"], metrics = {}) {
+function toRow(keys = [], dimensions = ["query", "page"], metrics = {}, { startDate, endDate, dataState } = {}) {
   const values = Object.fromEntries(dimensions.map((dimension, index) => [dimension, keys[index] || null]));
   return {
     query: values.query,
@@ -11,7 +11,10 @@ function toRow(keys = [], dimensions = ["query", "page"], metrics = {}) {
     clicks: Number(metrics.clicks) || 0,
     impressions: Number(metrics.impressions) || 0,
     ctr: Number(metrics.ctr) || 0,
-    position: Number(metrics.position) || 0
+    position: Number(metrics.position) || 0,
+    startDate: startDate || null,
+    endDate: endDate || null,
+    dataState: dataState || null
   };
 }
 
@@ -30,11 +33,12 @@ export async function fetchAllSearchAnalytics(client, {
   let pages = 0;
 
   while (rows.length < maxRows) {
-    const result = await client.querySearchAnalytics({ startDate, endDate, dimensions, rowLimit: Math.min(pageSize, maxRows - rows.length), startRow, dataState });
+    const rowLimit = Math.min(pageSize, maxRows - rows.length);
+    const result = await client.querySearchAnalytics({ startDate, endDate, dimensions, rowLimit, startRow, dataState });
     pages += 1;
-    const batch = (result.rows || []).map((row) => toRow(row.keys, dimensions, row));
+    const batch = (result.rows || []).map((row) => toRow(row.keys, dimensions, row, { startDate, endDate, dataState }));
     rows.push(...batch);
-    if (batch.length < Math.min(pageSize, maxRows - rows.length + batch.length)) break;
+    if (batch.length < rowLimit) break;
     startRow += batch.length;
   }
 

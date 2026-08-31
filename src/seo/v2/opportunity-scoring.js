@@ -27,7 +27,10 @@ function searchSignalScore(signal = {}) {
 export function classifyOpportunityAction(item = {}) {
   const signal = item.searchSignal || {};
   const competition = item.cannibalization?.severity || item.competition?.severity || "NONE";
+  const temporal = item.temporalCannibalization || null;
   if (competition === "HIGH") return "MERGE_CONTENT";
+  if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
+  if (temporal?.severity === "MEDIUM" && temporal.actionable && item.internalLinkGap !== true && item.linkGap !== true) return "OPTIMIZE_EXISTING";
   if (item.internalLinkGap === true || item.linkGap === true) return "LINK";
   if (signal.available) {
     if (signal.position != null && signal.position <= 10 && signal.ctr < 0.03) return "OPTIMIZE_EXISTING";
@@ -41,8 +44,9 @@ export function scoreOpportunity(item = {}) {
   const base = clamp(item.priority);
   const signal = searchSignalScore(item.searchSignal);
   const competitionPenalty = item.cannibalization?.severity === "HIGH" ? 0 : item.cannibalization?.severity === "MEDIUM" ? 3 : 0;
-  const score = clamp(Math.round(base * 0.55 + signal * 0.45 - competitionPenalty));
-  return Object.freeze({ ...item, action: classifyOpportunityAction(item), priority: score, scoreBreakdown: Object.freeze({ basePriority: base, searchSignal: signal, competitionPenalty }) });
+  const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
+  const score = clamp(Math.round(base * 0.55 + signal * 0.45 - competitionPenalty + temporalBonus));
+  return Object.freeze({ ...item, action: classifyOpportunityAction(item), priority: score, scoreBreakdown: Object.freeze({ basePriority: base, searchSignal: signal, competitionPenalty, temporalBonus }) });
 }
 
 export function scoreOpportunities(items = []) {
