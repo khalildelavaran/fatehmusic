@@ -1,0 +1,1 @@
+The SEO/GEO orchestrator composes existing engines. Do not add duplicate topic, intent, GSC, content strategy, or internal-link classifiers. Canonical ownership remains in the existing modules documented by `src/seo/v2/README.md`.
