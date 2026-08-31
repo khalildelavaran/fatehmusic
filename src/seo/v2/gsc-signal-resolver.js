@@ -1,4 +1,6 @@
 /** Resolve cached GSC query/page rows into opportunity-level search signals. */
+import { classifyIntent } from "./intents.js";
+import { resolveTopics } from "./topics.js";
 
 function normalizeUrl(value) {
   return String(value || "").replace(/#.*$/, "").replace(/\/$/, "").trim().toLowerCase();
@@ -10,11 +12,23 @@ function normalizeText(value) {
     .replace(/[\u200c\u200f\u200e]/g, "")
     .replace(/[يى]/g, "ی")
     .replace(/[ك]/g, "ک")
+    .replace(/[ًٌٍَُِّْـ]/g, "")
     .trim()
     .toLowerCase();
 }
 
-function aggregate(rows = []) {
+function tokens(value) {
+  return normalizeText(value).split(/[^\p{L}\p{N}]+/u).filter((token) => token.length >= 2);
+}
+
+function jaccard(a = [], b = []) {
+  const left = new Set(a), right = new Set(b);
+  if (!left.size || !right.size) return 0;
+  const intersection = [...left].filter((item) => right.has(item)).length;
+  return intersection / new Set([...left, ...right]).size;
+}
+
+export function aggregate(rows = []) {
   const total = rows.reduce((acc, row) => {
     const impressions = Math.max(0, Number(row.impressions) || 0);
     const clicks = Math.max(0, Number(row.clicks) || 0);
@@ -67,7 +81,8 @@ export function buildGscSignalIndex(rows = []) {
       clicks: Number(row.clicks) || 0,
       impressions: Number(row.impressions) || 0,
       ctr: Number(row.ctr) || 0,
-      position: Number(row.position) || 0
+      position: Number(row.position) || 0,
+      dataState: row.dataState || row.data_state || "final"
     };
     if (page) pageRows.set(page, [...(pageRows.get(page) || []), item]);
     if (query) queryRows.set(query, [...(queryRows.get(query) || []), item]);
@@ -89,7 +104,9 @@ function queryMatches(item, query) {
   const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return false;
-  return haystack.includes(normalizedQuery) || normalizedQuery.split(/\s+/).some((token) => token.length >= 3 && haystack.includes(token));
+  const queryTokens = tokens(normalizedQuery);
+  const haystackTokens = tokens(haystack);
+  return haystack.includes(normalizedQuery) || jaccard(queryTokens, haystackTokens) >= 0.45;
 }
 
 export function resolveOpportunitySearchSignals(opportunities = [], index) {
@@ -103,21 +120,58 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
   });
 }
 
-export function detectSearchCannibalization(rows = [], { minImpressions = 50 } = {}) {
+function inferSemanticProfile(query, page) {
+  const title = query || page || "";
+  const intent = classifyIntent({ path: page || "/", title, keywords: [title], entityType: "Article" }).primary;
+  const topics = resolveTopics({ title, keywords: [title], path: page || "/" }).map((topic) => topic.slug);
+  const pageTokens = tokens(page);
+  return { intent, topics, pageTokens };
+}
+
+function competitionScore(query, pages) {
+  const profiles = pages.map((item) => ({ ...item, semantic: inferSemanticProfile(query, item.page) }));
+  const pairScores = [];
+  for (let i = 0; i < profiles.length; i += 1) {
+    for (let j = i + 1; j < profiles.length; j += 1) {
+      const a = profiles[i].semantic, b = profiles[j].semantic;
+      const intent = a.intent === b.intent ? 1 : 0;
+      const topic = jaccard(a.topics, b.topics);
+      const entity = jaccard(a.pageTokens, b.pageTokens);
+      pairScores.push({ score: Math.round((0.4 + intent * 0.3 + topic * 0.2 + entity * 0.1) * 100), intentSimilarity: intent, topicSimilarity: topic, entitySimilarity: entity, pages: [profiles[i].page, profiles[j].page] });
+    }
+  }
+  return pairScores.sort((a, b) => b.score - a.score)[0] || null;
+}
+
+/** Detect likely cannibalization; shared query alone is never enough for HIGH. */
+export function detectSearchCannibalization(rows = [], { minImpressions = 50, highThreshold = 75 } = {}) {
   const groups = new Map();
   for (const row of rows) {
     const query = normalizeText(row.query);
     const page = normalizeUrl(row.page);
-    if (!query || !page || Number(row.impressions) < minImpressions) continue;
+    const impressions = Math.max(0, Number(row.impressions) || 0);
+    if (!query || !page || impressions < minImpressions) continue;
     const pages = groups.get(query) || new Map();
-    pages.set(page, (pages.get(page) || 0) + Number(row.impressions));
+    const previous = pages.get(page) || { impressions: 0, clicks: 0, positionWeighted: 0 };
+    pages.set(page, { impressions: previous.impressions + impressions, clicks: previous.clicks + Math.max(0, Number(row.clicks) || 0), positionWeighted: previous.positionWeighted + impressions * (Number(row.position) || 0) });
     groups.set(query, pages);
   }
   return [...groups.entries()]
     .filter(([, pages]) => pages.size > 1)
-    .map(([query, pages]) => Object.freeze({
-      query,
-      pages: [...pages.entries()].sort((a, b) => b[1] - a[1]).map(([page, impressions]) => ({ page, impressions }))
-    }))
-    .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
+    .map(([query, pages]) => {
+      const pageItems = [...pages.entries()].map(([page, metrics]) => ({ page, ...metrics, position: metrics.impressions ? metrics.positionWeighted / metrics.impressions : null }));
+      const competition = competitionScore(query, pageItems);
+      const severity = competition?.score >= highThreshold ? "HIGH" : competition?.score >= 60 ? "MEDIUM" : "LOW";
+      return Object.freeze({
+        query,
+        severity,
+        score: competition?.score || 0,
+        recommendedAction: severity === "HIGH" ? "MERGE" : severity === "MEDIUM" ? "REVIEW" : "MONITOR",
+        intentSimilarity: competition?.intentSimilarity || 0,
+        topicSimilarity: competition?.topicSimilarity || 0,
+        entitySimilarity: competition?.entitySimilarity || 0,
+        pages: pageItems.sort((a, b) => b.impressions - a.impressions)
+      });
+    })
+    .sort((a, b) => b.score - a.score || b.pages[0].impressions - a.pages[0].impressions);
 }
