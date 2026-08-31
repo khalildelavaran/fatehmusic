@@ -71,8 +71,15 @@ function inlineMarkdown(value) {
   return html;
 }
 
+function normalizeArticleText(value) {
+  return String(value ?? "")
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r");
+}
+
 function renderArticleContent(markdown) {
-  const lines = markdown.replace(/\r/g, "").split("\n");
+  const lines = normalizeArticleText(markdown).replace(/\r/g, "").split("\n");
   const blocks = [];
   let paragraph = [];
   let list = [];
