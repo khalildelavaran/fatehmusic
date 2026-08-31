@@ -6,6 +6,7 @@ import { buildContentClusterReport, buildArticleProfiles } from "./content-clust
 import { buildUnifiedContentOpportunities } from "./content-strategy.js";
 import { enrichOpportunitiesWithSearchConsole } from "./gsc-intelligence.js";
 import { buildGscSignalIndex, detectSearchCannibalization } from "./gsc-signal-resolver.js";
+import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { buildLinkGraph } from "./internal-links.js";
 import { scoreOpportunities } from "./opportunity-scoring.js";
 import { resolveTopics } from "./topics.js";
@@ -31,22 +32,22 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
-  const pageNodes = pages.map((page) => ({
-    url: page.url,
-    title: page.title,
-    type: "Article",
-    topics: page.topics,
-    priority: 12,
-    local: true
-  }));
+  const pageNodes = pages.map((page) => ({ url: page.url, title: page.title, type: "Article", topics: page.topics, priority: 12, local: true }));
   const gscIndex = buildGscSignalIndex(gscRows);
   const cannibalization = detectSearchCannibalization(gscRows, { pageSemantics: pages });
+  const temporalCannibalization = detectTemporalCannibalization(gscRows);
   const opportunities = scoreOpportunities(search.opportunities);
 
   return Object.freeze({
     cluster,
     pages: freeze(pages),
-    gsc: Object.freeze({ connected: search.connected, signalRowCount: search.signalRowCount, index: gscIndex, cannibalization: freeze(cannibalization) }),
+    gsc: Object.freeze({
+      connected: search.connected,
+      signalRowCount: search.signalRowCount,
+      index: gscIndex,
+      cannibalization: freeze(cannibalization),
+      temporalCannibalization: freeze(temporalCannibalization)
+    }),
     links: Object.freeze({ graph: freeze(buildLinkGraph(pageNodes)) }),
     opportunities: freeze(opportunities),
     summary: Object.freeze({
@@ -58,7 +59,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       mergeCount: opportunities.filter((item) => item.action === "MERGE_CONTENT").length,
       linkCount: opportunities.filter((item) => item.action === "LINK").length,
       searchBackedCount: opportunities.filter((item) => item.searchSignal?.available).length,
-      cannibalizationCount: cannibalization.length
+      cannibalizationCount: cannibalization.length,
+      temporalCannibalizationCount: temporalCannibalization.length,
+      temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length
     })
   });
 }
