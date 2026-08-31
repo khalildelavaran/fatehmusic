@@ -1,0 +1,61 @@
+/**
+ * Unified SEO/GEO orchestration layer.
+ * Composes existing engines; does not duplicate their rules.
+ */
+import { buildContentClusterReport, buildArticleProfiles } from "./content-clusters.js";
+import { buildUnifiedContentOpportunities } from "./content-strategy.js";
+import { enrichOpportunitiesWithSearchConsole } from "./gsc-intelligence.js";
+import { buildGscSignalIndex, detectSearchCannibalization } from "./gsc-signal-resolver.js";
+import { buildLinkGraph } from "./internal-links.js";
+import { scoreOpportunities } from "./opportunity-scoring.js";
+import { resolveTopics } from "./topics.js";
+import { classifyIntent } from "./intents.js";
+
+const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
+
+function articleSemantics(posts = []) {
+  return buildArticleProfiles(posts).map((page) => Object.freeze({
+    ...page,
+    topics: freeze(page.topics),
+    topicDetails: freeze(resolveTopics({ title: page.title, keywords: [page.title], path: `/blog/${page.slug}` })),
+    intentDetails: classifyIntent({ path: `/blog/${page.slug}`, title: page.title, keywords: [page.title], entityType: "Article" })
+  }));
+}
+
+/** Compose all existing SEO/GEO intelligence into one dashboard-ready model. */
+export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], siteUrl = "" } = {}) {
+  const cluster = buildContentClusterReport(posts, { courses, siteUrl });
+  const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates, courses, siteUrl });
+  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows);
+  const pages = articleSemantics(posts);
+  const pageNodes = pages.map((page) => ({
+    url: `${String(siteUrl).replace(/\/$/, "")}/blog/${encodeURIComponent(page.slug)}`,
+    title: page.title,
+    type: "Article",
+    topics: page.topics,
+    priority: 12,
+    local: true
+  }));
+  const gscIndex = buildGscSignalIndex(gscRows);
+  const cannibalization = detectSearchCannibalization(gscRows);
+  const opportunities = scoreOpportunities(search.opportunities);
+
+  return Object.freeze({
+    cluster,
+    pages: freeze(pages),
+    gsc: Object.freeze({ connected: search.connected, signalRowCount: search.signalRowCount, index: gscIndex, cannibalization: freeze(cannibalization) }),
+    links: Object.freeze({ graph: freeze(buildLinkGraph(pageNodes)) }),
+    opportunities: freeze(opportunities),
+    summary: Object.freeze({
+      opportunityCount: opportunities.length,
+      highPriorityCount: opportunities.filter((item) => item.priority >= 85).length,
+      newContentCount: opportunities.filter((item) => item.action === "NEW_CONTENT").length,
+      optimizeCount: opportunities.filter((item) => item.action === "OPTIMIZE_EXISTING").length,
+      expandCount: opportunities.filter((item) => item.action === "EXPAND").length,
+      mergeCount: opportunities.filter((item) => item.action === "MERGE_CONTENT").length,
+      linkCount: opportunities.filter((item) => item.action === "LINK").length,
+      searchBackedCount: opportunities.filter((item) => item.searchSignal?.available).length,
+      cannibalizationCount: cannibalization.length
+    })
+  });
+}
