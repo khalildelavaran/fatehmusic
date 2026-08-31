@@ -13,12 +13,15 @@ import { classifyIntent } from "./intents.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
 
-function articleSemantics(posts = []) {
+function articleSemantics(posts = [], siteUrl = "") {
+  const base = String(siteUrl).replace(/\/$/, "");
   return buildArticleProfiles(posts).map((page) => Object.freeze({
     ...page,
+    url: `${base}/blog/${encodeURIComponent(page.slug)}`,
     topics: freeze(page.topics),
     topicDetails: freeze(resolveTopics({ title: page.title, keywords: [page.title], path: `/blog/${page.slug}` })),
-    intentDetails: classifyIntent({ path: `/blog/${page.slug}`, title: page.title, keywords: [page.title], entityType: "Article" })
+    intentDetails: classifyIntent({ path: `/blog/${page.slug}`, title: page.title, keywords: [page.title], entityType: "Article" }),
+    entity: "Article"
   }));
 }
 
@@ -26,10 +29,10 @@ function articleSemantics(posts = []) {
 export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates, courses, siteUrl });
-  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows);
-  const pages = articleSemantics(posts);
+  const pages = articleSemantics(posts, siteUrl);
+  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
   const pageNodes = pages.map((page) => ({
-    url: `${String(siteUrl).replace(/\/$/, "")}/blog/${encodeURIComponent(page.slug)}`,
+    url: page.url,
     title: page.title,
     type: "Article",
     topics: page.topics,
@@ -37,7 +40,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
     local: true
   }));
   const gscIndex = buildGscSignalIndex(gscRows);
-  const cannibalization = detectSearchCannibalization(gscRows);
+  const cannibalization = detectSearchCannibalization(gscRows, { pageSemantics: pages });
   const opportunities = scoreOpportunities(search.opportunities);
 
   return Object.freeze({
