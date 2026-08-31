@@ -10,7 +10,8 @@ function normalizeText(value) {
     .replace(/[\u200c\u200f\u200e]/g, "")
     .replace(/[يى]/g, "ی")
     .replace(/[ك]/g, "ک")
-    .trim().toLowerCase();
+    .trim()
+    .toLowerCase();
 }
 
 function tokens(value) {
@@ -124,32 +125,70 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
   });
 }
 
+function resolveSemanticPage(value) {
+  if (!value) return null;
+  if (typeof value === "object") return value;
+  return null;
+}
+
 function pageSimilarity(a, b) {
-  const intent = a.intent && b.intent && a.intent === b.intent ? 1 : 0;
-  const topic = jaccard(a.topics || a.topic, b.topics || b.topic);
-  const entity = a.entity && b.entity && normalizeText(a.entity) === normalizeText(b.entity) ? 1 : 0;
+  const left = resolveSemanticPage(a);
+  const right = resolveSemanticPage(b);
+  if (!left || !right) return 0;
+  const intent = left.intent && right.intent && left.intent === right.intent ? 1 : 0;
+  const topicValuesLeft = left.topics || left.topic || [];
+  const topicValuesRight = right.topics || right.topic || [];
+  const topic = jaccard(Array.isArray(topicValuesLeft) ? topicValuesLeft.join(" ") : topicValuesLeft, Array.isArray(topicValuesRight) ? topicValuesRight.join(" ") : topicValuesRight);
+  const entityLeft = left.entity || left.entityType || "";
+  const entityRight = right.entity || right.entityType || "";
+  const entity = entityLeft && entityRight && normalizeText(entityLeft) === normalizeText(entityRight) ? 1 : 0;
   return topic * 0.55 + intent * 0.30 + entity * 0.15;
 }
 
-export function detectSearchCannibalization(rows = [], { minImpressions = 50, similarityThreshold = 0.55 } = {}) {
+function normalizeSemanticMap(pageSemantics = []) {
+  if (pageSemantics instanceof Map) return pageSemantics;
+  if (Array.isArray(pageSemantics)) return new Map(pageSemantics.map((item) => [normalizeUrl(item?.url || item?.canonicalUrl), item]).filter(([key]) => key));
+  if (pageSemantics && typeof pageSemantics === "object") return new Map(Object.entries(pageSemantics).map(([key, value]) => [normalizeUrl(key), value]).filter(([key]) => key));
+  return new Map();
+}
+
+export function detectSearchCannibalization(rows = [], { minImpressions = 50, similarityThreshold = 0.55, pageSemantics = [] } = {}) {
   const groups = new Map();
   for (const row of rows) {
     const query = normalizeText(row.query);
     const page = normalizeUrl(row.page);
     if (!query || !page || Number(row.impressions) < minImpressions) continue;
     const pages = groups.get(query) || new Map();
-    pages.set(page, (pages.get(page) || 0) + Number(row.impressions));
+    pages.set(page, (pages.get(page) || 0) + Math.max(0, Number(row.impressions) || 0));
     groups.set(query, pages);
   }
+
+  const semanticMap = normalizeSemanticMap(pageSemantics);
   return [...groups.entries()]
     .filter(([, pages]) => pages.size > 1)
     .map(([query, pages]) => {
       const ranked = [...pages.entries()].sort((a, b) => b[1] - a[1]);
-      const competition = ranked.map(([page, impressions], index) => ({ page, impressions, share: ranked.reduce((sum, [, value]) => sum + value, 0) ? impressions / ranked.reduce((sum, [, value]) => sum + value, 0) : 0, rank: index + 1 }));
+      const totalImpressions = ranked.reduce((sum, [, value]) => sum + value, 0);
+      const competition = ranked.map(([page, impressions], index) => ({ page, impressions, share: totalImpressions ? impressions / totalImpressions : 0, rank: index + 1 }));
+      const pairScores = [];
+      for (let i = 0; i < competition.length; i += 1) {
+        for (let j = i + 1; j < competition.length; j += 1) {
+          const left = semanticMap.get(competition[i].page);
+          const right = semanticMap.get(competition[j].page);
+          if (left && right) pairScores.push(pageSimilarity(left, right));
+        }
+      }
+      const semanticSimilarity = pairScores.length ? Math.max(...pairScores) : 0;
+      const hasSemanticEvidence = pairScores.length > 0;
       const dominantShare = competition[0]?.share || 0;
-      const severity = dominantShare < 0.7 ? "HIGH" : dominantShare < 0.85 ? "MEDIUM" : "LOW";
-      return Object.freeze({ query, pages: competition, severity, confidence: severity === "HIGH" ? 0.9 : severity === "MEDIUM" ? 0.7 : 0.45, similarityThreshold });
+      const distributionSeverity = dominantShare < 0.7 ? "HIGH" : dominantShare < 0.85 ? "MEDIUM" : "LOW";
+      const semanticConfirmed = !hasSemanticEvidence || semanticSimilarity >= similarityThreshold;
+      const severity = semanticConfirmed ? distributionSeverity : "LOW";
+      const confidenceBase = severity === "HIGH" ? 0.9 : severity === "MEDIUM" ? 0.7 : 0.45;
+      const confidence = hasSemanticEvidence ? confidenceBase * semanticSimilarity : Math.min(confidenceBase, 0.5);
+      return Object.freeze({ query, pages: competition, severity, confidence: Number(confidence.toFixed(3)), semanticSimilarity, semanticEvidence: hasSemanticEvidence, similarityThreshold, actionable: severity === "HIGH" && (!hasSemanticEvidence || semanticSimilarity >= similarityThreshold) });
     })
+    .filter((item) => item.actionable || item.severity !== "LOW")
     .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
 }
 
