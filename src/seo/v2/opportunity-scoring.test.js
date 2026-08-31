@@ -20,6 +20,32 @@ describe("opportunity scoring", () => {
     expect(classifyOpportunityAction({ searchSignal: { available: true }, cannibalization: { severity: "HIGH" } })).toBe("MERGE_CONTENT");
   });
 
+  it("uses merge for a high-severity actionable temporal ownership shift", () => {
+    expect(classifyOpportunityAction({
+      priority: 70,
+      temporalCannibalization: { severity: "HIGH", actionable: true }
+    })).toBe("MERGE_CONTENT");
+  });
+
+  it("uses optimization for a medium actionable temporal ownership shift without a link gap", () => {
+    expect(classifyOpportunityAction({
+      priority: 70,
+      temporalCannibalization: { severity: "MEDIUM", actionable: true },
+      internalLinkGap: false
+    })).toBe("OPTIMIZE_EXISTING");
+  });
+
+  it("adds a bounded temporal bonus to the priority score", () => {
+    const base = scoreOpportunity({ priority: 70, searchSignal: { available: false } });
+    const temporal = scoreOpportunity({
+      priority: 70,
+      searchSignal: { available: false },
+      temporalCannibalization: { severity: "HIGH", actionable: true }
+    });
+    expect(temporal.priority).toBeGreaterThan(base.priority);
+    expect(temporal.scoreBreakdown.temporalBonus).toBe(10);
+  });
+
   it("keeps new-content opportunities when no search signal exists", () => {
     expect(classifyOpportunityAction({ action: "NEW_CONTENT", searchSignal: { available: false } })).toBe("NEW_CONTENT");
   });
