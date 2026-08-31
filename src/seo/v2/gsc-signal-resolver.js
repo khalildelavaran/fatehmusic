@@ -1,4 +1,4 @@
-/** Resolve cached GSC query/page rows into opportunity-level search signals. */
+/** Resolve GSC query/page rows into actionable SEO/GEO search intelligence. */
 
 function normalizeUrl(value) {
   return String(value || "").replace(/#.*$/, "").replace(/\/$/, "").trim().toLowerCase();
@@ -10,8 +10,19 @@ function normalizeText(value) {
     .replace(/[\u200c\u200f\u200e]/g, "")
     .replace(/[يى]/g, "ی")
     .replace(/[ك]/g, "ک")
-    .trim()
-    .toLowerCase();
+    .trim().toLowerCase();
+}
+
+function tokens(value) {
+  return new Set(normalizeText(value).split(/\s+/).filter((token) => token.length >= 2));
+}
+
+function jaccard(a, b) {
+  const left = a instanceof Set ? a : tokens(a), right = b instanceof Set ? b : tokens(b);
+  if (!left.size || !right.size) return 0;
+  let intersection = 0;
+  for (const token of left) if (right.has(token)) intersection += 1;
+  return intersection / (left.size + right.size - intersection);
 }
 
 function aggregate(rows = []) {
@@ -56,7 +67,6 @@ export function buildGscSignalIndex(rows = []) {
   const pageRows = new Map();
   const queryRows = new Map();
   const opportunities = [];
-
   for (const row of rows) {
     const page = normalizeUrl(row.page);
     const query = normalizeText(row.query);
@@ -67,13 +77,13 @@ export function buildGscSignalIndex(rows = []) {
       clicks: Number(row.clicks) || 0,
       impressions: Number(row.impressions) || 0,
       ctr: Number(row.ctr) || 0,
-      position: Number(row.position) || 0
+      position: Number(row.position) || 0,
+      dataState: row.dataState || row.data_state || null
     };
     if (page) pageRows.set(page, [...(pageRows.get(page) || []), item]);
     if (query) queryRows.set(query, [...(queryRows.get(query) || []), item]);
     opportunities.push(Object.freeze({ ...item, opportunitySignalScore: scoreRow(item) }));
   }
-
   return Object.freeze({
     byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
     byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
@@ -89,7 +99,18 @@ function queryMatches(item, query) {
   const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return false;
-  return haystack.includes(normalizedQuery) || normalizedQuery.split(/\s+/).some((token) => token.length >= 3 && haystack.includes(token));
+  const exact = haystack.includes(normalizedQuery) ? 1 : 0;
+  const overlap = jaccard(tokens(haystack), tokens(normalizedQuery));
+  return exact === 1 || overlap >= 0.25;
+}
+
+function classifySearchOpportunity(signal) {
+  if (!signal?.available) return "CREATE_OR_MONITOR";
+  const position = Number(signal.position);
+  const ctr = Number(signal.ctr) || 0;
+  if (Number.isFinite(position) && position <= 10 && ctr < 0.03) return "OPTIMIZE";
+  if (Number.isFinite(position) && position > 10 && position <= 30) return "EXPAND";
+  return "MONITOR";
 }
 
 export function resolveOpportunitySearchSignals(opportunities = [], index) {
@@ -99,11 +120,18 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
     const querySignals = index.opportunities.filter((row) => queryMatches(item, row.query)).slice(0, 10);
     const candidates = [...pageSignals, aggregate(querySignals)];
     const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null };
-    return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none" });
+    return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none", searchAction: classifySearchOpportunity(best) });
   });
 }
 
-export function detectSearchCannibalization(rows = [], { minImpressions = 50 } = {}) {
+function pageSimilarity(a, b) {
+  const intent = a.intent && b.intent && a.intent === b.intent ? 1 : 0;
+  const topic = jaccard(a.topics || a.topic, b.topics || b.topic);
+  const entity = a.entity && b.entity && normalizeText(a.entity) === normalizeText(b.entity) ? 1 : 0;
+  return topic * 0.55 + intent * 0.30 + entity * 0.15;
+}
+
+export function detectSearchCannibalization(rows = [], { minImpressions = 50, similarityThreshold = 0.55 } = {}) {
   const groups = new Map();
   for (const row of rows) {
     const query = normalizeText(row.query);
@@ -115,9 +143,14 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50 } =
   }
   return [...groups.entries()]
     .filter(([, pages]) => pages.size > 1)
-    .map(([query, pages]) => Object.freeze({
-      query,
-      pages: [...pages.entries()].sort((a, b) => b[1] - a[1]).map(([page, impressions]) => ({ page, impressions }))
-    }))
+    .map(([query, pages]) => {
+      const ranked = [...pages.entries()].sort((a, b) => b[1] - a[1]);
+      const competition = ranked.map(([page, impressions], index) => ({ page, impressions, share: ranked.reduce((sum, [, value]) => sum + value, 0) ? impressions / ranked.reduce((sum, [, value]) => sum + value, 0) : 0, rank: index + 1 }));
+      const dominantShare = competition[0]?.share || 0;
+      const severity = dominantShare < 0.7 ? "HIGH" : dominantShare < 0.85 ? "MEDIUM" : "LOW";
+      return Object.freeze({ query, pages: competition, severity, confidence: severity === "HIGH" ? 0.9 : severity === "MEDIUM" ? 0.7 : 0.45, similarityThreshold });
+    })
     .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
 }
+
+export { normalizeText, normalizeUrl, jaccard, pageSimilarity };
