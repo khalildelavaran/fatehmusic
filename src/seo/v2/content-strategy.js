@@ -5,9 +5,24 @@ const INTENT_SUFFIX = Object.freeze({ informational: "راهنمای جامع", 
 function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").trim().toLowerCase(); }
 function findTopic(slug) { return TOPICS.find((topic) => topic.slug === slug) || null; }
 function resolveTopicFromTitle(title, fallback = null) {
-  if (fallback && findTopic(fallback)) return findTopic(fallback);
   const normalized = normalize(title);
-  return TOPICS.map((topic) => ({ topic, score: (topic.aliases || []).filter((alias) => normalized.includes(normalize(alias))).length })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
+  const titleTopic = TOPICS.map((topic) => ({ topic, score: (topic.aliases || []).filter((alias) => normalized.includes(normalize(alias))).length })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
+  return titleTopic || findTopic(fallback);
+}
+function topicForCourse(course) {
+  if (!course) return null;
+  const instrument = normalize(course.instrument || "");
+  const byInstrument = TOPICS.find((topic) => normalize(topic.slug) === instrument);
+  if (byInstrument) return byInstrument;
+  const normalized = normalize([course.slug, course.title, course.description].filter(Boolean).join(" | "));
+  return TOPICS.map((topic) => ({ topic, score: [topic.name, ...(topic.aliases || [])].filter(Boolean).filter((alias) => normalized.includes(normalize(alias))).length })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
+}
+function resolveCandidateTopic(candidate, course) {
+  const titleTopic = resolveTopicFromTitle(candidate.title);
+  const courseTopic = topicForCourse(course);
+  const metadataTopic = findTopic(candidate.instrumentKey);
+  if (titleTopic && courseTopic && titleTopic.slug !== courseTopic.slug) return null;
+  return titleTopic || courseTopic || metadataTopic;
 }
 function normalizeBaseUrl(siteUrl) { return String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, ""); }
 function findCourseForTopic(topic, courses = []) {
@@ -44,18 +59,34 @@ function buildBrief(gap, courses = [], siteUrl) {
 }
 export function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)).sort((a, b) => b.priority - a.priority || a.topic.localeCompare(b.topic, "fa")); }
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
-  const baseUrl = normalizeBaseUrl(siteUrl), topic = resolveTopicFromTitle(candidate.title, candidate.instrumentKey || null), course = candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : findCourseForTopic(topic, courses), intent = candidate.intent || "informational", isLocal = candidate.modifierType === "local_shushtar" || normalize(candidate.title).includes("شوشتر"), safeTopic = topic || { slug: "music-education", name: candidate.relatedCourseTitle || "آموزش موسیقی", aliases: [] }, targetEntity = buildTargetEntity(safeTopic, course, isLocal, baseUrl);
+  const baseUrl = normalizeBaseUrl(siteUrl);
+  const explicitCourse = candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : null;
+  const topic = resolveCandidateTopic(candidate, explicitCourse);
+  if (!topic) return null;
+  const course = explicitCourse || findCourseForTopic(topic, courses);
+  const intent = candidate.intent || "informational";
+  const isLocal = candidate.modifierType === "local_shushtar" || normalize(candidate.title).includes("شوشتر");
+  const safeTopic = topic;
+  const targetEntity = buildTargetEntity(safeTopic, course, isLocal, baseUrl);
   return Object.freeze({ source: "topic-engine", action: "NEW_CONTENT", topic: safeTopic.slug, topicName: safeTopic.name, searchIntent: intent, title: candidate.title, suggestedSlug: normalize(candidate.title).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 90), targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)), articleCount: 0, existingArticleSlugs: [], rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.", queryAngles: buildQueryAngles(safeTopic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: candidate.modifierType, scoreBreakdown: candidate.scoreBreakdown || null, topicId: candidate.id ?? null, topicStatus: candidate.status || null });
 }
 function opportunityKey(item) { return `${item.topic}|${item.searchIntent}|${item.course?.slug || item.targetEntity?.type || "general"}`; }
-function mergeOpportunity(candidate, gap) {
+function mergeOpportunity(candidate, gap, siteUrl) {
+  const topic = findTopic(candidate.topic);
+  if (!topic) return null;
+  const baseUrl = normalizeBaseUrl(siteUrl);
   const priority = Math.min(100, Math.round(Math.max(candidate.priority, gap.priority) + Math.min(10, Math.abs(candidate.priority - gap.priority) * 0.15)));
-  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority, gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: gap.existingArticleSlugs, action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", rationale: `${candidate.rationale} تحلیل SEO/GEO نیز این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}` });
+  const course = candidate.course?.slug ? { slug: candidate.course.slug, title: candidate.course.title } : null;
+  const searchIntent = gap.searchIntent || candidate.searchIntent;
+  const isLocal = searchIntent === "local";
+  const targetEntity = buildTargetEntity(topic, course ? coursesForMergeCourse(course, baseUrl) : null, isLocal, baseUrl);
+  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority, gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: gap.existingArticleSlugs, action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", searchIntent, queryAngles: buildQueryAngles(topic, searchIntent, course), targetEntity, rationale: `${candidate.rationale} تحلیل SEO/GEO نیز این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}` });
 }
+function coursesForMergeCourse(course, baseUrl) { return course ? { slug: course.slug, title: course.title } : null; }
 export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl } = {}) {
   const byKey = new Map();
-  for (const candidate of topicCandidates) { if (!candidate?.title) continue; const item = buildCandidateBrief(candidate, courses, siteUrl), key = opportunityKey(item), previous = byKey.get(key); if (!previous || item.priority > previous.priority) byKey.set(key, item); }
-  for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl)) { const key = opportunityKey(gap), candidate = byKey.get(key); byKey.set(key, candidate ? mergeOpportunity(candidate, gap) : gap); }
+  for (const candidate of topicCandidates) { if (!candidate?.title) continue; const item = buildCandidateBrief(candidate, courses, siteUrl); if (!item) continue; const key = opportunityKey(item); const previous = byKey.get(key); if (!previous || item.priority > previous.priority) byKey.set(key, item); }
+  for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl)) { const key = opportunityKey(gap), candidate = byKey.get(key); const merged = candidate ? mergeOpportunity(candidate, gap, siteUrl) : null; byKey.set(key, merged || gap); }
   const opportunities = [...byKey.values()].sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title, "fa"));
   return Object.freeze({ opportunityCount: opportunities.length, highPriorityCount: opportunities.filter((item) => item.priority >= 85).length, newContentCount: opportunities.filter((item) => item.action === "NEW_CONTENT").length, optimizeCount: opportunities.filter((item) => item.action === "OPTIMIZE_EXISTING").length, mergeCount: opportunities.filter((item) => item.action === "MERGE_CONTENT").length, opportunities: Object.freeze(opportunities) });
 }
