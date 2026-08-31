@@ -29,6 +29,7 @@ import { resolveTopics, topicSlugs } from "./v2/topics.js";
 import { classifyIntent } from "./v2/intents.js";
 import { getFreshness } from "./v2/freshness.js";
 import { buildInternalLinkPlan, buildLinkGraph } from "./v2/internal-links.js";
+import { buildAutonomousLinkGraph, buildLinkOpportunities } from "./v2/internal-link-graph.js";
 import { buildAnswerBlocks, answersFromFaq } from "./v2/answers.js";
 import { buildSiteLinkCandidates } from "./v2/site-graph.js";
 import { buildArticleLinkCandidates, buildContentClusterReport, buildArticleProfiles, findContentGaps, buildArticleClusterLinks } from "./v2/content-clusters.js";
@@ -60,4 +61,4 @@ export function buildSEO({ path, title, description, image, canonical, noindex =
     return Object.freeze({ metadata, canonical: canonicalUrl, openGraph, twitter, schemaGraph, geo: Object.freeze({ topics: topicsResolved, intent, freshness, internalLinks: links, answerBlocks: answers, audit, clusters: clusterReport, strategy: contentStrategy }) });
 }
 
-export { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildPersonSchema, buildArticleSchema, buildFaqSchema, buildBreadcrumbSchema, buildItemListSchema, buildAboutPageSchema, buildContactPageSchema, buildLocalPlaceSchema, buildWebPageSchema, resolveTopics, topicSlugs, classifyIntent, getFreshness, buildInternalLinkPlan, buildLinkGraph, buildAnswerBlocks, answersFromFaq, buildSiteLinkCandidates, buildArticleLinkCandidates, buildContentClusterReport, buildArticleProfiles, buildArticleClusterLinks, findContentGaps, buildContentStrategy, buildUnifiedContentOpportunities, enrichOpportunitiesWithSearchConsole, buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, scoreOpportunity, scoreOpportunities, classifyOpportunityAction, auditPage, isPrivateRoute };
+export { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildPersonSchema, buildArticleSchema, buildFaqSchema, buildBreadcrumbSchema, buildItemListSchema, buildAboutPageSchema, buildContactPageSchema, buildLocalPlaceSchema, buildWebPageSchema, resolveTopics, topicSlugs, classifyIntent, getFreshness, buildInternalLinkPlan, buildLinkGraph, buildAutonomousLinkGraph, buildLinkOpportunities, buildAnswerBlocks, answersFromFaq, buildSiteLinkCandidates, buildArticleLinkCandidates, buildContentClusterReport, buildArticleProfiles, buildArticleClusterLinks, findContentGaps, buildContentStrategy, buildUnifiedContentOpportunities, enrichOpportunitiesWithSearchConsole, buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, scoreOpportunity, scoreOpportunities, classifyOpportunityAction, auditPage, isPrivateRoute };
