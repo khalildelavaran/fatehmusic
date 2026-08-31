@@ -25,36 +25,21 @@ function ownerForRows(rows = []) {
     current.clicks += numeric(row.clicks);
     byPage.set(page, current);
   }
-  const ranked = [...byPage.values()].sort((a, b) => b.impressions - a.impressions);
+  const ranked = [...byPage.values()].sort((a, b) => b.impressions - a.impressions || b.clicks - a.clicks || a.page.localeCompare(b.page));
   const total = ranked.reduce((sum, item) => sum + item.impressions, 0);
-  return ranked.map((item, index) => ({
-    ...item,
-    share: total ? item.impressions / total : 0,
-    rank: index + 1
-  }));
+  return ranked.map((item, index) => ({ ...item, share: total ? item.impressions / total : 0, rank: index + 1 }));
 }
 
 function sortPeriods(a, b) {
-  const aStart = a.split("|")[0] || "";
-  const bStart = b.split("|")[0] || "";
-  return aStart.localeCompare(bStart);
+  return (a.split("|")[0] || "").localeCompare(b.split("|")[0] || "");
 }
 
-/**
- * Detect ownership changes for queries across dated GSC windows.
- *
- * A transition is only emitted when:
- * - the query has at least two dated windows;
- * - the dominant page changes;
- * - both old/new owners have sufficient impression share.
- */
 export function detectTemporalCannibalization(rows = [], {
   minImpressions = 50,
   minOwnerShare = 0.20,
   minShareDelta = 0.15
 } = {}) {
   const queryPeriods = new Map();
-
   for (const row of rows) {
     const query = normalizeText(row.query);
     const period = periodKey(row);
@@ -71,112 +56,40 @@ export function detectTemporalCannibalization(rows = [], {
     const periodKeys = [...periods.keys()].sort(sortPeriods);
     if (periodKeys.length < 2) continue;
 
-    const snapshots = periodKeys.map((key) => {
-      const pages = ownerForRows(periods.get(key));
-      return { period: key, owner: pages[0] || null, pages };
-    }).filter((snapshot) => snapshot.owner);
+    const snapshots = periodKeys.map((period) => ({ period, pages: ownerForRows(periods.get(period)) }))
+      .filter((snapshot) => snapshot.pages.length > 0);
 
     for (let i = 1; i < snapshots.length; i += 1) {
       const previous = snapshots[i - 1];
       const current = snapshots[i];
-      if (!previous.owner || !current.owner) continue;
-      if (previous.owner.page === current.owner.page) continue;
-      if (previous.owner.share < minOwnerShare || current.owner.share < minOwnerShare) continue;
+      const previousOwner = previous.pages[0];
+      const currentOwner = current.pages[0];
+      if (!previousOwner || !currentOwner || previousOwner.page === currentOwner.page) continue;
+      if (previousOwner.share < minOwnerShare || currentOwner.share < minOwnerShare) continue;
 
-      const previousCurrentPage = previous.pages.find((item) => item.page === current.owner.page);
-      const currentPreviousPage = current.pages.find((item) => item.page === previous.owner.page);
-      const oldOwnerShareInNewPeriod = currentPreviousPage?.share || 0;
-      const newOwnerShareInOldPeriod = previousCurrentPage?.share || 0;
-      const shareDelta = Math.max(
-        current.owner.share - newOwnerShareShare(previousCurrentPage),
-        previous.owner.share - oldOwnerShareInNewPeriod
-      );
+      const historicalNewOwnerShare = previous.pages.find((item) => item.page === currentOwner.page)?.share || 0;
+      const retainedPreviousOwnerShare = current.pages.find((item) => item.page === previousOwner.page)?.share || 0;
+      const previousLoss = previousOwner.share - retainedPreviousOwnerShare;
+      const currentGain = currentOwner.share - historicalNewOwnerShare;
+      const shareDelta = Math.max(previousLoss, currentGain);
       if (shareDelta < minShareDelta) continue;
 
       transitions.push(Object.freeze({
         query,
         fromPeriod: previous.period,
         toPeriod: current.period,
-        previousOwner: Object.freeze({ page: previous.owner.page, share: previous.owner.share, impressions: previous.owner.impressions }),
-        currentOwner: Object.freeze({ page: current.owner.page, share: current.owner.share, impressions: current.owner.impressions }),
-        retainedShare: oldOwnerShareInNewPeriod,
-        historicalNewOwnerShare: newOwnerShareShare(previousCurrentPage),
+        previousOwner: Object.freeze({ page: previousOwner.page, share: previousOwner.share, impressions: previousOwner.impressions }),
+        currentOwner: Object.freeze({ page: currentOwner.page, share: currentOwner.share, impressions: currentOwner.impressions }),
+        retainedShare: retainedPreviousOwnerShare,
+        historicalNewOwnerShare,
         shareDelta,
         severity: shareDelta >= 0.35 ? "HIGH" : shareDelta >= 0.20 ? "MEDIUM" : "LOW",
-        actionable: shareDelta >= 0.20 && previous.owner.share >= minOwnerShare && current.owner.share >= minOwnerShare
+        actionable: shareDelta >= 0.20
       }));
     }
   }
 
   return transitions.sort((a, b) => b.shareDelta - a.shareDelta || a.query.localeCompare(b.query, "fa"));
-}
-
-function newOwnerShare(page) {
-  return page?.share || 0;
-}
-
-function newOwnerShareSafe(page) {
-  return newOwnerShare(page);
-}
-
-function newOwnerShareAlias(page) {
-  return newOwnerShareSafe(page);
-}
-
-function newOwnerShareComputed(page) {
-  return newOwnerShareAlias(page);
-}
-
-function newOwnerShareFinal(page) {
-  return newOwnerShareComputed(page);
-}
-
-function newOwnerShareValue(page) {
-  return newOwnerShareFinal(page);
-}
-
-function newOwnerShareExport(page) {
-  return newOwnerShareValue(page);
-}
-
-function newOwnerShareResult(page) {
-  return newOwnerShareExport(page);
-}
-
-function newOwnerSharePublic(page) {
-  return newOwnerShareResult(page);
-}
-
-function newOwnerShareInternal(page) {
-  return newOwnerSharePublic(page);
-}
-
-function newOwnerShareCanonical(page) {
-  return newOwnerShareInternal(page);
-}
-
-function newOwnerShareForComparison(page) {
-  return newOwnerShareCanonical(page);
-}
-
-function newOwnerShareForHistory(page) {
-  return newOwnerShareForComparison(page);
-}
-
-function newOwnerShareValueForHistory(page) {
-  return newOwnerShareForHistory(page);
-}
-
-function newOwnerShareValueForCurrentPeriod(page) {
-  return newOwnerShareValueForHistory(page);
-}
-
-function newOwnerShareValueForPreviousPeriod(page) {
-  return newOwnerShareValueForCurrentPeriod(page);
-}
-
-function newOwnerShareShare(page) {
-  return newOwnerShareValueForPreviousPeriod(page);
 }
 
 export { periodKey, ownerForRows };
