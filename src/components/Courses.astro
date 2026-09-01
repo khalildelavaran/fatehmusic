@@ -13,6 +13,13 @@ const getCourseDisplayTitle = (title: string) => {
   return /^دوره\s+/.test(normalized) ? `آموزش ${normalized.replace(/^دوره\s+/, "")}` : normalized;
 };
 
+const getCourseDisplaySubtitle = (excerpt: string) => {
+  const normalized = String(excerpt ?? "").trim();
+  const foundationCourse = normalized.match(/^دوره\s+(تئوری موسیقی|ریتم و وزن[‌ ]?خوانی|صداسازی)$/);
+  if (foundationCourse) return `دوره آموزش ${foundationCourse[1].replace(/ریتم و وزن[‌ ]?خوانی/, "ریتم و وزن‌خوانی")}`;
+  return normalized;
+};
+
 const courseCards = typedCourses.map((course: any) => {
   const linkedInstructors = Array.isArray(course.instructors) && course.instructors.length && typeof course.instructors[0] === "object"
     ? course.instructors
@@ -44,7 +51,7 @@ const courseCards = typedCourses.map((course: any) => {
 
           <div class="course-content">
             <a href={`/courses/${course.slug}`} class="course-title-link"><h3 class="course-title">{getCourseDisplayTitle(course.title)}</h3></a>
-            <span class="course-subtitle">{course.content.excerpt}</span>
+            <span class="course-subtitle">{getCourseDisplaySubtitle(course.content.excerpt)}</span>
 
             {course.instructors.length > 0 && (
               <div class="course-instructors">
