@@ -22,7 +22,9 @@ export async function ensureActiveEnrollmentTerm(
   if (!enrollment) throw new Error('ACTIVE_ENROLLMENT_NOT_FOUND');
 
   const billingType = input.billingType ?? 'session_based';
-  if (billingType === 'session_based' && (!Number.isInteger(input.plannedSessions) || (input.plannedSessions ?? 0) <= 0)) {
+  if (billingType !== 'session_based' && billingType !== 'monthly') throw new Error('INVALID_BILLING_TYPE');
+  if (input.plannedSessions !== null && input.plannedSessions !== undefined &&
+      (!Number.isInteger(input.plannedSessions) || input.plannedSessions <= 0)) {
     throw new Error('INVALID_PLANNED_SESSIONS');
   }
 
@@ -48,7 +50,7 @@ export async function ensureActiveEnrollmentTerm(
     input.enrollmentId,
     next?.next_number ?? 1,
     input.startDate,
-    billingType === 'monthly' ? null : input.plannedSessions,
+    billingType === 'monthly' ? null : (input.plannedSessions ?? null),
     billingType,
     input.tuitionAmount ?? null,
     input.tuitionDueDate ?? null,
