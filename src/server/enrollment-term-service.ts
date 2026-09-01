@@ -9,24 +9,43 @@ export type EnrollmentTermInput = {
   tuitionDueDate?: string | null;
 };
 
+type ClassPolicy = {
+  billing_type: BillingType;
+  planned_sessions: number | null;
+  tuition_amount: number | null;
+  due_days: number | null;
+};
+
+function validateTermOptions(input: EnrollmentTermInput) {
+  if (!Number.isInteger(input.enrollmentId) || input.enrollmentId <= 0) throw new Error('INVALID_ENROLLMENT');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate)) throw new Error('INVALID_START_DATE');
+  const billingType = input.billingType ?? 'session_based';
+  if (billingType !== 'session_based' && billingType !== 'monthly') throw new Error('INVALID_BILLING_TYPE');
+  if (input.plannedSessions != null && (!Number.isInteger(input.plannedSessions) || input.plannedSessions <= 0)) {
+    throw new Error('INVALID_PLANNED_SESSIONS');
+  }
+  return billingType;
+}
+
+export async function getActiveClassTermPolicy(db: D1Database, classId: number): Promise<ClassPolicy | null> {
+  return db.prepare(`
+    SELECT billing_type, planned_sessions, tuition_amount, due_days
+    FROM class_term_policies
+    WHERE class_id = ? AND status = 'active'
+    LIMIT 1
+  `).bind(classId).first<ClassPolicy>();
+}
+
 export async function ensureActiveEnrollmentTerm(
   db: D1Database,
   input: EnrollmentTermInput,
 ): Promise<number> {
-  if (!Number.isInteger(input.enrollmentId) || input.enrollmentId <= 0) throw new Error('INVALID_ENROLLMENT');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate)) throw new Error('INVALID_START_DATE');
+  const billingType = validateTermOptions(input);
 
   const enrollment = await db.prepare(`
-    SELECT id FROM enrollments WHERE id = ? AND status = 'active'
-  `).bind(input.enrollmentId).first<{ id: number }>();
+    SELECT id, class_id FROM enrollments WHERE id = ? AND status = 'active'
+  `).bind(input.enrollmentId).first<{ id: number; class_id: number }>();
   if (!enrollment) throw new Error('ACTIVE_ENROLLMENT_NOT_FOUND');
-
-  const billingType = input.billingType ?? 'session_based';
-  if (billingType !== 'session_based' && billingType !== 'monthly') throw new Error('INVALID_BILLING_TYPE');
-  if (input.plannedSessions !== null && input.plannedSessions !== undefined &&
-      (!Number.isInteger(input.plannedSessions) || input.plannedSessions <= 0)) {
-    throw new Error('INVALID_PLANNED_SESSIONS');
-  }
 
   const existing = await db.prepare(`
     SELECT id FROM enrollment_terms
@@ -34,6 +53,20 @@ export async function ensureActiveEnrollmentTerm(
     ORDER BY term_number DESC, id DESC LIMIT 1
   `).bind(input.enrollmentId).first<{ id: number }>();
   if (existing) return existing.id;
+
+  const policy = await getActiveClassTermPolicy(db, enrollment.class_id);
+  const effectiveBilling = input.billingType ?? policy?.billing_type ?? billingType;
+  const effectiveSessions = input.plannedSessions !== undefined
+    ? input.plannedSessions
+    : (policy?.planned_sessions ?? null);
+  const effectiveTuition = input.tuitionAmount !== undefined
+    ? input.tuitionAmount
+    : (policy?.tuition_amount ?? null);
+  const dueDate = input.tuitionDueDate ?? (
+    policy?.due_days != null
+      ? `date('${input.startDate}', '+${policy.due_days} days')`
+      : null
+  );
 
   const next = await db.prepare(`
     SELECT COALESCE(MAX(term_number), 0) + 1 AS next_number
@@ -50,10 +83,10 @@ export async function ensureActiveEnrollmentTerm(
     input.enrollmentId,
     next?.next_number ?? 1,
     input.startDate,
-    billingType === 'monthly' ? null : (input.plannedSessions ?? null),
-    billingType,
-    input.tuitionAmount ?? null,
-    input.tuitionDueDate ?? null,
+    effectiveBilling === 'monthly' ? null : effectiveSessions,
+    effectiveBilling,
+    effectiveTuition,
+    dueDate,
   ).first<{ id: number }>();
 
   if (!result) throw new Error('TERM_CREATE_FAILED');
