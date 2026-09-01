@@ -3,6 +3,7 @@ import type { Course, Instructor } from "../types/courses";
 import { courses as staticCourses } from "../data/courses";
 import { instructors as staticInstructors } from "../data/instructors";
 import { schedules } from "../data/schedule";
+import { toPersianDigits } from "../utils/format-number";
 
 const resolvedCourses = Array.isArray(Astro.props.courses) ? Astro.props.courses : staticCourses;
 const typedCourses = resolvedCourses as Course[];
@@ -42,7 +43,7 @@ const courseCards = typedCourses.map((course: any) => {
 
             {course.instructors.length > 0 && (
               <div class="course-instructors">
-                <span class="course-instructor-count">{course.instructors.length} مدرس</span>
+                <span class="course-instructor-count">{toPersianDigits(course.instructors.length)} مدرس</span>
                 {course.instructors.map((instructor: Instructor) => (
                   <a class="course-instructor" href={`/instructors/${instructor.slug}`}>{instructor.name}</a>
                 ))}
