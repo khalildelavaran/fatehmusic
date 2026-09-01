@@ -21,7 +21,36 @@ const db = (env as AdminEnv).DB;
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
 const unified = buildUnifiedContentOpportunities({ gaps: report.gaps, topicCandidates: activeTopicCandidates, courses, siteUrl: site.url });
-const opportunities = unified.opportunities;
+
+const normalizeText = (value: string) => String(value ?? "")
+  .replace(/[\u200c\u200f\u200e]/g, "")
+  .replace(/[يى]/g, "ی")
+  .replace(/[ك]/g, "ک")
+  .replace(/[\s\u0640]+/g, " ")
+  .replace(/[؟?!.,،؛:]+$/g, "")
+  .trim()
+  .toLowerCase();
+
+const normalizeSlug = (value: string) => String(value ?? "")
+  .trim()
+  .replace(/^\/+|\/+$/g, "")
+  .toLowerCase();
+
+const publishedTitles = new Set(posts.map((post) => normalizeText(post.title)));
+const publishedSlugs = new Set(posts.map((post) => normalizeSlug(post.slug)));
+
+const opportunities = unified.opportunities.filter((item) => {
+  if (item.action !== "NEW_CONTENT") return true;
+  const sameTitle = publishedTitles.has(normalizeText(item.title));
+  const sameSlug = publishedSlugs.has(normalizeSlug(item.suggestedSlug));
+  return !sameTitle && !sameSlug;
+});
+
+const opportunityCount = opportunities.length;
+const highPriorityCount = opportunities.filter((item) => item.priority >= 85).length;
+const newContentCount = opportunities.filter((item) => item.action === "NEW_CONTENT").length;
+const optimizeCount = opportunities.filter((item) => item.action === "OPTIMIZE_EXISTING").length;
+
 const topicCounts = new Map();
 for (const item of opportunities) topicCounts.set(item.topicName, (topicCounts.get(item.topicName) ?? 0) + 1);
 const actionLabel = { NEW_CONTENT: "تولید مقاله جدید", OPTIMIZE_EXISTING: "بهینه‌سازی محتوای موجود", MERGE_CONTENT: "ادغام محتوا" };
@@ -40,14 +69,14 @@ const sourceLabel = { "topic-engine": "موتور موضوعات", gap: "شکا�
       </section>
 
       <div class="strategy-stats">
-        <div class="strategy-stat"><strong>{unified.opportunityCount}</strong><span>فرصت نهایی</span></div>
-        <div class="strategy-stat strategy-stat-hot"><strong>{unified.highPriorityCount}</strong><span>اولویت بالا</span></div>
-        <div class="strategy-stat"><strong>{unified.newContentCount}</strong><span>مقاله جدید</span></div>
-        <div class="strategy-stat"><strong>{unified.optimizeCount}</strong><span>بهینه‌سازی موجود</span></div>
+        <div class="strategy-stat"><strong>{opportunityCount}</strong><span>فرصت نهایی</span></div>
+        <div class="strategy-stat strategy-stat-hot"><strong>{highPriorityCount}</strong><span>اولویت بالا</span></div>
+        <div class="strategy-stat"><strong>{newContentCount}</strong><span>مقاله جدید</span></div>
+        <div class="strategy-stat"><strong>{optimizeCount}</strong><span>بهینه‌سازی موجود</span></div>
       </div>
 
       <section class="strategy-section">
-        <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف نهایی تصمیم‌گیری</h2></div><span class="strategy-count">{opportunities.length} فرصت</span></div>
+        <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف نهایی تصمیم‌گیری</h2></div><span class="strategy-count">{opportunityCount} فرصت</span></div>
         {opportunities.length === 0 ? (
           <div class="strategy-empty"><strong>در حال حاضر فرصت محتوایی قابل اقدام شناسایی نشده است.</strong><span>با اجرای موتور تولید موضوعات یا انتشار مقاله‌های جدید، این صف خودکار به‌روزرسانی می‌شود.</span></div>
         ) : (
