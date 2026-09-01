@@ -1,8 +1,10 @@
+export type AttendanceStatus = 'present' | 'absent' | 'excused' | 'unmarked';
+
 export type TodayStudentCard = {
   enrollmentSessionId: string;
   studentId: string;
   studentName: string;
-  attendance: 'present' | 'absent' | 'excused' | 'unmarked';
+  attendance: AttendanceStatus;
   consumedSessions: number;
   remainingSessions: number | null;
   tuitionDueDate: string | null;
@@ -24,9 +26,19 @@ export type TodaySessionCard = {
   students: TodayStudentCard[];
 };
 
+export const ATTENDANCE_INDICATOR: Record<AttendanceStatus, {
+  color: 'green' | 'red' | 'white' | 'yellow';
+  label: string;
+}> = {
+  present: { color: 'green', label: 'حاضر' },
+  absent: { color: 'red', label: 'غایب' },
+  excused: { color: 'white', label: 'مرخصی' },
+  unmarked: { color: 'yellow', label: 'ثبت نشده' },
+};
+
 /**
  * Presentation boundary for the secretary's same-day dashboard.
- * Data access and SQL aggregation belong in the repository layer.
+ * Unmarked is intentionally yellow and is not counted as absence.
  */
 export function buildTodaySessionCard(input: TodaySessionCard): TodaySessionCard {
   return input;
