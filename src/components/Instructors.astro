@@ -1,99 +1,53 @@
 ---
-import { instructors } from "../data/instructors";
+import { instructors as staticInstructors } from "../data/instructors";
+import { courses as staticCourses } from "../data/courses";
 import { schedules } from "../data/schedule";
 
-const instructorCards = instructors.map((ins) => {
-  const instructorSchedules = schedules.filter(
-    (s) =>
-      s.active &&
-      s.instructorId === ins.id
-  );
+const resolvedInstructors = Array.isArray(Astro.props.instructors) ? Astro.props.instructors : staticInstructors;
 
-  const days = [
-    ...new Set(instructorSchedules.map((s) => s.weekday))
-  ];
-
-  return {
-    ...ins,
-    schedules: instructorSchedules,
-    days
-  };
+const instructorCards = resolvedInstructors.map((ins: any) => {
+  const linkedCourses = Array.isArray(ins.courses) && ins.courses.length
+    ? ins.courses
+    : staticCourses.filter((course: any) => (course.instructors ?? []).includes(ins.id));
+  const instructorSchedules = schedules.filter((s) => s.active && s.instructorId === ins.id);
+  const days = [...new Set(instructorSchedules.map((s) => s.weekday))];
+  return { ...ins, courses: linkedCourses, schedules: instructorSchedules, days };
 });
 ---
 
 <section class="instructors" data-reveal="fade-up">
   <div class="container">
     <div class="section-header" data-reveal-group>
-      <span class="section-badge" data-reveal data-reveal-delay="1">
-        اساتید آموزشگاه
-      </span>
-
-      <h2
-        class="section-title"
-        data-reveal
-        data-reveal-delay="2"
-      >
-        تیم حرفه‌ای مدرسین موسیقی
-      </h2>
-
-      <p data-reveal data-reveal-delay="3">
-        آموزش توسط اساتید با تجربه در حوزه موسیقی کلاسیک و مدرن
-      </p>
+      <span class="section-badge" data-reveal data-reveal-delay="1">اساتید آموزشگاه</span>
+      <h2 class="section-title" data-reveal data-reveal-delay="2">تیم حرفه‌ای مدرسین موسیقی</h2>
+      <p data-reveal data-reveal-delay="3">آموزش توسط اساتید با تجربه در حوزه موسیقی کلاسیک و مدرن</p>
     </div>
 
     <div class="instructors-grid" data-reveal-group>
       {instructorCards.map((ins) => (
         <div class="instructor-card">
           <div class="instructor-image">
-            <a
-              href={`/instructors/${ins.slug}`}
-              class="instructor-image-link"
-            >
-              <img
-                src={ins.media.images.profile}
-                alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`}
-                width="1200"
-                height="1500"
-                loading="lazy"
-                decoding="async"
-              />
+            <a href={`/instructors/${ins.slug}`} class="instructor-image-link">
+              <img src={ins.media.images.profile} alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`} width="1200" height="1500" loading="lazy" decoding="async" />
             </a>
-
-            {ins.id === 1 && (
-              <span class="badge">
-                مدیر آموزشگاه
-              </span>
-            )}
-
-            <a
-              href={`/register?instructor=${ins.slug}`}
-              class="card-register-badge"
-              aria-label={`ثبت‌نام با ${ins.name}`}
-            >
-              ثبت‌نام
-            </a>
+            {ins.id === 1 && <span class="badge">مدیر آموزشگاه</span>}
+            <a href={`/register?instructor=${ins.slug}`} class="card-register-badge" aria-label={`ثبت‌نام با ${ins.name}`}>ثبت‌نام</a>
           </div>
 
           <div class="instructor-content">
-            <a
-              href={`/instructors/${ins.slug}`}
-              class="instructor-title-link"
-            >
-              <h3>{ins.name}</h3>
-            </a>
-
+            <a href={`/instructors/${ins.slug}`} class="instructor-title-link"><h3>{ins.name}</h3></a>
             <p>{ins.position}</p>
+
+            {ins.courses.length > 0 && (
+              <div class="instructor-courses">
+                <span class="instructor-course-count">{ins.courses.length} دوره</span>
+                {ins.courses.map((course: any) => <a href={`/courses/${course.slug}`}>{course.title}</a>)}
+              </div>
+            )}
 
             {ins.days.length > 0 && (
               <div class="days-tags">
-                {ins.days.map((day) => (
-                  <span
-                    class="day-tag"
-                    aria-label={`روز حضور ${day}`}
-                  >
-                    {day}
-                  </span>
-                ))}
+                {ins.days.map((day: string) => <span class="day-tag" aria-label={`روز حضور ${day}`}>{day}</span>)}
               </div>
             )}
           </div>
