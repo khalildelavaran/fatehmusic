@@ -70,12 +70,12 @@ export const PUT: APIRoute = async ({ request }) => {
   const now = new Date().toISOString();
   await db.prepare(`
     UPDATE enrollment_sessions
-    SET attendance_status = ?, attendance_note = ?, attendance_recorded_at = ?
+    SET status = ?, note = ?, updated_at = ?
     WHERE id = ?
-  `).bind(body.status, body.note ?? null, now, enrollmentSessionId).run();
+  `).bind(body.status, body.note ?? '', now, enrollmentSessionId).run();
 
   const updated = await db.prepare(`
-    SELECT id, enrollment_id, session_id, attendance_status, attendance_note, attendance_recorded_at
+    SELECT id, enrollment_id, session_id, status, attendance_mode, note, updated_at
     FROM enrollment_sessions
     WHERE id = ?
   `).bind(enrollmentSessionId).first();
