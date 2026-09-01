@@ -8,6 +8,11 @@ import { toPersianDigits } from "../utils/format-number";
 const resolvedCourses = Array.isArray(Astro.props.courses) ? Astro.props.courses : staticCourses;
 const typedCourses = resolvedCourses as Course[];
 
+const getCourseDisplayTitle = (title: string) => {
+  const normalized = title.trim();
+  return /^دوره\s+/.test(normalized) ? `آموزش ${normalized.replace(/^دوره\s+/, "")}` : normalized;
+};
+
 const courseCards = typedCourses.map((course: any) => {
   const linkedInstructors = Array.isArray(course.instructors) && course.instructors.length && typeof course.instructors[0] === "object"
     ? course.instructors
@@ -32,13 +37,13 @@ const courseCards = typedCourses.map((course: any) => {
         <div class="course-card">
           <div class="course-image">
             <a href={`/courses/${course.slug}`} class="course-image-link">
-              <img src={course.media.image} alt={`${course.title} در آموزشگاه موسیقی فاتح شوشتر`} width="800" height="450" loading="lazy" decoding="async" />
+              <img src={course.media.image} alt={`${getCourseDisplayTitle(course.title)} در آموزشگاه موسیقی فاتح شوشتر`} width="800" height="450" loading="lazy" decoding="async" />
             </a>
-            <a href={`/register?course=${course.slug}`} class="card-register-badge" aria-label={`ثبت‌نام در ${course.title}`}>ثبت‌نام</a>
+            <a href={`/register?course=${course.slug}`} class="card-register-badge" aria-label={`ثبت‌نام در ${getCourseDisplayTitle(course.title)}`}>ثبت‌نام</a>
           </div>
 
           <div class="course-content">
-            <a href={`/courses/${course.slug}`} class="course-title-link"><h3 class="course-title">{course.title}</h3></a>
+            <a href={`/courses/${course.slug}`} class="course-title-link"><h3 class="course-title">{getCourseDisplayTitle(course.title)}</h3></a>
             <span class="course-subtitle">{course.content.excerpt}</span>
 
             {course.instructors.length > 0 && (
