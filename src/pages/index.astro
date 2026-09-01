@@ -1,6 +1,7 @@
 ---
-export const prerender = true;
+export const prerender = false;
 
+import { env } from "cloudflare:workers";
 import MainLayout from "../layouts/MainLayout.astro";
 import Header from "../components/Header.astro";
 import Hero from "../components/Hero.astro";
@@ -11,26 +12,18 @@ import Gallery from "../components/Gallery.astro";
 import Testimonials from "../components/Testimonials.astro";
 import CTA from "../components/CTA.astro";
 import Footer from "../components/Footer.astro";
+import { resolveCourseInstructorRelations } from "../server/course-instructor-relations";
+
+const relations = await resolveCourseInstructorRelations(env.DB);
 ---
-
 <MainLayout>
-
   <Header />
-
   <Hero />
-  
-  <Courses />
-  
-  <Instructors />
-  
+  <Courses courses={relations.courses} />
+  <Instructors instructors={relations.instructors} />
   <WhyUs />
-  
   <Gallery />
-  
   <Testimonials />
-  
   <CTA />
-    
   <Footer />
-
 </MainLayout>
