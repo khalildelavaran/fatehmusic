@@ -1,0 +1,117 @@
+---
+export const prerender = false;
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSession } from '../../lib/auth';
+
+const session = await getSession(Astro.request);
+if (!session) return Astro.redirect('/login?redirect=/admin/daily');
+if (session.role !== 'ADMIN' && session.role !== 'REGISTRAR') {
+  return new Response('Forbidden', { status: 403 });
+}
+---
+
+<AdminLayout title="داشبورد روزانه">
+  <main class="daily-dashboard" dir="rtl">
+    <header class="daily-header">
+      <div>
+        <h1>داشبورد روزانه</h1>
+        <p id="daily-date"></p>
+      </div>
+      <div class="date-actions">
+        <button id="prev-day" type="button">روز قبل</button>
+        <button id="today" type="button">امروز</button>
+        <button id="next-day" type="button">روز بعد</button>
+      </div>
+    </header>
+
+    <section id="summary" class="summary-grid" aria-label="خلاصه روز"></section>
+    <section id="sessions" class="sessions" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const state = { date: new Date().toISOString().slice(0, 10) };
+    const sessions = document.querySelector('#sessions');
+    const summary = document.querySelector('#summary');
+    const dateLabel = document.querySelector('#daily-date');
+
+    const indicator = {
+      unmarked: ['yellow', 'ثبت نشده'],
+      present: ['green', 'حاضر'],
+      absent: ['red', 'غایب'],
+      excused: ['white', 'مرخصی'],
+    };
+
+    function renderStudent(student) {
+      const [color, label] = indicator[student.attendance] || indicator.unmarked;
+      const buttons = ['present', 'absent', 'excused'].map(status =>
+        `<button class="attendance-action ${status === student.attendance ? 'active' : ''}" data-enrollment-session-id="${student.enrollmentSessionId}" data-status="${status}">${indicator[status][1]}</button>`
+      ).join('');
+
+      return `<article class="student-card">
+        <div class="student-main">
+          <span class="attendance-light ${color}" title="${label}"></span>
+          <strong>${student.studentName}</strong>
+        </div>
+        <div class="student-meta">
+          <span>گذرانده: ${student.consumedSessions}</span>
+          <span>باقی‌مانده: ${student.remainingSessions ?? '—'}</span>
+          <span>شهریه: ${student.tuitionStatus}</span>
+        </div>
+        <div class="attendance-actions">${buttons}</div>
+      </article>`;
+    }
+
+    function render(data) {
+      dateLabel.textContent = data.date;
+      summary.innerHTML = `
+        <div>جلسه <strong>${data.summary.sessions}</strong></div>
+        <div>هنرجو <strong>${data.summary.students}</strong></div>
+        <div>غایب <strong>${data.summary.absent}</strong></div>
+        <div class="warning">ثبت‌نشده <strong>${data.summary.unmarked}</strong></div>`;
+
+      sessions.innerHTML = data.sessions.map(session => `
+        <section class="session-card">
+          <header>
+            <div><strong>${session.classTitle}</strong><span>${session.startTime} — ${session.endTime}</span></div>
+            <div>${session.teacherName} · ${session.roomName || 'بدون اتاق'}</div>
+          </header>
+          ${session.calendarWarning ? `<div class="calendar-warning">هشدار تقویم: ${session.calendarWarning}</div>` : ''}
+          <div class="teacher-status">وضعیت استاد: ${session.teacherAttendance || 'ثبت نشده'}</div>
+          <div class="students">${session.students.map(renderStudent).join('')}</div>
+        </section>`).join('') || '<p>برای این روز جلسه‌ای ثبت نشده است.</p>';
+    }
+
+    async function load() {
+      const response = await fetch(`/api/admin/today-dashboard?date=${encodeURIComponent(state.date)}`);
+      if (!response.ok) throw new Error('بارگذاری داشبورد ناموفق بود');
+      render(await response.json());
+    }
+
+    sessions.addEventListener('click', async (event) => {
+      const button = event.target.closest('[data-enrollment-session-id]');
+      if (!button) return;
+      button.disabled = true;
+      try {
+        const response = await fetch('/api/admin/attendance', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            enrollmentSessionId: Number(button.dataset.enrollmentSessionId),
+            status: button.dataset.status,
+          }),
+        });
+        if (!response.ok) throw new Error('ثبت حضور ناموفق بود');
+        await load();
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelector('#prev-day').addEventListener('click', () => { const d = new Date(state.date); d.setDate(d.getDate() - 1); state.date = d.toISOString().slice(0, 10); load(); });
+    document.querySelector('#next-day').addEventListener('click', () => { const d = new Date(state.date); d.setDate(d.getDate() + 1); state.date = d.toISOString().slice(0, 10); load(); });
+    document.querySelector('#today').addEventListener('click', () => { state.date = new Date().toISOString().slice(0, 10); load(); });
+
+    load().catch(error => { sessions.innerHTML = `<p role="alert">${error.message}</p>`; });
+  </script>
+</AdminLayout>
