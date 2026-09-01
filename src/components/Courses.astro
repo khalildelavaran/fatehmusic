@@ -1,113 +1,57 @@
 ---
 import type { Course, Instructor } from "../types/courses";
-
-import { courses } from "../data/courses";
-import { instructors } from "../data/instructors";
+import { courses as staticCourses } from "../data/courses";
+import { instructors as staticInstructors } from "../data/instructors";
 import { schedules } from "../data/schedule";
 
-const typedCourses = courses as Course[];
+const resolvedCourses = Array.isArray(Astro.props.courses) ? Astro.props.courses : staticCourses;
+const typedCourses = resolvedCourses as Course[];
 
-const courseCards = typedCourses.map((course: Course) => {
-  const instructorIds = course.instructors ?? [];
-
-  const courseInstructors: Instructor[] = instructors.filter(
-    (i) => instructorIds.includes(i.id)
-  );
-
-  const courseSchedules = schedules.filter(
-    (s) =>
-      s.active &&
-      instructorIds.includes(s.instructorId)
-  );
-
-  const days: string[] = [
-    ...new Set(courseSchedules.map((s) => s.weekday))
-  ];
-
-  return {
-    ...course,
-    instructors: courseInstructors,
-    schedules: courseSchedules,
-    days
-  };
+const courseCards = typedCourses.map((course: any) => {
+  const linkedInstructors = Array.isArray(course.instructors) && course.instructors.length && typeof course.instructors[0] === "object"
+    ? course.instructors
+    : staticInstructors.filter((i) => (course.instructors ?? []).includes(i.id));
+  const instructorIds = linkedInstructors.map((i: any) => Number(i.id));
+  const courseSchedules = schedules.filter((s) => s.active && instructorIds.includes(s.instructorId));
+  const days: string[] = [...new Set(courseSchedules.map((s) => s.weekday))];
+  return { ...course, instructors: linkedInstructors, schedules: courseSchedules, days };
 });
 ---
 
 <section class="courses" data-reveal="fade-up">
   <div class="container">
     <div class="section-header" data-reveal-group>
-      <span class="section-badge" data-reveal data-reveal-delay="1">
-        دوره‌های آموزشی
-      </span>
-
-      <h2 class="section-title" data-reveal data-reveal-delay="2">
-        یادگیری موسیقی با بهترین اساتید
-      </h2>
-
-      <p data-reveal data-reveal-delay="3">
-        دوره‌های آموزشی برای تمامی سنین، از مبتدی تا پیشرفته.
-      </p>
+      <span class="section-badge" data-reveal data-reveal-delay="1">دوره‌های آموزشی</span>
+      <h2 class="section-title" data-reveal data-reveal-delay="2">یادگیری موسیقی با بهترین اساتید</h2>
+      <p data-reveal data-reveal-delay="3">دوره‌های آموزشی برای تمامی سنین، از مبتدی تا پیشرفته.</p>
     </div>
 
     <div class="courses-grid" data-reveal-group>
       {courseCards.map((course) => (
         <div class="course-card">
           <div class="course-image">
-            <a
-              href={`/courses/${course.slug}`}
-              class="course-image-link"
-            >
-              <img
-                src={course.media.image}
-                alt={`${course.title} در آموزشگاه موسیقی فاتح شوشتر`}
-                width="800"
-                height="450"
-                loading="lazy"
-                decoding="async"
-              />
+            <a href={`/courses/${course.slug}`} class="course-image-link">
+              <img src={course.media.image} alt={`${course.title} در آموزشگاه موسیقی فاتح شوشتر`} width="800" height="450" loading="lazy" decoding="async" />
             </a>
-
-            <a
-              href={`/register?course=${course.slug}`}
-              class="card-register-badge"
-              aria-label={`ثبت‌نام در ${course.title}`}
-            >
-              ثبت‌نام
-            </a>
+            <a href={`/register?course=${course.slug}`} class="card-register-badge" aria-label={`ثبت‌نام در ${course.title}`}>ثبت‌نام</a>
           </div>
 
           <div class="course-content">
-            <a
-              href={`/courses/${course.slug}`}
-              class="course-title-link"
-            >
-              <h3 class="course-title">{course.title}</h3>
-            </a>
-
-            <span class="course-subtitle">
-              {course.content.excerpt}
-            </span>
+            <a href={`/courses/${course.slug}`} class="course-title-link"><h3 class="course-title">{course.title}</h3></a>
+            <span class="course-subtitle">{course.content.excerpt}</span>
 
             {course.instructors.length > 0 && (
               <div class="course-instructors">
+                <span class="course-instructor-count">{course.instructors.length} مدرس</span>
                 {course.instructors.map((instructor: Instructor) => (
-                  <div class="course-instructor">
-                    {instructor.name}
-                  </div>
+                  <a class="course-instructor" href={`/instructors/${instructor.slug}`}>{instructor.name}</a>
                 ))}
               </div>
             )}
 
             {course.days.length > 0 && (
               <div class="days-tags">
-                {course.days.map((day: string) => (
-                  <span
-                    class="day-tag"
-                    aria-label={`روز برگزاری ${day}`}
-                  >
-                    {day}
-                  </span>
-                ))}
+                {course.days.map((day: string) => <span class="day-tag" aria-label={`روز برگزاری ${day}`}>{day}</span>)}
               </div>
             )}
           </div>
