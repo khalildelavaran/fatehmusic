@@ -1,4 +1,4 @@
-export type AttendanceStatus = 'present' | 'absent' | 'excused';
+export type AttendanceStatus = 'pending' | 'present' | 'absent' | 'excused';
 
 export type AttendanceRecord = {
   enrollmentSessionId: string;
