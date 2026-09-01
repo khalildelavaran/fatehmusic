@@ -5,7 +5,7 @@
 
 UPDATE instructors
 SET instruments = json_remove(instruments, '$[' || (
-  SELECT value
+  SELECT key
   FROM json_each(instructors.instruments)
   WHERE value = 'voice-training-course'
   LIMIT 1
