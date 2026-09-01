@@ -40,8 +40,13 @@ const instructorCards = resolvedInstructors.map((ins: any) => {
 
             {ins.courses.length > 0 && (
               <div class="instructor-courses">
-                <span class="instructor-course-count">{ins.courses.length} دوره</span>
-                {ins.courses.map((course: any) => <a href={`/courses/${course.slug}`}>{course.title}</a>)}
+                <span class="instructor-course-count">{ins.courses.length} دوره: </span>
+                {ins.courses.map((course: any, index: number) => (
+                  <span class="instructor-course-link-item">
+                    {index > 0 && <span class="course-separator">، </span>}
+                    <a href={`/courses/${course.slug}`}>{course.title}</a>
+                  </span>
+                ))}
               </div>
             )}
 
