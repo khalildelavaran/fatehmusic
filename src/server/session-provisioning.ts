@@ -6,9 +6,8 @@ export type ProvisionSessionResult = {
 };
 
 /**
- * Creates the student-session rows for one concrete ClassSession.
- * Existing rows are preserved, making this operation idempotent.
- * A new active enrollment gets its first term on the first real session date.
+ * Provisions one student-session row for every active enrollment of a
+ * concrete ClassSession. This is intentionally idempotent.
  */
 export async function provisionEnrollmentSessionsForClassSession(
   db: D1Database,
