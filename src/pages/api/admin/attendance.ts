@@ -5,7 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { validateAttendance, type AttendanceStatus } from "../../../server/attendance-service";
 
-const VALID_STATUSES = new Set<AttendanceStatus>(["present", "absent", "excused"]);
+const VALID_STATUSES = new Set<AttendanceStatus>(["pending", "present", "absent", "excused"]);
 
 export const PUT: APIRoute = async ({ request }) => {
   const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -60,8 +60,9 @@ export const PUT: APIRoute = async ({ request }) => {
   `).bind(body.status, body.note ?? "", updatedAt, id).run();
 
   const attendance = await db.prepare(`
-    SELECT id, enrollment_id, session_id, status, attendance_mode, note, updated_at
-    FROM enrollment_sessions WHERE id = ?
+    SELECT id, enrollment_id, session_id, enrollment_term_id, status, attendance_mode, makeup_for_id, note, updated_at
+    FROM enrollment_sessions
+    WHERE id = ?
   `).bind(id).first();
 
   return json({ success: true, attendance });

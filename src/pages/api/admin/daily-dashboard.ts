@@ -43,13 +43,17 @@ export const GET: APIRoute = async ({ request }) => {
       r.name AS room_name,
       TRIM(COALESCE(i.first_name, '') || ' ' || COALESCE(i.last_name, '')) AS instructor_name,
       COALESCE(tsa.status, 'pending') AS teacher_attendance_status,
-      tsa.check_in_at AS teacher_check_in_at
+      tsa.check_in_at AS teacher_check_in_at,
+      ce.type AS calendar_exception_type,
+      ce.title AS calendar_exception_title
     FROM class_sessions cs
     JOIN classes c ON c.id = cs.class_id
     LEFT JOIN rooms r ON r.id = cs.room_id
     LEFT JOIN instructors i ON i.id = cs.instructor_id
     LEFT JOIN teacher_session_attendance tsa
       ON tsa.session_id = cs.id AND tsa.instructor_id = cs.instructor_id
+    LEFT JOIN calendar_exceptions ce
+      ON ce.exception_date = cs.session_date
     WHERE cs.session_date = ?
     ORDER BY cs.start_time, cs.id
   `).bind(date).all<{
@@ -57,7 +61,8 @@ export const GET: APIRoute = async ({ request }) => {
     instructor_id: number; room_id: number | null; location_type: string; type: string;
     status: string; original_session_id: number | null; class_title: string;
     room_name: string | null; instructor_name: string; teacher_attendance_status: string;
-    teacher_check_in_at: string | null;
+    teacher_check_in_at: string | null; calendar_exception_type: string | null;
+    calendar_exception_title: string | null;
   }>();
 
   const result = [];
@@ -74,6 +79,7 @@ export const GET: APIRoute = async ({ request }) => {
         et.id AS term_id,
         et.planned_sessions,
         et.billing_type,
+        et.tuition_due_date AS term_tuition_due_date,
         (
           SELECT COUNT(*) FROM enrollment_sessions consumed
           WHERE consumed.enrollment_id = e.id
@@ -84,42 +90,47 @@ export const GET: APIRoute = async ({ request }) => {
           SELECT MIN(i.due_date) FROM invoices i
           WHERE i.enrollment_term_id = et.id
             AND i.status IN ('pending', 'overdue')
-        ) AS tuition_due_date
+        ) AS invoice_due_date
       FROM enrollment_sessions es
       JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
       JOIN students s ON s.id = e.student_id
       LEFT JOIN enrollment_terms et ON et.id = es.enrollment_term_id
       WHERE es.session_id = ?
-      ORDER BY student_name, es.id
+      ORDER BY s.last_name, s.first_name, es.id
     `).bind(session.id).all<{
       enrollment_session_id: number; enrollment_id: number; student_id: number;
       student_name: string; attendance_status: string; attendance_mode: string | null;
       note: string; term_id: number | null; planned_sessions: number | null;
-      billing_type: string | null; consumed_sessions: number; tuition_due_date: string | null;
+      billing_type: string | null; consumed_sessions: number;
+      term_tuition_due_date: string | null; invoice_due_date: string | null;
     }>();
 
     result.push({
       ...session,
-      students: students.results.map((student) => ({
-        enrollmentSessionId: student.enrollment_session_id,
-        enrollmentId: student.enrollment_id,
-        studentId: student.student_id,
-        studentName: student.student_name,
-        attendanceStatus: student.attendance_status,
-        attendanceMode: student.attendance_mode,
-        note: student.note,
-        termId: student.term_id,
-        consumedSessions: student.consumed_sessions ?? 0,
-        plannedSessions: student.planned_sessions,
-        remainingSessions:
+      students: students.results.map((student) => {
+        const consumedSessions = student.consumed_sessions ?? 0;
+        const remainingSessions =
           student.billing_type === 'monthly' || student.planned_sessions == null
             ? null
-            : Math.max(student.planned_sessions - (student.consumed_sessions ?? 0), 0),
-        tuitionDueDate: student.tuition_due_date,
-        tuitionWarning: student.tuition_due_date != null ||
-          (student.planned_sessions != null &&
-            student.planned_sessions - (student.consumed_sessions ?? 0) <= 1),
-      })),
+            : Math.max(student.planned_sessions - consumedSessions, 0);
+        const tuitionDueDate = student.invoice_due_date ?? student.term_tuition_due_date;
+
+        return {
+          enrollmentSessionId: student.enrollment_session_id,
+          enrollmentId: student.enrollment_id,
+          studentId: student.student_id,
+          studentName: student.student_name,
+          attendanceStatus: student.attendance_status,
+          attendanceMode: student.attendance_mode,
+          note: student.note,
+          termId: student.term_id,
+          consumedSessions,
+          plannedSessions: student.planned_sessions,
+          remainingSessions,
+          tuitionDueDate,
+          tuitionWarning: tuitionDueDate != null || (remainingSessions != null && remainingSessions <= 1),
+        };
+      }),
     });
   }
 

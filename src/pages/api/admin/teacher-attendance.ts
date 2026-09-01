@@ -8,7 +8,8 @@ async function requireAttendanceAccess(request: Request): Promise<Response | nul
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
 }
 
-const VALID_STATUSES = new Set(['present', 'absent']);
+type TeacherAttendanceStatus = 'pending' | 'present' | 'absent';
+const VALID_STATUSES = new Set<TeacherAttendanceStatus>(['pending', 'present', 'absent']);
 
 export const PUT: APIRoute = async ({ request }) => {
   const denied = await requireAttendanceAccess(request);
@@ -17,7 +18,7 @@ export const PUT: APIRoute = async ({ request }) => {
   const db = env.DB;
   if (!db) return json({ success: false, message: 'دیتابیس در دسترس نیست.' }, 503);
 
-  let body: { sessionId?: number; instructorId?: number; status?: 'present' | 'absent'; note?: string | null };
+  let body: { sessionId?: number; instructorId?: number; status?: TeacherAttendanceStatus; note?: string | null };
   try {
     body = await request.json();
   } catch {
@@ -73,5 +74,5 @@ export const PUT: APIRoute = async ({ request }) => {
     WHERE session_id = ? AND instructor_id = ?
   `).bind(sessionId, instructorId).first();
 
-  return json({ success: true, attendance: attendance });
+  return json({ success: true, attendance });
 };

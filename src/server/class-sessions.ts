@@ -2,7 +2,7 @@
  * Concrete class sessions.
  * Session is the operational source of truth for date, time, instructor,
  * room and delivery mode. It may intentionally differ from the recurring
- * schedule.
+ * schedule, including on an official holiday.
  */
 
 export type SessionType = "regular" | "makeup";
@@ -70,7 +70,7 @@ function mapSession(row: SessionRow): ClassSessionRecord {
     notes: row.notes,
     cancellationReason: row.cancellation_reason,
     createdAt: row.created_at,
-    updatedAt: row.updated_at
+    updatedAt: row.updated_at,
   };
 }
 
@@ -78,17 +78,33 @@ function validTime(value: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+function validDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export function validateClassSession(input: ClassSessionInput): string[] {
   const errors: string[] = [];
+  const locationType = input.locationType ?? "in_person";
+  const type = input.type ?? "regular";
+
   if (!Number.isInteger(input.classId) || input.classId <= 0) errors.push("کلاس معتبر نیست.");
-  if (!input.sessionDate) errors.push("تاریخ جلسه الزامی است.");
+  if (!validDate(input.sessionDate)) errors.push("تاریخ جلسه معتبر نیست.");
   if (!validTime(input.startTime) || !validTime(input.endTime)) errors.push("ساعت جلسه معتبر نیست.");
   if (validTime(input.startTime) && validTime(input.endTime) && input.startTime >= input.endTime) {
     errors.push("ساعت پایان باید بعد از ساعت شروع باشد.");
   }
   if (!Number.isInteger(input.instructorId) || input.instructorId <= 0) errors.push("مدرس معتبر نیست.");
-  if (input.locationType === "online" && !input.meetingUrl) errors.push("برای جلسه آنلاین لینک ورود الزامی است.");
-  if (input.locationType === "in_person" && input.roomId == null) errors.push("برای جلسه حضوری اتاق الزامی است.");
+  if (locationType === "online" && !input.meetingUrl) errors.push("برای جلسه آنلاین لینک ورود الزامی است.");
+  if ((locationType === "in_person" || locationType === "hybrid") && input.roomId == null) {
+    errors.push("برای جلسه حضوری یا ترکیبی اتاق الزامی است.");
+  }
+  if (type === "makeup" && (!Number.isInteger(input.originalSessionId) || (input.originalSessionId ?? 0) <= 0)) {
+    errors.push("جلسه جبرانی باید به جلسه اصلی متصل باشد.");
+  }
+  if (type === "regular" && input.originalSessionId != null) {
+    errors.push("جلسه عادی نباید به‌عنوان جبرانی به جلسه دیگری متصل باشد.");
+  }
+
   return errors;
 }
 
@@ -103,12 +119,12 @@ export async function getSession(db: D1Database, id: number): Promise<ClassSessi
 }
 
 export async function listSessionsForDate(db: D1Database, date: string): Promise<ClassSessionRecord[]> {
-  const result = await db.prepare(
-    `SELECT ${SESSION_COLUMNS}
-     FROM class_sessions
-     WHERE session_date = ?
-     ORDER BY start_time, id`
-  ).bind(date).all<SessionRow>();
+  const result = await db.prepare(`
+    SELECT ${SESSION_COLUMNS}
+    FROM class_sessions
+    WHERE session_date = ?
+    ORDER BY start_time, id
+  `).bind(date).all<SessionRow>();
   return result.results.map(mapSession);
 }
 
@@ -116,77 +132,98 @@ export async function listSessionsForClass(
   db: D1Database,
   classId: number,
   fromDate?: string,
-  toDate?: string
+  toDate?: string,
 ): Promise<ClassSessionRecord[]> {
   const clauses = ["class_id = ?"];
   const binds: unknown[] = [classId];
   if (fromDate) { clauses.push("session_date >= ?"); binds.push(fromDate); }
   if (toDate) { clauses.push("session_date <= ?"); binds.push(toDate); }
 
-  const result = await db.prepare(
-    `SELECT ${SESSION_COLUMNS}
-     FROM class_sessions
-     WHERE ${clauses.join(" AND ")}
-     ORDER BY session_date, start_time, id`
-  ).bind(...binds).all<SessionRow>();
+  const result = await db.prepare(`
+    SELECT ${SESSION_COLUMNS}
+    FROM class_sessions
+    WHERE ${clauses.join(" AND ")}
+    ORDER BY session_date, start_time, id
+  `).bind(...binds).all<SessionRow>();
   return result.results.map(mapSession);
 }
 
 export async function createClassSession(db: D1Database, input: ClassSessionInput): Promise<number> {
-  const errors = validateClassSession(input);
+  const normalized: ClassSessionInput = {
+    ...input,
+    locationType: input.locationType ?? "in_person",
+    type: input.type ?? "regular",
+  };
+  const errors = validateClassSession(normalized);
   if (errors.length) throw new Error(errors.join(" "));
 
-  const classRow = await db.prepare("SELECT id FROM classes WHERE id = ?").bind(input.classId).first<{ id: number }>();
+  const classRow = await db.prepare("SELECT id FROM classes WHERE id = ?").bind(normalized.classId).first<{ id: number }>();
   if (!classRow) throw new Error("کلاس یافت نشد.");
 
-  const instructor = await db.prepare("SELECT id FROM instructors WHERE id = ?").bind(input.instructorId).first<{ id: number }>();
-  if (!instructor) throw new Error("مدرس یافت نشد.");
+  const instructor = await db.prepare("SELECT id FROM instructors WHERE id = ? AND is_active = 1")
+    .bind(normalized.instructorId).first<{ id: number }>();
+  if (!instructor) throw new Error("مدرس فعال یافت نشد.");
 
-  const inserted = await db.prepare(
-    `INSERT INTO class_sessions
+  if (normalized.roomId != null) {
+    const room = await db.prepare("SELECT id FROM rooms WHERE id = ? AND status = 'active'")
+      .bind(normalized.roomId).first<{ id: number }>();
+    if (!room) throw new Error("اتاق فعال یافت نشد.");
+  }
+
+  if (normalized.type === "makeup") {
+    const original = await db.prepare(`
+      SELECT id FROM class_sessions
+      WHERE id = ? AND class_id = ?
+    `).bind(normalized.originalSessionId, normalized.classId).first<{ id: number }>();
+    if (!original) throw new Error("جلسه اصلی جبرانی یافت نشد یا متعلق به این کلاس نیست.");
+  }
+
+  const inserted = await db.prepare(`
+    INSERT INTO class_sessions
       (class_id, session_date, start_time, end_time, instructor_id, room_id,
        location_type, online_platform, meeting_url, type, original_session_id, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(
-    input.classId,
-    input.sessionDate,
-    input.startTime,
-    input.endTime,
-    input.instructorId,
-    input.roomId ?? null,
-    input.locationType ?? "in_person",
-    input.onlinePlatform ?? null,
-    input.meetingUrl ?? null,
-    input.type ?? "regular",
-    input.originalSessionId ?? null,
-    input.notes ?? ""
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    normalized.classId,
+    normalized.sessionDate,
+    normalized.startTime,
+    normalized.endTime,
+    normalized.instructorId,
+    normalized.roomId ?? null,
+    normalized.locationType,
+    normalized.onlinePlatform ?? null,
+    normalized.meetingUrl ?? null,
+    normalized.type,
+    normalized.originalSessionId ?? null,
+    normalized.notes ?? "",
   ).run();
 
-  if (typeof inserted.meta.last_row_id !== "number") throw new Error("Failed to create class session");
+  if (typeof inserted.meta.last_row_id !== "number") throw new Error("SESSION_CREATE_FAILED");
   return inserted.meta.last_row_id;
 }
 
 export async function cancelClassSession(db: D1Database, id: number, reason: string): Promise<boolean> {
-  const result = await db.prepare(
-    `UPDATE class_sessions
-     SET status = 'cancelled', cancellation_reason = ?, updated_at = datetime('now')
-     WHERE id = ? AND status = 'scheduled'`
-  ).bind(reason, id).run();
+  const result = await db.prepare(`
+    UPDATE class_sessions
+    SET status = 'cancelled', cancellation_reason = ?, updated_at = datetime('now')
+    WHERE id = ? AND status = 'scheduled'
+  `).bind(reason, id).run();
   return result.success;
 }
 
 export async function completeClassSession(db: D1Database, id: number): Promise<boolean> {
-  const result = await db.prepare(
-    `UPDATE class_sessions SET status = 'completed', updated_at = datetime('now')
-     WHERE id = ? AND status = 'scheduled'`
-  ).bind(id).run();
+  const result = await db.prepare(`
+    UPDATE class_sessions
+    SET status = 'completed', updated_at = datetime('now')
+    WHERE id = ? AND status = 'scheduled'
+  `).bind(id).run();
   return result.success;
 }
 
 export async function createMakeupSession(
   db: D1Database,
   originalSessionId: number,
-  input: Omit<ClassSessionInput, "classId" | "type" | "originalSessionId">
+  input: Omit<ClassSessionInput, "classId" | "type" | "originalSessionId">,
 ): Promise<number> {
   const original = await getSession(db, originalSessionId);
   if (!original) throw new Error("جلسه اصلی یافت نشد.");
@@ -194,6 +231,6 @@ export async function createMakeupSession(
     ...input,
     classId: original.classId,
     type: "makeup",
-    originalSessionId
+    originalSessionId,
   });
 }
