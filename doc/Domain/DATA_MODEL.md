@@ -1,1122 +1,513 @@
 # DATA_MODEL.md
 
-**Version:** 1.0
+**Version:** 2.0
 
-**Status:** Approved
+**Status:** Approved — operational domain amendment
 
 **Architecture Level:** Enterprise
 
 **Project:** Fateh Music Academy
 
+> This document remains the canonical domain reference. The operational amendment at the end of the document supersedes any earlier statement that conflicts with it.
+
 ---
 
 # 1. Purpose
 
-This document defines the complete business domain model of the Fateh Music Academy platform.
+This document defines the business domain model of the Fateh Music Academy platform.
 
-It is the authoritative reference for every business entity, relationship, identifier, lifecycle, ownership rule and repository interaction.
-
-The Domain Model is independent from
-
-- Astro
-- JavaScript
-- Databases
-- CMS
-- APIs
-
-It represents the business itself.
+The Domain Model is independent from Astro, JavaScript, databases, CMS and APIs. It represents the business itself.
 
 ---
 
 # 2. Design Principles
 
-The data model follows
-
-- Domain Driven Design (DDD)
-- Entity-Centric Architecture
-- Repository Pattern
-- AI-First Design
-- Schema.org Compatibility
-- SEO-first Modeling
+The data model follows Domain Driven Design (DDD), Entity-Centric Architecture, Repository Pattern, AI-First Design and Schema.org compatibility.
 
 Every object represents a real-world business concept.
 
 ---
 
-# 3. Domain Overview
+# 3. Public/content domain
 
-```
+The existing public/content entities remain valid:
+
+```text
 Organization
-
-├── Courses
-│
-├── Instructors
-│
-├── Course Categories
-│
-├── Music Styles
-│
-├── Instruments
-│
-├── Articles
-│
-├── Events
-│
-├── Workshops
-│
-├── Gallery
-│
-├── Reviews
-│
-├── Testimonials
-│
-├── FAQs
-│
-├── Contact
-│
-├── Branches
-│
-├── Certificates
-│
-└── Social Networks
-```
-
----
-
-# 4. Core Aggregate Root
-
-The entire system has one Aggregate Root.
-
-```
-Organization
-```
-
-Everything belongs to the organization.
-
-Nothing exists independently.
-
----
-
-# 5. Core Entities
-
-Current version contains
-
-```
-Organization
-
 Course
-
 Instructor
-
 Article
-
 Category
-
 MusicStyle
-
 Instrument
-
-Schedule
-
 Gallery
-
 GalleryImage
-
 Review
-
 FAQ
-
-ContactInformation
-
 Branch
-
 SocialProfile
-```
-
-Future entities
-
-```
-Student
-
-Enrollment
-
-Certificate
-
-Practice
-
-Lesson
-
-Assignment
-
-Exam
-
-OnlineCourse
-
-VideoLesson
-
-MusicBook
-
-Composer
-
-MusicPiece
-
-Podcast
-
-Newsletter
-
-EventRegistration
-```
-
----
-
-# 6. Entity Classification
-
-Business Entities
-
-```
-Organization
-
-Course
-
-Instructor
-
-Article
-
 Event
 ```
 
-Supporting Entities
+The public Course catalog continues to use the existing static catalog plus operational overrides. The operational school-management model must not duplicate these public identities.
 
-```
-Category
+---
 
-Image
+# 4. Operational school domain
 
-FAQ
+The operational domain is:
 
-Review
-
-Schedule
-```
-
-Reference Entities
-
-```
-Country
-
-City
-
-Language
-
-Tag
-
-MusicStyle
-
-Instrument
+```text
+Course
+  ↓
+Class
+  ├── ClassSchedule (recurring/default plan)
+  └── ClassSession (real calendar occurrence)
+          ├── InstructorSessionAttendance
+          └── EnrollmentSession
+                    ↓
+                Enrollment
+                 ├── Student
+                 └── EnrollmentTerm (optional)
+                            ↓
+                         Invoice
+                            ↓
+                         Payment
 ```
 
 ---
 
-# 7. Universal Entity Contract
+# 5. Course
 
-Every business entity inherits
+`Course` represents what is taught.
 
-```
-id
-
-slug
-
-title
-
-status
-
-createdAt
-
-updatedAt
-
-publishedAt
-
-seo
-
-schema
-
-metadata
-```
-
-Every entity is uniquely identifiable.
+It is not a particular student's schedule and does not own a specific calendar occurrence.
 
 ---
 
-# 8. Entity Lifecycle
+# 6. Class
 
-```
-Draft
+`Class` represents an operational teaching offering based on a Course.
 
-↓
+The current D1 `classes` table is the existing implementation and must be extended rather than duplicated.
 
-Review
+Class type and delivery mode are separate dimensions.
 
-↓
+Class type:
 
-Published
-
-↓
-
-Archived
-
-↓
-
-Deleted
+```text
+INDIVIDUAL
+GROUP
+WORKSHOP
 ```
 
-Repositories expose only
+Delivery mode:
 
-Published
+```text
+IN_PERSON
+ONLINE
+HYBRID
+```
 
-entities.
+The current `class_type = online` value is a legacy mismatch and must be migrated semantically to `delivery_mode = ONLINE`.
 
 ---
 
-# 9. Entity Identity
+# 7. ClassSchedule
 
-Each entity owns
+`ClassSchedule` is a recurring/default timetable.
 
-```
-UUID
+It answers:
 
-↓
+> معمولاً کلاس چه روز و ساعتی برگزار می‌شود؟
 
-Slug
+It is not the actual attendance event.
 
-↓
+A future operational schedule should contain at least:
 
-Canonical URL
-
-↓
-
-Schema @id
-
-↓
-
-Repository ID
-```
-
-Identity is immutable after publication.
-
----
-
-# 10. Organization Entity
-
-Organization owns
-
-```
-Basic Information
-
-Brand
-
-Address
-
-Contact
-
-Social Profiles
-
-Logo
-
-Cover Image
-
-Mission
-
-Vision
-
-History
-
-Opening Hours
-
-Geo Location
-
-Courses
-
-Teachers
-```
-
-Exactly one Organization exists.
-
----
-
-# 11. Course Entity
-
-Course represents
-
-one educational program.
-
-Properties
-
-```
-id
-
-slug
-
-title
-
-subtitle
-
-description
-
-excerpt
-
-level
-
-price
-
-duration
-
-sessions
-
-categoryId
-
-musicStyleIds
-
-instrumentIds
-
-teacherIds
-
-galleryIds
-
-faqIds
-
-reviewIds
-
-seo
-
-schema
-
-status
-```
-
-Course is the central educational entity.
-
----
-
-# 12. Instructor Entity
-
-Represents one teacher.
-
-Properties
-
-```
-id
-
-slug
-
-fullName
-
-photo
-
-biography
-
-specialties
-
-experience
-
-education
-
-certifications
-
-socialProfiles
-
-courseIds
-
-galleryIds
-
-articleIds
-
-seo
-
-schema
-```
-
-Instructor may teach multiple courses.
-
----
-
-# 13. Article Entity
-
-Educational content.
-
-Properties
-
-```
-id
-
-slug
-
-title
-
-excerpt
-
-content
-
-authorId
-
-categoryId
-
-tags
-
-readingTime
-
-featuredImage
-
-relatedCourseIds
-
-seo
-
-schema
-```
-
-Articles strengthen topical authority.
-
----
-
-# 14. Category Entity
-
-Categories classify
-
-Courses
-
-Articles
-
-Events
-
-Properties
-
-```
-id
-
-slug
-
-title
-
-description
-
-parentId
-
-icon
-
-seo
-```
-
-Supports hierarchy.
-
----
-
-# 15. Instrument Entity
-
-Examples
-
-```
-Classical Guitar
-
-Piano
-
-Violin
-
-Setar
-
-Santur
-
-Tar
-
-Drums
-```
-
-One instrument
-
-may belong to many courses.
-
----
-
-# 16. Music Style Entity
-
-Examples
-
-```
-Classical
-
-Pop
-
-Flamenco
-
-Traditional Persian
-
-Jazz
-
-Rock
-
-Blues
-```
-
-Music styles classify
-
-courses
-
-articles
-
-events.
-
----
-
-# 17. Schedule Entity
-
-Represents
-
-teaching schedule.
-
-Properties
-
-```
-courseId
-
-teacherId
-
+```text
+classId
 weekday
-
 startTime
-
 endTime
-
-room
-
-capacity
+roomId
+validFrom
+validTo
 ```
 
-Future versions may support online schedules.
+The existing `src/data/schedule.js` is a legacy static catalog and is not itself the authoritative operational Schedule table.
 
 ---
 
-# 18. Gallery Entity
+# 8. ClassSession
 
-Gallery contains
+`ClassSession` represents one real calendar occurrence.
 
-images
+It owns the effective date/time/location for that occurrence and can differ from the recurring Schedule.
 
-videos
+Conceptual properties:
 
-documents
-
-related entities.
-
-Gallery itself is metadata.
-
-Files belong to GalleryItems.
-
----
-
-# 19. Gallery Image Entity
-
-Properties
-
-```
+```text
 id
-
-title
-
-alt
-
-caption
-
-width
-
-height
-
-format
-
-copyright
-
-entityId
-
-entityType
-```
-
-Supports ImageObject Schema.
-
----
-
-# 20. Review Entity
-
-Represents
-
-student reviews.
-
-Properties
-
-```
-author
-
-rating
-
-review
-
+classId
 date
-
-courseId
-
-teacherId
-
-approved
+startTime
+endTime
+instructorId
+roomId
+deliveryMode
+type
+status
+originalSessionId
+cancellationReason
+notes
 ```
 
-Supports AggregateRating.
+Session type may include:
+
+```text
+REGULAR
+MAKEUP
+```
+
+Status may include:
+
+```text
+SCHEDULED
+COMPLETED
+CANCELLED
+```
+
+A Session may exist without a recurring Schedule, especially for workshops and makeup sessions.
 
 ---
 
-# 21. FAQ Entity
+# 9. Room
 
-Properties
+`Room` is a physical resource belonging to a Branch.
 
-```
-question
+The current `classes.room` text field is a legacy representation. The target operational model uses a real Room resource and stores the actual room on Session.
 
-answer
-
-displayOrder
-
-entityId
-
-entityType
-```
-
-Reusable across entities.
+A Session room may differ from the default Schedule room.
 
 ---
 
-# 22. Branch Entity
+# 10. Student
 
-Supports future expansion.
+`Student` is the person-level entity.
 
-Properties
-
-```
-Branch Name
-
-Address
-
-Phone
-
-Geo
-
-Opening Hours
-
-Images
-
-Manager
-```
-
-Current implementation
-
-contains one branch.
-
-Architecture supports many.
+The existing D1 `students` table is authoritative for operational student identity.
 
 ---
 
-# 23. Social Profile Entity
+# 11. Registration
 
-Properties
+`Registration` represents intake/history from the registration process.
 
+It is not the same concept as Enrollment.
+
+Existing registrations must remain backward-compatible.
+
+---
+
+# 12. Enrollment
+
+`Enrollment` represents a student's active membership in a Class.
+
+The current `class_students` table is the existing operational predecessor and must be evolved rather than duplicated without an explicit migration strategy.
+
+An active student/Class relationship must be unique.
+
+---
+
+# 13. EnrollmentTerm
+
+`EnrollmentTerm` represents one student's instructional/billing cycle.
+
+It is scoped to an Enrollment.
+
+A term is not a calendar season and is not globally defined by Course.
+
+For session-based education, it begins from the student's first applicable instructional session and may contain:
+
+```text
+4 sessions
+8 sessions
+10 sessions
 ```
-Platform
 
-URL
+or another configured entitlement.
 
-Username
+The effective count belongs to the EnrollmentTerm.
 
-Verified
+---
 
-Priority
+# 14. Legacy Registration.term
+
+The existing `registrations.term` field numbers registrations for a student.
+
+This is retained as legacy registration history.
+
+It must not be used as the authoritative instructional `EnrollmentTerm` after the operational model is introduced.
+
+No destructive rename is permitted.
+
+---
+
+# 15. EnrollmentSession
+
+`EnrollmentSession` represents one student's relationship to one ClassSession.
+
+Conceptual properties:
+
+```text
+id
+enrollmentId
+sessionId
+status
+attendanceMode
+note
+makeupForId
 ```
 
-Reusable across
+Canonical student status:
 
-Organization
+```text
+PRESENT
+ABSENT
+EXCUSED
+```
 
+`EXCUSED` means approved leave and does not consume the student's session entitlement.
+
+`PRESENT` and `ABSENT` consume entitlement.
+
+If `LATE` is introduced, its consumption semantics must be explicitly defined by academy policy.
+
+---
+
+# 16. InstructorSessionAttendance
+
+Instructor attendance is independent of student attendance.
+
+It must not be inferred from student attendance or ClassSession status.
+
+---
+
+# 17. Makeup sessions
+
+Two cases exist.
+
+### Whole-class makeup
+
+A replacement ClassSession references the original session:
+
+```text
+ClassSession.originalSessionId
+```
+
+### Student-specific makeup
+
+A replacement EnrollmentSession references the original excused record:
+
+```text
+EnrollmentSession.makeupForId
+```
+
+A makeup may occur earlier or later than the normal schedule and may use a different date, time, room, delivery mode and, where academy policy permits, instructor.
+
+The recurring Schedule must never be rewritten to represent a one-off makeup.
+
+---
+
+# 18. Holidays and cancellation
+
+An official holiday does not delete or rewrite recurring Schedule data.
+
+A generated ClassSession may be marked:
+
+```text
+CANCELLED
+```
+
+with:
+
+```text
+cancellationReason = OFFICIAL_HOLIDAY
+```
+
+A replacement makeup session is created only when the academy requires one.
+
+---
+
+# 19. Workshop
+
+A Workshop reuses the Class/Session/Enrollment infrastructure.
+
+```text
+Class.type = WORKSHOP
+```
+
+A workshop may have one or multiple Sessions and does not require a recurring ClassSchedule.
+
+A workshop Enrollment does not necessarily require EnrollmentTerm.
+
+---
+
+# 20. Delivery modes
+
+Online is not a separate academic hierarchy.
+
+A Class may have a default delivery mode, while a particular Session may override it.
+
+A Hybrid Session may contain students with different attendance modes:
+
+```text
+Student A → PRESENT / IN_PERSON
+Student B → PRESENT / ONLINE
+Student C → EXCUSED
+```
+
+---
+
+# 21. Billing
+
+Billing is independent of scheduling.
+
+Supported models:
+
+```text
+SESSION_BASED
+MONTHLY
+```
+
+A session-based cycle has a planned session entitlement.
+
+A monthly billing cycle is based on the billing period and does not automatically imply a fixed number of sessions.
+
+---
+
+# 22. Invoice
+
+`Invoice` represents a tuition/debt charge.
+
+It must remain separate from ClassSession and EnrollmentSession.
+
+---
+
+# 23. Payment
+
+`Payment` represents money paid against an Invoice.
+
+It must not be used to calculate instructional attendance directly.
+
+---
+
+# 24. Session entitlement calculation
+
+For a session-based EnrollmentTerm:
+
+```text
+consumed = PRESENT + ABSENT (+ policy-defined LATE)
+remaining = plannedSessions - consumed
+```
+
+`EXCUSED` does not consume entitlement.
+
+`remainingSessions` is derived data, not an independently editable source of truth.
+
+---
+
+# 25. Today dashboard
+
+The reception/admin dashboard must use:
+
+```text
+ClassSession(date = today)
+```
+
+as its operational source.
+
+It must not derive today's real attendance schedule directly from `src/data/schedule.js`.
+
+For each Session it should resolve:
+
+```text
+Class
+Course
 Instructor
-
-Events
-
----
-
-# 24. Relationships
-
-```
-Organization
-
-↓
-
-Course
-
-↓
-
-Instructor
-
-↓
-
-Article
-
-↓
-
-Gallery
-
-↓
-
-Review
-
-↓
-
-FAQ
-```
-
-Relationships are explicit.
-
----
-
-# 25. Cardinality
-
-Organization
-
-1 → N Courses
-
-Course
-
-N → N Instructors
-
-Course
-
-N → N Instruments
-
-Course
-
-N → N Styles
-
-Instructor
-
-1 → N Articles
-
-Article
-
-N → N Tags
-
-Gallery
-
-1 → N Images
-
-Course
-
-1 → N Reviews
-
-Course
-
-1 → N FAQ
-
----
-
-# 26. Repository Ownership
-
-Each entity belongs to
-
-one repository.
-
-```
-OrganizationRepository
-
-CourseRepository
-
-InstructorRepository
-
-ArticleRepository
-
-GalleryRepository
-
-ReviewRepository
-
-FAQRepository
-```
-
-Ownership is exclusive.
-
----
-
-# 27. Storage Model
-
-Current
-
-```
-JavaScript Objects
-```
-
-Future
-
-```
-Markdown
-
-↓
-
-JSON
-
-↓
-
-Content Collections
-
-↓
-
-Cloudflare D1
-
-↓
-
-PostgreSQL
-
-↓
-
-CMS
-```
-
-Domain Model remains unchanged.
-
----
-
-# 28. Schema Mapping
-
-Every entity maps directly to Schema.org.
-
-Examples
-
-```
-Organization
-
-↓
-
-Organization
-
-Course
-
-↓
-
-Course
-
-Instructor
-
-↓
-
-Person
-
-Article
-
-↓
-
-Article
-
-Gallery Image
-
-↓
-
-ImageObject
-
-FAQ
-
-↓
-
-Question
-
-↓
-
-Answer
-```
-
----
-
-# 29. SEO Mapping
-
-Every entity owns
-
-```
-SEO
-
-↓
-
-Canonical
-
-↓
-
-OG
-
-↓
-
-Twitter
-
-↓
-
-Keywords
-
-↓
-
-Description
-```
-
-SEO belongs to the entity.
-
----
-
-# 30. AI Knowledge Model
-
-Every entity contributes to
-
-```
-Knowledge Graph
-
-↓
-
-Semantic Relationships
-
-↓
-
-Embeddings
-
-↓
-
-RAG
-
-↓
-
-AI Search
-
-↓
-
-LLM Understanding
-```
-
-The domain model is designed for both humans and intelligent systems.
-
----
-
-# 31. Validation Rules
-
-Every entity must satisfy
-
-✓ Unique ID
-
-✓ Unique Slug
-
-✓ Valid SEO
-
-✓ Valid Schema
-
-✓ Published State
-
-✓ Valid Relationships
-
-✓ Required Fields
-
-Repositories enforce validation.
-
----
-
-# 32. Future Evolution
-
-Planned entities
-
-```
+Room / DeliveryMode
+InstructorAttendance
+EnrollmentSession
 Student
-
-Enrollment
-
-Certificate
-
-Attendance
-
-Assignment
-
-Exam
-
-Practice Session
-
-Video Lesson
-
-Podcast
-
-Live Stream
-
-Digital Products
-
-Forum
-
-Comments
-
-Notifications
-
-Payments
+EnrollmentTerm
+Invoice
 ```
 
-No redesign required.
+Student attendance actions:
+
+```text
+PRESENT → green
+ABSENT  → red
+EXCUSED → white
+```
+
+Attendance colors must not be reused for financial state.
 
 ---
 
-# 33. Architectural Constraints
+# 26. Current implementation mapping
 
-Business entities
-
-must never contain
-
-Rendering Logic
-
-Astro Components
-
-Browser APIs
-
-HTML
-
-CSS
-
-Database Queries
-
-Only business knowledge.
-
----
-
-# 34. Compliance Rules
-
-Every new entity must
-
-✓ Represent a real business concept
-
-✓ Have stable identity
-
-✓ Have repository ownership
-
-✓ Support SEO
-
-✓ Support Schema
-
-✓ Support AI
-
-✓ Be documented
-
-Architecture review is mandatory before introducing a new entity.
+| Current | Domain meaning | Decision |
+|---|---|---|
+| `src/data/courses.js` | Course catalog | Preserve |
+| `course_overrides` | Course admin override | Preserve |
+| `instructors` | Instructor | Preserve |
+| `students` | Student | Preserve |
+| `registrations` | Registration/intake history | Preserve |
+| `registrations.term` | Legacy registration numbering | Preserve; not new Term authority |
+| `classes` | Class | Extend |
+| `class_students` | Enrollment predecessor | Evolve |
+| `src/data/schedule.js` | Legacy schedule catalog | Do not use as real Session source |
+| `classes.room` | Legacy room label | Migrate/augment with Room |
+| `classes.class_type=online` | Mixed semantic field | Migrate to delivery mode |
+| missing ClassSession | Real session | Add |
+| missing EnrollmentSession | Student/session state | Add |
+| missing InstructorSessionAttendance | Instructor attendance | Add |
+| missing Room | Physical resource | Add |
+| missing Invoice | Tuition charge | Add |
+| missing Payment | Payment | Add |
 
 ---
 
-# 35. Final Statement
+# 27. Architectural rule
 
-The Domain Model represents the permanent business foundation of the Fateh Music Academy platform.
+**Schedule is a plan. Session is reality. Enrollment is membership. EnrollmentSession is the student's state in reality. EnrollmentTerm is the student's instructional/billing cycle. Invoice and Payment are finance.**
 
-Frameworks, databases, APIs and user interfaces may evolve over time, but the Domain Model remains the single source of business truth.
-
-All future development must conform to this model.
+These concepts must not be collapsed into one table or one overloaded field.
 
 ---
 
-## Status
+# 28. Compatibility
+
+The operational domain must preserve:
+
+- existing Student IDs
+- existing Instructor IDs
+- existing Course IDs/slugs
+- existing Registration history
+- existing Contract relationships
+- existing Certificate relationships
+- public SEO/content architecture
+
+No historical attendance or historical session times may be fabricated when migrating from the current static schedule.
+
+---
+
+# 29. Status
 
 Approved
 
 Mandatory
 
-Effective Immediately
+Effective immediately for new operational development.
