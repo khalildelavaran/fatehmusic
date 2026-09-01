@@ -14,6 +14,13 @@ const instructorCards = resolvedInstructors.map((ins: any) => {
   const days = [...new Set(instructorSchedules.map((s) => s.weekday))];
   return { ...ins, courses: linkedCourses, schedules: instructorSchedules, days };
 });
+
+const getInstructorCourseTitle = (title: string) => {
+  const normalized = title.trim();
+  return /^(دوره\s+)?(سلفژ|صداسازی|ریتم و وزن خوانی|تئوری موسیقی)$/.test(normalized)
+    ? `آموزش ${normalized.replace(/^دوره\s+/, "")}`
+    : normalized;
+};
 ---
 
 <section class="instructors" data-reveal="fade-up">
@@ -45,7 +52,7 @@ const instructorCards = resolvedInstructors.map((ins: any) => {
                 {ins.courses.map((course: any, index: number) => (
                   <span class="instructor-course-link-item">
                     {index > 0 && <span class="course-separator">، </span>}
-                    <a href={`/courses/${course.slug}`}>{course.title}</a>
+                    <a href={`/courses/${course.slug}`}>{getInstructorCourseTitle(course.title)}</a>
                   </span>
                 ))}
               </div>
