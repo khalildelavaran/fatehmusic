@@ -1,0 +1,3 @@
+# Cloudflare D1 remote migrations are sensitive to CRLF line endings when
+# parsing CREATE TRIGGER statements. Keep migration SQL files in LF format.
+migrations/*.sql text eol=lf
