@@ -41,7 +41,6 @@ CREATE INDEX IF NOT EXISTS idx_teacher_session_attendance_status
   ON teacher_session_attendance(session_id, status);
 CREATE INDEX IF NOT EXISTS idx_teacher_session_attendance_instructor
   ON teacher_session_attendance(instructor_id, status);
-
 CREATE INDEX IF NOT EXISTS idx_class_sessions_daily
   ON class_sessions(session_date, start_time, status);
 CREATE INDEX IF NOT EXISTS idx_class_sessions_class_status_date
@@ -56,21 +55,21 @@ CREATE TRIGGER IF NOT EXISTS trg_class_sessions_makeup_insert
 BEFORE INSERT ON class_sessions
 WHEN NEW.type = 'makeup'
 BEGIN
-  SELECT CASE
+  SELECT (CASE
     WHEN NEW.original_session_id IS NULL THEN RAISE(ABORT, 'MAKEUP_REQUIRES_ORIGINAL_SESSION')
     WHEN NOT EXISTS (
       SELECT 1 FROM class_sessions original
       WHERE original.id = NEW.original_session_id
         AND original.class_id = NEW.class_id
     ) THEN RAISE(ABORT, 'MAKEUP_ORIGINAL_SESSION_INVALID')
-  END;
+  END);
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_class_sessions_makeup_update
 BEFORE UPDATE OF type, original_session_id, class_id ON class_sessions
 WHEN NEW.type = 'makeup'
 BEGIN
-  SELECT CASE
+  SELECT (CASE
     WHEN NEW.original_session_id IS NULL THEN RAISE(ABORT, 'MAKEUP_REQUIRES_ORIGINAL_SESSION')
     WHEN NEW.original_session_id = NEW.id THEN RAISE(ABORT, 'MAKEUP_CANNOT_REFERENCE_SELF')
     WHEN NOT EXISTS (
@@ -78,7 +77,7 @@ BEGIN
       WHERE original.id = NEW.original_session_id
         AND original.class_id = NEW.class_id
     ) THEN RAISE(ABORT, 'MAKEUP_ORIGINAL_SESSION_INVALID')
-  END;
+  END);
 END;
 
 -- Attendance is forbidden for a cancelled session and the enrollment must
@@ -86,7 +85,7 @@ END;
 CREATE TRIGGER IF NOT EXISTS trg_enrollment_sessions_validate_insert
 BEFORE INSERT ON enrollment_sessions
 BEGIN
-  SELECT CASE
+  SELECT (CASE
     WHEN EXISTS (
       SELECT 1 FROM class_sessions cs
       WHERE cs.id = NEW.session_id AND cs.status = 'cancelled'
@@ -103,13 +102,13 @@ BEGIN
       WHERE et.id = NEW.enrollment_term_id
         AND et.enrollment_id = NEW.enrollment_id
     ) THEN RAISE(ABORT, 'ENROLLMENT_TERM_MISMATCH')
-  END;
+  END);
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_enrollment_sessions_validate_update
 BEFORE UPDATE OF enrollment_id, session_id, enrollment_term_id, status ON enrollment_sessions
 BEGIN
-  SELECT CASE
+  SELECT (CASE
     WHEN EXISTS (
       SELECT 1 FROM class_sessions cs
       WHERE cs.id = NEW.session_id AND cs.status = 'cancelled'
@@ -126,7 +125,7 @@ BEGIN
       WHERE et.id = NEW.enrollment_term_id
         AND et.enrollment_id = NEW.enrollment_id
     ) THEN RAISE(ABORT, 'ENROLLMENT_TERM_MISMATCH')
-  END;
+  END);
 END;
 
 -- Student makeup rows must reference an occurrence belonging to the same enrollment.
@@ -134,44 +133,46 @@ CREATE TRIGGER IF NOT EXISTS trg_enrollment_sessions_makeup_insert
 BEFORE INSERT ON enrollment_sessions
 WHEN NEW.makeup_for_id IS NOT NULL
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
-    SELECT 1 FROM enrollment_sessions original
-    WHERE original.id = NEW.makeup_for_id
-      AND original.enrollment_id = NEW.enrollment_id
-  ) THEN RAISE(ABORT, 'MAKEUP_ENROLLMENT_MISMATCH') END;
+  SELECT (CASE
+    WHEN NOT EXISTS (
+      SELECT 1 FROM enrollment_sessions original
+      WHERE original.id = NEW.makeup_for_id
+        AND original.enrollment_id = NEW.enrollment_id
+    ) THEN RAISE(ABORT, 'MAKEUP_ENROLLMENT_MISMATCH')
+  END);
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_enrollment_sessions_makeup_update
 BEFORE UPDATE OF makeup_for_id, enrollment_id ON enrollment_sessions
 WHEN NEW.makeup_for_id IS NOT NULL
 BEGIN
-  SELECT CASE
+  SELECT (CASE
     WHEN NEW.makeup_for_id = NEW.id THEN RAISE(ABORT, 'MAKEUP_CANNOT_REFERENCE_SELF')
     WHEN NOT EXISTS (
       SELECT 1 FROM enrollment_sessions original
       WHERE original.id = NEW.makeup_for_id
         AND original.enrollment_id = NEW.enrollment_id
     ) THEN RAISE(ABORT, 'MAKEUP_ENROLLMENT_MISMATCH')
-  END;
+  END);
 END;
 
 -- Teacher attendance belongs to the instructor assigned to the concrete session.
 CREATE TRIGGER IF NOT EXISTS trg_teacher_attendance_validate_insert
 BEFORE INSERT ON teacher_session_attendance
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM class_sessions cs
     WHERE cs.id = NEW.session_id
       AND cs.instructor_id = NEW.instructor_id
-  ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH') END;
+  ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH') END);
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_teacher_attendance_validate_update
 BEFORE UPDATE OF session_id, instructor_id ON teacher_session_attendance
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM class_sessions cs
     WHERE cs.id = NEW.session_id
       AND cs.instructor_id = NEW.instructor_id
-  ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH') END;
+  ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH') END);
 END;
