@@ -1,18 +1,18 @@
 import { instructors as staticInstructors } from "../data/instructors.js";
 
 export interface InstructorsEnv { DB: D1Database; }
-export interface InstructorRecord { id:number; slug:string; firstName:string; lastName:string; phone:string; email:string; specialty:string; instruments:string[]; biography:string; notes:string; isActive:boolean; createdAt:string; updatedAt:string; }
+export interface InstructorRecord { id:number; slug:string; firstName:string; lastName:string; phone:string; email:string; specialty:string; instruments:string[]; biography:string; notes:string; isActive:boolean; payPercentage:number; createdAt:string; updatedAt:string; }
 export interface InstructorStudentSummary { studentId:number; firstName:string; lastName:string; nationalCode:string; studentStatus:string; course:string; termCount:number; startDate:string; lastActivity:string; }
 export interface InstructorProfile { instructor:InstructorRecord; students:InstructorStudentSummary[]; }
 export interface InstructorListParams { search?:string|null; status?:string|null; page?:number|null; pageSize?:number|null; }
 export interface NormalizedInstructorListParams { search:string; isActive:boolean|null; page:number; pageSize:number; offset:number; }
 export interface InstructorListItem extends InstructorRecord { studentCount:number; }
 export interface InstructorListResult { instructors:InstructorListItem[]; total:number; page:number; pageSize:number; }
-export interface InstructorInput { firstName?:string; lastName?:string; phone?:string; email?:string; specialty?:string; instruments?:string[]; biography?:string; notes?:string; isActive?:boolean; }
+export interface InstructorInput { firstName?:string; lastName?:string; phone?:string; email?:string; specialty?:string; instruments?:string[]; biography?:string; notes?:string; isActive?:boolean; payPercentage?:number; }
 export interface ValidationResult { valid:boolean; errors:string[]; }
 export interface InstructorValidationOptions { isCreate?:boolean; }
 
-var COLUMNS = "id, slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active, created_at, updated_at";
+var COLUMNS = "id, slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active, pay_percentage, created_at, updated_at";
 var DEFAULT_PAGE_SIZE = 20;
 var MAX_PAGE_SIZE = 100;
 
@@ -27,14 +27,19 @@ function parseInstruments(value:any):string[] {
   } catch (_) { return []; }
 }
 
+function normalizePayPercentage(value:any):number {
+  var n=Number(value);
+  return Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : 50;
+}
+
 function mapDbInstructor(row:any):InstructorRecord {
-  return { id:Number(row.id), slug:String(row.slug||""), firstName:String(row.first_name||""), lastName:String(row.last_name||""), phone:String(row.phone||""), email:String(row.email||""), specialty:String(row.specialty||""), instruments:parseInstruments(row.instruments), biography:String(row.biography||""), notes:String(row.notes||""), isActive:Number(row.is_active)===1, createdAt:String(row.created_at||""), updatedAt:String(row.updated_at||"") };
+  return { id:Number(row.id), slug:String(row.slug||""), firstName:String(row.first_name||""), lastName:String(row.last_name||""), phone:String(row.phone||""), email:String(row.email||""), specialty:String(row.specialty||""), instruments:parseInstruments(row.instruments), biography:String(row.biography||""), notes:String(row.notes||""), isActive:Number(row.is_active)===1, payPercentage:normalizePayPercentage(row.pay_percentage), createdAt:String(row.created_at||""), updatedAt:String(row.updated_at||"") };
 }
 
 function mapStaticInstructor(item:any):InstructorRecord {
   var name=typeof item.name==="string"?item.name.trim():""; var parts=name?name.split(/\s+/):[]; var identity=item.identity||{}; var content=item.content||{}; var relations=item.relations||{};
   var firstName=identity.firstName||(parts.length>0?parts[0]:""); var lastName=identity.lastName||parts.slice(1).join(" ");
-  return { id:Number(item.id), slug:String(item.slug||""), firstName:String(firstName), lastName:String(lastName), phone:String(item.phone||""), email:String(item.email||""), specialty:String(item.position||content.excerpt||""), instruments:Array.isArray(relations.courses)?relations.courses:[], biography:String(content.biography||""), notes:"", isActive:item.active!==false, createdAt:"", updatedAt:"" };
+  return { id:Number(item.id), slug:String(item.slug||""), firstName:String(firstName), lastName:String(lastName), phone:String(item.phone||""), email:String(item.email||""), specialty:String(item.position||content.excerpt||""), instruments:Array.isArray(relations.courses)?relations.courses:[], biography:String(content.biography||""), notes:"", isActive:item.active!==false, payPercentage:50, createdAt:"", updatedAt:"" };
 }
 
 export function normalizeInstructorListParams(params:InstructorListParams):NormalizedInstructorListParams {
@@ -84,14 +89,15 @@ export function validateInstructorInput(input:InstructorInput,options:Instructor
   if(isCreate&&!firstName)errors.push("نام مدرس الزامی است.");if(isCreate&&!lastName)errors.push("نام خانوادگی مدرس الزامی است.");
   if(input.email!==undefined&&input.email!==""){var email=String(input.email);var at=email.indexOf("@");var dot=email.lastIndexOf(".");if(at<=0||dot<=at+1||dot>=email.length-1)errors.push("ایمیل معتبر نیست.");}
   if(input.instruments!==undefined&&!Array.isArray(input.instruments))errors.push("فهرست سازهای آموزشی معتبر نیست.");
+  if(input.payPercentage!==undefined&&(!Number.isFinite(Number(input.payPercentage))||Number(input.payPercentage)<0||Number(input.payPercentage)>100))errors.push("درصد سهم مدرس باید بین ۰ تا ۱۰۰ باشد.");
   return {valid:errors.length===0,errors};
 }
 
 function slugify(firstName:string,lastName:string):string{var raw=(firstName+"-"+lastName).trim().toLowerCase();var result="";for(var i=0;i<raw.length;i++){var character=raw.charAt(i);var code=character.charCodeAt(0);if((code>=97&&code<=122)||(code>=48&&code<=57)||character==="-"||(code>=0x0600&&code<=0x06ff))result+=character;else if(/\s/.test(character))result+="-";}return result||"instructor-"+Date.now();}
 
 export async function createInstructor(db:D1Database,input:InstructorInput):Promise<number>{
-  var values=[slugify(input.firstName||"",input.lastName||""),input.firstName||"",input.lastName||"",input.phone||"",input.email||"",input.specialty||"",JSON.stringify(input.instruments||[]),input.biography||"",input.notes||""];
-  var sql="INSERT INTO instructors (slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+  var values=[slugify(input.firstName||"",input.lastName||""),input.firstName||"",input.lastName||"",input.phone||"",input.email||"",input.specialty||"",JSON.stringify(input.instruments||[]),input.biography||"",input.notes||"",normalizePayPercentage(input.payPercentage)];
+  var sql="INSERT INTO instructors (slug, first_name, last_name, phone, email, specialty, instruments, biography, notes, is_active, pay_percentage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)";
   var result:any=await db.prepare(sql).bind(...values).run();if(!result||!result.meta||typeof result.meta.last_row_id!=="number")throw new Error("Failed to create instructor");return result.meta.last_row_id;
 }
 
@@ -101,6 +107,7 @@ export async function updateInstructor(db:D1Database,id:number,patch:InstructorI
   for(var i=0;i<keys.length;i++){var key=keys[i];var value=(patch as any)[key];if(value!==undefined){setClauses.push(columnMap[key]+" = ?");bindings.push(value);}}
   if(patch.instruments!==undefined){setClauses.push("instruments = ?");bindings.push(JSON.stringify(patch.instruments));}
   if(patch.isActive!==undefined){setClauses.push("is_active = ?");bindings.push(patch.isActive?1:0);}
+  if(patch.payPercentage!==undefined){setClauses.push("pay_percentage = ?");bindings.push(normalizePayPercentage(patch.payPercentage));}
   if(setClauses.length===0)return true;
   var sql="UPDATE instructors SET "+setClauses.join(", ")+", updated_at = datetime('now') WHERE id = ?";bindings.push(id);
   var result:any=await db.prepare(sql).bind(...bindings).run();
