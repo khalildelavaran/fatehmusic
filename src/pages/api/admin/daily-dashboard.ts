@@ -21,9 +21,15 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     const sessions = await listSessionsForDate(db, date);
+
+    // Provision each session independently. A failure for one class must not
+    // hide all other sessions from the daily operational dashboard.
     for (const session of sessions) {
-      if (session.status !== "cancelled") {
+      if (session.status === "cancelled") continue;
+      try {
         await provisionEnrollmentSessionsForClassSession(db, session.id);
+      } catch (error) {
+        console.error(`[admin/daily-dashboard] provisioning failed for session ${session.id}:`, error);
       }
     }
 
