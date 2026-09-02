@@ -27,11 +27,12 @@ export async function getTodayDashboardRows(db:D1Database,today:string):Promise<
            es.status attendance,
            COALESCE((SELECT SUM(CASE WHEN es2.status IN ('present','absent') AND cs2.status!='cancelled' THEN 1 ELSE 0 END)
                      FROM enrollment_sessions es2 JOIN class_sessions cs2 ON cs2.id=es2.session_id
-                     WHERE es2.enrollment_id=e.id AND (et.id IS NULL OR es2.session_id IN
-                       (SELECT session_id FROM enrollment_sessions WHERE enrollment_id=e.id))),0) consumed_sessions,
-           et.planned_sessions,CASE WHEN et.planned_sessions IS NULL THEN NULL ELSE MAX(0,et.planned_sessions-COALESCE(
+                     WHERE es2.enrollment_id=e.id AND es2.enrollment_term_id=et.id),0) consumed_sessions,
+           et.planned_sessions,
+           CASE WHEN et.planned_sessions IS NULL THEN NULL ELSE MAX(0,et.planned_sessions-COALESCE(
              (SELECT SUM(CASE WHEN es2.status IN ('present','absent') AND cs2.status!='cancelled' THEN 1 ELSE 0 END)
-              FROM enrollment_sessions es2 JOIN class_sessions cs2 ON cs2.id=es2.session_id WHERE es2.enrollment_id=e.id),0)) END remaining_sessions,
+              FROM enrollment_sessions es2 JOIN class_sessions cs2 ON cs2.id=es2.session_id
+              WHERE es2.enrollment_id=e.id AND es2.enrollment_term_id=et.id),0)) END remaining_sessions,
            et.tuition_due_date,
            CASE WHEN et.id IS NULL THEN 'not_applicable'
                 WHEN EXISTS(SELECT 1 FROM invoices inv WHERE inv.enrollment_term_id=et.id AND inv.status='paid') THEN 'paid'
