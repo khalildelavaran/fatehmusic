@@ -55,81 +55,23 @@ const seo = buildSEO({
 ---
 
 <!DOCTYPE html>
-
 <html lang="fa" dir="rtl">
-
 <head>
-
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{seo.metadata.title}</title>
-
-  <meta
-    name="description"
-    content={seo.metadata.description}
-  />
-
-  <meta
-    name="keywords"
-    content={seo.metadata.keywords.join("، ")}
-  />
-
-  <meta
-    name="robots"
-    content={seo.metadata.robots}
-  />
-
-  <meta
-    name="author"
-    content={seo.metadata.author}
-  />
-
-  <meta
-    name="theme-color"
-    content={seo.metadata.themeColor}
-  />
-
-  <meta
-    name="generator"
-    content={Astro.generator}
-  />
-
-  <link
-    rel="canonical"
-    href={seo.canonical}
-  />
-
-  <link
-    rel="icon"
-    href="/favicon.svg"
-    type="image/svg+xml"
-  />
-
-  <link
-    rel="apple-touch-icon"
-    href="/logo.svg"
-  />
-
-  <link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
-  />
-
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
-  />
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
-    rel="stylesheet"
-  />
+  <meta name="description" content={seo.metadata.description} />
+  <meta name="keywords" content={seo.metadata.keywords.join("، ")} />
+  <meta name="robots" content={seo.metadata.robots} />
+  <meta name="author" content={seo.metadata.author} />
+  <meta name="theme-color" content={seo.metadata.themeColor} />
+  <meta name="generator" content={Astro.generator} />
+  <link rel="canonical" href={seo.canonical} />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet" />
 
   <!-- Open Graph -->
   <meta property="og:type" content={seo.openGraph["og:type"]} />
@@ -147,11 +89,7 @@ const seo = buildSEO({
   <meta name="twitter:image" content={seo.twitter["twitter:image"]} />
 
   <!-- Schema.org JSON-LD -->
-  <script
-    is:inline
-    type="application/ld+json"
-    set:html={JSON.stringify(seo.schemaGraph)}
-  />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(seo.schemaGraph)} />
 
   <!-- Google Analytics 4 -->
   <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45"></script>
@@ -172,18 +110,15 @@ const seo = buildSEO({
     t.src=v;s=b.getElementsByTagName(e)[0];
     s.parentNode.insertBefore(t,s)}(window, document,'script',
     'https://connect.facebook.net/en_US/fbevents.js');
-
     fbq('init', '830226966747297');
     fbq('track', 'PageView');
   </script>
-
 </head>
-
 <body>
   <slot />
   <script src="../scripts/reveal.js"></script>
   <script src="../scripts/analytics.js"></script>
   <script src="../scripts/persian-digits.ts"></script>
+  <script src="../scripts/admin/daily-operations-panels.js"></script>
 </body>
-
 </html>
