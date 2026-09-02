@@ -18,9 +18,16 @@ function validate(settings: Omit<ClassTermSettings, 'classId'>): void {
 }
 
 export async function getClassTermSettings(db: D1Database, classId: number): Promise<ClassTermSettings | null> {
-  const row = await db.prepare(`SELECT class_id,billing_type,planned_sessions,tuition_amount,tuition_due_days FROM class_term_settings WHERE class_id=?`).bind(classId).first<{class_id:number;billing_type:string;planned_sessions:number|null;tuition_amount:number|null;tuition_due_days:number|null}>();
-  if (!row) return null;
-  return { classId:row.class_id, billingType:row.billing_type as ClassBillingType, plannedSessions:row.planned_sessions, tuitionAmount:row.tuition_amount, tuitionDueDays:row.tuition_due_days };
+  try {
+    const row = await db.prepare(`SELECT class_id,billing_type,planned_sessions,tuition_amount,tuition_due_days FROM class_term_settings WHERE class_id=?`).bind(classId).first<{class_id:number;billing_type:string;planned_sessions:number|null;tuition_amount:number|null;tuition_due_days:number|null}>();
+    if (!row) return null;
+    return { classId:row.class_id, billingType:row.billing_type as ClassBillingType, plannedSessions:row.planned_sessions, tuitionAmount:row.tuition_amount, tuitionDueDays:row.tuition_due_days };
+  } catch (error) {
+    // The operational dashboard must remain readable even if the optional
+    // class-term settings table is missing or temporarily unavailable.
+    console.warn('[class-term-settings] unable to read settings; using defaults', error);
+    return null;
+  }
 }
 
 export async function saveClassTermSettings(db: D1Database, settings: ClassTermSettings): Promise<void> {
