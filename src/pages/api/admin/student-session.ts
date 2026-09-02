@@ -25,6 +25,8 @@ export const PUT: APIRoute = async ({ request }) => {
     const messages: Record<string,string> = {
       ENROLLMENT_SESSION_NOT_FOUND:'جلسه هنرجو یافت نشد.',
       ENROLLMENT_INACTIVE:'ثبت‌نام هنرجو فعال نیست.',
+      ENROLLMENT_SESSION_CLASS_MISMATCH:'هنرجو متعلق به کلاس این جلسه نیست.',
+      ENROLLMENT_TERM_REQUIRED:'چرخه آموزشی این جلسه مشخص نشده است.',
       SESSION_CANCELLED:'برای جلسه لغوشده حضور ثبت نمی‌شود.'
     };
     return json({ success:false, code, message:messages[code] ?? 'ثبت وضعیت حضور با خطا مواجه شد.' }, 422);
@@ -61,6 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
     const messages: Record<string,string> = {
       ENROLLMENT_SESSION_NOT_FOUND:'جلسه اصلی هنرجو یافت نشد.',
       ENROLLMENT_INACTIVE:'ثبت‌نام هنرجو فعال نیست.',
+      ENROLLMENT_TERM_REQUIRED:'چرخه آموزشی جلسه اصلی مشخص نشده است.',
       MAKEUP_REQUIRES_EXCUSED_SESSION:'برای جلسه‌ای که مرخصی نخورده است جلسه جبرانی ایجاد نمی‌شود.',
       MAKEUP_ALREADY_CREATED:'برای این جلسه قبلاً جبرانی ایجاد شده است.',
       'جلسه اصلی یافت نشد.':'جلسه اصلی یافت نشد.'
