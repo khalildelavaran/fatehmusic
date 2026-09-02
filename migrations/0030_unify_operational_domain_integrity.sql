@@ -19,7 +19,7 @@ CREATE TABLE teacher_session_attendance_v2 (
   session_id     INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
   instructor_id  INTEGER NOT NULL REFERENCES instructors(id),
   status         TEXT NOT NULL DEFAULT 'pending',
-  check_in_at    TEXT,
+  check_in_at   TEXT,
   note           TEXT NOT NULL DEFAULT '',
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
@@ -81,8 +81,7 @@ BEGIN
   END;
 END;
 
--- Attendance is forbidden for a cancelled session and the enrollment must
--- belong to the same class as the concrete session.
+-- Attendance records must never exist for a cancelled concrete session.
 CREATE TRIGGER IF NOT EXISTS trg_enrollment_sessions_validate_insert
 BEFORE INSERT ON enrollment_sessions
 BEGIN
@@ -113,7 +112,7 @@ BEGIN
     WHEN EXISTS (
       SELECT 1 FROM class_sessions cs
       WHERE cs.id = NEW.session_id AND cs.status = 'cancelled'
-    ) AND NEW.status <> 'pending' THEN RAISE(ABORT, 'ATTENDANCE_ON_CANCELLED_SESSION')
+    ) THEN RAISE(ABORT, 'ATTENDANCE_ON_CANCELLED_SESSION')
     WHEN NOT EXISTS (
       SELECT 1
       FROM enrollments e
@@ -159,19 +158,31 @@ END;
 CREATE TRIGGER IF NOT EXISTS trg_teacher_attendance_validate_insert
 BEFORE INSERT ON teacher_session_attendance
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
-    SELECT 1 FROM class_sessions cs
-    WHERE cs.id = NEW.session_id
-      AND cs.instructor_id = NEW.instructor_id
-  ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH') END;
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM class_sessions cs
+      WHERE cs.id = NEW.session_id AND cs.status = 'cancelled'
+    ) THEN RAISE(ABORT, 'ATTENDANCE_ON_CANCELLED_SESSION')
+    WHEN NOT EXISTS (
+      SELECT 1 FROM class_sessions cs
+      WHERE cs.id = NEW.session_id
+        AND cs.instructor_id = NEW.instructor_id
+    ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH')
+  END;
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_teacher_attendance_validate_update
-BEFORE UPDATE OF session_id, instructor_id ON teacher_session_attendance
+BEFORE UPDATE OF session_id, instructor_id, status ON teacher_session_attendance
 BEGIN
-  SELECT CASE WHEN NOT EXISTS (
-    SELECT 1 FROM class_sessions cs
-    WHERE cs.id = NEW.session_id
-      AND cs.instructor_id = NEW.instructor_id
-  ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH') END;
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM class_sessions cs
+      WHERE cs.id = NEW.session_id AND cs.status = 'cancelled'
+    ) THEN RAISE(ABORT, 'ATTENDANCE_ON_CANCELLED_SESSION')
+    WHEN NOT EXISTS (
+      SELECT 1 FROM class_sessions cs
+      WHERE cs.id = NEW.session_id
+        AND cs.instructor_id = NEW.instructor_id
+    ) THEN RAISE(ABORT, 'SESSION_INSTRUCTOR_MISMATCH')
+  END;
 END;
