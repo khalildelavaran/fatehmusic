@@ -2,6 +2,7 @@
 -- Attendance is never allowed against a cancelled concrete session.
 -- Makeup sessions must point to an original session in the same class.
 -- Student makeup rows remain tied to the original enrollment/term.
+-- An excused original occurrence cannot be changed after its makeup exists.
 
 PRAGMA foreign_keys=OFF;
 
@@ -134,6 +135,18 @@ BEGIN
         AND makeup_session.class_id = original_session.class_id
     ) THEN RAISE(ABORT, 'MAKEUP_SESSION_LINK_MISMATCH')
   END;
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_enrollment_session_original_makeup_lock
+BEFORE UPDATE OF status ON enrollment_sessions
+WHEN OLD.status = 'excused'
+  AND NEW.status <> 'excused'
+  AND EXISTS (
+    SELECT 1 FROM enrollment_sessions makeup
+    WHERE makeup.makeup_for_id = OLD.id
+  )
+BEGIN
+  SELECT RAISE(ABORT, 'EXCUSED_SESSION_HAS_MAKEUP');
 END;
 
 CREATE TRIGGER IF NOT EXISTS trg_teacher_session_attendance_validate
