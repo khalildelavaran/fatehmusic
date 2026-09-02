@@ -1,22 +1,18 @@
 -- ====================================================================
--- Migration 0023: refine operational enrollment terms
+-- Migration 0023: bind concrete student sessions to their exact term.
 --
--- A student's term is a cycle of concrete sessions. The term therefore
--- needs to be explicitly attached to each enrollment_session; counting
--- by date alone can accidentally pull a later term into the current one.
--- Class also stores the default term/billing policy; EnrollmentTerm keeps
--- a snapshot so later class-policy changes do not rewrite history.
+-- A student's term is a cycle of concrete sessions. The term is therefore
+-- explicitly attached to each enrollment_session; progress must never be
+-- inferred from dates alone.
 -- ====================================================================
 
-ALTER TABLE classes ADD COLUMN default_term_sessions INTEGER;
-ALTER TABLE classes ADD COLUMN default_billing_type TEXT NOT NULL DEFAULT 'session_based';
-
-ALTER TABLE enrollment_sessions ADD COLUMN enrollment_term_id INTEGER REFERENCES enrollment_terms(id);
+ALTER TABLE enrollment_sessions
+  ADD COLUMN enrollment_term_id INTEGER REFERENCES enrollment_terms(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_enrollment_sessions_term
   ON enrollment_sessions(enrollment_term_id, enrollment_id);
 
--- Existing operational data, if any, is associated with the earliest term.
+-- Preserve existing data by associating it with the earliest known term.
 UPDATE enrollment_sessions
 SET enrollment_term_id = (
   SELECT et.id
@@ -27,6 +23,5 @@ SET enrollment_term_id = (
 )
 WHERE enrollment_term_id IS NULL;
 
--- Do not enforce NOT NULL here: a session can be created before an
--- enrollment is attached to a term. The application service assigns the
--- term atomically when the first session is attached.
+-- Nullable by design: provisioning may create the concrete session record
+-- before the student's first actual occurrence establishes the active term.
