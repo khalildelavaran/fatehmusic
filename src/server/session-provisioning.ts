@@ -21,6 +21,11 @@ function addDays(date: string, days: number | null): string | null {
  *
  * Legacy class_students rows are normalized into enrollments on demand so
  * existing Class Management data remains visible to the operational domain.
+ *
+ * Attendance provisioning must not depend on term/billing configuration.
+ * If term creation fails, the EnrollmentSession is still created with a
+ * nullable enrollment_term_id so the student remains visible in the daily
+ * dashboard and attendance can be recorded.
  */
 export async function provisionEnrollmentSessionsForClassSession(
   db: D1Database,
@@ -80,17 +85,27 @@ export async function provisionEnrollmentSessionsForClassSession(
 
   for (const enrollment of enrollments.results) {
     try {
-      const termId = await ensureTermForFirstSession(
-        db,
-        enrollment.id,
-        session.session_date,
-        settings ? {
-          billingType: settings.billingType,
-          plannedSessions: settings.plannedSessions,
-          tuitionAmount: settings.tuitionAmount,
-          tuitionDueDate: addDays(session.session_date, settings.tuitionDueDays),
-        } : {},
-      );
+      let termId: number | null = null;
+
+      try {
+        termId = await ensureTermForFirstSession(
+          db,
+          enrollment.id,
+          session.session_date,
+          settings ? {
+            billingType: settings.billingType,
+            plannedSessions: settings.plannedSessions,
+            tuitionAmount: settings.tuitionAmount,
+            tuitionDueDate: addDays(session.session_date, settings.tuitionDueDays),
+          } : {},
+        );
+      } catch (error) {
+        // Term/billing setup must not block attendance provisioning.
+        console.warn(
+          `[session-provisioning] term creation failed for enrollment ${enrollment.id}, session ${sessionId}; creating attendance row without term:`,
+          error,
+        );
+      }
 
       await db.prepare(`
         INSERT INTO enrollment_sessions
