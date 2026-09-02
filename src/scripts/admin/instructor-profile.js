@@ -9,12 +9,14 @@ function setStatus(text, isError = false) {
 
 function collectBody(form) {
   const data = new FormData(form);
+  const rawPercentage = Number(data.get("payPercentage"));
   return {
     firstName: String(data.get("firstName") || "").trim(),
     lastName: String(data.get("lastName") || "").trim(),
     phone: String(data.get("phone") || "").trim(),
     email: String(data.get("email") || "").trim(),
     specialty: String(data.get("specialty") || "").trim(),
+    payPercentage: Number.isFinite(rawPercentage) ? rawPercentage : 50,
     instruments: data.getAll("instruments").map(String),
     biography: String(data.get("biography") || "").trim(),
     notes: String(data.get("notes") || "").trim(),
