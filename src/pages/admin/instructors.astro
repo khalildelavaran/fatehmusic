@@ -65,6 +65,10 @@ const pageTitle = profile ? `پروفایل ${profile.instructor.firstName} ${pr
                   <label>موبایل<input name="phone" dir="ltr" value={profile?.instructor.phone ?? ""} /></label>
                   <label>ایمیل<input name="email" type="email" dir="ltr" value={profile?.instructor.email ?? ""} /></label>
                   <label>تخصص<input name="specialty" value={profile?.instructor.specialty ?? ""} placeholder="مثلاً: مدرس گیتار و دروس پایه موسیقی" /></label>
+                  <label>درصد سهم مدرس از جلسات
+                    <input name="payPercentage" type="number" min="0" max="100" step="1" value={profile?.instructor.payPercentage ?? 50} />
+                    <small>پیش‌فرض: ۵۰٪ — این درصد برای محاسبه کارکرد ماهانه استفاده می‌شود.</small>
+                  </label>
 
                   <fieldset class="admin-instrument-fieldset">
                     <legend>سازها / دوره‌های آموزشی</legend>
