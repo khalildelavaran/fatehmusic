@@ -7,14 +7,21 @@ export async function setStudentSessionStatus(
   note?: string | null,
 ): Promise<void> {
   const row = await db.prepare(`
-    SELECT es.id, es.enrollment_id, es.session_id, e.status AS enrollment_status, cs.status AS session_status
+    SELECT es.id, es.enrollment_id, es.session_id, es.enrollment_term_id,
+           e.status AS enrollment_status, e.class_id AS enrollment_class_id,
+           cs.status AS session_status, cs.class_id AS session_class_id
     FROM enrollment_sessions es
     JOIN enrollments e ON e.id = es.enrollment_id
     JOIN class_sessions cs ON cs.id = es.session_id
     WHERE es.id = ?
-  `).bind(enrollmentSessionId).first<{ id:number; enrollment_id:number; session_id:number; enrollment_status:string; session_status:string }>();
+  `).bind(enrollmentSessionId).first<{
+    id:number; enrollment_id:number; session_id:number; enrollment_term_id:number|null;
+    enrollment_status:string; enrollment_class_id:number; session_status:string; session_class_id:number;
+  }>();
   if (!row) throw new Error('ENROLLMENT_SESSION_NOT_FOUND');
   if (row.enrollment_status !== 'active') throw new Error('ENROLLMENT_INACTIVE');
+  if (row.enrollment_class_id !== row.session_class_id) throw new Error('ENROLLMENT_SESSION_CLASS_MISMATCH');
+  if (row.enrollment_term_id == null) throw new Error('ENROLLMENT_TERM_REQUIRED');
   if (row.session_status === 'cancelled') throw new Error('SESSION_CANCELLED');
 
   await db.prepare(`UPDATE enrollment_sessions SET status = ?, note = ?, updated_at = datetime('now') WHERE id = ?`)
@@ -42,6 +49,7 @@ export async function createStudentMakeup(
   }>();
   if (!original) throw new Error('ENROLLMENT_SESSION_NOT_FOUND');
   if (original.enrollment_status !== 'active') throw new Error('ENROLLMENT_INACTIVE');
+  if (original.enrollment_term_id == null) throw new Error('ENROLLMENT_TERM_REQUIRED');
   if (original.status !== 'excused') throw new Error('MAKEUP_REQUIRES_EXCUSED_SESSION');
 
   const existing = await db.prepare(`
