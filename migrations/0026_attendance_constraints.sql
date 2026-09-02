@@ -1,7 +1,0 @@
--- Attendance is one current status per student enrollment/session occurrence.
--- 0022 already provides the correct unique constraint:
---   (enrollment_id, session_id)
--- This migration intentionally adds no duplicate uniqueness constraint.
---
--- Cancelled sessions must not receive attendance. This is a cross-table
--- invariant and is enforced by the attendance service transaction.
