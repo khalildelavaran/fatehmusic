@@ -49,6 +49,18 @@
   const esc = value => { const d = document.createElement("div"); d.textContent = String(value ?? ""); return d.innerHTML; };
   const methodLabels = { cash: "نقدی", pos: "پوز", transfer: "انتقال", online: "آنلاین", other: "سایر" };
 
+  function normalizeStudentPaymentMethods() {
+    sessions.querySelectorAll("select[data-payment-method]").forEach(select => {
+      if (select.dataset.normalized === "1") return;
+      select.innerHTML = `<option value="">روش پرداخت</option><option value="cash">نقدی</option><option value="pos">پوز</option><option value="transfer">انتقال</option><option value="online">آنلاین</option>`;
+      select.dataset.normalized = "1";
+    });
+  }
+
+  const observer = new MutationObserver(normalizeStudentPaymentMethods);
+  observer.observe(sessions, { childList: true, subtree: true });
+  normalizeStudentPaymentMethods();
+
   async function json(response) {
     const text = await response.text();
     if (!text.trim()) throw new Error(`پاسخ خالی از سرور دریافت شد (${response.status})`);
