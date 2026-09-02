@@ -193,7 +193,26 @@ export const GET: APIRoute = async ({ request }) => {
             SELECT MIN(i.due_date) FROM invoices i
             WHERE i.enrollment_term_id = et.id
               AND i.status IN ('pending', 'overdue')
-          ) AS invoice_due_date
+          ) AS invoice_due_date,
+          (
+            SELECT i.id FROM invoices i
+            WHERE i.enrollment_term_id = et.id
+              AND i.status <> 'cancelled'
+            ORDER BY i.id DESC
+            LIMIT 1
+          ) AS invoice_id,
+          (
+            SELECT COALESCE(SUM(i.amount), 0) FROM invoices i
+            WHERE i.enrollment_term_id = et.id
+              AND i.status <> 'cancelled'
+          ) AS invoice_amount,
+          (
+            SELECT COALESCE(SUM(p.amount), 0)
+            FROM payments p
+            JOIN invoices i ON i.id = p.invoice_id
+            WHERE i.enrollment_term_id = et.id
+              AND i.status <> 'cancelled'
+          ) AS paid_amount
         FROM enrollment_sessions es
         JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
         JOIN students s ON s.id = e.student_id
@@ -206,6 +225,7 @@ export const GET: APIRoute = async ({ request }) => {
         note: string; term_id: number | null; planned_sessions: number | null;
         billing_type: string | null; consumed_sessions: number;
         term_tuition_due_date: string | null; invoice_due_date: string | null;
+        invoice_id: number | null; invoice_amount: number | null; paid_amount: number | null;
       }>();
 
       result.push({
@@ -217,6 +237,18 @@ export const GET: APIRoute = async ({ request }) => {
               ? null
               : Math.max(student.planned_sessions - consumedSessions, 0);
           const tuitionDueDate = student.invoice_due_date ?? student.term_tuition_due_date;
+          const invoiceAmount = Number(student.invoice_amount ?? 0);
+          const paidAmount = Number(student.paid_amount ?? 0);
+          const balance = Math.max(invoiceAmount - paidAmount, 0);
+          const financialStatus = !student.invoice_id
+            ? "none"
+            : balance <= 0
+              ? "paid"
+              : tuitionDueDate && tuitionDueDate < date
+                ? "overdue"
+                : paidAmount > 0
+                  ? "partial"
+                  : "pending";
 
           return {
             enrollmentSessionId: student.enrollment_session_id,
@@ -232,6 +264,11 @@ export const GET: APIRoute = async ({ request }) => {
             remainingSessions,
             tuitionDueDate,
             tuitionWarning: tuitionDueDate != null || (remainingSessions != null && remainingSessions <= 1),
+            invoiceId: student.invoice_id,
+            invoiceAmount,
+            paidAmount,
+            balance,
+            financialStatus,
           };
         }),
       });
