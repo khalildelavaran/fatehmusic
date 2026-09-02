@@ -1,5 +1,6 @@
 import { ensureTermForFirstSession } from './enrollment-term-service';
 import { getClassTermSettings } from './class-term-settings';
+import { ensureNormalizedEnrollment } from './enrollment-service';
 
 export type ProvisionSessionResult = {
   sessionId: number;
@@ -18,9 +19,8 @@ function addDays(date: string, days: number | null): string | null {
  * Creates one pending EnrollmentSession for every active Enrollment attached
  * to a concrete ClassSession. Re-running the function is idempotent.
  *
- * Legacy class_students rows are bridged into the normalized enrollments table
- * before attendance rows are provisioned. This keeps the existing class UI and
- * the operational attendance domain consistent without duplicating students.
+ * Legacy class_students rows are normalized into enrollments on demand so
+ * existing Class Management data remains visible to the operational domain.
  */
 export async function provisionEnrollmentSessionsForClassSession(
   db: D1Database,
@@ -42,24 +42,32 @@ export async function provisionEnrollmentSessionsForClassSession(
     return { sessionId, enrollmentSessionIds: [] };
   }
 
-  const settings = await getClassTermSettings(db, session.class_id);
+  // Bridge legacy Class Management memberships into the operational
+  // Enrollment model before creating per-session attendance rows.
+  const legacyStudents = await db.prepare(`
+    SELECT student_id
+    FROM class_students
+    WHERE class_id = ? AND status = 'active'
+    ORDER BY student_id
+  `).bind(session.class_id).all<{ student_id: number }>();
 
-  // Bridge existing class_students memberships into the normalized enrollment
-  // model. The unique partial index on active enrollments makes this idempotent.
-  await db.prepare(`
-    INSERT INTO enrollments (class_id, student_id, status, source_class_student_id)
-    SELECT cs.class_id, cs.student_id, 'active', cs.id
-    FROM class_students cs
-    WHERE cs.class_id = ?
-      AND cs.status = 'active'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM enrollments e
-        WHERE e.class_id = cs.class_id
-          AND e.student_id = cs.student_id
-          AND e.status = 'active'
-      )
-  `).bind(session.class_id).run();
+  for (const row of legacyStudents.results) {
+    try {
+      await ensureNormalizedEnrollment(db, session.class_id, row.student_id);
+    } catch (error) {
+      console.error(
+        `[session-provisioning] enrollment normalization failed for class ${session.class_id}, student ${row.student_id}:`,
+        error,
+      );
+    }
+  }
+
+  let settings: Awaited<ReturnType<typeof getClassTermSettings>> = null;
+  try {
+    settings = await getClassTermSettings(db, session.class_id);
+  } catch (error) {
+    console.warn(`[session-provisioning] class term settings unavailable for class ${session.class_id}; using defaults:`, error);
+  }
 
   const enrollments = await db.prepare(`
     SELECT id
@@ -71,34 +79,38 @@ export async function provisionEnrollmentSessionsForClassSession(
   const ids: number[] = [];
 
   for (const enrollment of enrollments.results) {
-    const termId = await ensureTermForFirstSession(
-      db,
-      enrollment.id,
-      session.session_date,
-      settings ? {
-        billingType: settings.billingType,
-        plannedSessions: settings.plannedSessions,
-        tuitionAmount: settings.tuitionAmount,
-        tuitionDueDate: addDays(session.session_date, settings.tuitionDueDays),
-      } : {},
-    );
+    try {
+      const termId = await ensureTermForFirstSession(
+        db,
+        enrollment.id,
+        session.session_date,
+        settings ? {
+          billingType: settings.billingType,
+          plannedSessions: settings.plannedSessions,
+          tuitionAmount: settings.tuitionAmount,
+          tuitionDueDate: addDays(session.session_date, settings.tuitionDueDays),
+        } : {},
+      );
 
-    await db.prepare(`
-      INSERT INTO enrollment_sessions
-        (enrollment_id, session_id, enrollment_term_id, status)
-      VALUES (?, ?, ?, 'pending')
-      ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
-        enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
-        updated_at = datetime('now')
-    `).bind(enrollment.id, sessionId, termId).run();
+      await db.prepare(`
+        INSERT INTO enrollment_sessions
+          (enrollment_id, session_id, enrollment_term_id, status)
+        VALUES (?, ?, ?, 'pending')
+        ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
+          enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
+          updated_at = datetime('now')
+      `).bind(enrollment.id, sessionId, termId).run();
 
-    const row = await db.prepare(`
-      SELECT id
-      FROM enrollment_sessions
-      WHERE enrollment_id = ? AND session_id = ?
-    `).bind(enrollment.id, sessionId).first<{ id: number }>();
+      const row = await db.prepare(`
+        SELECT id
+        FROM enrollment_sessions
+        WHERE enrollment_id = ? AND session_id = ?
+      `).bind(enrollment.id, sessionId).first<{ id: number }>();
 
-    if (row) ids.push(row.id);
+      if (row) ids.push(row.id);
+    } catch (error) {
+      console.error(`[session-provisioning] failed for enrollment ${enrollment.id}, session ${sessionId}:`, error);
+    }
   }
 
   return { sessionId, enrollmentSessionIds: ids };
