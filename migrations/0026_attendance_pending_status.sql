@@ -1,6 +1,6 @@
 -- Attendance must distinguish an unmarked record from a real absence.
--- SQLite CHECK constraints are immutable, so rebuild the small operational table.
--- Preserve the enrollment_term_id introduced by migration 0025.
+-- SQLite CHECK constraints are immutable, so rebuild the operational table.
+-- Preserve the enrollment_term_id and makeup_for_id relationships.
 PRAGMA foreign_keys=OFF;
 
 CREATE TABLE enrollment_sessions_v2 (
@@ -21,7 +21,7 @@ CREATE TABLE enrollment_sessions_v2 (
 INSERT INTO enrollment_sessions_v2
   (id, enrollment_id, session_id, enrollment_term_id, status, attendance_mode, makeup_for_id, note, created_at, updated_at)
 SELECT
-  id, enrollment_id, session_id, enrollment_term_id, status, attendance_mode, NULL, note, created_at, updated_at
+  id, enrollment_id, session_id, enrollment_term_id, status, attendance_mode, makeup_for_id, note, created_at, updated_at
 FROM enrollment_sessions;
 
 DROP TABLE enrollment_sessions;
