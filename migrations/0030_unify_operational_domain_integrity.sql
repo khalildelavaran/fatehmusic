@@ -19,7 +19,7 @@ CREATE TABLE teacher_session_attendance_v2 (
   session_id     INTEGER NOT NULL REFERENCES class_sessions(id) ON DELETE CASCADE,
   instructor_id  INTEGER NOT NULL REFERENCES instructors(id),
   status         TEXT NOT NULL DEFAULT 'pending',
-  check_in_at   TEXT,
+  check_in_at    TEXT,
   note           TEXT NOT NULL DEFAULT '',
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
@@ -154,7 +154,8 @@ BEGIN
   END;
 END;
 
--- Teacher attendance belongs to the instructor assigned to the concrete session.
+-- Teacher attendance belongs to the instructor assigned to the concrete session,
+-- and no teacher attendance record may exist for a cancelled session.
 CREATE TRIGGER IF NOT EXISTS trg_teacher_attendance_validate_insert
 BEFORE INSERT ON teacher_session_attendance
 BEGIN
