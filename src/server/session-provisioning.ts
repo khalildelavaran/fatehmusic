@@ -18,9 +18,9 @@ function addDays(date: string, days: number | null): string | null {
  * Creates one pending EnrollmentSession for every active Enrollment attached
  * to a concrete ClassSession. Re-running the function is idempotent.
  *
- * The first concrete session starts the student's active term. Class term
- * settings are copied into that term as a snapshot so later policy changes do
- * not rewrite historical terms.
+ * Legacy class_students rows are bridged into the normalized enrollments table
+ * before attendance rows are provisioned. This keeps the existing class UI and
+ * the operational attendance domain consistent without duplicating students.
  */
 export async function provisionEnrollmentSessionsForClassSession(
   db: D1Database,
@@ -43,6 +43,24 @@ export async function provisionEnrollmentSessionsForClassSession(
   }
 
   const settings = await getClassTermSettings(db, session.class_id);
+
+  // Bridge existing class_students memberships into the normalized enrollment
+  // model. The unique partial index on active enrollments makes this idempotent.
+  await db.prepare(`
+    INSERT INTO enrollments (class_id, student_id, status, source_class_student_id)
+    SELECT cs.class_id, cs.student_id, 'active', cs.id
+    FROM class_students cs
+    WHERE cs.class_id = ?
+      AND cs.status = 'active'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM enrollments e
+        WHERE e.class_id = cs.class_id
+          AND e.student_id = cs.student_id
+          AND e.status = 'active'
+      )
+  `).bind(session.class_id).run();
+
   const enrollments = await db.prepare(`
     SELECT id
     FROM enrollments
