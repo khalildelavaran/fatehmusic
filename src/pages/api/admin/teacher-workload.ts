@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
+import { provisionEnrollmentSessionsForClassSession } from "../../../server/session-provisioning";
 
 export const GET: APIRoute = async ({ request }) => {
   try {
@@ -18,6 +19,16 @@ export const GET: APIRoute = async ({ request }) => {
     const [year, monthNumber] = month.split("-").map(Number);
     const next = new Date(Date.UTC(year, monthNumber, 1));
     const endDate = next.toISOString().slice(0, 10);
+
+    const monthSessions = await db.prepare(`
+      SELECT id FROM class_sessions
+      WHERE session_date >= ? AND session_date < ? AND status <> 'cancelled'
+      ORDER BY session_date, start_time, id
+    `).bind(startDate, endDate).all<{ id: number }>();
+    for (const session of monthSessions.results) {
+      try { await provisionEnrollmentSessionsForClassSession(db, session.id); }
+      catch (error) { console.warn(`[admin/teacher-workload] session ${session.id} provisioning skipped:`, error); }
+    }
 
     const instructorRows = await db.prepare(`
       SELECT id, first_name, last_name, pay_percentage
@@ -63,11 +74,8 @@ export const GET: APIRoute = async ({ request }) => {
     const instructors = instructorRows.results.map((row) => {
       const work = byInstructor.get(row.id);
       const percentage = Math.min(100, Math.max(0, Number(row.pay_percentage ?? 50)));
-      const studentSessions = Number(work?.student_sessions ?? 0);
-      const absentSessions = Number(work?.absent_sessions ?? 0);
       const presentSessions = Number(work?.present_sessions ?? 0);
-      const excusedSessions = Number(work?.excused_sessions ?? 0);
-      const pendingSessions = Number(work?.pending_sessions ?? 0);
+      const absentSessions = Number(work?.absent_sessions ?? 0);
       const sessionValueTotal = Number(work?.session_value_total ?? 0);
       const instructorShare = sessionValueTotal * (percentage / 100);
       return {
@@ -75,11 +83,11 @@ export const GET: APIRoute = async ({ request }) => {
         instructorName: `${row.first_name} ${row.last_name}`.trim(),
         payPercentage: percentage,
         classSessions: Number(work?.class_sessions ?? 0),
-        studentSessions,
+        studentSessions: Number(work?.student_sessions ?? 0),
         presentSessions,
         absentSessions,
-        excusedSessions,
-        pendingSessions,
+        excusedSessions: Number(work?.excused_sessions ?? 0),
+        pendingSessions: Number(work?.pending_sessions ?? 0),
         compensableSessions: presentSessions + absentSessions,
         sessionValueTotal,
         instructorShare,
