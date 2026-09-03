@@ -23,8 +23,11 @@ export async function setStudentSessionStatus(
   if (!row) throw new Error('ENROLLMENT_SESSION_NOT_FOUND');
   if (row.enrollment_status !== 'active') throw new Error('ENROLLMENT_INACTIVE');
   if (row.enrollment_class_id !== row.session_class_id) throw new Error('ENROLLMENT_SESSION_CLASS_MISMATCH');
-  if (row.enrollment_term_id == null) throw new Error('ENROLLMENT_TERM_REQUIRED');
   if (row.session_status === 'cancelled') throw new Error('SESSION_CANCELLED');
+
+  // Attendance remains operational even when class billing/term settings have
+  // not been configured yet. Provisioning can bind a nullable row to its term
+  // later without losing the recorded attendance.
 
   // Once an excused occurrence has a makeup, the original occurrence is locked.
   // Otherwise changing it to present/absent would consume both occurrences.
