@@ -46,36 +46,61 @@ export const POST: APIRoute = async ({ request }) => {
   const errors = validateClassSchedule(input);
   if (errors.length) return json({ success: false, message: errors.join(' ') }, 422);
 
-  if (input.roomId != null) {
-    const room = await db.prepare(`SELECT id FROM rooms WHERE id = ? AND status = 'active'`).bind(input.roomId).first();
-    if (!room) return json({ success: false, code: 'ROOM_NOT_ACTIVE', message: 'اتاق انتخاب‌شده فعال نیست.' }, 422);
+  const classRow = await db.prepare(`
+    SELECT id, title, instructor_id, default_room_id
+    FROM classes
+    WHERE id = ? AND status = 'active'
+  `).bind(input.classId).first<{ id:number; title:string; instructor_id:number; default_room_id:number|null }>();
+  if (!classRow) return json({ success: false, message: 'کلاس فعال یافت نشد.' }, 404);
+
+  const effectiveRoomId = input.roomId ?? classRow.default_room_id;
+  if (effectiveRoomId != null) {
+    const room = await db.prepare(`SELECT id FROM rooms WHERE id = ? AND status = 'active'`).bind(effectiveRoomId).first();
+    if (!room) return json({ success: false, code: 'ROOM_NOT_ACTIVE', message: 'اتاق انتخاب‌شده یا اتاق پیش‌فرض کلاس فعال نیست.' }, 422);
   }
 
-  const conflict = await db.prepare(`
-    SELECT cs.id, c.title AS class_title
-    FROM class_schedules cs
-    JOIN classes c ON c.id = cs.class_id
-    WHERE cs.status = 'active'
-      AND cs.day_of_week = ?
-      AND cs.start_time < ?
-      AND cs.end_time > ?
-      AND (? IS NOT NULL AND cs.room_id = ?)
-      AND (cs.effective_to IS NULL OR ? IS NULL OR cs.effective_to >= ?)
-      AND (? IS NULL OR cs.effective_from IS NULL OR cs.effective_from <= ?)
-    LIMIT 1
-  `).bind(
+  const overlapSql = `
+    schedule.status = 'active'
+    AND schedule.day_of_week = ?
+    AND schedule.start_time < ?
+    AND schedule.end_time > ?
+    AND (schedule.effective_to IS NULL OR ? IS NULL OR schedule.effective_to >= ?)
+    AND (? IS NULL OR schedule.effective_from IS NULL OR schedule.effective_from <= ?)
+  `;
+  const overlapBindings = [
     input.dayOfWeek,
     input.endTime,
     input.startTime,
-    input.roomId,
-    input.roomId,
     input.effectiveFrom,
     input.effectiveFrom,
     input.effectiveTo,
     input.effectiveTo,
-  ).first<{ id: number; class_title: string }>();
-  if (conflict) {
-    return json({ success: false, code: 'ROOM_SCHEDULE_CONFLICT', message: `این اتاق در همین بازه برای «${conflict.class_title}» رزرو است.` }, 409);
+  ];
+
+  if (effectiveRoomId != null) {
+    const roomConflict = await db.prepare(`
+      SELECT schedule.id, c.title AS class_title
+      FROM class_schedules schedule
+      JOIN classes c ON c.id = schedule.class_id
+      WHERE ${overlapSql}
+        AND COALESCE(schedule.room_id, c.default_room_id) = ?
+      LIMIT 1
+    `).bind(...overlapBindings, effectiveRoomId).first<{ id:number; class_title:string }>();
+    if (roomConflict) {
+      return json({ success: false, code: 'ROOM_SCHEDULE_CONFLICT', message: `این اتاق در همین بازه برای «${roomConflict.class_title}» رزرو است.` }, 409);
+    }
+  }
+
+  const instructorConflict = await db.prepare(`
+    SELECT schedule.id, c.title AS class_title
+    FROM class_schedules schedule
+    JOIN classes c ON c.id = schedule.class_id
+    WHERE ${overlapSql}
+      AND c.instructor_id = ?
+    LIMIT 1
+  `).bind(...overlapBindings, classRow.instructor_id).first<{ id:number; class_title:string }>();
+  if (instructorConflict) {
+    return json({ success: false, code: 'INSTRUCTOR_SCHEDULE_CONFLICT', message: `مدرس در همین بازه برای «${instructorConflict.class_title}» برنامه فعال دارد.` }, 409);
   }
 
   try {
