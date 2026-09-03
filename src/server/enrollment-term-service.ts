@@ -79,32 +79,50 @@ export async function ensureActiveEnrollmentTerm(
     WHERE enrollment_id = ?
   `).bind(input.enrollmentId).first<{ next_number: number }>();
 
-  const result = await db.prepare(`
-    INSERT INTO enrollment_terms
-      (enrollment_id, term_number, start_date, planned_sessions, billing_type,
-       tuition_amount, tuition_due_date, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
-    RETURNING id
-  `).bind(
-    input.enrollmentId,
-    next?.next_number ?? 1,
-    input.startDate,
-    billingType === 'monthly' ? null : (input.plannedSessions ?? null),
-    billingType,
-    input.tuitionAmount ?? null,
-    input.tuitionDueDate ?? null,
-  ).first<{ id: number }>();
+  const nextNumber = next?.next_number ?? 1;
+  const statements = [
+    db.prepare(`
+      INSERT INTO enrollment_terms
+        (enrollment_id, term_number, start_date, planned_sessions, billing_type,
+         tuition_amount, tuition_due_date, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+    `).bind(
+      input.enrollmentId,
+      nextNumber,
+      input.startDate,
+      billingType === 'monthly' ? null : (input.plannedSessions ?? null),
+      billingType,
+      input.tuitionAmount ?? null,
+      input.tuitionDueDate ?? null,
+    ),
+  ];
 
-  if (!result) throw new Error('TERM_CREATE_FAILED');
+  if (input.tuitionAmount != null) {
+    statements.push(db.prepare(`
+      INSERT INTO invoices (enrollment_term_id, amount, due_date, status, description)
+      SELECT et.id, ?, ?, 'pending', 'شهریه ترم'
+      FROM enrollment_terms et
+      WHERE et.enrollment_id = ? AND et.term_number = ? AND et.status = 'active'
+      AND NOT EXISTS (
+        SELECT 1 FROM invoices i
+        WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+      )
+    `).bind(input.tuitionAmount, input.tuitionDueDate ?? null, input.enrollmentId, nextNumber));
+  }
 
-  await ensureTuitionInvoice(
-    db,
-    result.id,
-    input.tuitionAmount ?? null,
-    input.tuitionDueDate ?? null,
-  );
+  // Initial term creation and its tuition invoice are one state transition.
+  // If invoice creation fails, D1 rolls back the new term as well.
+  await db.batch(statements);
 
-  return result.id;
+  const created = await db.prepare(`
+    SELECT id
+    FROM enrollment_terms
+    WHERE enrollment_id = ? AND term_number = ? AND status = 'active'
+    LIMIT 1
+  `).bind(input.enrollmentId, nextNumber).first<{ id: number }>();
+
+  if (!created) throw new Error('TERM_CREATE_FAILED');
+  return created.id;
 }
 
 /**
