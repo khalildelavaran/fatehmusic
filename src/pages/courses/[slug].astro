@@ -15,6 +15,7 @@ import {
   resolveSite,
   resolveCourse,
   buildCourseSchema,
+  buildCourseStyleSchemas,
   buildFaqSchema,
   buildBreadcrumbSchema,
   answersFromFaq
@@ -36,6 +37,7 @@ if (!resolvedCourse) {
 }
 
 const courseSchema = buildCourseSchema(resolvedCourse, { site });
+const courseStyleSchemas = buildCourseStyleSchemas(resolvedCourse, { site });
 const faqSchema = buildFaqSchema(resolvedCourse.faqs);
 const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "خانه", path: "/" },
@@ -43,7 +45,7 @@ const breadcrumbSchema = buildBreadcrumbSchema([
   { name: course.title, path: `/courses/${course.slug}` }
 ], site);
 
-const schema: object[] = [courseSchema, faqSchema, breadcrumbSchema].filter(
+const schema: object[] = [courseSchema, ...courseStyleSchemas, faqSchema, breadcrumbSchema].filter(
   (item): item is object => item !== null
 );
 
@@ -93,7 +95,7 @@ const internalLinkCount = teachers.length + relatedCourses.length + 1;
   title={course.seo.title}
   description={course.seo.description}
   keywords={course.seo.keywords}
-  topics={[course.instrument, course.category, "شوشتر"]}
+  topics={[course.instrument, course.category, "گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو", "شوشتر"]}
   entityType="Course"
   answerBlocks={answerBlocks}
   linkCandidates={linkCandidates}
