@@ -3,9 +3,19 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
-import { validateAttendance, type AttendanceStatus } from "../../../server/attendance-service";
+import { setStudentSessionStatus } from "../../../server/student-session-operations";
 
+type AttendanceStatus = "present" | "absent" | "excused";
 const VALID_STATUSES = new Set<AttendanceStatus>(["present", "absent", "excused"]);
+
+const ERROR_MESSAGES: Record<string, string> = {
+  ENROLLMENT_SESSION_NOT_FOUND: "جلسه هنرجو یافت نشد.",
+  ENROLLMENT_INACTIVE: "ثبت‌نام هنرجو فعال نیست.",
+  ENROLLMENT_SESSION_CLASS_MISMATCH: "هنرجو متعلق به کلاس این جلسه نیست.",
+  ENROLLMENT_TERM_REQUIRED: "چرخه آموزشی این جلسه مشخص نشده است.",
+  SESSION_CANCELLED: "برای جلسه لغوشده نمی‌توان حضور ثبت کرد.",
+  EXCUSED_SESSION_HAS_MAKEUP: "برای این مرخصی جلسه جبرانی ساخته شده و وضعیت جلسه اصلی قابل تغییر نیست.",
+};
 
 export const PUT: APIRoute = async ({ request }) => {
   const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -22,46 +32,29 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   const id = Number(body.enrollmentSessionId);
-  if (!Number.isInteger(id) || id <= 0) return json({ success: false, message: "شناسه جلسه هنرجو معتبر نیست." }, 422);
-  if (!body.status || !VALID_STATUSES.has(body.status)) return json({ success: false, message: "وضعیت حضور معتبر نیست." }, 422);
-
-  const row = await db.prepare(`
-    SELECT es.id, e.status AS enrollment_status, cs.status AS session_status
-    FROM enrollment_sessions es
-    JOIN enrollments e ON e.id = es.enrollment_id
-    JOIN class_sessions cs ON cs.id = es.session_id
-    WHERE es.id = ?
-  `).bind(id).first<{ id: number; enrollment_status: string; session_status: string }>();
-
-  if (!row) return json({ success: false, message: "جلسه هنرجو یافت نشد." }, 404);
-
-  try {
-    validateAttendance({
-      sessionExists: true,
-      sessionCancelled: row.session_status === "cancelled",
-      enrollmentBelongsToSession: true,
-      enrollmentActive: row.enrollment_status === "active",
-    });
-  } catch (error) {
-    const code = error instanceof Error ? error.message : "ATTENDANCE_INVALID";
-    const message = code === "SESSION_CANCELLED"
-      ? "برای جلسه لغوشده نمی‌توان حضور ثبت کرد."
-      : code === "ENROLLMENT_INACTIVE"
-        ? "ثبت‌نام هنرجو فعال نیست."
-        : "ثبت حضور مجاز نیست.";
-    return json({ success: false, code, message }, 422);
+  if (!Number.isInteger(id) || id <= 0) {
+    return json({ success: false, message: "شناسه جلسه هنرجو معتبر نیست." }, 422);
+  }
+  if (!body.status || !VALID_STATUSES.has(body.status)) {
+    return json({ success: false, message: "وضعیت حضور معتبر نیست." }, 422);
   }
 
-  const updatedAt = new Date().toISOString();
-  await db.prepare(`
-    UPDATE enrollment_sessions
-    SET status = ?, note = ?, updated_at = ?
-    WHERE id = ?
-  `).bind(body.status, body.note ?? "", updatedAt, id).run();
+  try {
+    await setStudentSessionStatus(db, id, body.status, body.note);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "ATTENDANCE_UPDATE_FAILED";
+    return json({
+      success: false,
+      code,
+      message: ERROR_MESSAGES[code] ?? "ثبت حضور با خطا مواجه شد.",
+    }, code === "ENROLLMENT_SESSION_NOT_FOUND" ? 404 : 422);
+  }
 
   const attendance = await db.prepare(`
-    SELECT id, enrollment_id, session_id, status, attendance_mode, note, updated_at
-    FROM enrollment_sessions WHERE id = ?
+    SELECT id, enrollment_id, session_id, enrollment_term_id, status,
+           attendance_mode, makeup_for_id, note, updated_at
+    FROM enrollment_sessions
+    WHERE id = ?
   `).bind(id).first();
 
   return json({ success: true, attendance });
