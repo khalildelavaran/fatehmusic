@@ -44,8 +44,8 @@ export function buildCourseSchema(course, { site }) {
         course.category,
         ...(course.seo?.keywords || [])
     ].filter(Boolean);
-    const guitarStyleTracks = course.slug === "guitar-course"
-        ? buildGuitarStyleTracks(course, site)
+    const guitarStyleRefs = course.slug === "guitar-course"
+        ? GUITAR_STYLE_TRACKS.map((track) => ({ "@id": `${course.url}#${track.slug}` }))
         : undefined;
 
     return pruneEmpty({
@@ -55,7 +55,12 @@ export function buildCourseSchema(course, { site }) {
         name: course.title,
         description: course.description,
         image: course.image,
-        keywords: [...new Set([...courseTopics, "گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"].filter(Boolean))],
+        keywords: [...new Set([
+            ...courseTopics,
+            ...(course.slug === "guitar-course"
+                ? ["گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"]
+                : [])
+        ])],
         teaches: course.slug === "guitar-course"
             ? ["گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"]
             : undefined,
@@ -75,26 +80,31 @@ export function buildCourseSchema(course, { site }) {
                   text
               }))
             : undefined,
-        hasPart: guitarStyleTracks,
+        hasPart: guitarStyleRefs,
         hasCourseInstance: courseInstance,
         offers: buildOffers(course.plan, site)
     });
 }
 
-function buildGuitarStyleTracks(course, site) {
+/**
+ * Return the three guitar style entities as first-class graph nodes.
+ * Keeping them as top-level nodes lets GEO consumers resolve each style
+ * independently instead of treating the styles as plain keywords.
+ */
+export function buildCourseStyleSchemas(course, { site }) {
+    if (course?.slug !== "guitar-course") return [];
+
     return GUITAR_STYLE_TRACKS.map((track) => ({
         "@type": SCHEMA_TYPES.COURSE,
         "@id": `${course.url}#${track.slug}`,
         url: `${course.url}#${track.slug}`,
         name: track.name,
         description: track.description,
+        keywords: [track.name, "گیتار", "شوشتر"],
+        teaches: track.name,
         provider: { "@id": `${site.url}/#organization` },
         isPartOf: { "@id": buildCourseRef(course)["@id"] },
-        areaServed: {
-            "@type": "City",
-            name: "شوشتر"
-        },
-        teaches: track.name
+        mainEntityOfPage: { "@id": `${course.url}/#webpage` }
     }));
 }
 
