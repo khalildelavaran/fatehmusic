@@ -29,8 +29,39 @@ export const TOPICS = Object.freeze([
     { slug: "shushtar", name: "آموزش موسیقی در شوشتر", aliases: ["شوشتر", "موسیقی شوشتر", "آموزش موسیقی شوشتر", "کلاس موسیقی شوشتر"] }
 ]);
 
+const PARENT_TOPIC = "music-education";
+const LOCAL_TOPIC = "shushtar";
+
 function normalize(value) {
     return stripZwnj(clean(value)).replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").toLowerCase();
+}
+
+function resolveTopicMatches(corpus) {
+    return TOPICS
+        .map((topic) => {
+            const matches = topic.aliases.filter((alias) => corpus.includes(normalize(alias)));
+            return {
+                ...topic,
+                score: matches.length ? Math.min(95, 35 + matches.length * 20) : 0,
+                matchedBy: matches
+            };
+        })
+        .filter((topic) => topic.score > 0);
+}
+
+function suppressParentTopics(topics) {
+    const hasSpecificTopic = topics.some((topic) => topic.slug !== PARENT_TOPIC);
+    if (!hasSpecificTopic) return topics;
+    return topics.filter((topic) => topic.slug !== PARENT_TOPIC);
+}
+
+function applyTopicPrecedence(topics) {
+    // Local scope is a more specific semantic scope than the generic
+    // "music-education" topic. A query such as "آموزش موسیقی در شوشتر"
+    // must become one local asset, not two independent topic clusters.
+    const hasLocalTopic = topics.some((topic) => topic.slug === LOCAL_TOPIC);
+    const narrowed = hasLocalTopic ? topics.filter((topic) => topic.slug !== PARENT_TOPIC) : topics;
+    return suppressParentTopics(narrowed);
 }
 
 /**
@@ -41,7 +72,7 @@ export function resolveTopics({ title = "", keywords = [], path = "", explicit =
     const corpus = normalize([title, path, ...(keywords || [])].join(" | "));
     const explicitSet = new Set((explicit || []).map(normalize));
 
-    return TOPICS
+    const resolved = TOPICS
         .map((topic) => {
             const explicitMatch = explicitSet.has(topic.slug) || explicitSet.has(normalize(topic.name));
             const matches = topic.aliases.filter((alias) => corpus.includes(normalize(alias)));
@@ -53,8 +84,9 @@ export function resolveTopics({ title = "", keywords = [], path = "", explicit =
             };
         })
         .filter((topic) => topic.score > 0)
-        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "fa"))
-        .slice(0, 8);
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, "fa"));
+
+    return applyTopicPrecedence(resolved).slice(0, 8);
 }
 
 /**
