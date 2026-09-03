@@ -27,9 +27,10 @@ export const PUT: APIRoute = async ({ request }) => {
       ENROLLMENT_INACTIVE:'ثبت‌نام هنرجو فعال نیست.',
       ENROLLMENT_SESSION_CLASS_MISMATCH:'هنرجو متعلق به کلاس این جلسه نیست.',
       ENROLLMENT_TERM_REQUIRED:'چرخه آموزشی این جلسه مشخص نشده است.',
-      SESSION_CANCELLED:'برای جلسه لغوشده حضور ثبت نمی‌شود.'
+      SESSION_CANCELLED:'برای جلسه لغوشده حضور ثبت نمی‌شود.',
+      EXCUSED_SESSION_HAS_MAKEUP:'برای این مرخصی جلسه جبرانی ساخته شده و وضعیت جلسه اصلی قابل تغییر نیست.'
     };
-    return json({ success:false, code, message:messages[code] ?? 'ثبت وضعیت حضور با خطا مواجه شد.' }, 422);
+    return json({ success:false, code, message:messages[code] ?? 'ثبت وضعیت حضور با خطا مواجه شد.' }, code === 'ENROLLMENT_SESSION_NOT_FOUND' ? 404 : 422);
   }
 };
 
