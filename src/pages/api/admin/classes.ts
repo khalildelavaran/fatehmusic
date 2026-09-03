@@ -9,6 +9,16 @@ async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
 }
 
+async function validateDefaultRoom(db: D1Database, defaultRoomId: number | null | undefined): Promise<Response | null> {
+  if (defaultRoomId === undefined || defaultRoomId === null) return null;
+  if (!Number.isInteger(defaultRoomId) || defaultRoomId <= 0) {
+    return json({ success: false, message: "اتاق پیش‌فرض معتبر نیست." }, 422);
+  }
+  const room = await db.prepare(`SELECT id FROM rooms WHERE id = ? AND status = 'active'`).bind(defaultRoomId).first();
+  if (!room) return json({ success: false, message: "اتاق پیش‌فرض انتخاب‌شده فعال نیست." }, 422);
+  return null;
+}
+
 export const GET: APIRoute = async ({ request }) => {
   const denied = await requireAdmin(request);
   if (denied) return denied;
@@ -54,6 +64,8 @@ export const POST: APIRoute = async ({ request }) => {
 
   const validation = validateClassInput(body, { isCreate: true });
   if (!validation.valid) return json({ success: false, message: validation.errors.join(" ") }, 422);
+  const invalidRoom = await validateDefaultRoom(db, body.defaultRoomId);
+  if (invalidRoom) return invalidRoom;
 
   let id: number;
   try {
@@ -85,6 +97,8 @@ export const PATCH: APIRoute = async ({ request }) => {
 
   const validation = validateClassInput(patch, { isCreate: false });
   if (!validation.valid) return json({ success: false, message: validation.errors.join(" ") }, 422);
+  const invalidRoom = await validateDefaultRoom(db, patch.defaultRoomId);
+  if (invalidRoom) return invalidRoom;
 
   const ok = await updateClass(db, id, patch);
   if (!ok) return json({ success: false, message: "به‌روزرسانی کلاس با خطا مواجه شد." }, 500);
