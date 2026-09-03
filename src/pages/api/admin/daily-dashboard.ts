@@ -13,16 +13,6 @@ function persianWeekdayIndex(date: string): number {
 }
 
 async function materializeScheduledSessions(db: D1Database, date: string): Promise<void> {
-  const exception = await db.prepare(`
-    SELECT id, type, title
-    FROM calendar_exceptions
-    WHERE exception_date = ?
-  `).bind(date).first<{ id: number; type: string; title: string }>();
-
-  // A concrete makeup/special session may still exist on an exception date,
-  // but do not auto-create ordinary recurring sessions for that date.
-  if (exception) return;
-
   const dayOfWeek = persianWeekdayIndex(date);
   const schedules = await db.prepare(`
     SELECT
