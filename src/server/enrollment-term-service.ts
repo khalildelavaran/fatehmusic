@@ -22,8 +22,16 @@ type ExistingTermRow = {
   tuition_due_date: string | null;
 };
 
+type RenewableTermRow = ExistingTermRow & {
+  enrollment_id: number;
+  start_date: string;
+  planned_sessions: number | null;
+  billing_type: BillingType;
+};
+
 function addDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(value.getTime())) throw new Error('INVALID_START_DATE');
   value.setUTCDate(value.getUTCDate() + days);
   return value.toISOString().slice(0, 10);
 }
@@ -159,4 +167,82 @@ export async function ensureTermForFirstSession(
     startDate: sessionDate,
     ...options,
   });
+}
+
+/**
+ * Completes an exhausted term and opens the next term using a fresh snapshot
+ * of the class-level settings. Pending occurrences from the new start date
+ * onward are rebound to the new term; consumed history remains immutable.
+ */
+export async function renewEnrollmentTerm(
+  db: D1Database,
+  enrollmentId: number,
+  startDate: string,
+): Promise<{ previousTermId: number; termId: number }> {
+  if (!Number.isInteger(enrollmentId) || enrollmentId <= 0) throw new Error('INVALID_ENROLLMENT');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) throw new Error('INVALID_START_DATE');
+
+  const enrollment = await db.prepare(`
+    SELECT id, class_id FROM enrollments WHERE id = ? AND status = 'active'
+  `).bind(enrollmentId).first<{ id:number; class_id:number }>();
+  if (!enrollment) throw new Error('ACTIVE_ENROLLMENT_NOT_FOUND');
+
+  const active = await db.prepare(`
+    SELECT id, enrollment_id, start_date, planned_sessions, billing_type,
+           tuition_amount, tuition_due_date
+    FROM enrollment_terms
+    WHERE enrollment_id = ? AND status = 'active'
+    ORDER BY term_number DESC, id DESC
+    LIMIT 1
+  `).bind(enrollmentId).first<RenewableTermRow>();
+  if (!active) throw new Error('ACTIVE_TERM_NOT_FOUND');
+  if (startDate < active.start_date) throw new Error('RENEWAL_DATE_BEFORE_ACTIVE_TERM');
+
+  if (active.billing_type === 'session_based') {
+    if (active.planned_sessions == null) throw new Error('ACTIVE_TERM_PLAN_MISSING');
+    const count = await db.prepare(`
+      SELECT COUNT(*) AS consumed
+      FROM enrollment_sessions es
+      JOIN class_sessions cs ON cs.id = es.session_id
+      WHERE es.enrollment_id = ?
+        AND es.enrollment_term_id = ?
+        AND es.status IN ('present', 'absent')
+        AND cs.status <> 'cancelled'
+    `).bind(enrollmentId, active.id).first<{ consumed:number }>();
+    if ((count?.consumed ?? 0) < active.planned_sessions) throw new Error('TERM_NOT_EXHAUSTED');
+  } else {
+    if (startDate.slice(0, 7) <= active.start_date.slice(0, 7)) throw new Error('MONTHLY_TERM_NOT_READY');
+  }
+
+  await db.prepare(`
+    UPDATE enrollment_terms
+    SET status = 'completed', updated_at = datetime('now')
+    WHERE id = ? AND status = 'active'
+  `).bind(active.id).run();
+
+  let newTermId: number;
+  try {
+    newTermId = await ensureActiveEnrollmentTerm(db, { enrollmentId, startDate });
+  } catch (error) {
+    await db.prepare(`
+      UPDATE enrollment_terms SET status = 'active', updated_at = datetime('now')
+      WHERE id = ? AND NOT EXISTS (
+        SELECT 1 FROM enrollment_terms WHERE enrollment_id = ? AND status = 'active'
+      )
+    `).bind(active.id, enrollmentId).run();
+    throw error;
+  }
+
+  await db.prepare(`
+    UPDATE enrollment_sessions
+    SET enrollment_term_id = ?, updated_at = datetime('now')
+    WHERE enrollment_id = ?
+      AND enrollment_term_id = ?
+      AND status = 'pending'
+      AND session_id IN (
+        SELECT id FROM class_sessions WHERE session_date >= ?
+      )
+  `).bind(newTermId, enrollmentId, active.id, startDate).run();
+
+  return { previousTermId: active.id, termId: newTermId };
 }
