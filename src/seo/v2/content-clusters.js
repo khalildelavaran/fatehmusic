@@ -30,14 +30,52 @@ export function buildArticleClusterLinks(posts = [], limit = 4) {
 }
 
 const DEFAULT_INTENTS = ["informational", "commercial", "transactional", "local"];
+const INTENT_SCOPE = Object.freeze({ local: "shushtar", commercial: "global", transactional: "global", informational: "global" });
+const CANONICAL_TOPIC = Object.freeze({ shushtar: "music-education" });
+
+function canonicalTopic(topic) { return CANONICAL_TOPIC[topic] || topic; }
+function canonicalCourse(items) {
+  const courses = [...new Set(items.map((item) => item?.relatedCourseSlug).filter(Boolean))];
+  return courses.length === 1 ? courses[0] : null;
+}
+
+/**
+ * Gaps are search-coverage records, not articles. Compatible intents for the
+ * same topic/scope/course are aggregated into one canonical asset so the UI
+ * cannot generate one opportunity per intent.
+ */
 export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS) {
   const profiles = buildArticleProfiles(posts);
-  const byTopic = new Map();
+  const byAsset = new Map();
   for (const item of profiles) for (const topic of item.topics) {
-    const entry = byTopic.get(topic) || { topic, intents: new Set(), articles: [] };
-    entry.intents.add(item.intent); entry.articles.push(item.slug); byTopic.set(topic, entry);
+    const coveredIntent = item.intent;
+    const canonical = canonicalTopic(topic);
+    const isLocal = topic === "shushtar";
+    const scope = isLocal ? "shushtar" : "global";
+    const key = `${canonical}|${scope}|${item.relatedCourseSlug || "general"}`;
+    const entry = byAsset.get(key) || { topic: topic === "shushtar" ? "shushtar" : topic, canonicalTopic: canonical, scope, courseCandidates: [], intents: new Set(), articles: [] };
+    entry.intents.add(coveredIntent);
+    if (item.relatedCourseSlug) entry.courseCandidates.push(item.relatedCourseSlug);
+    entry.articles.push(item.slug);
+    byAsset.set(key, entry);
   }
-  return [...byTopic.values()].map((entry) => ({ topic: entry.topic, coveredIntents: [...entry.intents], missingIntents: requiredIntents.filter((intent) => !entry.intents.has(intent)), articleCount: entry.articles.length, articleSlugs: entry.articles })).sort((a, b) => b.missingIntents.length - a.missingIntents.length || a.articleCount - b.articleCount);
+
+  const gaps = [...byAsset.values()].map((entry) => {
+    const courseSlug = canonicalCourse(entry.courseCandidates.map((slug) => ({ relatedCourseSlug: slug })));
+    const missingIntents = requiredIntents.filter((intent) => !entry.intents.has(intent));
+    return {
+      topic: entry.topic,
+      canonicalTopic: entry.canonicalTopic,
+      scope: entry.scope,
+      courseSlug,
+      coveredIntents: [...entry.intents],
+      missingIntents,
+      articleCount: entry.articles.length,
+      articleSlugs: [...new Set(entry.articles)]
+    };
+  }).filter((gap) => gap.missingIntents.length > 0);
+
+  return gaps.sort((a, b) => b.missingIntents.length - a.missingIntents.length || a.articleCount - b.articleCount || a.topic.localeCompare(b.topic, "fa"));
 }
 
 export function buildContentClusterReport(posts = [], { courses = [], siteUrl } = {}) {
