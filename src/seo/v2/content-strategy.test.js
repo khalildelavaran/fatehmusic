@@ -41,6 +41,33 @@ describe("content strategy deduplication", () => {
     expect(result.briefCount).toBe(2);
   });
 
+  it("does not collapse distinct informational content angles for the same course", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      topicCandidates: [
+        { title: "چگونه گیتار را از صفر یاد بگیریم؟", intent: "informational", modifierType: "how_to", relatedCourseSlug: "guitar-course", scoreTotal: 80 },
+        { title: "رایج‌ترین اشتباهات هنرجویان گیتار و راه اصلاح آن‌ها", intent: "informational", modifierType: "mistakes", relatedCourseSlug: "guitar-course", scoreTotal: 78 },
+        { title: "تکنیک‌های تمرین مؤثر برای هنرجویان گیتار", intent: "informational", modifierType: "practice_tips", relatedCourseSlug: "guitar-course", scoreTotal: 76 }
+      ]
+    });
+    expect(result.opportunityCount).toBe(3);
+  });
+
+  it("merges a local SEO gap with its local course candidate, but not with unrelated angles", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      gaps: [{ topic: "vocal", scope: "shushtar", missingIntents: ["local", "transactional"], articleCount: 1, articleSlugs: ["vocal-shushtar"] }],
+      topicCandidates: [
+        { title: "چرا آموزشگاه فاتح برای یادگیری آواز سنتی در شوشتر انتخاب خوبی است", intent: "commercial", modifierType: "local_shushtar", relatedCourseSlug: "traditional-vocal-course", scoreTotal: 88 },
+        { title: "چگونه آواز را از صفر یاد بگیریم؟", intent: "informational", modifierType: "how_to", relatedCourseSlug: "traditional-vocal-course", scoreTotal: 86 }
+      ]
+    });
+    expect(result.opportunityCount).toBe(2);
+    const local = result.opportunities.find((item) => item.modifierType === "local_shushtar");
+    expect(local.searchIntents).toEqual(["transactional", "local", "commercial"]);
+    expect(local.course.slug).toBe("traditional-vocal-course");
+  });
+
   it("keeps Course identity for a subject-specific local opportunity", () => {
     const result = buildUnifiedContentOpportunities({
       courses,
