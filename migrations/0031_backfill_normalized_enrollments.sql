@@ -21,6 +21,14 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM enrollments e
   WHERE e.source_class_student_id = cs.id
+)
+AND NOT EXISTS (
+  SELECT 1
+  FROM enrollments e
+  WHERE e.class_id = cs.class_id
+    AND e.student_id = cs.student_id
+    AND e.status = 'active'
+    AND cs.status = 'active'
 );
 
 CREATE INDEX IF NOT EXISTS idx_enrollments_source_class_student
