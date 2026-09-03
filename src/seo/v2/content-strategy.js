@@ -30,15 +30,16 @@ function topicForCourse(course) {
   return TOPICS.map((topic) => ({ topic, score: [topic.name, ...(topic.aliases || [])].filter(Boolean).filter((alias) => normalized.includes(normalize(alias))).length })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
 }
 function resolveCandidateTopic(candidate, course) {
-  const titleTopic = resolveTopicFromTitle(candidate.title);
-  const courseTopic = topicForCourse(course);
-  const metadataTopic = findTopic(candidate.instrumentKey);
+  const titleTopic = resolveTopicFromTitle(candidate.title), courseTopic = topicForCourse(course), metadataTopic = findTopic(candidate.instrumentKey);
   if (titleTopic && courseTopic && titleTopic.slug !== courseTopic.slug) return null;
   return titleTopic || courseTopic || metadataTopic;
 }
 function normalizeBaseUrl(siteUrl) { return String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, ""); }
 function findCourseForTopic(topic, courses = []) {
-  if (!topic || isShushtarTopic(topic)) return null;
+  // The root topic is intentionally course-agnostic. Never attach a specific
+  // course such as children-music-course merely because its title contains the
+  // broad phrase "آموزش موسیقی".
+  if (!topic || isShushtarTopic(topic) || topic.slug === "music-education") return null;
   const aliases = [topic.name, ...(topic.aliases || [])].map(normalize).filter(Boolean);
   return courses.find((course) => aliases.some((alias) => normalize([course?.slug, course?.title, course?.instrument, course?.description].filter(Boolean).join(" | ")).includes(alias))) || null;
 }
