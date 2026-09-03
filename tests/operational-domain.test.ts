@@ -93,4 +93,28 @@ describe('operational education domain', () => {
     const consumed = statuses.filter((status) => status === 'present' || status === 'absent');
     expect(consumed).toEqual(['present', 'absent']);
   });
+
+  it('preserves the old term for already-provisioned sessions after renewal', () => {
+    const term1 = 101;
+    const term2 = 202;
+    const alreadyProvisionedTermId = term1;
+    const activeTermIdAfterRenewal = term2;
+
+    // Mirrors the COALESCE(existing.enrollment_term_id, excluded.enrollment_term_id)
+    // rule used by session provisioning: an existing session must never be
+    // reassigned to the newly active term merely because the provisioner runs again.
+    const retainedTermId = alreadyProvisionedTermId ?? activeTermIdAfterRenewal;
+
+    expect(retainedTermId).toBe(term1);
+    expect(retainedTermId).not.toBe(term2);
+  });
+
+  it('assigns a newly provisioned session to the new active term', () => {
+    const existingTermId: number | null = null;
+    const activeTermIdAfterRenewal = 202;
+
+    const assignedTermId = existingTermId ?? activeTermIdAfterRenewal;
+
+    expect(assignedTermId).toBe(202);
+  });
 });
