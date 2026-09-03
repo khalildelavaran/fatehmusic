@@ -109,9 +109,8 @@ export async function ensureActiveEnrollmentTerm(
 
 /**
  * Explicitly closes the current term and opens the next term.
- * The new term snapshots the class-level billing settings at renewal time;
- * invoices and payments remain attached to their original term and therefore
- * never mix financial history between terms.
+ * The new term snapshots the current class billing settings at renewal time.
+ * Existing invoices/payments remain attached to the previous term.
  */
 export async function renewEnrollmentTerm(
   db: D1Database,
@@ -129,7 +128,7 @@ export async function renewEnrollmentTerm(
   if (!enrollment) throw new Error('ACTIVE_ENROLLMENT_NOT_FOUND');
 
   const current = await db.prepare(`
-    SELECT id, term_number, planned_sessions, billing_type, tuition_amount, tuition_due_date
+    SELECT id, term_number, billing_type, planned_sessions
     FROM enrollment_terms
     WHERE enrollment_id = ? AND status = 'active'
     ORDER BY term_number DESC, id DESC
@@ -137,12 +136,20 @@ export async function renewEnrollmentTerm(
   `).bind(enrollmentId).first<{
     id: number;
     term_number: number;
-    planned_sessions: number | null;
     billing_type: BillingType;
-    tuition_amount: number | null;
-    tuition_due_date: string | null;
+    planned_sessions: number | null;
   }>();
   if (!current) throw new Error('ACTIVE_TERM_NOT_FOUND');
+
+  if (current.billing_type === 'session_based' && current.planned_sessions != null) {
+    const counts = await db.prepare(`
+      SELECT COALESCE(SUM(CASE WHEN status IN ('present', 'absent') THEN 1 ELSE 0 END), 0) AS consumed
+      FROM enrollment_sessions
+      WHERE enrollment_id = ? AND enrollment_term_id = ?
+    `).bind(enrollmentId, current.id).first<{ consumed: number }>();
+    const remaining = Math.max(current.planned_sessions - (counts?.consumed ?? 0), 0);
+    if (remaining > 1) throw new Error('TERM_NOT_READY_FOR_RENEWAL');
+  }
 
   const settings = await getClassTermSettings(db, enrollment.class_id);
   if (!settings) throw new Error('CLASS_TERM_SETTINGS_NOT_FOUND');
@@ -154,6 +161,14 @@ export async function renewEnrollmentTerm(
         date.setUTCDate(date.getUTCDate() + settings.tuitionDueDays!);
         return date.toISOString().slice(0, 10);
       })();
+
+  // Close first so the invariant "at most one active term" is preserved even
+  // if the following INSERT fails. A retry can safely create the next term.
+  await db.prepare(`
+    UPDATE enrollment_terms
+    SET status = 'completed', updated_at = datetime('now')
+    WHERE id = ? AND status = 'active'
+  `).bind(current.id).run();
 
   const nextNumber = current.term_number + 1;
   const nextTerm = await db.prepare(`
@@ -173,12 +188,6 @@ export async function renewEnrollmentTerm(
   ).first<{ id: number }>();
 
   if (!nextTerm) throw new Error('TERM_RENEWAL_CREATE_FAILED');
-
-  await db.prepare(`
-    UPDATE enrollment_terms
-    SET status = 'completed', updated_at = datetime('now')
-    WHERE id = ? AND status = 'active'
-  `).bind(current.id).run();
 
   await ensureTuitionInvoice(db, nextTerm.id, settings.tuitionAmount, dueDate);
 
