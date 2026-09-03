@@ -89,6 +89,9 @@ export function validateClassSession(input: ClassSessionInput): string[] {
   if (!Number.isInteger(input.instructorId) || input.instructorId <= 0) errors.push("مدرس معتبر نیست.");
   if (input.locationType === "online" && !input.meetingUrl) errors.push("برای جلسه آنلاین لینک ورود الزامی است.");
   if (input.locationType === "in_person" && input.roomId == null) errors.push("برای جلسه حضوری اتاق الزامی است.");
+  if (input.type === "makeup" && (!Number.isInteger(input.originalSessionId) || Number(input.originalSessionId) <= 0)) {
+    errors.push("جلسه جبرانی باید به جلسه اصلی متصل باشد.");
+  }
   return errors;
 }
 
