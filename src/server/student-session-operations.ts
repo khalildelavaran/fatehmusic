@@ -7,15 +7,29 @@ export async function setStudentSessionStatus(
   note?: string | null,
 ): Promise<void> {
   const row = await db.prepare(`
-    SELECT es.id, es.enrollment_id, es.session_id, e.status AS enrollment_status, cs.status AS session_status
+    SELECT es.id, es.enrollment_id, es.session_id, es.status,
+           e.status AS enrollment_status, cs.status AS session_status
     FROM enrollment_sessions es
     JOIN enrollments e ON e.id = es.enrollment_id
     JOIN class_sessions cs ON cs.id = es.session_id
     WHERE es.id = ?
-  `).bind(enrollmentSessionId).first<{ id:number; enrollment_id:number; session_id:number; enrollment_status:string; session_status:string }>();
+  `).bind(enrollmentSessionId).first<{
+    id:number; enrollment_id:number; session_id:number; status:string;
+    enrollment_status:string; session_status:string;
+  }>();
   if (!row) throw new Error('ENROLLMENT_SESSION_NOT_FOUND');
   if (row.enrollment_status !== 'active') throw new Error('ENROLLMENT_INACTIVE');
   if (row.session_status === 'cancelled') throw new Error('SESSION_CANCELLED');
+
+  if (row.status === 'excused' && status !== 'excused') {
+    const makeup = await db.prepare(`
+      SELECT id
+      FROM enrollment_sessions
+      WHERE makeup_for_id = ?
+      LIMIT 1
+    `).bind(enrollmentSessionId).first<{ id:number }>();
+    if (makeup) throw new Error('EXCUSED_SESSION_HAS_MAKEUP');
+  }
 
   await db.prepare(`UPDATE enrollment_sessions SET status = ?, note = ?, updated_at = datetime('now') WHERE id = ?`)
     .bind(status, note ?? '', enrollmentSessionId).run();
