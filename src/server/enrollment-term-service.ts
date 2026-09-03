@@ -116,7 +116,16 @@ export async function renewEnrollmentTerm(
   db: D1Database,
   enrollmentId: number,
   startDate: string,
-): Promise<{ previousTermId: number; termId: number; termNumber: number }> {
+): Promise<{
+  previousTermId: number;
+  termId: number;
+  termNumber: number;
+  billingType: BillingType;
+  plannedSessions: number | null;
+  tuitionAmount: number | null;
+  tuitionDueDate: string | null;
+  invoiceId: number | null;
+}> {
   if (!Number.isInteger(enrollmentId) || enrollmentId <= 0) throw new Error('INVALID_ENROLLMENT');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) throw new Error('INVALID_START_DATE');
 
@@ -162,8 +171,6 @@ export async function renewEnrollmentTerm(
         return date.toISOString().slice(0, 10);
       })();
 
-  // Close first so the invariant "at most one active term" is preserved even
-  // if the following INSERT fails. A retry can safely create the next term.
   await db.prepare(`
     UPDATE enrollment_terms
     SET status = 'completed', updated_at = datetime('now')
@@ -190,8 +197,22 @@ export async function renewEnrollmentTerm(
   if (!nextTerm) throw new Error('TERM_RENEWAL_CREATE_FAILED');
 
   await ensureTuitionInvoice(db, nextTerm.id, settings.tuitionAmount, dueDate);
+  const invoice = await db.prepare(`
+    SELECT id FROM invoices
+    WHERE enrollment_term_id = ? AND status <> 'cancelled'
+    ORDER BY id DESC LIMIT 1
+  `).bind(nextTerm.id).first<{ id: number }>();
 
-  return { previousTermId: current.id, termId: nextTerm.id, termNumber: nextNumber };
+  return {
+    previousTermId: current.id,
+    termId: nextTerm.id,
+    termNumber: nextNumber,
+    billingType: settings.billingType,
+    plannedSessions: settings.plannedSessions,
+    tuitionAmount: settings.tuitionAmount,
+    tuitionDueDate: dueDate,
+    invoiceId: invoice?.id ?? null,
+  };
 }
 
 /** The first concrete class session determines the term start date. */
