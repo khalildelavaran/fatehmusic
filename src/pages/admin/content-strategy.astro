@@ -8,19 +8,25 @@ import "../../styles/admin/dashboard.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
-import { buildContentClusterReport, buildUnifiedContentOpportunities, resolveSite } from "../../seo/index.js";
+import { buildSEOIntelligence, resolveSite } from "../../seo/index.js";
 import { listTopics } from "../../ai/content-engine/db";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/admin/login");
 if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
+
 const posts = await getPublishedPosts();
 const site = resolveSite();
-const report = buildContentClusterReport(posts, { courses, siteUrl: site.url });
 const db = (env as AdminEnv).DB;
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
-const unified = buildUnifiedContentOpportunities({ gaps: report.gaps, topicCandidates: activeTopicCandidates, courses, siteUrl: site.url });
+const intelligence = buildSEOIntelligence({
+  posts,
+  courses,
+  topicCandidates: activeTopicCandidates,
+  gscRows: [],
+  siteUrl: site.url
+});
 
 const normalizeText = (value: string) => String(value ?? "")
   .replace(/[\u200c\u200f\u200e]/g, "")
@@ -39,7 +45,7 @@ const normalizeSlug = (value: string) => String(value ?? "")
 const publishedTitles = new Set(posts.map((post) => normalizeText(post.title)));
 const publishedSlugs = new Set(posts.map((post) => normalizeSlug(post.slug)));
 
-const opportunities = unified.opportunities.filter((item) => {
+const opportunities = intelligence.opportunities.filter((item) => {
   if (item.action !== "NEW_CONTENT") return true;
   const sameTitle = publishedTitles.has(normalizeText(item.title));
   const sameSlug = publishedSlugs.has(normalizeSlug(item.suggestedSlug));
@@ -65,7 +71,7 @@ const sourceLabel = { "topic-engine": "موتور موضوعات", gap: "شکا�
       <section class="admin-hero" aria-label="مرکز فرصت‌های محتوا">
         <span class="admin-hero-label">SEO / GEO Content Intelligence</span>
         <h1>مرکز فرصت‌های محتوا</h1>
-        <span class="admin-hero-description">یک صف واحد برای تمام تصمیم‌های محتوایی؛ موضوعات پیشنهادی و شکاف‌های SEO/GEO قبل از نمایش، تحلیل و ادغام می‌شوند.</span>
+        <span class="admin-hero-description">یک صف واحد برای تمام تصمیم‌های محتوایی؛ موضوعات پیشنهادی، شکاف‌های SEO/GEO و امتیازدهی از یک orchestrator مرکزی تغذیه می‌شوند.</span>
       </section>
 
       <div class="strategy-stats">
