@@ -11,6 +11,24 @@ import {
     buildCourseRef
 } from "../geo/graph.js";
 
+const GUITAR_STYLE_TRACKS = [
+    {
+        slug: "pop-guitar",
+        name: "آموزش گیتار پاپ",
+        description: "مسیر تخصصی آموزش گیتار پاپ با تمرکز بر آکورد، استرام، ریتم و همراهی آواز."
+    },
+    {
+        slug: "classical-guitar",
+        name: "آموزش گیتار کلاسیک",
+        description: "مسیر تخصصی آموزش گیتار کلاسیک با تمرکز بر نت‌خوانی، فینگراستایل و اجرای قطعات کلاسیک."
+    },
+    {
+        slug: "flamenco-guitar",
+        name: "آموزش گیتار فلامنکو",
+        description: "مسیر تخصصی آموزش گیتار فلامنکو با تمرکز بر تکنیک‌های ریتمیک و ضربی فلامنکو."
+    }
+];
+
 /**
  * @param {Object} course - a resolved course (from resolveCourse)
  * @param {Object} params
@@ -26,6 +44,9 @@ export function buildCourseSchema(course, { site }) {
         course.category,
         ...(course.seo?.keywords || [])
     ].filter(Boolean);
+    const guitarStyleTracks = course.slug === "guitar-course"
+        ? buildGuitarStyleTracks(course, site)
+        : undefined;
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.COURSE,
@@ -34,7 +55,10 @@ export function buildCourseSchema(course, { site }) {
         name: course.title,
         description: course.description,
         image: course.image,
-        keywords: [...new Set(courseTopics)],
+        keywords: [...new Set([...courseTopics, "گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"].filter(Boolean))],
+        teaches: course.slug === "guitar-course"
+            ? ["گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"]
+            : undefined,
         provider: { "@id": `${site.url}/#organization` },
         mainEntityOfPage: { "@id": `${course.url}/#webpage` },
         educationalLevel: course.level.join("، "),
@@ -51,9 +75,27 @@ export function buildCourseSchema(course, { site }) {
                   text
               }))
             : undefined,
+        hasPart: guitarStyleTracks,
         hasCourseInstance: courseInstance,
         offers: buildOffers(course.plan, site)
     });
+}
+
+function buildGuitarStyleTracks(course, site) {
+    return GUITAR_STYLE_TRACKS.map((track) => ({
+        "@type": SCHEMA_TYPES.COURSE,
+        "@id": `${course.url}#${track.slug}`,
+        url: `${course.url}#${track.slug}`,
+        name: track.name,
+        description: track.description,
+        provider: { "@id": `${site.url}/#organization` },
+        isPartOf: { "@id": buildCourseRef(course)["@id"] },
+        areaServed: {
+            "@type": "City",
+            name: "شوشتر"
+        },
+        teaches: track.name
+    }));
 }
 
 function buildCourseInstance(course, instructorRefs) {
