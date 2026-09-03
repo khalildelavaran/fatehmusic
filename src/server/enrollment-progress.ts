@@ -30,11 +30,12 @@ export async function getEnrollmentProgress(
 
   const counts = await db.prepare(`
     SELECT
-      SUM(CASE WHEN status IN ('present', 'absent') THEN 1 ELSE 0 END) AS consumed,
-      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
-      SUM(CASE WHEN status = 'excused' THEN 1 ELSE 0 END) AS excused
-    FROM enrollment_sessions
-    WHERE enrollment_id = ? AND enrollment_term_id = ?
+      SUM(CASE WHEN es.status IN ('present', 'absent') AND cs.status != 'cancelled' THEN 1 ELSE 0 END) AS consumed,
+      SUM(CASE WHEN es.status = 'pending' AND cs.status != 'cancelled' THEN 1 ELSE 0 END) AS pending,
+      SUM(CASE WHEN es.status = 'excused' AND cs.status != 'cancelled' THEN 1 ELSE 0 END) AS excused
+    FROM enrollment_sessions es
+    JOIN class_sessions cs ON cs.id = es.session_id
+    WHERE es.enrollment_id = ? AND es.enrollment_term_id = ?
   `).bind(enrollmentId, term.id).first<{
     consumed: number | null;
     pending: number | null;
@@ -61,5 +62,5 @@ export async function getEnrollmentProgress(
 
 export function shouldWarnForRenewal(progress: EnrollmentProgress): boolean {
   if (progress.billingType === 'monthly' || progress.plannedSessions == null) return false;
-  return progress.remainingSessions <= 1;
+  return progress.remainingSessions != null && progress.remainingSessions <= 1;
 }
