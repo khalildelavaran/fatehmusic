@@ -75,10 +75,13 @@ export const GET: APIRoute = async ({ request }) => {
         et.planned_sessions,
         et.billing_type,
         (
-          SELECT COUNT(*) FROM enrollment_sessions consumed
+          SELECT COUNT(*)
+          FROM enrollment_sessions consumed
+          JOIN class_sessions consumed_session ON consumed_session.id = consumed.session_id
           WHERE consumed.enrollment_id = e.id
             AND consumed.enrollment_term_id = et.id
             AND consumed.status IN ('present', 'absent')
+            AND consumed_session.status != 'cancelled'
         ) AS consumed_sessions,
         (
           SELECT MIN(i.due_date) FROM invoices i
@@ -117,7 +120,7 @@ export const GET: APIRoute = async ({ request }) => {
             : Math.max(student.planned_sessions - (student.consumed_sessions ?? 0), 0),
         tuitionDueDate: student.tuition_due_date,
         tuitionWarning: student.tuition_due_date != null ||
-          (student.planned_sessions != null &&
+          (student.billing_type !== 'monthly' && student.planned_sessions != null &&
             student.planned_sessions - (student.consumed_sessions ?? 0) <= 1),
       })),
     });
