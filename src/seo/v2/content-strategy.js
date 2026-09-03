@@ -1,8 +1,21 @@
 /** Unified Content Intelligence: resolves topic candidates and SEO/GEO gaps into one dashboard queue. */
 import { TOPICS } from "./topics.js";
+
 const INTENT_PRIORITY = Object.freeze({ transactional: 100, local: 92, commercial: 84, informational: 70, navigational: 58 });
 const INTENT_SUFFIX = Object.freeze({ informational: "راهنمای جامع", commercial: "راهنمای انتخاب", transactional: "هزینه و ثبت‌نام", local: "در شوشتر", navigational: "معرفی و مسیر دسترسی" });
-function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").trim().toLowerCase(); }
+const INTENTS = Object.freeze(["informational", "commercial", "transactional", "local", "navigational"]);
+
+// Intents that describe the same service/search need should share one content asset.
+// Intent remains metadata on the asset instead of automatically becoming a new URL.
+const COMPATIBLE_INTENTS = Object.freeze({
+  local: new Set(["local", "commercial", "transactional"]),
+  commercial: new Set(["local", "commercial", "transactional"]),
+  transactional: new Set(["local", "commercial", "transactional"]),
+  informational: new Set(["informational"]),
+  navigational: new Set(["navigational"])
+});
+
+function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").replace(/[\s\-_]+/g, " ").trim().toLowerCase(); }
 function findTopic(slug) { return TOPICS.find((topic) => topic.slug === slug) || null; }
 function isShushtarTopic(topic) { return topic?.slug === "shushtar" || normalize(topic?.name).includes("شوشتر"); }
 function localTopicName(topic) { return isShushtarTopic(topic) ? "آموزش موسیقی" : (topic?.name || "آموزش موسیقی"); }
@@ -62,9 +75,21 @@ function buildBrief(gap, courses = [], siteUrl) {
   const topic = findTopic(gap.topic), intent = gap.missingIntents?.[0]; if (!topic || !intent) return null;
   const baseUrl = normalizeBaseUrl(siteUrl), isLocal = intent === "local" || isShushtarTopic(topic), course = isLocal ? null : findCourseForTopic(topic, courses), targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl), articleCount = Number(gap.articleCount) || 0;
   const action = articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT";
-  return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, title: buildTitle(topic, intent, course), suggestedSlug: `${topic.slug}-${intent}`, targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl) });
+  return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], title: buildTitle(topic, intent, course), suggestedSlug: canonicalSlug(topic, isLocal, course), targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl) });
 }
-export function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)).sort((a, b) => b.priority - a.priority || a.topic.localeCompare(b.topic, "fa")); }
+function canonicalScope(topic, isLocal = false) { return isLocal || isShushtarTopic(topic) ? "shushtar" : "global"; }
+function canonicalSlug(topic, isLocal = false, course = null) {
+  if (isLocal || isShushtarTopic(topic)) return `${topic.slug === "shushtar" ? "music-education" : topic.slug}-shushtar`;
+  if (course?.slug) return course.slug;
+  return topic.slug;
+}
+function canonicalAssetKey(item) { return `${item.topic}|${canonicalScope(findTopic(item.topic), Boolean(item.modifierType === "local_shushtar" || item.searchIntent === "local" || item.isLocal))}|${item.course?.slug || "general"}`; }
+function areIntentsCompatible(a, b) { return Boolean(COMPATIBLE_INTENTS[a]?.has(b) && COMPATIBLE_INTENTS[b]?.has(a)); }
+function choosePrimaryIntent(intents = []) { return [...new Set(intents)].sort((a, b) => (INTENT_PRIORITY[b] ?? 0) - (INTENT_PRIORITY[a] ?? 0))[0] || "informational"; }
+function mergeIntents(a = [], b = []) { return [...new Set([...a, ...b])].filter((intent) => INTENTS.includes(intent)); }
+function mergeQueryAngles(topic, intents, course) { return Object.freeze([...new Set(intents.flatMap((intent) => buildQueryAngles(topic, intent, course)))].slice(0, 12)); }
+function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)); }
+
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const baseUrl = normalizeBaseUrl(siteUrl);
   const explicitCourse = candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : null;
@@ -73,11 +98,10 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const intent = candidate.intent || "informational";
   const isLocal = candidate.modifierType === "local_shushtar" || normalize(candidate.title).includes("شوشتر") || isShushtarTopic(topic);
   const course = isLocal ? null : (explicitCourse || findCourseForTopic(topic, courses));
-  const safeTopic = topic;
-  const targetEntity = buildTargetEntity(safeTopic, course, isLocal, baseUrl);
-  return Object.freeze({ source: "topic-engine", action: "NEW_CONTENT", topic: safeTopic.slug, topicName: safeTopic.name, searchIntent: intent, title: candidate.title, suggestedSlug: normalize(candidate.title).replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 90), targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)), articleCount: 0, existingArticleSlugs: [], rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.", queryAngles: buildQueryAngles(safeTopic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: candidate.modifierType, scoreBreakdown: candidate.scoreBreakdown || null, topicId: candidate.id ?? null, topicStatus: candidate.status || null });
+  const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
+  return Object.freeze({ source: "topic-engine", action: "NEW_CONTENT", topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], isLocal, title: candidate.title, suggestedSlug: canonicalSlug(topic, isLocal, course), targetEntity, course: course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null, priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)), articleCount: 0, existingArticleSlugs: [], rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.", queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: candidate.modifierType, scoreBreakdown: candidate.scoreBreakdown || null, topicId: candidate.id ?? null, topicStatus: candidate.status || null });
 }
-function opportunityKey(item) { return `${item.topic}|${item.searchIntent}|${item.course?.slug || item.targetEntity?.type || "general"}`; }
+
 function mergeOpportunity(candidate, gap, siteUrl) {
   const topic = findTopic(candidate.topic);
   if (!topic) return null;
@@ -85,16 +109,60 @@ function mergeOpportunity(candidate, gap, siteUrl) {
   const priority = Math.min(100, Math.round(Math.max(candidate.priority, gap.priority) + Math.min(10, Math.abs(candidate.priority - gap.priority) * 0.15)));
   const course = candidate.course?.slug ? { slug: candidate.course.slug, title: candidate.course.title } : null;
   const searchIntent = gap.searchIntent || candidate.searchIntent;
-  const isLocal = searchIntent === "local" || isShushtarTopic(topic);
+  const isLocal = searchIntent === "local" || candidate.isLocal || isShushtarTopic(topic);
   const targetEntity = buildTargetEntity(topic, isLocal ? null : (course ? coursesForMergeCourse(course, baseUrl) : null), isLocal, baseUrl);
-  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority, gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: gap.existingArticleSlugs, action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", searchIntent, queryAngles: buildQueryAngles(topic, searchIntent, isLocal ? null : course), targetEntity, course: isLocal ? null : candidate.course, rationale: `${candidate.rationale} تحلیل SEO/GEO نیز این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}` });
+  const searchIntents = mergeIntents(candidate.searchIntents || [candidate.searchIntent], gap.searchIntents || [gap.searchIntent]);
+  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority, gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: [...new Set([...(candidate.existingArticleSlugs || []), ...(gap.existingArticleSlugs || [])])], action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", searchIntent: choosePrimaryIntent(searchIntents), searchIntents, isLocal, queryAngles: mergeQueryAngles(topic, searchIntents, isLocal ? null : course), suggestedSlug: canonicalSlug(topic, isLocal, isLocal ? null : course), targetEntity, course: isLocal ? null : candidate.course, rationale: `${candidate.rationale} تحلیل SEO/GEO نیز این Intent را کم‌پوشش تشخیص داده است: ${gap.rationale}` });
 }
 function coursesForMergeCourse(course, baseUrl) { return course ? { slug: course.slug, title: course.title } : null; }
+
+function mergeCompatibleOpportunities(items) {
+  const groups = new Map();
+  for (const item of items) {
+    const key = canonicalAssetKey(item);
+    const current = groups.get(key);
+    if (!current) { groups.set(key, item); continue; }
+    const currentIntents = current.searchIntents || [current.searchIntent];
+    const incomingIntents = item.searchIntents || [item.searchIntent];
+    if (!currentIntents.every((a) => incomingIntents.some((b) => areIntentsCompatible(a, b)))) {
+      groups.set(`${key}|${incomingIntents.join(",")}`, item);
+      continue;
+    }
+    const mergedIntents = mergeIntents(currentIntents, incomingIntents);
+    const preferred = item.priority > current.priority ? item : current;
+    groups.set(key, Object.freeze({
+      ...preferred,
+      source: current.source === item.source ? current.source : "topic-engine+gap",
+      searchIntent: choosePrimaryIntent(mergedIntents),
+      searchIntents: mergedIntents,
+      queryAngles: mergeQueryAngles(findTopic(preferred.topic), mergedIntents, preferred.course),
+      existingArticleSlugs: [...new Set([...(current.existingArticleSlugs || []), ...(item.existingArticleSlugs || [])])],
+      articleCount: Math.max(Number(current.articleCount) || 0, Number(item.articleCount) || 0),
+      action: [current.action, item.action].includes("OPTIMIZE_EXISTING") ? "OPTIMIZE_EXISTING" : preferred.action,
+      gapDetected: Boolean(current.gapDetected || item.gapDetected),
+      rationale: `${current.rationale} ${item.rationale}`
+    }));
+  }
+  return [...groups.values()];
+}
+
 export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl } = {}) {
   const byKey = new Map();
-  for (const candidate of topicCandidates) { if (!candidate?.title) continue; const item = buildCandidateBrief(candidate, courses, siteUrl); if (!item) continue; const key = opportunityKey(item); const previous = byKey.get(key); if (!previous || item.priority > previous.priority) byKey.set(key, item); }
-  for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl)) { const key = opportunityKey(gap), candidate = byKey.get(key); const merged = candidate ? mergeOpportunity(candidate, gap, siteUrl) : null; byKey.set(key, merged || gap); }
-  const opportunities = [...byKey.values()].sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title, "fa"));
+  for (const candidate of topicCandidates) {
+    if (!candidate?.title) continue;
+    const item = buildCandidateBrief(candidate, courses, siteUrl); if (!item) continue;
+    const key = canonicalAssetKey(item);
+    const previous = byKey.get(key);
+    if (!previous || item.priority > previous.priority) byKey.set(key, item);
+  }
+  for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl)) {
+    const key = canonicalAssetKey(gap), candidate = byKey.get(key), merged = candidate ? mergeOpportunity(candidate, gap, siteUrl) : gap;
+    byKey.set(key, merged);
+  }
+  const opportunities = mergeCompatibleOpportunities([...byKey.values()]).sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title, "fa"));
   return Object.freeze({ opportunityCount: opportunities.length, highPriorityCount: opportunities.filter((item) => item.priority >= 85).length, newContentCount: opportunities.filter((item) => item.action === "NEW_CONTENT").length, optimizeCount: opportunities.filter((item) => item.action === "OPTIMIZE_EXISTING").length, mergeCount: opportunities.filter((item) => item.action === "MERGE_CONTENT").length, opportunities: Object.freeze(opportunities) });
 }
-export function buildContentStrategy(gaps = [], courses = [], { siteUrl } = {}) { const briefs = buildContentStrategyFromGaps(gaps, courses, siteUrl); return Object.freeze({ briefCount: briefs.length, highPriorityCount: briefs.filter((item) => item.priority >= 85).length, briefs: Object.freeze(briefs) }); }
+
+export function buildContentStrategy(gaps = [], courses = [], { siteUrl } = {}) { const briefs = mergeCompatibleOpportunities(buildContentStrategyFromGaps(gaps, courses, siteUrl)); return Object.freeze({ briefCount: briefs.length, highPriorityCount: briefs.filter((item) => item.priority >= 85).length, briefs: Object.freeze(briefs) }); }
+
+export { canonicalAssetKey, areIntentsCompatible };
