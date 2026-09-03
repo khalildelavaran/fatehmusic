@@ -112,7 +112,30 @@ export async function ensureActiveEnrollmentTerm(
 
   // Initial term creation and its tuition invoice are one state transition.
   // If invoice creation fails, D1 rolls back the new term as well.
-  await db.batch(statements);
+  try {
+    await db.batch(statements);
+  } catch (error) {
+    // Another concurrent request may have won the active-term race. D1 rolls
+    // back this batch on the uniqueness violation, so recover the winner
+    // instead of allowing attendance provisioning to create a NULL term link.
+    const concurrent = await db.prepare(`
+      SELECT id, tuition_amount, tuition_due_date
+      FROM enrollment_terms
+      WHERE enrollment_id = ? AND status = 'active'
+      ORDER BY term_number DESC, id DESC
+      LIMIT 1
+    `).bind(input.enrollmentId).first<ExistingTermRow>();
+
+    if (!concurrent) throw error;
+
+    await ensureTuitionInvoice(
+      db,
+      concurrent.id,
+      concurrent.tuition_amount,
+      concurrent.tuition_due_date,
+    );
+    return concurrent.id;
+  }
 
   const created = await db.prepare(`
     SELECT id
