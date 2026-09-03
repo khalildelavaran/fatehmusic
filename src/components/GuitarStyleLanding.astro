@@ -1,0 +1,134 @@
+---
+import MainLayout from "../layouts/MainLayout.astro";
+import Header from "./Header.astro";
+import Footer from "./Footer.astro";
+import FAQSection from "./FAQSection.astro";
+
+const { style, site } = Astro.props;
+const parentUrl = `${site.url}/courses/guitar-course`;
+const canonicalUrl = `${site.url}/courses/${style.slug}`;
+const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
+---
+
+<MainLayout
+  title={style.title + " در شوشتر | آموزشگاه موسیقی فاتح"}
+  description={style.description}
+  keywords={style.keywords}
+  topics={[style.title, "آموزش گیتار", "گیتار", "شوشتر", "خلیل دلاوران"]}
+  entityType="Course"
+  canonical={canonicalUrl}
+  schema={style.schema}
+  answerBlocks={style.faqs.map(([question, answer]) => ({
+    question,
+    answer,
+    sourceUrl: canonicalUrl,
+    entityId: `${canonicalUrl}#course`,
+    priority: 30
+  }))}
+  linkCandidates={[
+    {
+      url: parentUrl,
+      title: "آموزش گیتار",
+      type: "Course",
+      topics: ["آموزش گیتار", "گیتار", "شوشتر"],
+      priority: 35,
+      local: true
+    },
+    {
+      url: instructorUrl,
+      title: "خلیل دلاوران",
+      type: "Instructor",
+      topics: ["گیتار", "خلیل دلاوران", "شوشتر"],
+      priority: 30,
+      local: true
+    }
+  ]}
+  auditContext={{
+    h1Count: 1,
+    missingImageAlt: 0,
+    wordCount: `${style.overview} ${style.curriculum.map((item) => item[0] + " " + item[1]).join(" ")} ${style.faqs.flat().join(" ")}`.trim().split(/\s+/).length,
+    internalLinkCount: 3
+  }}
+>
+  <Header />
+
+  <section class="course-page">
+    <div class="container">
+      <div class="course-page__hero">
+        <div class="course-page__content">
+          <span class="course-page__badge">مسیر تخصصی گیتار</span>
+          <h1 class="course-page__title">{style.title}</h1>
+          <p class="course-page__description">{style.description}</p>
+          <div class="course-page__meta">
+            <div class="course-page__meta-item"><strong>مدرس</strong><span><a href={instructorUrl}>خلیل دلاوران</a></span></div>
+            <div class="course-page__meta-item"><strong>سطح</strong><span>مبتدی تا پیشرفته</span></div>
+            <div class="course-page__meta-item"><strong>محل</strong><span>شوشتر</span></div>
+            <div class="course-page__meta-item"><strong>دوره مادر</strong><span><a href={parentUrl}>آموزش گیتار</a></span></div>
+          </div>
+          <a href={`/register?course=guitar-course`} class="btn btn-primary">ثبت نام آموزش گیتار</a>
+        </div>
+        <div class="course-page__image">
+          <img src={style.image} alt={style.title} />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="course-page__section">
+    <div class="container">
+      <h2>این مسیر چه مهارت‌هایی را پوشش می‌دهد؟</h2>
+      <p>{style.overview}</p>
+      <ul class="course-page__features">
+        <li>{style.focus}</li>
+        <li>آموزش مرحله‌ای متناسب با سطح هنرجو</li>
+        <li>تقویت تکنیک، ریتم و اجرای موسیقایی</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="course-page__section">
+    <div class="container">
+      <h2>مخاطبان این مسیر</h2>
+      <ul class="course-page__features">
+        {style.audience.map((item) => <li>{item}</li>)}
+      </ul>
+      <p><strong>پیش‌نیاز:</strong> {style.prerequisites}</p>
+    </div>
+  </section>
+
+  <section class="course-page__section">
+    <div class="container">
+      <h2>سرفصل‌های آموزش {style.shortTitle}</h2>
+      <div class="course-page__related-grid">
+        {style.curriculum.map(([title, description], index) => (
+          <article class="course-card" key={title}>
+            <div class="course-content">
+              <span>مرحله {index + 1}</span>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="course-page__section">
+    <div class="container">
+      <h2>ارتباط این مسیر با دوره جامع گیتار</h2>
+      <p>
+        {style.title} یکی از مسیرهای تخصصی دوره جامع <a href={parentUrl}>آموزش گیتار</a> در آموزشگاه موسیقی فاتح است.
+        برای بررسی تفاوت مسیرهای پاپ، کلاسیک و فلامنکو، به صفحه اصلی آموزش گیتار مراجعه کنید.
+      </p>
+      <a href={parentUrl} class="btn btn-secondary">مشاهده دوره جامع آموزش گیتار</a>
+    </div>
+  </section>
+
+  <FAQSection
+    title={`سوالات متداول درباره ${style.title}`}
+    subtitle="پاسخ پرسش‌های رایج درباره انتخاب و شروع این مسیر آموزشی."
+    items={style.faqs.map(([question, answer]) => ({ question, answer }))}
+  />
+
+  <Footer />
+</MainLayout>

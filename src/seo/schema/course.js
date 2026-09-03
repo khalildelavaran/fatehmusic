@@ -13,17 +13,20 @@ import {
 
 const GUITAR_STYLE_TRACKS = [
     {
-        slug: "pop-guitar",
+        slug: "guitar-pop",
+        path: "/courses/guitar-pop",
         name: "آموزش گیتار پاپ",
         description: "مسیر تخصصی آموزش گیتار پاپ با تمرکز بر آکورد، استرام، ریتم و همراهی آواز."
     },
     {
-        slug: "classical-guitar",
+        slug: "guitar-classical",
+        path: "/courses/guitar-classical",
         name: "آموزش گیتار کلاسیک",
         description: "مسیر تخصصی آموزش گیتار کلاسیک با تمرکز بر نت‌خوانی، فینگراستایل و اجرای قطعات کلاسیک."
     },
     {
-        slug: "flamenco-guitar",
+        slug: "guitar-flamenco",
+        path: "/courses/guitar-flamenco",
         name: "آموزش گیتار فلامنکو",
         description: "مسیر تخصصی آموزش گیتار فلامنکو با تمرکز بر تکنیک‌های ریتمیک و ضربی فلامنکو."
     }
@@ -45,7 +48,7 @@ export function buildCourseSchema(course, { site }) {
         ...(course.seo?.keywords || [])
     ].filter(Boolean);
     const guitarStyleRefs = course.slug === "guitar-course"
-        ? GUITAR_STYLE_TRACKS.map((track) => ({ "@id": `${course.url}#${track.slug}` }))
+        ? GUITAR_STYLE_TRACKS.map((track) => ({ "@id": `${site.url}${track.path}#course` }))
         : undefined;
 
     return pruneEmpty({
@@ -87,25 +90,54 @@ export function buildCourseSchema(course, { site }) {
 }
 
 /**
- * Return the three guitar style entities as first-class graph nodes.
- * Keeping them as top-level nodes lets GEO consumers resolve each style
- * independently instead of treating the styles as plain keywords.
+ * Build first-class Course nodes for the three guitar style landing pages.
+ * These nodes use the real child URLs rather than URL fragments so each
+ * learning path has an independently crawlable entity identity.
  */
 export function buildCourseStyleSchemas(course, { site }) {
     if (course?.slug !== "guitar-course") return [];
 
     return GUITAR_STYLE_TRACKS.map((track) => ({
         "@type": SCHEMA_TYPES.COURSE,
-        "@id": `${course.url}#${track.slug}`,
-        url: `${course.url}#${track.slug}`,
+        "@id": `${site.url}${track.path}#course`,
+        url: `${site.url}${track.path}`,
         name: track.name,
         description: track.description,
         keywords: [track.name, "گیتار", "شوشتر"],
         teaches: track.name,
         provider: { "@id": `${site.url}/#organization` },
         isPartOf: { "@id": buildCourseRef(course)["@id"] },
-        mainEntityOfPage: { "@id": `${course.url}/#webpage` }
+        mainEntityOfPage: { "@id": `${site.url}${track.path}#webpage` }
     }));
+}
+
+/**
+ * Build the Course entity for an individual guitar style landing page.
+ */
+export function buildGuitarStyleSchema(style, { site, instructorSlug = "khalil-delavaran" } = {}) {
+    const url = `${site.url}/courses/${style.slug}`;
+    const parentUrl = `${site.url}/courses/guitar-course`;
+
+    return {
+        "@type": SCHEMA_TYPES.COURSE,
+        "@id": `${url}#course`,
+        url,
+        name: style.title,
+        description: style.description,
+        image: `${site.url}${style.image}`,
+        keywords: style.keywords,
+        teaches: [style.title, style.focus],
+        provider: { "@id": `${site.url}/#organization` },
+        instructor: { "@id": `${site.url}/instructors/${instructorSlug}#person` },
+        isPartOf: { "@id": `${parentUrl}#course` },
+        mainEntityOfPage: { "@id": `${url}#webpage` },
+        educationalLevel: "مبتدی، متوسط، پیشرفته",
+        audience: {
+            "@type": SCHEMA_TYPES.AUDIENCE,
+            audienceType: style.audience.join("، ")
+        },
+        coursePrerequisites: style.prerequisites
+    };
 }
 
 function buildCourseInstance(course, instructorRefs) {
