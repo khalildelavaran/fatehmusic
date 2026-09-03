@@ -1,3 +1,5 @@
+import { getClassTermSettings } from './class-term-settings';
+
 export type BillingType = 'session_based' | 'monthly';
 
 export type EnrollmentTermInput = {
@@ -103,6 +105,84 @@ export async function ensureActiveEnrollmentTerm(
   );
 
   return result.id;
+}
+
+/**
+ * Explicitly closes the current term and opens the next term.
+ * The new term snapshots the class-level billing settings at renewal time;
+ * invoices and payments remain attached to their original term and therefore
+ * never mix financial history between terms.
+ */
+export async function renewEnrollmentTerm(
+  db: D1Database,
+  enrollmentId: number,
+  startDate: string,
+): Promise<{ previousTermId: number; termId: number; termNumber: number }> {
+  if (!Number.isInteger(enrollmentId) || enrollmentId <= 0) throw new Error('INVALID_ENROLLMENT');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) throw new Error('INVALID_START_DATE');
+
+  const enrollment = await db.prepare(`
+    SELECT id, class_id
+    FROM enrollments
+    WHERE id = ? AND status = 'active'
+  `).bind(enrollmentId).first<{ id: number; class_id: number }>();
+  if (!enrollment) throw new Error('ACTIVE_ENROLLMENT_NOT_FOUND');
+
+  const current = await db.prepare(`
+    SELECT id, term_number, planned_sessions, billing_type, tuition_amount, tuition_due_date
+    FROM enrollment_terms
+    WHERE enrollment_id = ? AND status = 'active'
+    ORDER BY term_number DESC, id DESC
+    LIMIT 1
+  `).bind(enrollmentId).first<{
+    id: number;
+    term_number: number;
+    planned_sessions: number | null;
+    billing_type: BillingType;
+    tuition_amount: number | null;
+    tuition_due_date: string | null;
+  }>();
+  if (!current) throw new Error('ACTIVE_TERM_NOT_FOUND');
+
+  const settings = await getClassTermSettings(db, enrollment.class_id);
+  if (!settings) throw new Error('CLASS_TERM_SETTINGS_NOT_FOUND');
+
+  const dueDate = settings.tuitionDueDays == null
+    ? null
+    : (() => {
+        const date = new Date(`${startDate}T00:00:00Z`);
+        date.setUTCDate(date.getUTCDate() + settings.tuitionDueDays!);
+        return date.toISOString().slice(0, 10);
+      })();
+
+  const nextNumber = current.term_number + 1;
+  const nextTerm = await db.prepare(`
+    INSERT INTO enrollment_terms
+      (enrollment_id, term_number, start_date, planned_sessions, billing_type,
+       tuition_amount, tuition_due_date, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+    RETURNING id
+  `).bind(
+    enrollmentId,
+    nextNumber,
+    startDate,
+    settings.plannedSessions,
+    settings.billingType,
+    settings.tuitionAmount,
+    dueDate,
+  ).first<{ id: number }>();
+
+  if (!nextTerm) throw new Error('TERM_RENEWAL_CREATE_FAILED');
+
+  await db.prepare(`
+    UPDATE enrollment_terms
+    SET status = 'completed', updated_at = datetime('now')
+    WHERE id = ? AND status = 'active'
+  `).bind(current.id).run();
+
+  await ensureTuitionInvoice(db, nextTerm.id, settings.tuitionAmount, dueDate);
+
+  return { previousTermId: current.id, termId: nextTerm.id, termNumber: nextNumber };
 }
 
 /** The first concrete class session determines the term start date. */
