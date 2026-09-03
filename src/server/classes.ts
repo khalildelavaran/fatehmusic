@@ -12,6 +12,7 @@
  */
 
 import { getCourse } from "./courses";
+import { ensureNormalizedEnrollment, syncNormalizedEnrollmentStatus } from "./enrollment-service";
 
 export interface ClassesEnv { DB: D1Database; }
 
@@ -150,6 +151,10 @@ export async function createClass(db: D1Database, input: ClassInput): Promise<nu
   if (!instructor) throw new Error("مدرس انتخاب‌شده معتبر نیست.");
   const course = await getCourse(db, input.courseId as number);
   if (!course) throw new Error("دوره‌ی انتخاب‌شده معتبر نیست.");
+  if (input.defaultRoomId != null) {
+    const room = await db.prepare("SELECT id FROM rooms WHERE id = ? AND is_active = 1").bind(input.defaultRoomId).first<{ id: number }>();
+    if (!room) throw new Error("اتاق پیش‌فرض انتخاب‌شده معتبر یا فعال نیست.");
+  }
   const classType = isValidClassType(input.classType) ? input.classType : "individual";
   const deliveryMode = isValidDeliveryMode(input.deliveryMode) ? input.deliveryMode : "in_person";
   const inserted = await db.prepare(`INSERT INTO classes (title, course_id, instructor_id, room, class_type, delivery_mode, default_room_id, capacity, level, start_date, end_date, notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).bind(input.title ?? "", input.courseId, input.instructorId, input.room ?? "", classType, deliveryMode, input.defaultRoomId ?? null, input.capacity ?? 1, input.level ?? "", input.startDate ?? null, input.endDate ?? null, input.notes ?? "").run();
@@ -169,6 +174,10 @@ export async function updateClass(db: D1Database, id: number, patch: ClassInput)
       setClauses.push(`${column} = ?`); bind.push(value);
     }
   }
+  if (patch.defaultRoomId !== undefined && patch.defaultRoomId !== null) {
+    const room = await db.prepare("SELECT id FROM rooms WHERE id = ? AND is_active = 1").bind(patch.defaultRoomId).first<{ id: number }>();
+    if (!room) throw new Error("اتاق پیش‌فرض انتخاب‌شده معتبر یا فعال نیست.");
+  }
   if (!setClauses.length) return true;
   const result = await db.prepare(`UPDATE classes SET ${setClauses.join(", ")}, updated_at = datetime('now') WHERE id = ?`).bind(...bind, id).run();
   return result.success;
@@ -185,13 +194,24 @@ export async function enrollStudent(db: D1Database, classId: number, studentId: 
   ]);
   if (!classRow) return { ok: false, error: "کلاس یافت نشد." };
   if (!student) return { ok: false, error: "هنرجو یافت نشد." };
-  if (existingActive) return { ok: false, error: "این هنرجو از قبل در این کلاس ثبت‌نام فعال دارد." };
+  if (existingActive) {
+    try { await ensureNormalizedEnrollment(db, classId, studentId); } catch (error) { console.error("[class/enroll] normalization failed", error); }
+    return { ok: false, error: "این هنرجو از قبل در این کلاس ثبت‌نام فعال دارد." };
+  }
   if ((activeCount?.count ?? 0) >= classRow.capacity) return { ok: false, error: "ظرفیت این کلاس تکمیل شده است." };
-  try { await db.prepare("INSERT INTO class_students (class_id, student_id) VALUES (?, ?)").bind(classId, studentId).run(); return { ok: true }; }
-  catch { return { ok: false, error: "این هنرجو از قبل در این کلاس ثبت‌نام فعال دارد." }; }
+  try {
+    const inserted = await db.prepare("INSERT INTO class_students (class_id, student_id) VALUES (?, ?)").bind(classId, studentId).run();
+    if (!inserted.success) return { ok: false, error: "ثبت هنرجو در کلاس انجام نشد." };
+    await ensureNormalizedEnrollment(db, classId, studentId);
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "این هنرجو از قبل در این کلاس ثبت‌نام فعال دارد." };
+  }
 }
 
 export async function updateEnrollmentStatus(db: D1Database, classId: number, studentId: number, status: EnrollmentStatus): Promise<boolean> {
   const result = await db.prepare("UPDATE class_students SET status = ? WHERE class_id = ? AND student_id = ? AND status = 'active'").bind(status, classId, studentId).run();
-  return result.success;
+  if (!result.success) return false;
+  await syncNormalizedEnrollmentStatus(db, classId, studentId, status);
+  return true;
 }
