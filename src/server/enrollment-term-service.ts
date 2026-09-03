@@ -111,6 +111,10 @@ export async function ensureActiveEnrollmentTerm(
  * Explicitly closes the current term and opens the next term.
  * The new term snapshots the current class billing settings at renewal time.
  * Existing invoices/payments remain attached to the previous term.
+ *
+ * The state transition is committed as one D1 batch so a failure while
+ * creating the new term or its invoice cannot leave the enrollment without
+ * an active term.
  */
 export async function renewEnrollmentTerm(
   db: D1Database,
@@ -171,32 +175,53 @@ export async function renewEnrollmentTerm(
         return date.toISOString().slice(0, 10);
       })();
 
-  await db.prepare(`
-    UPDATE enrollment_terms
-    SET status = 'completed', updated_at = datetime('now')
-    WHERE id = ? AND status = 'active'
-  `).bind(current.id).run();
-
   const nextNumber = current.term_number + 1;
+
+  const statements = [
+    db.prepare(`
+      UPDATE enrollment_terms
+      SET status = 'completed', updated_at = datetime('now')
+      WHERE id = ? AND status = 'active'
+    `).bind(current.id),
+    db.prepare(`
+      INSERT INTO enrollment_terms
+        (enrollment_id, term_number, start_date, planned_sessions, billing_type,
+         tuition_amount, tuition_due_date, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+    `).bind(
+      enrollmentId,
+      nextNumber,
+      startDate,
+      settings.plannedSessions,
+      settings.billingType,
+      settings.tuitionAmount,
+      dueDate,
+    ),
+  ];
+
+  if (settings.tuitionAmount != null) {
+    statements.push(db.prepare(`
+      INSERT INTO invoices (enrollment_term_id, amount, due_date, status, description)
+      SELECT et.id, ?, ?, 'pending', 'شهریه ترم'
+      FROM enrollment_terms et
+      WHERE et.enrollment_id = ? AND et.term_number = ? AND et.status = 'active'
+      AND NOT EXISTS (
+        SELECT 1 FROM invoices i
+        WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+      )
+    `).bind(settings.tuitionAmount, dueDate, enrollmentId, nextNumber));
+  }
+
+  await db.batch(statements);
+
   const nextTerm = await db.prepare(`
-    INSERT INTO enrollment_terms
-      (enrollment_id, term_number, start_date, planned_sessions, billing_type,
-       tuition_amount, tuition_due_date, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
-    RETURNING id
-  `).bind(
-    enrollmentId,
-    nextNumber,
-    startDate,
-    settings.plannedSessions,
-    settings.billingType,
-    settings.tuitionAmount,
-    dueDate,
-  ).first<{ id: number }>();
+    SELECT id FROM enrollment_terms
+    WHERE enrollment_id = ? AND term_number = ? AND status = 'active'
+    LIMIT 1
+  `).bind(enrollmentId, nextNumber).first<{ id: number }>();
 
   if (!nextTerm) throw new Error('TERM_RENEWAL_CREATE_FAILED');
 
-  await ensureTuitionInvoice(db, nextTerm.id, settings.tuitionAmount, dueDate);
   const invoice = await db.prepare(`
     SELECT id FROM invoices
     WHERE enrollment_term_id = ? AND status <> 'cancelled'
