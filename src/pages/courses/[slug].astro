@@ -54,6 +54,14 @@ const relatedCourses = courses
   .filter((item) => item.slug !== course.slug && item.instrument === course.instrument)
   .slice(0, 3);
 
+const guitarStyleLinks = course.slug === "guitar-course"
+  ? [
+      { href: "/courses/guitar-pop", title: "آموزش گیتار پاپ", description: "آکورد، ریتم، استرام و همراهی آواز" },
+      { href: "/courses/guitar-classical", title: "آموزش گیتار کلاسیک", description: "نت‌خوانی، فینگراستایل و اجرای قطعات کلاسیک" },
+      { href: "/courses/guitar-flamenco", title: "آموزش گیتار فلامنکو", description: "کمپاس، راسگوادو و تکنیک‌های ریتمیک" }
+    ]
+  : [];
+
 const linkCandidates = [
   ...teachers.map((teacher) => ({
     url: `${site.url}/instructors/${teacher.slug}`,
@@ -69,6 +77,14 @@ const linkCandidates = [
     type: "Course",
     topics: [item.instrument, item.category, ...item.seo.keywords],
     priority: 20,
+    local: true
+  })),
+  ...guitarStyleLinks.map((item) => ({
+    url: `${site.url}${item.href}`,
+    title: item.title,
+    type: "Course",
+    topics: [item.title, "آموزش گیتار", "شوشتر"],
+    priority: 40,
     local: true
   }))
 ];
@@ -87,7 +103,7 @@ const auditText = [
   resolvedCourse.seoContent?.learningPath?.map((item) => `${item.stage} ${item.description}`) || []
 ].flat().filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
-const internalLinkCount = teachers.length + relatedCourses.length + 1;
+const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleLinks.length + 1;
 
 ---
 
@@ -155,6 +171,26 @@ const internalLinkCount = teachers.length + relatedCourses.length + 1;
 </div>
 </div>
 </section>
+
+{guitarStyleLinks.length > 0 && (
+<section class="course-page__section">
+<div class="container">
+<h2>مسیرهای تخصصی آموزش گیتار</h2>
+<p>دوره جامع آموزش گیتار شامل سه مسیر مشخص است. هر مسیر صفحه مستقل خود را دارد تا محتوای آموزشی و موضوع جست‌وجویی آن به‌صورت جداگانه قابل بررسی باشد.</p>
+<div class="course-page__related-grid">
+{guitarStyleLinks.map((item) => (
+<a href={item.href} class="course-card">
+<div class="course-content">
+<span>مسیر تخصصی</span>
+<h3>{item.title}</h3>
+<p>{item.description}</p>
+</div>
+</a>
+))}
+</div>
+</div>
+</section>
+)}
 
 <section class="course-page__section">
 <div class="container">

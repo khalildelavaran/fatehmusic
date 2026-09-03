@@ -1,0 +1,23 @@
+---
+import GuitarStyleLanding from "../../components/GuitarStyleLanding.astro";
+import { guitarStylePages } from "../../data/guitar-style-content.js";
+import { resolveSite, buildBreadcrumbSchema, buildFaqSchema, buildGuitarStyleSchema } from "../../seo/index.js";
+
+const site = resolveSite();
+const baseStyle = guitarStylePages["guitar-classical"];
+const style = {
+  ...baseStyle,
+  schema: [
+    buildGuitarStyleSchema(baseStyle, { site }),
+    buildFaqSchema(baseStyle.faqs.map(([question, answer]) => ({ question, answer }))),
+    buildBreadcrumbSchema([
+      { name: "خانه", path: "/" },
+      { name: "دوره‌ها", path: "/courses" },
+      { name: "آموزش گیتار", path: "/courses/guitar-course" },
+      { name: baseStyle.title, path: `/courses/${baseStyle.slug}` }
+    ], site)
+  ]
+};
+---
+
+<GuitarStyleLanding style={style} site={site} />
