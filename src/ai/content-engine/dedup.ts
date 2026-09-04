@@ -3,6 +3,7 @@
 // unit-testable without any database.
 
 import { titleSimilarity } from "./normalize";
+import { canonicalAssetKey } from "./canonical-identity";
 import type { TopicCandidate } from "./types";
 
 // Two titles this similar or higher are treated as the same topic. Tuned
@@ -12,15 +13,18 @@ import type { TopicCandidate } from "./types";
 // distinct topic) are more costly and harder to notice.
 const NEAR_DUPLICATE_THRESHOLD = 0.82;
 
-/** Removes exact-key duplicates that appear more than once within the
- * same generated batch (templates can legitimately collide, e.g. two
- * modifier types producing the same phrase for an edge-case course). */
+/** Removes semantic duplicates within a generated batch. Candidates with
+ * different wording but the same course/angle/audience/level now share one
+ * canonical identity; genuinely different editorial angles remain distinct. */
 export function dedupWithinBatch(candidates: TopicCandidate[]): TopicCandidate[] {
-  const seen = new Set<string>();
+  const seenCanonical = new Set<string>();
+  const seenNormalized = new Set<string>();
   const out: TopicCandidate[] = [];
   for (const candidate of candidates) {
-    if (seen.has(candidate.normalizedKey)) continue;
-    seen.add(candidate.normalizedKey);
+    const canonicalKey = canonicalAssetKey(candidate);
+    if (seenCanonical.has(canonicalKey) || seenNormalized.has(candidate.normalizedKey)) continue;
+    seenCanonical.add(canonicalKey);
+    seenNormalized.add(candidate.normalizedKey);
     out.push(candidate);
   }
   return out;
@@ -28,18 +32,19 @@ export function dedupWithinBatch(candidates: TopicCandidate[]): TopicCandidate[]
 
 export interface ExistingTitleIndex {
   normalizedKeys: Set<string>;
+  canonicalKeys: Set<string>;
   titles: string[];
 }
 
-/** Filters out candidates that already exist (exact key match) or are a
- * near-duplicate (Jaccard similarity above threshold) of something
- * already in content_topics or already-published/drafted blog_posts. */
+/** Filters out candidates that already exist (exact normalized key or
+ * canonical semantic identity) or are a near-duplicate of an existing title. */
 export function filterAgainstExisting(
   candidates: TopicCandidate[],
   existing: ExistingTitleIndex
 ): TopicCandidate[] {
   return candidates.filter((candidate) => {
     if (existing.normalizedKeys.has(candidate.normalizedKey)) return false;
+    if (existing.canonicalKeys.has(canonicalAssetKey(candidate))) return false;
     for (const title of existing.titles) {
       if (titleSimilarity(candidate.title, title) >= NEAR_DUPLICATE_THRESHOLD) return false;
     }
