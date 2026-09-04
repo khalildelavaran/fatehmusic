@@ -3,7 +3,7 @@ import { ROLES, ROLE_LABELS_FA } from "../../server/admin-auth";
 
 export interface Props {
   session: { username: string; role: string };
-  active: "dashboard" | "daily" | "reports" | "posts" | "books" | "certificates" | "courses" | "registration" | "students" | "instructors" | "classes" | "content-strategy";
+  active: "dashboard" | "daily" | "reports" | "posts" | "topics" | "books" | "certificates" | "courses" | "registration" | "students" | "instructors" | "classes" | "content-strategy";
 }
 
 const { session, active } = Astro.props;
@@ -18,6 +18,7 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
     <a href="/admin/reports" class:list={["admin-nav-link", active === "reports" && "is-active"]}>گزارش‌ها</a>
     {isAdmin && <a href="/admin/posts" class:list={["admin-nav-link", active === "posts" && "is-active"]}>نوشته‌ها</a>}
     {isAdmin && <a href="/admin/content-strategy" class:list={["admin-nav-link", active === "content-strategy" && "is-active"]}>استراتژی محتوا</a>}
+    {isAdmin && <a href="/admin/topics" class:list={["admin-nav-link", active === "topics" && "is-active"]}>موضوعات</a>}
     {isAdmin && <a href="/admin/books" class:list={["admin-nav-link", active === "books" && "is-active"]}>کتاب‌ها</a>}
     {isAdmin && <a href="/admin/certificates" class:list={["admin-nav-link", active === "certificates" && "is-active"]}>گواهینامه‌ها</a>}
     <a href="/admin/courses" class:list={["admin-nav-link", active === "courses" && "is-active"]}>دوره‌ها</a>
