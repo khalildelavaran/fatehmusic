@@ -14,6 +14,49 @@ import { classifyIntent } from "./intents.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
 
+function normalize(value) {
+  return String(value ?? "")
+    .replace(/[\u200c\u200f\u200e]/g, "")
+    .replace(/[يى]/g, "ی")
+    .replace(/[ك]/g, "ک")
+    .replace(/[\s\-_]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Stored topic-engine candidates can outlive the rules that generated them.
+ * A broad title such as «آموزش موسیقی در شوشتر» must never inherit a
+ * specific course merely because an old DB row contains relatedCourseSlug.
+ * Subject-specific titles (for example «کلاس آواز در شوشتر») are retained.
+ */
+function filterStaleBroadCourseCandidates(candidates = [], courses = []) {
+  const courseBySlug = new Map(courses.filter((course) => course?.slug).map((course) => [course.slug, course]));
+
+  return candidates.filter((candidate) => {
+    if (!candidate?.relatedCourseSlug) return true;
+    const course = courseBySlug.get(candidate.relatedCourseSlug);
+    if (!course) return true;
+
+    const title = normalize(candidate.title);
+    const courseTopic = normalize(course.instrument || "");
+    const courseName = normalize(course.title || "");
+    const resolved = resolveTopics({ title: candidate.title, keywords: [candidate.title], path: "" });
+    const resolvedSubjects = resolved.filter((topic) => topic.slug !== "shushtar" && topic.slug !== "music-education");
+
+    // If the title resolves only to a broad/local topic, the course relation
+    // is stale and would otherwise turn a general opportunity into a child
+    // course opportunity (the exact source of the duplicate queue entries).
+    if (resolvedSubjects.length === 0) {
+      const explicitlyNamesCourse = courseTopic && title.includes(courseTopic);
+      const explicitlyNamesCourseTitle = courseName && title.includes(courseName);
+      if (!explicitlyNamesCourse && !explicitlyNamesCourseTitle) return false;
+    }
+
+    return true;
+  });
+}
+
 function articleSemantics(posts = [], siteUrl = "") {
   const base = String(siteUrl).replace(/\/$/, "");
   return buildArticleProfiles(posts).map((page) => Object.freeze({
@@ -29,7 +72,8 @@ function articleSemantics(posts = [], siteUrl = "") {
 /** Compose all existing SEO/GEO intelligence into one dashboard-ready model. */
 export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
-  const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates, courses, siteUrl });
+  const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
+  const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
   const pageNodes = pages.map((page) => ({ url: page.url, title: page.title, type: "Article", topics: page.topics, priority: 12, local: true }));
