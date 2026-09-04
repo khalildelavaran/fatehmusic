@@ -12,7 +12,15 @@ const instructorCards = resolvedInstructors.map((ins: any) => {
     : staticCourses.filter((course: any) => (course.instructors ?? []).includes(ins.id));
   const instructorSchedules = schedules.filter((s) => s.active && s.instructorId === ins.id);
   const days = [...new Set(instructorSchedules.map((s) => s.weekday))];
-  return { ...ins, courses: linkedCourses, schedules: instructorSchedules, days };
+  const displayCourses = ins.slug === "khalil-delavaran"
+    ? [
+        ...linkedCourses.filter((course: any) => course.slug !== "voice-training-course"),
+        { slug: "guitar-pop", title: "آموزش گیتار پاپ" },
+        { slug: "guitar-classical", title: "آموزش گیتار کلاسیک" },
+        { slug: "guitar-flamenco", title: "آموزش گیتار فلامنکو" }
+      ].filter((course: any, index: number, courses: any[]) => courses.findIndex((item) => item.slug === course.slug) === index)
+    : linkedCourses;
+  return { ...ins, courses: displayCourses, schedules: instructorSchedules, days };
 });
 
 const getInstructorCourseTitle = (title: string) => {
