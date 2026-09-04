@@ -1,0 +1,81 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+import { listAuditLog } from "../../server/audit-log";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+// Audit log is admin-only, not registrar: it exists to review sensitive
+// operations, including ones performed by registrars themselves.
+if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
+
+const db = (env as AdminEnv).DB;
+const page = Number(Astro.url.searchParams.get("page") ?? "1") || 1;
+const entityType = Astro.url.searchParams.get("entityType");
+
+const result = db ? await listAuditLog(db, { page, entityType, pageSize: 50 }) : null;
+
+const ACTOR_LABELS_FA: Record<string, string> = { admin: "ادمین", registrar: "کارشناس ثبت‌نام", instructor: "مدرس", student: "هنرجو", system: "سیستم" };
+
+const formatDateTime = (iso: string) => {
+  try {
+    return new Intl.DateTimeFormat("fa-IR", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso.replace(" ", "T") + "Z"));
+  } catch {
+    return iso;
+  }
+};
+---
+<MainLayout title="گزارش تغییرات | آموزشگاه موسیقی فاتح" noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="reports" />
+    <main class="admin-main">
+      <div class="admin-shell">
+        <section class="admin-hero">
+          <p>امنیت</p>
+          <h1>گزارش تغییرات (Audit Log)</h1>
+          <span class="admin-hero-description">فهرست عملیات حساس انجام‌شده توسط ادمین‌ها و مدرسان</span>
+        </section>
+
+        {!db && <p class="admin-table-empty">دیتابیس در دسترس نیست.</p>}
+
+        {result && (
+          <>
+            <section class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>زمان</th><th>عامل</th><th>عملیات</th><th>موجودیت</th><th>شناسه موجودیت</th></tr></thead>
+                <tbody>
+                  {result.entries.length === 0 ? (
+                    <tr><td colspan="5" class="admin-table-empty">رکوردی یافت نشد.</td></tr>
+                  ) : (
+                    result.entries.map((entry) => (
+                      <tr>
+                        <td>{formatDateTime(entry.createdAt)}</td>
+                        <td>{ACTOR_LABELS_FA[entry.actorType] ?? entry.actorType}{entry.actorId != null ? ` #${entry.actorId}` : ""}</td>
+                        <td dir="ltr">{entry.action}</td>
+                        <td dir="ltr">{entry.entityType}</td>
+                        <td>{entry.entityId ?? "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </section>
+
+            <section class="admin-pagination">
+              <span class="admin-table-subtext">صفحه {result.page} — مجموع {result.total} رکورد</span>
+              <div class="admin-table-actions">
+                {result.page > 1 && <a href={`/admin/audit-log?page=${result.page - 1}`}>صفحه قبل</a>}
+                {result.page * result.pageSize < result.total && <a href={`/admin/audit-log?page=${result.page + 1}`}>صفحه بعد</a>}
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+    </main>
+  </div>
+</MainLayout>

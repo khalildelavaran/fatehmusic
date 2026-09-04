@@ -138,9 +138,14 @@ const pageTitle = profile ? `کلاس ${profile.class.title} | آموزشگاه 
                             <td dir="ltr">{s.nationalCode || "-"}</td>
                             <td>{formatJalaliDate(s.enrollmentDate)}</td>
                             <td><span class="admin-status-pill" data-status={s.status}>{ENROLLMENT_STATUS_LABELS_FA[s.status]}</span></td>
-                            <td>
+                            <td class="admin-table-actions">
                               {s.status === "active" && (
                                 <button type="button" class="admin-withdraw-btn" data-student-id={s.studentId}>انصراف</button>
+                              )}
+                              {s.enrollmentId != null ? (
+                                <a href={`/admin/evaluations?enrollmentId=${encodeURIComponent(s.enrollmentId)}&studentName=${encodeURIComponent(s.firstName + " " + s.lastName)}`}>ارزیابی و تمرین</a>
+                              ) : (
+                                <span class="admin-table-subtext">ثبت‌نام هنوز فعال‌سازی نشده</span>
                               )}
                             </td>
                           </tr>

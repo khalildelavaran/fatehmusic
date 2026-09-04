@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { dedupWithinBatch, filterAgainstExisting } from "../../../src/ai/content-engine/dedup";
 import { toDedupKey } from "../../../src/ai/content-engine/normalize";
+import { canonicalAssetKey } from "../../../src/ai/content-engine/canonical-identity";
 import type { TopicCandidate } from "../../../src/ai/content-engine/types";
 
 function candidate(title: string, overrides: Partial<TopicCandidate> = {}): TopicCandidate {
@@ -27,7 +28,12 @@ describe("dedupWithinBatch", () => {
   });
 
   it("keeps distinct candidates", () => {
-    const out = dedupWithinBatch([candidate("چگونه گیتار یاد بگیریم؟"), candidate("فواید یادگیری گیتار")]);
+    // Different modifierType (how_to vs benefits) -> different editorial
+    // angle -> different canonical identity, even for the same course.
+    const out = dedupWithinBatch([
+      candidate("چگونه گیتار یاد بگیریم؟"),
+      candidate("فواید یادگیری گیتار", { modifierType: "benefits" })
+    ]);
     expect(out).toHaveLength(2);
   });
 });
@@ -35,7 +41,17 @@ describe("dedupWithinBatch", () => {
 describe("filterAgainstExisting", () => {
   it("removes an exact normalized-key match", () => {
     const c = candidate("چگونه گیتار یاد بگیریم؟");
-    const out = filterAgainstExisting([c], { normalizedKeys: new Set([c.normalizedKey]), titles: [] });
+    const out = filterAgainstExisting([c], { normalizedKeys: new Set([c.normalizedKey]), canonicalKeys: new Set(), titles: [] });
+    expect(out).toHaveLength(0);
+  });
+
+  it("removes an exact canonical-identity match", () => {
+    const c = candidate("چگونه گیتار یاد بگیریم؟");
+    const out = filterAgainstExisting([c], {
+      normalizedKeys: new Set(),
+      canonicalKeys: new Set([canonicalAssetKey(c)]),
+      titles: []
+    });
     expect(out).toHaveLength(0);
   });
 
@@ -43,6 +59,7 @@ describe("filterAgainstExisting", () => {
     const c = candidate("چگونه گیتار را از صفر یاد بگیریم؟");
     const out = filterAgainstExisting([c], {
       normalizedKeys: new Set(),
+      canonicalKeys: new Set(),
       titles: ["چگونه یادگیری گیتار را از صفر شروع کنیم؟"]
     });
     // Deliberately not asserting a specific outcome here -- see the
@@ -55,6 +72,7 @@ describe("filterAgainstExisting", () => {
     const c = candidate("راهنمای خرید ویولن مناسب برای مبتدی‌ها", { instrumentKey: "violin" });
     const out = filterAgainstExisting([c], {
       normalizedKeys: new Set(["چیزی کاملا متفاوت"]),
+      canonicalKeys: new Set(["v1|other-course|how_to|general|general"]),
       titles: ["فواید یادگیری تنبک برای رشد ذهنی"]
     });
     expect(out).toHaveLength(1);

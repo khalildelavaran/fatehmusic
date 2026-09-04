@@ -114,7 +114,7 @@ export async function listClasses(db: D1Database, rawParams: ClassListParams): P
   return { classes, total: totalRow?.count ?? 0, page, pageSize };
 }
 
-export interface ClassEnrolledStudent { studentId: number; firstName: string; lastName: string; nationalCode: string; enrollmentDate: string; status: EnrollmentStatus; }
+export interface ClassEnrolledStudent { studentId: number; firstName: string; lastName: string; nationalCode: string; enrollmentDate: string; status: EnrollmentStatus; enrollmentId: number | null; }
 export interface ClassProfile { class: ClassRecord; instructorName: string; courseTitle: string; students: ClassEnrolledStudent[]; }
 
 export async function getClassProfile(db: D1Database, id: number): Promise<ClassProfile | null> {
@@ -122,9 +122,14 @@ export async function getClassProfile(db: D1Database, id: number): Promise<Class
   if (!row) return null;
   const [course, studentsResult] = await Promise.all([
     getCourse(db, row.course_id),
-    db.prepare(`SELECT s.id as student_id, s.first_name, s.last_name, s.national_code, cs.enrollment_date, cs.status FROM class_students cs JOIN students s ON s.id = cs.student_id WHERE cs.class_id = ? ORDER BY cs.status ASC, cs.enrollment_date DESC`).bind(id).all<{ student_id: number; first_name: string; last_name: string; national_code: string; enrollment_date: string; status: string }>()
+    // enrollment_id is nullable: a class_students row only gets a matching
+    // enrollments row lazily, via ensureNormalizedEnrollment (see
+    // enrollment-service.ts) -- e.g. the first time attendance or an
+    // evaluation/assignment touches it. Until then this is null and the
+    // admin UI hides evaluation/assignment actions for that student.
+    db.prepare(`SELECT s.id as student_id, s.first_name, s.last_name, s.national_code, cs.enrollment_date, cs.status, e.id as enrollment_id FROM class_students cs JOIN students s ON s.id = cs.student_id LEFT JOIN enrollments e ON e.class_id = cs.class_id AND e.student_id = cs.student_id AND e.status = 'active' WHERE cs.class_id = ? ORDER BY cs.status ASC, cs.enrollment_date DESC`).bind(id).all<{ student_id: number; first_name: string; last_name: string; national_code: string; enrollment_date: string; status: string; enrollment_id: number | null }>()
   ]);
-  return { class: mapClassRow(row), instructorName: `${row.instructor_first_name} ${row.instructor_last_name}`.trim(), courseTitle: (course?.title as string) ?? "-", students: studentsResult.results.map(s => ({ studentId: s.student_id, firstName: s.first_name, lastName: s.last_name, nationalCode: s.national_code, enrollmentDate: s.enrollment_date, status: isValidEnrollmentStatus(s.status) ? s.status : "active" })) };
+  return { class: mapClassRow(row), instructorName: `${row.instructor_first_name} ${row.instructor_last_name}`.trim(), courseTitle: (course?.title as string) ?? "-", students: studentsResult.results.map(s => ({ studentId: s.student_id, firstName: s.first_name, lastName: s.last_name, nationalCode: s.national_code, enrollmentDate: s.enrollment_date, status: isValidEnrollmentStatus(s.status) ? s.status : "active", enrollmentId: s.enrollment_id ?? null })) };
 }
 
 export interface ClassInput {

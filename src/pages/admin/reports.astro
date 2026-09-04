@@ -1,0 +1,159 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import { getAdminSession, type AdminEnv } from "../../server/admin-auth";
+import {
+  getDashboardOverview,
+  getStudentReport,
+  getInstructorReport,
+  getClassReport,
+  getFinanceReport,
+  getEducationalReport,
+} from "../../server/admin-reports";
+
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/admin/login");
+
+const db = (env as AdminEnv).DB;
+const today = new Date().toISOString().slice(0, 10);
+const yearStart = `${today.slice(0, 4)}-01-01`;
+
+const [overview, students, instructors, classes, finance, educational] = db
+  ? await Promise.all([
+      getDashboardOverview(db, today),
+      getStudentReport(db, yearStart, today),
+      getInstructorReport(db),
+      getClassReport(db, today),
+      getFinanceReport(db, today),
+      getEducationalReport(db),
+    ])
+  : [null, null, null, null, null, null];
+
+const formatToman = (value: number) => `${value.toLocaleString("fa-IR")} تومان`;
+---
+<MainLayout title="گزارش‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="reports" />
+    <main class="admin-main">
+      <div class="admin-shell">
+        <section class="admin-hero" aria-label="خلاصه گزارش‌ها">
+          <span class="admin-hero-label">گزارش‌های تحلیلی</span>
+          <h1>گزارش‌های آموزشگاه</h1>
+          <span class="admin-hero-description">نمای کلی وضعیت هنرجویان، مدرسان، کلاس‌ها، مالی و آموزشی</span>
+        </section>
+
+        {!db && <p class="admin-table-empty">دیتابیس در دسترس نیست.</p>}
+
+        {overview && (
+          <>
+            <div class="admin-section-title"><h2>آمار کلی امروز</h2></div>
+            <div class="admin-grid">
+              <div class="admin-stat-card"><span class="admin-stat-value">{overview.activeStudents}</span><span class="admin-stat-label">هنرجوی فعال</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{overview.activeInstructors}</span><span class="admin-stat-label">مدرس فعال</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{overview.activeClasses}</span><span class="admin-stat-label">کلاس فعال</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{overview.todayClasses}</span><span class="admin-stat-label">کلاس امروز</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{overview.todaySessions}</span><span class="admin-stat-label">جلسه امروز</span></div>
+              <div class:list={["admin-stat-card", overview.debtorsCount > 0 && "attention"]}><span class="admin-stat-value">{overview.debtorsCount}</span><span class="admin-stat-label">بدهکار</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{formatToman(overview.monthRevenue)}</span><span class="admin-stat-label">درآمد این ماه</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{overview.certificatesIssued}</span><span class="admin-stat-label">گواهینامه صادرشده</span></div>
+            </div>
+          </>
+        )}
+
+        {students && (
+          <>
+            <div class="admin-section-title"><h2>گزارش هنرجویان</h2></div>
+            <div class="admin-grid">
+              <div class="admin-stat-card"><span class="admin-stat-value">{students.total}</span><span class="admin-stat-label">کل هنرجویان</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{students.active}</span><span class="admin-stat-label">فعال</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{students.inactive}</span><span class="admin-stat-label">غیرفعال</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{students.graduated}</span><span class="admin-stat-label">فارغ‌التحصیل</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{students.newEnrollmentsInRange}</span><span class="admin-stat-label">ثبت‌نام جدید از ابتدای سال</span></div>
+            </div>
+          </>
+        )}
+
+        {classes && (
+          <>
+            <div class="admin-section-title"><h2>گزارش کلاس‌ها</h2></div>
+            <div class="admin-grid">
+              <div class="admin-stat-card"><span class="admin-stat-value">{classes.active}</span><span class="admin-stat-label">فعال</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{classes.cancelled}</span><span class="admin-stat-label">لغوشده</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{classes.todayCount}</span><span class="admin-stat-label">امروز</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{classes.totalCapacity}</span><span class="admin-stat-label">ظرفیت کل</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{classes.emptyCapacity}</span><span class="admin-stat-label">ظرفیت خالی</span></div>
+            </div>
+          </>
+        )}
+
+        {finance && (
+          <>
+            <div class="admin-section-title"><h2>گزارش مالی</h2></div>
+            <div class="admin-grid">
+              <div class="admin-stat-card"><span class="admin-stat-value">{formatToman(finance.dailyRevenue)}</span><span class="admin-stat-label">درآمد امروز</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{formatToman(finance.monthlyRevenue)}</span><span class="admin-stat-label">درآمد این ماه</span></div>
+              <div class:list={["admin-stat-card", finance.receivables > 0 && "attention"]}><span class="admin-stat-value">{formatToman(finance.receivables)}</span><span class="admin-stat-label">مطالبات</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{finance.completedPayments}</span><span class="admin-stat-label">پرداخت کامل‌شده</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{finance.partialOrOverdueInvoices}</span><span class="admin-stat-label">فاکتور معوق/ناقص</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{finance.debtorsCount}</span><span class="admin-stat-label">تعداد بدهکاران</span></div>
+            </div>
+          </>
+        )}
+
+        {educational && (
+          <>
+            <div class="admin-section-title"><h2>گزارش آموزشی</h2></div>
+            <div class="admin-grid">
+              <div class="admin-stat-card"><span class="admin-stat-value">{educational.averageAttendanceRate != null ? `${educational.averageAttendanceRate}%` : "—"}</span><span class="admin-stat-label">میانگین حضور</span></div>
+              <div class="admin-stat-card"><span class="admin-stat-value">{educational.averageEvaluationScore ?? "—"}</span><span class="admin-stat-label">میانگین ارزیابی</span></div>
+            </div>
+
+            {educational.atRiskStudents.length > 0 && (
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <caption style="text-align:right;color:var(--text-secondary);padding-bottom:10px;">هنرجویان در معرض افت (نرخ حضور کمتر از ۷۰٪)</caption>
+                  <thead><tr><th>هنرجو</th><th>تعداد غیبت</th><th>میانگین ارزیابی</th></tr></thead>
+                  <tbody>
+                    {educational.atRiskStudents.map((s) => (
+                      <tr><td>{s.studentName}</td><td>{s.absentCount}</td><td>{s.averageEvaluation ?? "—"}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+
+        {instructors && instructors.perInstructor.length > 0 && (
+          <>
+            <div class="admin-section-title"><h2>گزارش مدرسان</h2></div>
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead><tr><th>مدرس</th><th>تعداد کلاس</th><th>تعداد هنرجو</th><th>میانگین حضور</th><th>میانگین ارزیابی</th></tr></thead>
+                <tbody>
+                  {instructors.perInstructor.map((i) => (
+                    <tr>
+                      <td>{i.name}</td>
+                      <td>{i.classCount}</td>
+                      <td>{i.studentCount}</td>
+                      <td>{i.averageAttendanceRate != null ? `${i.averageAttendanceRate}%` : "—"}</td>
+                      <td>{i.averageEvaluationScore ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+        <div class="admin-section-title"><h2>دسترسی سریع</h2></div>
+        <nav class="admin-grid" aria-label="بخش‌های گزارش">
+          <a href="/admin/audit-log"><strong>گزارش تغییرات</strong><span>عملیات حساس ثبت‌شده توسط ادمین‌ها و مدرسان</span></a>
+        </nav>
+      </div>
+    </main>
+  </div>
+</MainLayout>
