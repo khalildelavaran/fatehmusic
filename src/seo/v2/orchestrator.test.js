@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSEOIntelligence } from "./orchestrator.js";
+import { findContentGaps } from "./content-clusters.js";
 
 describe("buildSEOIntelligence", () => {
   it("composes existing engines into one view", () => {
@@ -54,6 +55,22 @@ describe("buildSEOIntelligence", () => {
     expect(result.opportunities).toHaveLength(1);
     expect(result.opportunities[0].topic).toBe("vocal");
     expect(result.opportunities[0].course.slug).toBe("traditional-vocal-course");
+  });
+
+  it("keeps a comparison article on its declared course topic instead of every title-mentioned instrument", () => {
+    const gaps = findContentGaps([
+      {
+        slug: "violin-kamancheh-comparison",
+        title: "ویولن یا کمانچه؛ مقایسه‌ای برای انتخاب ساز مناسب شما",
+        excerpt: "مقایسه ویولن و کمانچه برای انتخاب دوره",
+        topic: "کمانچه",
+        related_course_slug: "kamancheh-course"
+      }
+    ], ["informational", "commercial", "transactional", "local"]);
+
+    expect(gaps).toHaveLength(4);
+    expect(gaps.every((gap) => gap.topic === "kamancheh")).toBe(true);
+    expect(gaps.every((gap) => gap.courseSlug === "kamancheh-course")).toBe(true);
   });
 
   it("exposes temporal ownership changes", () => {
