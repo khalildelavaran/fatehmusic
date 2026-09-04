@@ -133,7 +133,19 @@ const internalLinkCount = teacherCourses.length + 1;
 {teacherCourses.map((course: ResolvedCourse) => (
 <a href={`/courses/${course.slug}`} class="course-card">
 <img src={course.media.image} alt={course.title} loading="lazy" decoding="async" />
-<div class="course-content"><h3>{course.title}</h3><p>{course.content.excerpt}</p><span class="course-link">مشاهده دوره</span></div>
+<div class="course-content">
+<h3>{course.title}</h3>
+{course.slug === "guitar-course" ? (
+<div class="course-style-list">
+<a href="/courses/guitar-pop">آموزش گیتار پاپ</a>
+<a href="/courses/guitar-classical">آموزش گیتار کلاسیک</a>
+<a href="/courses/guitar-flamenco">آموزش گیتار فلامنکو</a>
+</div>
+) : (
+<p>{course.content.excerpt}</p>
+)}
+<span class="course-link">مشاهده دوره</span>
+</div>
 </a>
 ))}
 </div>
