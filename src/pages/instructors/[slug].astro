@@ -11,6 +11,7 @@ import InstructorSeoContent from "../../components/InstructorSeoContent.astro";
 import FAQSection from "../../components/FAQSection.astro";
 
 import { instructors } from "../../data/instructors";
+import { instructorCourseDisplay } from "../../data/instructor-course-display";
 
 import {
   resolveSite,
@@ -81,6 +82,7 @@ const auditText = [
 ].filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
 const internalLinkCount = teacherCourses.length + 1;
+const courseDisplay = (instructorCourseDisplay[teacher.slug] || {}) as Record<string, string>;
 
 ---
 
@@ -133,19 +135,7 @@ const internalLinkCount = teacherCourses.length + 1;
 {teacherCourses.map((course: ResolvedCourse) => (
 <a href={`/courses/${course.slug}`} class="course-card">
 <img src={course.media.image} alt={course.title} loading="lazy" decoding="async" />
-<div class="course-content">
-<h3>{course.title}</h3>
-{course.slug === "guitar-course" ? (
-<div class="course-style-list">
-<a href="/courses/guitar-pop">آموزش گیتار پاپ</a>
-<a href="/courses/guitar-classical">آموزش گیتار کلاسیک</a>
-<a href="/courses/guitar-flamenco">آموزش گیتار فلامنکو</a>
-</div>
-) : (
-<p>{course.content.excerpt}</p>
-)}
-<span class="course-link">مشاهده دوره</span>
-</div>
+<div class="course-content"><h3>{course.title}</h3><p>{courseDisplay[course.slug] || course.content.excerpt}</p><span class="course-link">مشاهده دوره</span></div>
 </a>
 ))}
 </div>
