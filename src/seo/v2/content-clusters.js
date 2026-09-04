@@ -2,20 +2,44 @@
  * Fateh Music Academy — Content Cluster Engine
  * Deterministic topical clustering for published blog content.
  */
-import { resolveTopics } from "./topics.js";
+import { TOPICS, resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 import { buildContentStrategy } from "./content-strategy.js";
 
 function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").toLowerCase(); }
 function hasLocalSignal(...values) { return values.some((value) => normalize(value).includes("شوشتر")); }
 
+function findDeclaredTopic(value) {
+  const normalized = normalize(value);
+  if (!normalized) return null;
+  return TOPICS.find((topic) => topic.slug === normalized || normalize(topic.name) === normalized || (topic.aliases || []).some((alias) => normalize(alias) === normalized)) || null;
+}
+
+function findCourseTopic(courseSlug) {
+  const normalized = normalize(courseSlug);
+  if (!normalized) return null;
+  const directSlug = normalized.endsWith("-course") ? normalized.slice(0, -7) : normalized;
+  return TOPICS.find((topic) => topic.slug === directSlug && topic.slug !== "music-education" && topic.slug !== "shushtar") || null;
+}
+
+function resolveProfileSubjects(post, resolvedTopics) {
+  const declaredTopic = findDeclaredTopic(post.topic);
+  if (declaredTopic && declaredTopic.slug !== "music-education" && declaredTopic.slug !== "shushtar") return [declaredTopic];
+
+  const courseTopic = findCourseTopic(post.related_course_slug);
+  if (courseTopic) return [courseTopic];
+
+  return resolvedTopics.filter((topic) => topic.slug !== "shushtar" && topic.slug !== "music-education");
+}
+
 function profile(post) {
   const keywords = [post.topic, post.title, post.excerpt].filter(Boolean);
   const topics = resolveTopics({ title: post.title, keywords, path: `/blog/${post.slug}` });
-  const intent = classifyIntent({ path: `/blog/${post.slug}`, title: post.title, keywords, entityType: "Article" });
   const local = hasLocalSignal(post.topic, post.title, post.excerpt) || topics.some((topic) => topic.slug === "shushtar");
-  const subjectTopics = topics.filter((topic) => topic.slug !== "shushtar");
-  return Object.freeze({ slug: post.slug, title: post.title, topics: subjectTopics.length ? subjectTopics.map((item) => item.slug) : topics.map((item) => item.slug), topicDetails: topics, scope: local ? "shushtar" : "global", intent: intent.primary, relatedCourseSlug: post.related_course_slug || null });
+  const subjectTopics = resolveProfileSubjects(post, topics);
+  const fallbackTopics = topics.filter((topic) => topic.slug !== "shushtar");
+  const finalTopics = subjectTopics.length ? subjectTopics : fallbackTopics;
+  return Object.freeze({ slug: post.slug, title: post.title, topics: finalTopics.length ? finalTopics.map((item) => item.slug) : ["music-education"], topicDetails: finalTopics.length ? finalTopics : topics, scope: local ? "shushtar" : "global", intent: classifyIntent({ path: `/blog/${post.slug}`, title: post.title, keywords, entityType: "Article" }).primary, relatedCourseSlug: post.related_course_slug || null });
 }
 
 export function buildArticleProfiles(posts = []) { return posts.filter((post) => post?.slug && post?.title).map(profile); }
@@ -85,8 +109,8 @@ export function buildArticleLinkCandidates(posts = [], siteUrl) {
   return posts.filter((post) => post?.slug && post?.title).map((post) => {
     const keywords = [post.topic, post.title, post.excerpt].filter(Boolean);
     const topics = resolveTopics({ title: post.title, keywords, path: `/blog/${post.slug}` });
-    const intent = classifyIntent({ path: `/blog/${post.slug}`, title: post.title, keywords, entityType: "Article" });
     const local = hasLocalSignal(post.topic, post.title, post.excerpt) || topics.some((topic) => topic.slug === "shushtar");
-    return { url: `${base}/blog/${encodeURIComponent(post.slug)}`, title: post.title, type: "Article", topics: topics.filter((topic) => topic.slug !== "shushtar").map((item) => item.slug), topicDetails: topics, intent: intent.primary, priority: 12, local };
+    const profileTopics = resolveProfileSubjects(post, topics);
+    return { url: `${base}/blog/${encodeURIComponent(post.slug)}`, title: post.title, type: "Article", topics: (profileTopics.length ? profileTopics : topics.filter((topic) => topic.slug !== "shushtar")).map((item) => item.slug), topicDetails: profileTopics.length ? profileTopics : topics, intent: classifyIntent({ path: `/blog/${post.slug}`, title: post.title, keywords, entityType: "Article" }).primary, priority: 12, local };
   });
 }
