@@ -46,7 +46,12 @@ const publishedTitles = new Set(posts.map((post) => normalizeText(post.title)));
 const publishedSlugs = new Set(posts.map((post) => normalizeSlug(post.slug)));
 
 const opportunities = intelligence.opportunities.filter((item) => {
-  if (item.action !== "NEW_CONTENT") return true;
+  // Published content is not an actionable creation opportunity in this queue.
+  // Existing-content optimization/merge cards belong to analytics, not the
+  // production list. New-content candidates are also suppressed when their
+  // title or suggested slug already exists as a published article.
+  if (item.action !== "NEW_CONTENT") return false;
+
   const sameTitle = publishedTitles.has(normalizeText(item.title));
   const sameSlug = publishedSlugs.has(normalizeSlug(item.suggestedSlug));
   return !sameTitle && !sameSlug;
