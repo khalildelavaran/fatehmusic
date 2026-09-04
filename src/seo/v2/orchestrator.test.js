@@ -18,6 +18,44 @@ describe("buildSEOIntelligence", () => {
     expect(Array.isArray(result.opportunities)).toBe(true);
   });
 
+  it("rejects a stale broad local candidate that points at a specific course", () => {
+    const result = buildSEOIntelligence({
+      posts: [],
+      courses: [{ slug: "children-music-course", title: "آموزش موسیقی کودک", instrument: "children-music" }],
+      topicCandidates: [{
+        title: "آموزش موسیقی در شوشتر | راهنمای کلاس و انتخاب دوره",
+        relatedCourseSlug: "children-music-course",
+        modifierType: "local_shushtar",
+        intent: "local",
+        scoreTotal: 90
+      }],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.opportunities).toEqual([]);
+  });
+
+  it("keeps a subject-specific local candidate linked to its course", () => {
+    const result = buildSEOIntelligence({
+      posts: [],
+      courses: [{ slug: "traditional-vocal-course", title: "آموزش آواز سنتی", instrument: "vocal" }],
+      topicCandidates: [{
+        title: "هزینه کلاس آواز در شوشتر",
+        relatedCourseSlug: "traditional-vocal-course",
+        modifierType: "local_shushtar",
+        intent: "transactional",
+        scoreTotal: 90
+      }],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.opportunities).toHaveLength(1);
+    expect(result.opportunities[0].topic).toBe("vocal");
+    expect(result.opportunities[0].course.slug).toBe("traditional-vocal-course");
+  });
+
   it("exposes temporal ownership changes", () => {
     const result = buildSEOIntelligence({
       posts: [],
