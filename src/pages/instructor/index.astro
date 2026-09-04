@@ -1,0 +1,230 @@
+---
+import { env } from "cloudflare:workers";
+import MainLayout from "../../layouts/MainLayout.astro";
+import { getInstructorSession, type InstructorEnv } from "../../server/instructor-auth";
+import "../../styles/student.css";
+
+const session = await getInstructorSession(Astro.request, env as InstructorEnv);
+if (!session) return Astro.redirect("/instructor/login");
+---
+<MainLayout title="داشبورد مدرس | آموزشگاه موسیقی فاتح" noindex={true}>
+<main class="student-dashboard" dir="rtl">
+<aside class="student-sidebar">
+  <div class="student-sidebar-brand"><img src="/logo.webp" alt="آموزشگاه موسیقی فاتح"/><strong>آموزشگاه موسیقی فاتح</strong></div>
+  <nav aria-label="ناوبری داشبورد مدرس">
+    <a href="#today">جلسات امروز</a>
+    <a href="#classes">کلاس‌های من</a>
+    <a href="#students">هنرجویان</a>
+    <a href="#pending">تمرین‌های در انتظار بررسی</a>
+    <a href="#account">حساب کاربری</a>
+  </nav>
+  <button class="student-logout" id="logoutButton" type="button">خروج از حساب</button>
+</aside>
+<section class="student-main">
+<header class="student-top"><div><img src="/logo.webp" alt="فاتح"/><div><strong>داشبورد مدرس</strong><span id="instructorNameLabel">در حال بارگذاری...</span></div></div></header>
+<div id="instructorApp"><p class="student-loading">در حال بارگذاری اطلاعات...</p></div>
+</section>
+</main>
+<script>
+const app = document.querySelector('#instructorApp');
+const nameLabel = document.querySelector('#instructorNameLabel');
+const esc = (v) => String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+const ATTENDANCE_LABEL = { pending: 'ثبت‌نشده', present: 'حاضر', absent: 'غایب', excused: 'مرخصی' };
+
+async function api(path, options) {
+  const r = await fetch(path, { credentials: 'same-origin', ...options });
+  if (r.status === 401) { location.href = '/instructor/login'; throw new Error('unauthorized'); }
+  return r.json();
+}
+
+function sessionCard(s, students) {
+  const own = students.filter((st) => st.session_id === s.session_id);
+  return `<article class="student-item">
+    <div class="student-item-icon">♪</div>
+    <h3>${esc(s.class_title)}</h3>
+    <p>ساعت: ${esc(s.start_time)} - ${esc(s.end_time)}${s.room_name ? ` · ${esc(s.room_name)}` : ''}</p>
+    <p>وضعیت جلسه: ${esc(s.session_status === 'cancelled' ? 'لغوشده' : s.session_status === 'completed' ? 'برگزارشده' : 'برنامه‌ریزی‌شده')}</p>
+    ${s.calendar_warning ? `<p style="color:#d98d8d">توجه تقویمی: ${esc(s.calendar_warning)}</p>` : ''}
+    <div class="student-grid" style="margin-top:12px">
+      ${own.length ? own.map((st) => `
+        <div class="student-item" style="padding:14px">
+          <h3 style="font-size:1rem">${esc(st.student_name)}</h3>
+          <p>حضور: <strong>${esc(ATTENDANCE_LABEL[st.attendance] ?? st.attendance)}</strong></p>
+          <p>جلسات مصرف‌شده: ${esc(st.consumed_sessions)}${st.planned_sessions != null ? ` از ${esc(st.planned_sessions)}` : ''}</p>
+          <div class="student-actions">
+            <button data-attendance="present" data-esid="${st.enrollment_session_id}">حاضر</button>
+            <button data-attendance="absent" data-esid="${st.enrollment_session_id}">غایب</button>
+            <button data-attendance="excused" data-esid="${st.enrollment_session_id}">مرخصی</button>
+          </div>
+          <div class="student-actions">
+            <button data-eval-enrollment="${st.enrollment_session_id}" data-eval-session="${s.session_id}" data-student-name="${esc(st.student_name)}">ثبت ارزیابی</button>
+            <button data-assign-enrollment="${st.enrollment_session_id}" data-assign-session="${s.session_id}" data-student-name="${esc(st.student_name)}">ثبت تمرین</button>
+          </div>
+        </div>
+      `).join('') : '<p class="student-empty">هنرجویی برای این جلسه یافت نشد.</p>'}
+    </div>
+  </article>`;
+}
+
+function classCard(c) {
+  return `<article class="student-item">
+    <div class="student-item-icon">▤</div>
+    <h3>${esc(c.title)}</h3>
+    <p>وضعیت: ${esc(c.status === 'active' ? 'فعال' : c.status)}</p>
+    <p>تعداد هنرجو: ${esc(c.studentCount)}${c.capacity ? ` از ${esc(c.capacity)} ظرفیت` : ''}</p>
+    ${c.room ? `<p>سالن: ${esc(c.room)}</p>` : ''}
+  </article>`;
+}
+
+function studentCard(s) {
+  return `<article class="student-item">
+    <div class="student-item-icon">☺</div>
+    <h3>${esc(s.firstName)} ${esc(s.lastName)}</h3>
+    <p>کلاس: ${esc(s.classTitle)}</p>
+    <p>وضعیت ثبت‌نام: ${esc(s.enrollmentStatus === 'active' ? 'فعال' : s.enrollmentStatus)}</p>
+    <div class="student-actions">
+      <button data-eval-enrollment="${s.enrollmentId}" data-eval-session="" data-student-name="${esc(s.firstName + ' ' + s.lastName)}">ثبت ارزیابی</button>
+      <button data-assign-enrollment="${s.enrollmentId}" data-assign-session="" data-student-name="${esc(s.firstName + ' ' + s.lastName)}">ثبت تمرین</button>
+    </div>
+  </article>`;
+}
+
+function pendingAssignmentRow(a) {
+  return `<article class="student-item">
+    <h3>${esc(a.title)}</h3>
+    <p>هنرجو: ${esc(a.studentName)}</p>
+    <p>مهلت: ${esc(a.dueDate || 'تعیین‌نشده')}</p>
+    <div class="student-actions">
+      <button data-review-assignment="${a.id}">علامت‌گذاری به‌عنوان بررسی‌شده</button>
+    </div>
+  </article>`;
+}
+
+async function markAttendance(enrollmentSessionId, status) {
+  const d = await api('/api/instructor/attendance', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enrollmentSessionId: Number(enrollmentSessionId), status }),
+  });
+  if (!d.success) { alert(d.message || 'ثبت حضور انجام نشد.'); return; }
+  await load();
+}
+
+async function submitEvaluation(enrollmentId, sessionId, studentName) {
+  const overall = Number(prompt(`نمره کلی ارزیابی برای ${studentName} (۰ تا ۱۰۰):`));
+  if (!Number.isFinite(overall)) return;
+  const comment = prompt('توضیحات ارزیابی (اختیاری):') || '';
+  const d = await api('/api/instructor/evaluations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enrollmentId: Number(enrollmentId), sessionId: sessionId ? Number(sessionId) : null, overall, comment }),
+  });
+  alert(d.success ? 'ارزیابی ثبت شد.' : (d.message || 'ثبت ارزیابی انجام نشد.'));
+}
+
+async function submitAssignment(enrollmentId, sessionId, studentName) {
+  const title = prompt(`عنوان تمرین برای ${studentName}:`);
+  if (!title) return;
+  const dueDate = prompt('مهلت انجام تمرین (فرمت YYYY-MM-DD، اختیاری):') || null;
+  const d = await api('/api/instructor/assignments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enrollmentId: Number(enrollmentId), sessionId: sessionId ? Number(sessionId) : null, title, dueDate }),
+  });
+  alert(d.success ? 'تمرین ثبت شد.' : (d.message || 'ثبت تمرین انجام نشد.'));
+}
+
+async function reviewAssignment(id) {
+  const d = await api('/api/instructor/assignments', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: Number(id), status: 'reviewed' }),
+  });
+  if (!d.success) { alert(d.message || 'انجام نشد.'); return; }
+  await load();
+}
+
+async function load() {
+  const [me, dashboard, classes, students] = await Promise.all([
+    api('/api/instructor/me'),
+    api(`/api/instructor/dashboard?date=${todayISO()}`),
+    api('/api/instructor/classes'),
+    api('/api/instructor/students'),
+  ]);
+
+  if (!me.success) { app.innerHTML = `<p>${esc(me.message)}</p>`; return; }
+  nameLabel.textContent = `${me.instructor.firstName} ${me.instructor.lastName}`;
+
+  app.innerHTML = `
+    ${me.instructor.mustChangePassword ? '<section class="student-alert"><strong>توجه:</strong> برای امنیت حساب، رمز عبور خود را تغییر دهید.</section>' : ''}
+    <section id="today" class="student-section">
+      <div class="student-section-heading"><div><span class="student-eyebrow">امروز</span><h2>جلسات امروز</h2></div></div>
+      <div class="student-grid">
+        ${dashboard.success && dashboard.sessions.length ? dashboard.sessions.map((s) => sessionCard(s, dashboard.students)).join('') : '<p class="student-empty">جلسه‌ای برای امروز ثبت نشده است.</p>'}
+      </div>
+    </section>
+    <section id="classes" class="student-section">
+      <div class="student-section-heading"><div><span class="student-eyebrow">کلاس‌ها</span><h2>کلاس‌های من</h2></div></div>
+      <div class="student-grid">
+        ${classes.success && classes.classes.length ? classes.classes.map(classCard).join('') : '<p class="student-empty">کلاسی برای شما ثبت نشده است.</p>'}
+      </div>
+    </section>
+    <section id="students" class="student-section">
+      <div class="student-section-heading"><div><span class="student-eyebrow">هنرجویان</span><h2>هنرجویان من</h2></div></div>
+      <div class="student-grid">
+        ${students.success && students.students.length ? students.students.map(studentCard).join('') : '<p class="student-empty">هنرجویی برای شما ثبت نشده است.</p>'}
+      </div>
+    </section>
+    <section id="pending" class="student-section">
+      <div class="student-section-heading"><div><span class="student-eyebrow">تمرین‌ها</span><h2>تمرین‌های در انتظار بررسی</h2></div></div>
+      <div class="student-grid">
+        ${dashboard.success && dashboard.pendingAssignments.length ? dashboard.pendingAssignments.map(pendingAssignmentRow).join('') : '<p class="student-empty">تمرینی در انتظار بررسی نیست.</p>'}
+      </div>
+    </section>
+    <section id="account" class="student-section">
+      <div class="student-section-heading"><div><span class="student-eyebrow">حساب کاربری</span><h2>تغییر رمز عبور</h2></div></div>
+      <form id="passwordForm" class="student-password">
+        <input id="newPassword" type="password" minlength="8" placeholder="رمز جدید، حداقل ۸ کاراکتر" required/>
+        <input id="repeatPassword" type="password" minlength="8" placeholder="تکرار رمز جدید" required/>
+        <button>ذخیره رمز جدید</button>
+        <p id="passwordStatus" class="student-status"></p>
+      </form>
+    </section>
+  `;
+}
+
+app?.addEventListener('click', (e) => {
+  const target = e.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.dataset.attendance) { markAttendance(target.dataset.esid, target.dataset.attendance); return; }
+  if (target.dataset.evalEnrollment !== undefined) { submitEvaluation(target.dataset.evalEnrollment, target.dataset.evalSession, target.dataset.studentName); return; }
+  if (target.dataset.assignEnrollment !== undefined) { submitAssignment(target.dataset.assignEnrollment, target.dataset.assignSession, target.dataset.studentName); return; }
+  if (target.dataset.reviewAssignment) { reviewAssignment(target.dataset.reviewAssignment); return; }
+});
+
+app?.addEventListener('submit', async (e) => {
+  if (e.target.id !== 'passwordForm') return;
+  e.preventDefault();
+  const status = document.querySelector('#passwordStatus');
+  const p = document.querySelector('#newPassword').value;
+  if (p !== document.querySelector('#repeatPassword').value) { status.textContent = 'تکرار رمز یکسان نیست.'; return; }
+  const d = await api('/api/instructor/password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_password: p }),
+  });
+  status.textContent = d.message || 'انجام شد.';
+  if (d.success) document.querySelector('#passwordForm').reset();
+});
+
+async function logout() {
+  await fetch('/api/instructor/logout', { method: 'POST', credentials: 'same-origin' });
+  location.href = '/instructor/login';
+}
+document.querySelector('#logoutButton')?.addEventListener('click', logout);
+
+load();
+</script>
+</MainLayout>

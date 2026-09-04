@@ -1,0 +1,39 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import "../../styles/student.css";
+---
+<MainLayout title="ورود مدرسان | آموزشگاه موسیقی فاتح" noindex={true}>
+  <main class="student-auth" dir="rtl">
+    <section class="student-card">
+      <img src="/logo.webp" alt="آموزشگاه موسیقی فاتح" class="student-logo" />
+      <h1>ورود مدرسان</h1>
+      <p>با نام کاربری و رمز عبوری که از سوی آموزشگاه دریافت کرده‌اید وارد شوید.</p>
+      <form id="instructorLoginForm">
+        <label>نام کاربری<input id="username" autocomplete="username" required /></label>
+        <label>رمز عبور<input id="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit">ورود به داشبورد</button>
+        <p id="loginStatus" class="student-status" role="alert"></p>
+      </form>
+    </section>
+  </main>
+  <script>
+    const form = document.querySelector('#instructorLoginForm');
+    const status = document.querySelector('#loginStatus');
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = 'در حال ورود...';
+      const r = await fetch('/api/instructor/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          username: document.querySelector('#username').value,
+          password: document.querySelector('#password').value,
+        }),
+      });
+      const d = await r.json().catch(() => ({ message: 'خطای سرور' }));
+      if (!r.ok) { status.textContent = d.message || 'ورود ناموفق بود.'; return; }
+      location.href = '/instructor';
+    });
+  </script>
+</MainLayout>
