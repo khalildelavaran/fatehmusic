@@ -11,6 +11,7 @@ import {
 } from "../../../server/assignments";
 import { instructorOwnsEnrollment } from "../../../server/instructor-portal";
 import { recordAuditEvent } from "../../../server/audit-log";
+import { createNotification } from "../../../server/in-app-notifications";
 
 function mapRow(row: any) {
   return {
@@ -72,9 +73,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!validation.valid) return json({ success: false, message: validation.errors.join(" ") }, 422);
 
   const enrollment = await db
-    .prepare("SELECT e.id, e.class_id, e.status FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.id = ? AND c.instructor_id = ?")
+    .prepare("SELECT e.id, e.class_id, e.status, e.student_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.id = ? AND c.instructor_id = ?")
     .bind(input.enrollmentId, session.instructorId)
-    .first<{ id: number; class_id: number; status: string }>();
+    .first<{ id: number; class_id: number; status: string; student_id: number }>();
   if (!enrollment) return json({ success: false, message: "این هنرجو متعلق به کلاس‌های شما نیست." }, 403);
   if (enrollment.status !== "active") {
     return json({ success: false, message: "برای هنرجوی غیرفعال نمی‌توان تمرین ثبت کرد." }, 422);
@@ -106,6 +107,16 @@ export const POST: APIRoute = async ({ request }) => {
       entityType: "assignment",
       entityId: id,
       metadata: { enrollmentId: input.enrollmentId, title: input.title },
+    });
+
+    await createNotification(db, {
+      recipientType: "student",
+      recipientId: enrollment.student_id,
+      type: "assignment",
+      title: "تمرین جدید محول شد",
+      body: input.title,
+      entityType: "assignment",
+      entityId: id,
     });
 
     const row = await db.prepare("SELECT * FROM assignments WHERE id = ?").bind(id).first();

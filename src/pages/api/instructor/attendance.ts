@@ -3,6 +3,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getInstructorSession, json, type InstructorEnv } from "../../../server/instructor-auth";
 import { validateAttendance, type AttendanceStatus } from "../../../server/attendance-service";
+import { createNotification } from "../../../server/in-app-notifications";
 
 const VALID_STATUSES = new Set<AttendanceStatus>(["pending", "present", "absent", "excused"]);
 
@@ -27,14 +28,15 @@ export const PUT: APIRoute = async ({ request }) => {
   // enrollmentSessionId alone as authorization.
   const row = await db
     .prepare(
-      `SELECT es.id, e.status AS enrollment_status, cs.status AS session_status, cs.instructor_id
+      `SELECT es.id, e.status AS enrollment_status, cs.status AS session_status, cs.instructor_id, e.student_id, c.title AS class_title
        FROM enrollment_sessions es
        JOIN enrollments e ON e.id = es.enrollment_id
        JOIN class_sessions cs ON cs.id = es.session_id
+       JOIN classes c ON c.id = cs.class_id
        WHERE es.id = ?`,
     )
     .bind(id)
-    .first<{ id: number; enrollment_status: string; session_status: string; instructor_id: number }>();
+    .first<{ id: number; enrollment_status: string; session_status: string; instructor_id: number; student_id: number; class_title: string }>();
 
   if (!row) return json({ success: false, message: "جلسه هنرجو یافت نشد." }, 404);
   if (row.instructor_id !== session.instructorId) {
@@ -71,6 +73,18 @@ export const PUT: APIRoute = async ({ request }) => {
     )
     .bind(id)
     .first();
+
+  if (body.status === "absent") {
+    await createNotification(db, {
+      recipientType: "student",
+      recipientId: row.student_id,
+      type: "attendance",
+      title: "غیبت ثبت شد",
+      body: `غیبت شما در کلاس «${row.class_title}» ثبت شد.`,
+      entityType: "enrollment_session",
+      entityId: id,
+    });
+  }
 
   return json({ success: true, attendance });
 };

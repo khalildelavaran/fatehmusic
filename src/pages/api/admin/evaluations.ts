@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { validateEvaluationInput, type EvaluationInput } from "../../../server/evaluations";
 import { recordAuditEvent } from "../../../server/audit-log";
+import { createNotification } from "../../../server/in-app-notifications";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -73,9 +74,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!validation.valid) return json({ success: false, message: validation.errors.join(" ") }, 422);
 
   const enrollment = await db
-    .prepare("SELECT e.id, e.class_id FROM enrollments e WHERE e.id = ?")
+    .prepare("SELECT e.id, e.class_id, e.student_id FROM enrollments e WHERE e.id = ?")
     .bind(body.enrollmentId)
-    .first<{ id: number; class_id: number }>();
+    .first<{ id: number; class_id: number; student_id: number }>();
   if (!enrollment) return json({ success: false, message: "ثبت‌نامی با این شناسه یافت نشد." }, 404);
 
   if (body.sessionId) {
@@ -117,6 +118,16 @@ export const POST: APIRoute = async ({ request }) => {
       entityType: "evaluation",
       entityId: id,
       metadata: { enrollmentId: body.enrollmentId, instructorId: body.instructorId, overall: body.overall },
+    });
+
+    await createNotification(db, {
+      recipientType: "student",
+      recipientId: enrollment.student_id,
+      type: "evaluation",
+      title: "ارزیابی جدید ثبت شد",
+      body: `نمره کلی ارزیابی جدید شما: ${body.overall}`,
+      entityType: "evaluation",
+      entityId: id,
     });
 
     const row = await db.prepare("SELECT * FROM evaluations WHERE id = ?").bind(id).first();

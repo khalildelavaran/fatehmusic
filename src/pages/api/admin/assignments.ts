@@ -11,6 +11,7 @@ import {
   type AssignmentStatus,
 } from "../../../server/assignments";
 import { recordAuditEvent } from "../../../server/audit-log";
+import { createNotification } from "../../../server/in-app-notifications";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -77,9 +78,9 @@ export const POST: APIRoute = async ({ request }) => {
   if (!validation.valid) return json({ success: false, message: validation.errors.join(" ") }, 422);
 
   const enrollment = await db
-    .prepare("SELECT e.id, e.class_id, e.status FROM enrollments e WHERE e.id = ?")
+    .prepare("SELECT e.id, e.class_id, e.status, e.student_id FROM enrollments e WHERE e.id = ?")
     .bind(body.enrollmentId)
-    .first<{ id: number; class_id: number; status: string }>();
+    .first<{ id: number; class_id: number; status: string; student_id: number }>();
   if (!enrollment) return json({ success: false, message: "ثبت‌نامی با این شناسه یافت نشد." }, 404);
   if (enrollment.status !== "active") {
     return json({ success: false, message: "برای هنرجوی غیرفعال نمی‌توان تمرین ثبت کرد." }, 422);
@@ -119,6 +120,16 @@ export const POST: APIRoute = async ({ request }) => {
       entityType: "assignment",
       entityId: id,
       metadata: { enrollmentId: body.enrollmentId, instructorId: body.instructorId, title: body.title },
+    });
+
+    await createNotification(db, {
+      recipientType: "student",
+      recipientId: enrollment.student_id,
+      type: "assignment",
+      title: "تمرین جدید محول شد",
+      body: body.title,
+      entityType: "assignment",
+      entityId: id,
     });
 
     const row = await db.prepare("SELECT * FROM assignments WHERE id = ?").bind(id).first();

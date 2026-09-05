@@ -1,0 +1,52 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "name": "fatehmusic",
+    "main": "./src/worker.ts",
+    "compatibility_date": "2026-07-01",
+    "compatibility_flags": [
+        "nodejs_compat"
+    ],
+
+    "assets": {
+        "directory": "./dist/client",
+        "binding": "ASSETS",
+         "html_handling": "drop-trailing-slash"
+    },
+
+    "observability": {
+        "enabled": true
+    },
+
+    "kv_namespaces": [
+        {
+            "binding": "SESSION",
+            "id": "dddc032f53cd4eaf92cffdf143aef621"
+        }
+    ],
+
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "fatehmusic-db",
+            "database_id": "b03d1f36-cb20-42ae-9048-99ab8af208c9"
+        }
+    ],
+
+    "ai": {
+        "binding": "AI"
+    },
+
+    // Cloudflare Browser Run (formerly Browser Rendering) -- used by the
+    // certificate PDF generator AND the contract PDF pipeline (both call
+    // env.BROWSER.quickAction("pdf", ...); see src/server/certificates/ and
+    // src/server/contracts/). Requires compatibility_date >= 2026-03-24
+    // (already satisfied above). See doc/ADR/ADR-012 — Certificate Issuance System.md.
+    "browser": {
+        "binding": "BROWSER"
+    },
+
+    // Runs daily at 02:30 UTC = 06:00 Iran time. Cron is always UTC on Cloudflare.
+    "triggers": {
+        "crons": ["30 2 * * *", "*/30 * * * *"]
+    }
+}

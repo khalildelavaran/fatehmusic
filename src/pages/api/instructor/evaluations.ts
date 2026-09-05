@@ -5,6 +5,7 @@ import { getInstructorSession, json, type InstructorEnv } from "../../../server/
 import { validateEvaluationInput, type EvaluationInput } from "../../../server/evaluations";
 import { instructorOwnsEnrollment } from "../../../server/instructor-portal";
 import { recordAuditEvent } from "../../../server/audit-log";
+import { createNotification } from "../../../server/in-app-notifications";
 
 function mapRow(row: any) {
   return {
@@ -113,6 +114,19 @@ export const POST: APIRoute = async ({ request }) => {
       entityId: id,
       metadata: { enrollmentId: input.enrollmentId, overall: input.overall },
     });
+
+    const enrollmentRow = await db.prepare("SELECT student_id FROM enrollments WHERE id = ?").bind(input.enrollmentId).first<{ student_id: number }>();
+    if (enrollmentRow) {
+      await createNotification(db, {
+        recipientType: "student",
+        recipientId: enrollmentRow.student_id,
+        type: "evaluation",
+        title: "ارزیابی جدید ثبت شد",
+        body: `نمره کلی ارزیابی جدید شما: ${input.overall}`,
+        entityType: "evaluation",
+        entityId: id,
+      });
+    }
 
     const row = await db.prepare("SELECT * FROM evaluations WHERE id = ?").bind(id).first();
     return json({ success: true, evaluation: row ? mapRow(row) : null }, 201);
