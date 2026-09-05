@@ -29,7 +29,35 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   const requests = await listMakeupRequests(db, { enrollmentId });
-  return json({ success: true, requests });
+
+  // Also return the student's excused absences that don't already have an
+  // open (non-rejected/non-completed) makeup request, since the portal
+  // needs these to let the student pick which absence to request a
+  // makeup for.
+  const excusedRows = await db
+    .prepare(
+      `SELECT es.id AS enrollment_session_id, cs.session_date, cs.start_time, c.title AS class_title
+       FROM enrollment_sessions es
+       JOIN class_sessions cs ON cs.id = es.session_id
+       JOIN classes c ON c.id = cs.class_id
+       WHERE es.enrollment_id = ? AND es.status = 'excused'
+         AND NOT EXISTS (
+           SELECT 1 FROM makeup_requests mr
+           WHERE mr.original_enrollment_session_id = es.id AND mr.status IN ('pending', 'approved', 'scheduled')
+         )
+       ORDER BY cs.session_date DESC`,
+    )
+    .bind(enrollmentId)
+    .all();
+
+  const requestableAbsences = (excusedRows.results ?? []).map((row: any) => ({
+    enrollmentSessionId: Number(row.enrollment_session_id),
+    sessionDate: String(row.session_date || ""),
+    startTime: String(row.start_time || ""),
+    classTitle: String(row.class_title || ""),
+  }));
+
+  return json({ success: true, requests, requestableAbsences });
 };
 
 export const POST: APIRoute = async ({ request }) => {
