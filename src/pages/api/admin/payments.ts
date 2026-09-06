@@ -3,18 +3,10 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
+import { applyPayment, normalizePaymentMethod } from "../../../server/payment-calculations";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function normalizeMethod(value: unknown): "cash" | "pos" | "transfer" | "online" {
-  const method = String(value ?? "").trim().toLowerCase();
-  if (method === "cash") return "cash";
-  if (method === "pos" || method === "card" || method === "card_reader") return "pos";
-  if (method === "transfer" || method === "bank" || method === "card_to_card") return "transfer";
-  if (method === "online" || method === "gateway" || method === "internet") return "online";
-  return "cash";
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -35,7 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     const invoiceId = Number(body?.invoiceId);
     const amount = Number(body?.amount);
-    const method = normalizeMethod(body?.method);
+    const method = normalizePaymentMethod(body?.method);
     const reference = typeof body?.reference === "string" ? body.reference.trim() : "";
     const note = typeof body?.note === "string" ? body.note.trim() : "";
 
@@ -53,23 +45,41 @@ export const POST: APIRoute = async ({ request }) => {
 
     const paid = await db.prepare(`SELECT COALESCE(SUM(amount), 0) AS total_paid FROM payments WHERE invoice_id = ?`).bind(invoiceId).first<{ total_paid: number }>();
     const alreadyPaid = paid?.total_paid ?? 0;
-    const balance = Math.max(invoice.amount - alreadyPaid, 0);
-    if (balance <= 0) return json({ success: false, message: "این صورتحساب قبلاً به‌طور کامل پرداخت شده است." }, 409);
-    if (amount > balance) return json({ success: false, message: `مبلغ پرداخت نمی‌تواند بیشتر از مانده ${balance.toLocaleString("fa-IR")} باشد.` }, 422);
+    const payment = applyPayment({
+      invoiceAmount: Number(invoice.amount),
+      alreadyPaid: Number(alreadyPaid),
+      paymentAmount: amount,
+      dueDate: invoice.due_date,
+      today: todayIso(),
+    });
 
-    const payment = await db.prepare(`
+    if (!payment.accepted && payment.error === "already_paid") {
+      return json({ success: false, message: "این صورتحساب قبلاً به‌طور کامل پرداخت شده است." }, 409);
+    }
+    if (!payment.accepted && payment.error === "overpayment") {
+      return json({ success: false, message: `مبلغ پرداخت نمی‌تواند بیشتر از مانده ${payment.balance.toLocaleString("fa-IR")} باشد.` }, 422);
+    }
+
+    const inserted = await db.prepare(`
       INSERT INTO payments (invoice_id, amount, paid_at, method, reference, note)
       VALUES (?, ?, datetime('now'), ?, ?, ?)
       RETURNING id
     `).bind(invoiceId, amount, method, reference || null, note).first<{ id: number }>();
 
-    if (!payment) return json({ success: false, message: "پرداخت ثبت نشد." }, 500);
+    if (!inserted) return json({ success: false, message: "پرداخت ثبت نشد." }, 500);
 
-    const newPaid = alreadyPaid + amount;
-    const newStatus = newPaid >= invoice.amount ? "paid" : (invoice.due_date && invoice.due_date < todayIso() ? "overdue" : "pending");
-    await db.prepare(`UPDATE invoices SET status = ?, updated_at = datetime('now') WHERE id = ?`).bind(newStatus, invoiceId).run();
+    await db.prepare(`UPDATE invoices SET status = ?, updated_at = datetime('now') WHERE id = ?`).bind(payment.newStatus, invoiceId).run();
 
-    return json({ success: true, paymentId: payment.id, invoiceId, invoiceAmount: invoice.amount, paidAmount: newPaid, balance: Math.max(invoice.amount - newPaid, 0), invoiceStatus: newStatus, method });
+    return json({
+      success: true,
+      paymentId: inserted.id,
+      invoiceId,
+      invoiceAmount: invoice.amount,
+      paidAmount: payment.newPaid,
+      balance: payment.balance,
+      invoiceStatus: payment.newStatus,
+      method,
+    });
   } catch (error) {
     console.error("[admin/payments] request failed:", error);
     return json({ success: false, message: "ثبت پرداخت با خطا مواجه شد." }, 500);
