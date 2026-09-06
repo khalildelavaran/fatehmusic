@@ -10,7 +10,7 @@
     align-items:center;
     gap:18px;
     padding:10px 18px;
-    margin:-32px 0 24px 0;
+    margin:-32px 0 10px;
     background:linear-gradient(90deg,rgba(212,175,55,.09),rgba(255,255,255,.025) 45%,rgba(255,255,255,.015));
     border:1px solid rgba(212,175,55,.16);
     border-top:0;
