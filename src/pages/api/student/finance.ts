@@ -62,9 +62,13 @@ export const GET: APIRoute = async ({ request }) => {
     const nearDue = dueDays !== null && dueDays >= 0 && dueDays <= 7 && balance > 0;
     const renewalWarning = remaining !== null && remaining <= 1 && balance > 0;
     const halfTermWarning = e.planned_sessions !== null && e.planned_sessions > 1 && remaining !== null && remaining <= Math.ceil(e.planned_sessions / 2) && balance > 0;
-    const sessionValue = e.planned_sessions && e.planned_sessions > 0 ? invoiceAmount / e.planned_sessions : 0;
-    const amountDueToDate = sessionValue > 0 ? Math.min(invoiceAmount, consumed * sessionValue) : invoiceAmount;
-    const unpaidSessions = sessionValue > 0 ? Math.min(e.planned_sessions ?? consumed, Math.ceil(Math.max(amountDueToDate - paidAmount, 0) / sessionValue)) : null;
+    const isSessionBased = e.billing_type === 'session_based';
+    const sessionValue = isSessionBased && e.planned_sessions && e.planned_sessions > 0
+      ? invoiceAmount / e.planned_sessions : 0;
+    const amountDueToDate = isSessionBased && sessionValue > 0
+      ? Math.min(invoiceAmount, consumed * sessionValue) : invoiceAmount;
+    const unpaidSessions = isSessionBased && sessionValue > 0
+      ? Math.min(e.planned_sessions ?? consumed, Math.ceil(Math.max(amountDueToDate - paidAmount, 0) / sessionValue)) : null;
 
     const payments = await db.prepare(`
       SELECT p.id,p.amount,p.paid_at,p.method,p.reference
