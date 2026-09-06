@@ -17,7 +17,16 @@
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    background-color: #fff !important;
+    background-image: none !important;
     color: #111 !important;
+    color-scheme: light !important;
+  }
+
+  html.is-printing-global body::before,
+  html.is-printing-global body::after {
+    display: none !important;
+    content: none !important;
   }
 
   html.is-printing-global body > *:not(.global-print-frame) {
@@ -30,8 +39,11 @@
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    background-color: #fff !important;
+    background-image: none !important;
     color: #111 !important;
     direction: rtl;
+    color-scheme: light !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
@@ -46,8 +58,22 @@
     padding: 0 !important;
     box-sizing: border-box;
     background: #fff !important;
+    background-color: #fff !important;
+    background-image: none !important;
     color: #111 !important;
     overflow: visible !important;
+  }
+
+  html.is-printing-global .global-print-sheet.global-print-light,
+  html.is-printing-global .global-print-sheet.global-print-light *,
+  html.is-printing-global .global-print-sheet.global-print-light::before,
+  html.is-printing-global .global-print-sheet.global-print-light::after {
+    background: #fff !important;
+    background-color: #fff !important;
+    background-image: none !important;
+    color: #111 !important;
+    border-color: #bbb !important;
+    color-scheme: light !important;
   }
 
   html.is-printing-global .global-print-sheet,
@@ -56,24 +82,14 @@
     box-shadow: none !important;
   }
 
-  /* Instructor report: remove every part of the dark admin theme. */
-  html.is-printing-global .global-print-sheet [data-print-light],
-  html.is-printing-global .global-print-sheet [data-print-light] *,
-  html.is-printing-global .global-print-sheet [data-print-light]::before,
-  html.is-printing-global .global-print-sheet [data-print-light]::after {
-    background: #fff !important;
-    background-image: none !important;
-    color: #111 !important;
-    border-color: #bbb !important;
-  }
-
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-section-title,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-section-title h2 {
+  html.is-printing-global .global-print-sheet.global-print-light .admin-section-title,
+  html.is-printing-global .global-print-sheet.global-print-light .admin-section-title h2 {
     color: #111 !important;
     background: #fff !important;
+    background-color: #fff !important;
   }
 
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table-wrap {
+  html.is-printing-global .global-print-sheet.global-print-light .admin-table-wrap {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
@@ -86,7 +102,7 @@
     border-radius: 0 !important;
   }
 
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table {
+  html.is-printing-global .global-print-sheet.global-print-light .admin-table {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -96,14 +112,15 @@
     background: #fff !important;
   }
 
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table td {
+  html.is-printing-global .global-print-sheet.global-print-light .admin-table th,
+  html.is-printing-global .global-print-sheet.global-print-light .admin-table td {
     width: auto !important;
     min-width: 0 !important;
     max-width: none !important;
     padding: 7px 6px !important;
     border: 1px solid #bbb !important;
     background: #fff !important;
+    background-color: #fff !important;
     color: #111 !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
@@ -111,7 +128,7 @@
     vertical-align: middle;
   }
 
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th { font-weight: 700; }
+  html.is-printing-global .global-print-sheet.global-print-light .admin-table th { font-weight: 700; }
 
   html.is-printing-global .global-print-sheet table {
     width: 100% !important;
@@ -142,7 +159,9 @@
   html.is-printing-global .global-print-sheet select {
     color: #111 !important;
     background: #fff !important;
+    background-color: #fff !important;
     -webkit-text-fill-color: #111 !important;
+    color-scheme: light !important;
   }
 
   html.is-printing-global .global-print-sheet [data-no-print],
