@@ -19,6 +19,20 @@
     margin:0 !important;
 }
 
+/* Certificate actions stay together in one row. */
+.admin-form.admin-cert-actions{
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px !important;
+    grid-column:1 / -1;
+}
+
+.admin-form.admin-cert-actions button{
+    min-width:0;
+    width:100%;
+    white-space:nowrap;
+}
+
 .admin-cert-results{
     display:flex;
     flex-direction:column;
@@ -83,4 +97,16 @@
 
 .field-hint.is-warning{
     color:#e08080;
+}
+
+@media(max-width:640px){
+    .admin-form.admin-cert-actions{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:5px !important;
+    }
+
+    .admin-form.admin-cert-actions button{
+        padding-inline:6px;
+        font-size:11px;
+    }
 }
