@@ -82,7 +82,7 @@ function mapClassRow(row: ClassRow): ClassRecord {
 
 const CLASS_COLUMNS = "id, title, course_id, instructor_id, room, class_type, delivery_mode, default_room_id, capacity, level, start_date, end_date, status, notes, created_at, updated_at";
 
-export interface ClassListParams { search?: string | null; status?: string | null; instructorId?: number | null; page?: number | null; pageSize?: number | null; }
+export interface ClassListParams { search?: string | null; status?: string | null; instructorId?: number | null; courseId?: number | null; level?: string | null; page?: number | null; pageSize?: number | null; }
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
@@ -90,19 +90,23 @@ export function normalizeClassListParams(params: ClassListParams) {
   const search = (params.search ?? "").trim();
   const status = isValidClassStatus(params.status) ? params.status : null;
   const instructorId = Number.isInteger(params.instructorId) && (params.instructorId as number) > 0 ? params.instructorId as number : null;
+  const courseId = Number.isInteger(params.courseId) && (params.courseId as number) > 0 ? params.courseId as number : null;
+  const level = (params.level ?? "").trim() || null;
   const page = Math.max(1, Number.isFinite(params.page) ? Math.floor(params.page as number) : 1);
   const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number.isFinite(params.pageSize) ? Math.floor(params.pageSize as number) : DEFAULT_PAGE_SIZE));
-  return { search, status, instructorId, page, pageSize, offset: (page - 1) * pageSize };
+  return { search, status, instructorId, courseId, level, page, pageSize, offset: (page - 1) * pageSize };
 }
 
 export interface ClassListItem extends ClassRecord { instructorName: string; courseTitle: string; enrolledCount: number; }
 export interface ClassListResult { classes: ClassListItem[]; total: number; page: number; pageSize: number; }
 
 export async function listClasses(db: D1Database, rawParams: ClassListParams): Promise<ClassListResult> {
-  const { search, status, instructorId, page, pageSize, offset } = normalizeClassListParams(rawParams);
+  const { search, status, instructorId, courseId, level, page, pageSize, offset } = normalizeClassListParams(rawParams);
   const where: string[] = []; const bind: unknown[] = [];
   if (status) { where.push("classes.status = ?"); bind.push(status); }
   if (instructorId) { where.push("classes.instructor_id = ?"); bind.push(instructorId); }
+  if (courseId) { where.push("classes.course_id = ?"); bind.push(courseId); }
+  if (level) { where.push("classes.level = ?"); bind.push(level); }
   if (search) { where.push("(classes.title LIKE ? OR classes.room LIKE ?)"); bind.push(`%${search}%`, `%${search}%`); }
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const totalRow = await db.prepare(`SELECT COUNT(*) as count FROM classes ${whereSql}`).bind(...bind).first<{ count: number }>();

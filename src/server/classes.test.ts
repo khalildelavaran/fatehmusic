@@ -4,7 +4,7 @@ import { normalizeClassListParams, validateClassInput, isValidClassStatus } from
 describe("normalizeClassListParams", () => {
   it("applies defaults when nothing is provided", () => {
     const result = normalizeClassListParams({});
-    expect(result).toEqual({ search: "", status: null, instructorId: null, page: 1, pageSize: 20, offset: 0 });
+    expect(result).toEqual({ search: "", status: null, instructorId: null, courseId: null, level: null, page: 1, pageSize: 20, offset: 0 });
   });
 
   it("clamps page/pageSize the same way students/instructors lists do", () => {
@@ -18,6 +18,18 @@ describe("normalizeClassListParams", () => {
     expect(normalizeClassListParams({ instructorId: 0 }).instructorId).toBeNull();
     expect(normalizeClassListParams({ instructorId: -1 }).instructorId).toBeNull();
     expect(normalizeClassListParams({ instructorId: 1.5 }).instructorId).toBeNull();
+  });
+
+  it("only accepts a positive integer courseId", () => {
+    expect(normalizeClassListParams({ courseId: 4 }).courseId).toBe(4);
+    expect(normalizeClassListParams({ courseId: 0 }).courseId).toBeNull();
+    expect(normalizeClassListParams({ courseId: -1 }).courseId).toBeNull();
+  });
+
+  it("trims level and treats an empty string as no filter", () => {
+    expect(normalizeClassListParams({ level: "  مبتدی  " }).level).toBe("مبتدی");
+    expect(normalizeClassListParams({ level: "" }).level).toBeNull();
+    expect(normalizeClassListParams({ level: undefined }).level).toBeNull();
   });
 
   it("drops an invalid status instead of passing it through to SQL", () => {
