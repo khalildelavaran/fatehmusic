@@ -70,10 +70,25 @@
     vertical-align:middle;
 }
 
-/* Keep only the requested headings on one line. Their columns grow to their content. */
 .admin-panel .admin-table th.posts-th-nowrap{
     white-space:nowrap !important;
     word-break:keep-all !important;
+}
+
+/* Responsive white table text to prevent unnecessary horizontal scrolling. */
+.admin-panel .admin-table td{
+    font-size:clamp(10px,1.1vw,13px);
+}
+
+.admin-panel .admin-table td strong{
+    font-size:clamp(10px,1.15vw,13px);
+}
+
+.admin-panel .admin-table-subtext{
+    font-size:clamp(8px,.9vw,11px);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
 }
 
 /* Operation buttons stay together on one row. */
@@ -98,6 +113,9 @@
 
 @media(max-width:900px){
     .admin-panel{grid-template-columns:1fr;}
+    .admin-panel .admin-table td{font-size:clamp(10px,1.7vw,13px);}
+    .admin-panel .admin-table td strong{font-size:clamp(10px,1.8vw,13px);}
+    .admin-panel .admin-table-subtext{font-size:clamp(8px,1.4vw,11px);}
 }
 
 @media(max-width:640px){
@@ -115,6 +133,10 @@
     .admin-panel .admin-table td{
         padding:7px 7px;
     }
+
+    .admin-panel .admin-table td{font-size:10px;}
+    .admin-panel .admin-table td strong{font-size:10px;}
+    .admin-panel .admin-table-subtext{font-size:8px;}
 
     .admin-table-actions button{
         min-height:30px;
