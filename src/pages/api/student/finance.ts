@@ -51,7 +51,8 @@ export const GET: APIRoute = async ({ request }) => {
     const invoice = await db.prepare(`
       SELECT i.id, i.amount, i.due_date, i.status,
         COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0) AS paid_amount
-      FROM invoices i WHERE i.enrollment_term_id=? AND i.status <> 'cancelled'
+      FROM invoices i
+      WHERE i.enrollment_term_id=? AND i.status <> 'cancelled'
       ORDER BY i.id DESC LIMIT 1
     `).bind(e.term_id).first<{id:number;amount:number;due_date:string|null;status:string;paid_amount:number}>();
 
@@ -68,9 +69,14 @@ export const GET: APIRoute = async ({ request }) => {
     const halfTermWarning = e.planned_sessions !== null && e.planned_sessions > 1 && remaining !== null && remaining <= Math.ceil(e.planned_sessions / 2) && finance.balance > 0;
 
     const payments = await db.prepare(`
-      SELECT p.id,p.amount,p.paid_at,p.method,p.reference
-      FROM payments p JOIN invoices i ON i.id=p.invoice_id
-      WHERE i.enrollment_term_id=? ORDER BY p.paid_at DESC,p.id DESC
+      SELECT p.id,p.amount,p.paid_at,p.method,p.reference,p.note,
+        i.id AS invoice_id,i.amount AS invoice_amount,i.due_date AS invoice_due_date
+      FROM payments p
+      JOIN invoices i ON i.id=p.invoice_id
+      WHERE i.enrollment_term_id=?
+        AND i.status <> 'cancelled'
+        AND i.id=(SELECT i2.id FROM invoices i2 WHERE i2.enrollment_term_id=i.enrollment_term_id AND i2.status<>'cancelled' ORDER BY i2.id DESC LIMIT 1)
+      ORDER BY p.paid_at DESC,p.id DESC
     `).bind(e.term_id).all();
 
     result.push({
