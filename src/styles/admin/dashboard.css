@@ -64,7 +64,7 @@
 .admin-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-    gap:24px;
+    gap:18px;
 }
 
 .admin-section-title{
@@ -91,10 +91,10 @@
 .admin-grid a,
 .admin-stat-card{
     display:block;
-    padding:28px;
+    padding:20px;
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
     border:1px solid rgba(255,255,255,.06);
-    border-radius:26px;
+    border-radius:20px;
     backdrop-filter:blur(16px);
     transition:var(--transition);
     position:relative;
@@ -123,7 +123,7 @@
     content:"";
     position:absolute;
     inset:0;
-    border-radius:26px;
+    border-radius:20px;
     background:linear-gradient(135deg,rgba(212,175,55,.35),transparent 40%,rgba(212,175,55,.12));
     opacity:0;
     transition:.4s ease;
@@ -133,8 +133,8 @@
 /* ---------- Hover ---------- */
 .admin-grid a:hover,
 .admin-stat-card:hover{
-    transform:translateY(-8px);
-    box-shadow:0 30px 70px rgba(0,0,0,.42),0 0 45px rgba(212,175,55,.15);
+    transform:translateY(-4px);
+    box-shadow:0 20px 48px rgba(0,0,0,.36),0 0 32px rgba(212,175,55,.12);
 }
 
 .admin-grid a:hover::before,
@@ -164,15 +164,15 @@
 .admin-stat-card{
     display:flex;
     flex-direction:column;
-    gap:10px;
+    gap:7px;
 }
 
 .admin-stat-icon{
     display:grid;
     place-items:center;
-    width:44px;
-    height:44px;
-    border-radius:14px;
+    width:36px;
+    height:36px;
+    border-radius:11px;
     background:rgba(212,175,55,.12);
     color:var(--primary);
     position:relative;
@@ -180,24 +180,24 @@
 }
 
 .admin-stat-icon svg{
-    width:22px;
-    height:22px;
+    width:19px;
+    height:19px;
 }
 
 .admin-stat-value{
     position:relative;
     z-index:2;
-    font-size:2.4rem;
+    font-size:2rem;
     font-weight:800;
     color:var(--text);
-    line-height:1.1;
+    line-height:1.05;
 }
 
 .admin-stat-label{
     position:relative;
     z-index:2;
     color:var(--text-secondary);
-    font-size:14px;
+    font-size:13px;
 }
 
 .admin-stat-breakdown{
@@ -205,13 +205,13 @@
     z-index:2;
     display:flex;
     flex-wrap:wrap;
-    gap:8px;
-    margin-top:4px;
+    gap:6px;
+    margin-top:3px;
 }
 
 .admin-stat-breakdown span{
-    font-size:12px;
-    padding:4px 10px;
+    font-size:11px;
+    padding:3px 8px;
     border-radius:999px;
     background:rgba(255,255,255,.05);
     border:1px solid var(--border);
