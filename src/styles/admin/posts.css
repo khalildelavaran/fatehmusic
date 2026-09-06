@@ -4,11 +4,13 @@
 
 .admin-panel{
     display:grid;
+    direction:ltr;
     grid-template-columns:minmax(280px,420px) minmax(0,1fr);
     gap:24px;
 }
 
 .admin-panel form#postForm.admin-form{
+    direction:rtl;
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
     align-content:start;
@@ -50,6 +52,7 @@
     width:100%;
     padding:12px;
     overflow-x:auto;
+    direction:rtl;
 }
 
 .admin-panel .admin-table{
@@ -127,7 +130,14 @@
 }
 
 @media(max-width:900px){
-    .admin-panel{grid-template-columns:1fr;}
+    .admin-panel{
+        direction:ltr;
+        grid-template-columns:1fr;
+    }
+    .admin-panel form#postForm.admin-form,
+    .admin-panel .admin-table-wrap{
+        direction:rtl;
+    }
     .admin-panel .admin-table td{font-size:clamp(10px,1.7vw,13px);}
     .admin-panel .admin-table td strong{font-size:clamp(10px,1.8vw,13px);}
     .admin-panel .admin-table-subtext{font-size:clamp(8px,1.4vw,11px);}
