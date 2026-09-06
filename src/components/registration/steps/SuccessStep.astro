@@ -8,14 +8,14 @@
   <div class="tracking-card"><span>کد پیگیری</span><strong data-field-out="success-tracking-code">-</strong></div>
   <div class="review-card"><h3>خلاصه ثبت نام</h3><div class="review-row"><span class="review-label">ساز</span><span class="review-value" data-field-out="success-instrument">-</span></div><div class="review-row"><span class="review-label">استاد</span><span class="review-value" data-field-out="success-instructor">-</span></div><div class="review-row"><span class="review-label">روز و زمان کلاس</span><span class="review-value" data-field-out="success-schedule">-</span></div></div>
   <div class="materials-card" data-materials-container></div>
-  <div class="contract-card">
+  <div id="contractPrintArea" class="contract-card">
     <div class="contract-card-heading"><span class="contract-card-kicker">DOCUMENT · FATEH MUSIC</span><h3>قرارداد هنرجویی</h3><span class="contract-card-line"></span></div>
     <p class="contract-note">قرارداد بر اساس اطلاعات ثبت‌نام شما تکمیل شده است. نسخه چاپی برای امضای هنرجو و آموزشگاه آماده است.</p>
     <div class="contract-body" data-contract-container hidden></div>
-    <button type="button" class="secondary-btn contract-print-btn" data-action="print-contract">چاپ قرارداد</button>
+    <button type="button" class="secondary-btn contract-print-btn no-print" data-print-target="#contractPrintArea" data-print-title="قرارداد هنرجویی">چاپ قرارداد</button>
   </div>
   <div class="contact-card"><h3>نیاز به مشاوره خرید ساز دارید؟</h3><p>کارشناسان آموزشگاه فاتح شما را در انتخاب ساز مناسب راهنمایی می‌کنند.</p><div class="contact-links" data-contact-links></div></div>
-  <div class="success-actions"><button type="button" class="secondary-btn" data-action="print-contract">چاپ قرارداد</button><button type="button" class="btn" data-action="back-home">بازگشت به صفحه اصلی</button></div>
+  <div class="success-actions"><button type="button" class="secondary-btn no-print" data-print-target="#contractPrintArea" data-print-title="قرارداد هنرجویی">چاپ قرارداد</button><button type="button" class="btn no-print" data-action="back-home">بازگشت به صفحه اصلی</button></div>
 </section>
 
 <script>
