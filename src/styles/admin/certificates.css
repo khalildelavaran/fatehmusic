@@ -3,8 +3,12 @@
 ========================================== */
 
 .admin-panel--certificates{
-    grid-template-columns: 1fr;
-    max-width: 640px;
+    grid-template-columns:1fr;
+    max-width:640px;
+}
+
+.admin-panel--certificates:first-of-type .admin-form{
+    padding:0;
 }
 
 .admin-cert-results{
