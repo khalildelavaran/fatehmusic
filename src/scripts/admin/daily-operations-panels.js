@@ -7,17 +7,14 @@
   if (!shell || !summary || !sessions || document.querySelector("#dailyOperationsPanels")) return;
 
   const state = { date: localDateString(), month: localDateString().slice(0, 7) };
-
   const style = document.createElement("style");
   style.textContent = `
     #dailyOperationsPanels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0 0 22px}
     .dop-panel{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px}
     .dop-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
     .dop-head h2{margin:2px 0 0;font-size:20px}.dop-kicker{font-size:11px;opacity:.65}
-    .dop-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 11px;cursor:pointer;font-family:inherit}
-    .dop-btn:hover{border-color:var(--primary)}
-    .dop-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
-    .dop-card{border:1px solid var(--border);border-radius:11px;padding:10px;background:rgba(255,255,255,.03)}
+    .dop-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 11px;cursor:pointer;font-family:inherit}.dop-btn:hover{border-color:var(--primary)}
+    .dop-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}.dop-card{border:1px solid var(--border);border-radius:11px;padding:10px;background:rgba(255,255,255,.03)}
     .dop-card span{display:block;font-size:11px;opacity:.65;margin-bottom:4px}.dop-card b{font-size:17px}.dop-gold b{color:var(--gold-light)}
     .dop-methods{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 16px}.dop-chip{border:1px solid var(--border);border-radius:999px;padding:6px 9px;font-size:12px}.dop-chip b{margin-inline-start:4px}
     .dop-columns{display:grid;grid-template-columns:1fr 1fr;gap:14px}.dop-columns h3{font-size:14px;margin:0 0 8px}.dop-list{display:grid;gap:7px;max-height:260px;overflow:auto}
@@ -56,7 +53,6 @@
       select.dataset.normalized = "1";
     });
   }
-
   const observer = new MutationObserver(normalizeStudentPaymentMethods);
   observer.observe(sessions, { childList: true, subtree: true });
   normalizeStudentPaymentMethods();
@@ -113,4 +109,12 @@
 
   loadFinance();
   loadWorkload();
+
+  // Keep the secretary/manager daily view fresh without requiring a manual refresh.
+  const refreshTimer = setInterval(() => {
+    if (document.hidden) return;
+    loadFinance();
+    loadWorkload();
+  }, 120000);
+  window.addEventListener("beforeunload", () => clearInterval(refreshTimer), { once: true });
 })();
