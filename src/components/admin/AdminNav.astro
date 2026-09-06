@@ -33,6 +33,6 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
   document.querySelector('#navLogoutForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
-    location.href = '/admin/login';
+    location.href = '/login';
   });
 </script>
