@@ -46,6 +46,9 @@ class PrintManager {
     PrintManager.active = true;
     const sheet = source.cloneNode(true) as HTMLElement;
     sheet.classList.add("global-print-sheet");
+    if (source.hasAttribute("data-print-light")) {
+      sheet.classList.add("global-print-light");
+    }
     sheet.removeAttribute("id");
     sheet.removeAttribute("hidden");
     sheet.removeAttribute("aria-hidden");
