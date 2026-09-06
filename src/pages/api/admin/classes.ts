@@ -31,6 +31,8 @@ export const GET: APIRoute = async ({ request }) => {
     search: url.searchParams.get("search"),
     status: url.searchParams.get("status"),
     instructorId: url.searchParams.get("instructorId") ? Number(url.searchParams.get("instructorId")) : undefined,
+    courseId: url.searchParams.get("courseId") ? Number(url.searchParams.get("courseId")) : undefined,
+    level: url.searchParams.get("level"),
     page: url.searchParams.get("page") ? Number(url.searchParams.get("page")) : undefined,
     pageSize: url.searchParams.get("pageSize") ? Number(url.searchParams.get("pageSize")) : undefined
   });
