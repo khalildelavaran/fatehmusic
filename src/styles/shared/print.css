@@ -14,7 +14,7 @@
     margin: 12mm;
   }
 
-  @page :landscape {
+  @page landscape {
     size: A4 landscape;
     margin: 12mm;
   }
