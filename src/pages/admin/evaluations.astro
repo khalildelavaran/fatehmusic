@@ -32,12 +32,12 @@ const pageTitle = studentName ? `ارزیابی و تمرین ${studentName} | �
           </section>
         ) : (
           <Fragment>
-            <section class="admin-hero">
+            <section class="admin-hero no-print">
               <p><a href="/admin/classes">← بازگشت به کلاس‌ها</a></p>
               <h1>ارزیابی و تمرین{studentName ? ` — ${studentName}` : ""}</h1>
             </section>
 
-            <div class="admin-profile-grid">
+            <div class="admin-profile-grid no-print">
               <section class="admin-card">
                 <h2>ثبت ارزیابی جدید</h2>
                 <form id="evaluationForm" class="admin-form" data-enrollment-id={enrollmentId}>
@@ -69,24 +69,34 @@ const pageTitle = studentName ? `ارزیابی و تمرین ${studentName} | �
               </section>
             </div>
 
-            <div class="admin-section-title"><h2>سوابق ارزیابی</h2></div>
-            <section class="admin-table-wrap">
-              <table class="admin-table">
-                <thead><tr><th>تاریخ</th><th>نمره کلی</th><th>فن‌آوری</th><th>ریتم</th><th>تئوری</th><th>اجرا</th><th>انضباط</th><th>توضیحات</th></tr></thead>
-                <tbody id="evaluationsBody" data-enrollment-id={enrollmentId}>
-                  <tr><td colspan="8" class="admin-table-empty">در حال بارگذاری...</td></tr>
-                </tbody>
-              </table>
+            <section id="evaluationPrintArea" class="evaluation-print-section">
+              <div class="admin-section-title">
+                <h2>سوابق ارزیابی</h2>
+                <button type="button" class="admin-document-btn no-print" data-print-target="#evaluationPrintArea" data-print-title="سوابق ارزیابی">چاپ</button>
+              </div>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>تاریخ</th><th>نمره کلی</th><th>فن‌آوری</th><th>ریتم</th><th>تئوری</th><th>اجرا</th><th>انضباط</th><th>توضیحات</th></tr></thead>
+                  <tbody id="evaluationsBody" data-enrollment-id={enrollmentId}>
+                    <tr><td colspan="8" class="admin-table-empty">در حال بارگذاری...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
 
-            <div class="admin-section-title"><h2>سوابق تمرین</h2></div>
-            <section class="admin-table-wrap">
-              <table class="admin-table">
-                <thead><tr><th>عنوان</th><th>مهلت</th><th>وضعیت</th><th>یادداشت هنرجو</th></tr></thead>
-                <tbody id="assignmentsBody" data-enrollment-id={enrollmentId}>
-                  <tr><td colspan="4" class="admin-table-empty">در حال بارگذاری...</td></tr>
-                </tbody>
-              </table>
+            <section id="assignmentPrintArea" class="evaluation-print-section">
+              <div class="admin-section-title">
+                <h2>سوابق تمرین</h2>
+                <button type="button" class="admin-document-btn no-print" data-print-target="#assignmentPrintArea" data-print-title="سوابق تمرین">چاپ</button>
+              </div>
+              <div class="admin-table-wrap">
+                <table class="admin-table">
+                  <thead><tr><th>عنوان</th><th>مهلت</th><th>وضعیت</th><th>یادداشت هنرجو</th></tr></thead>
+                  <tbody id="assignmentsBody" data-enrollment-id={enrollmentId}>
+                    <tr><td colspan="4" class="admin-table-empty">در حال بارگذاری...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </section>
           </Fragment>
         )}
