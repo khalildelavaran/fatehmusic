@@ -11,7 +11,7 @@ import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { courses } from "../../data/courses.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
-if (!session) return Astro.redirect("/admin/login");
+if (!session) return Astro.redirect("/login");
 if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 
 const activeCourses = (courses as Array<{ slug: string; title: string; active: boolean }>)

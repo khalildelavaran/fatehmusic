@@ -14,7 +14,7 @@ import { formatJalaliDate } from "../../utils/format-date";
 import { courses } from "../../data/courses.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
-if (!session) return Astro.redirect("/admin/login");
+if (!session) return Astro.redirect("/login");
 const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
 if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
 

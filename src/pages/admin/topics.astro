@@ -9,7 +9,7 @@ import "../../styles/admin/topics.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
-if (!session) return Astro.redirect("/admin/login");
+if (!session) return Astro.redirect("/login");
 if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 ---
 <MainLayout title="مدیریت موضوعات | آموزشگاه موسیقی فاتح" noindex={true}>

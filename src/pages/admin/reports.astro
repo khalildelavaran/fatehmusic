@@ -9,7 +9,7 @@ import { getAdminSession, type AdminEnv } from "../../server/admin-auth";
 import { getDashboardOverview, getStudentReport, getInstructorReport, getClassReport, getFinanceReport, getEducationalReport } from "../../server/admin-reports";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
-if (!session) return Astro.redirect("/admin/login");
+if (!session) return Astro.redirect("/login");
 const db = (env as AdminEnv).DB;
 const today = new Date().toISOString().slice(0, 10);
 const yearStart = `${today.slice(0, 4)}-01-01`;

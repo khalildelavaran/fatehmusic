@@ -8,7 +8,7 @@ import "../../styles/admin/dashboard.css";
 import { env } from "cloudflare:workers";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 const session = await getAdminSession(Astro.request, env as AdminEnv);
-if (!session) return Astro.redirect("/admin/login");
+if (!session) return Astro.redirect("/login");
 if (session.role !== ROLES.ADMIN && session.role !== ROLES.REGISTRAR) return new Response("Forbidden", { status: 403 });
 ---
 <MainLayout title="داشبورد روزانه | آموزشگاه موسیقی فاتح" noindex={true}>

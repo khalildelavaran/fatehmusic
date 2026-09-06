@@ -8,7 +8,7 @@ import "../../styles/admin/registrations.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
-if (!session) return Astro.redirect("/admin/login");
+if (!session) return Astro.redirect("/login");
 const allowedRoles: string[] = [ROLES.ADMIN, ROLES.REGISTRAR];
 if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
 ---
