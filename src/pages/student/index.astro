@@ -4,7 +4,7 @@ import MainLayout from "../../layouts/MainLayout.astro";
 import { getStudentSession, type StudentEnv } from "../../server/student-auth";
 import "../../styles/student.css";
 const session=await getStudentSession(Astro.request,env as StudentEnv);
-if(!session)return Astro.redirect('/student/login');
+if(!session)return Astro.redirect('/login');
 ---
 <MainLayout title="داشبورد هنرجو | آموزشگاه موسیقی فاتح" noindex={true}>
 <main class="student-dashboard" dir="rtl">
@@ -121,7 +121,7 @@ app?.addEventListener('click',async e=>{const t=e.target;if(!(t instanceof HTMLE
   if(t.dataset.leaveSession){const note=prompt('یادداشت مرخصی (اختیاری):')||'';t.setAttribute('disabled','true');const d:any=await api('/api/student/leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentSessionId:Number(t.dataset.leaveSession),note})});if(!d.success)alert(d.message||'ثبت مرخصی انجام نشد.');await loadFinance();await loadNotifications();}
 });
 app?.addEventListener('submit',async e=>{if(!(e.target instanceof HTMLFormElement)||e.target.id!=='passwordForm')return;e.preventDefault();const status=document.querySelector('#passwordStatus') as HTMLElement;const p=(document.querySelector('#newPassword') as HTMLInputElement).value;if(p!==(document.querySelector('#repeatPassword') as HTMLInputElement).value){status.textContent='تکرار رمز یکسان نیست.';return}const r=await fetch('/api/student/password',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({new_password:p})});const d=await r.json();status.textContent=d.message||'انجام شد.';if(r.ok)(document.querySelector('#passwordForm') as HTMLFormElement).reset()});
-async function logout(){await fetch('/api/student/logout',{method:'POST',credentials:'same-origin'});location.href='/student/login'}
+async function logout(){await fetch('/api/student/logout',{method:'POST',credentials:'same-origin'});location.href='/login'}
 document.querySelector('#logoutButton')?.addEventListener('click',logout);load();
 </script>
 <style>
