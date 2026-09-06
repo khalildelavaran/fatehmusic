@@ -86,6 +86,39 @@
     color: #111 !important;
   }
 
+  /* The screen table is intentionally wide and scrollable. On paper it must
+     use the available A4 width and print every field without a scroll box. */
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+  }
+
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    table-layout: fixed;
+  }
+
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table td {
+    overflow-wrap: anywhere;
+    word-break: normal;
+    white-space: normal !important;
+    padding: 7px 6px !important;
+    border: 1px solid #bbb !important;
+    vertical-align: middle;
+  }
+
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th {
+    font-weight: 700;
+  }
+
   html.is-printing-global .global-print-sheet img {
     max-width: 100%;
     break-inside: avoid;
