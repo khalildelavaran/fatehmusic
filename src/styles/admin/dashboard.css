@@ -191,31 +191,36 @@
     font-weight:800;
     color:var(--text);
     line-height:1.05;
+    white-space:nowrap;
 }
 
 .admin-stat-label{
     position:relative;
     z-index:2;
     color:var(--text-secondary);
-    font-size:13px;
+    font-size:15px;
+    line-height:1.4;
+    white-space:nowrap;
 }
 
 .admin-stat-breakdown{
     position:relative;
     z-index:2;
     display:flex;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
     gap:6px;
     margin-top:3px;
+    overflow:hidden;
 }
 
 .admin-stat-breakdown span{
-    font-size:11px;
+    font-size:12px;
     padding:3px 8px;
     border-radius:999px;
     background:rgba(255,255,255,.05);
     border:1px solid var(--border);
     color:var(--text-secondary);
+    white-space:nowrap;
 }
 
 .admin-stat-card.attention .admin-stat-icon{
