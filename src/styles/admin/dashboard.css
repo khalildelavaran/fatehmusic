@@ -68,11 +68,11 @@
 }
 
 .admin-section-title{
-    display:flex;
-    align-items:baseline;
     justify-content:space-between;
+    align-items:baseline;
     gap:12px;
-    margin:36px 0 16px;
+    margin:10px 0 10px;
+    display:flex;
 }
 
 .admin-section-title:first-child{ margin-top:0; }
