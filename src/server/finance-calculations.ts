@@ -14,6 +14,7 @@ export interface FinanceCalculation {
   invoiceAmount: number;
   paidAmount: number;
   balance: number;
+  balanceToDate: number;
   dueDate: string | null;
   overdue: boolean;
   dueDays: number | null;
@@ -46,8 +47,9 @@ export function calculateFinance(input: FinanceCalculationInput): FinanceCalcula
   const amountDueToDate = isSessionBased && sessionValue > 0
     ? Math.min(invoiceAmount, consumedSessions * sessionValue)
     : invoiceAmount;
+  const balanceToDate = Math.max(amountDueToDate - paidAmount, 0);
   const unpaidSessions = isSessionBased && sessionValue > 0
-    ? Math.min(plannedSessions, Math.ceil(Math.max(amountDueToDate - paidAmount, 0) / sessionValue))
+    ? Math.min(plannedSessions, Math.ceil(balanceToDate / sessionValue))
     : null;
 
   const financialStatus: FinanceStatus = invoiceAmount <= 0 && paidAmount <= 0
@@ -61,18 +63,8 @@ export function calculateFinance(input: FinanceCalculationInput): FinanceCalcula
           : "pending";
 
   return {
-    invoiceAmount,
-    paidAmount,
-    balance,
-    dueDate,
-    overdue,
-    dueDays,
-    nearDue,
-    financialStatus,
-    isSessionBased,
-    sessionValue,
-    amountDueToDate,
-    unpaidSessions,
+    invoiceAmount, paidAmount, balance, balanceToDate, dueDate, overdue, dueDays, nearDue,
+    financialStatus, isSessionBased, sessionValue, amountDueToDate, unpaidSessions,
   };
 }
 
