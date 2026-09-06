@@ -16,7 +16,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
     <section class="admin-hero"><p>مدیریت نوشته‌ها</p><h1>نوشته‌های وبلاگ</h1><p>ایجاد، ویرایش و انتشار مقاله‌های وبلاگ.</p></section>
     <section class="admin-ai-trigger"><div><strong>تولید خودکار روزانه</strong><span>هر روز یک پیش‌نویس جدید با هوش مصنوعی ساخته می‌شود.</span></div><button type="button" id="generateNowButton">تولید همین الان (تست)</button></section>
     <p id="generateStatus" role="status" class="admin-ai-status"></p>
-    <section class="admin-panel"><form id="postForm" class="admin-form">
+    <section class="admin-panel"><form id="postForm" class="admin-form" style="row-gap:0 !important; column-gap:18px !important;">
       <input type="hidden" name="id" /><label>عنوان<input name="title" required /></label><label>اسلاگ انگلیسی<input name="slug" dir="ltr" required /></label><label>موضوع<input name="topic" required /></label><label>خلاصه<textarea name="excerpt" required></textarea></label><label class="form-full">متن مقاله<textarea name="content" rows="14" required></textarea></label><label>اسلاگ دوره مرتبط<input name="related_course_slug" dir="ltr" /></label><label>عنوان دوره مرتبط<input name="related_course_title" /></label><label>Meta Title<input name="meta_title" /></label><label class="form-full">Meta Description<textarea name="meta_description"></textarea></label>
       <label>وضعیت<select name="status"><option value="draft">پیش‌نویس</option><option value="published">منتشر شده</option></select></label>
       <div class="admin-form-actions"><button type="submit">ذخیره نوشته</button><button type="button" class="secondary" id="clearForm">فرم خالی / نوشته جدید</button></div><p id="adminMessage" role="status"></p>
