@@ -7,8 +7,11 @@
 .global-print-frame { display: none; }
 
 @media print {
-  @page { size: A4 portrait; margin: 5mm 10mm 10mm 5mm; }
-  @page landscape { size: A4 landscape; margin: 5mm 10mm 10mm 5mm; }
+  /* Keep browser page margins at zero and apply the exact
+     physical margins to the printable frame itself. This makes
+     the right 1cm margin deterministic in print preview. */
+  @page { size: A4 portrait; margin: 0; }
+  @page landscape { size: A4 landscape; margin: 0; }
 
   html.is-printing-global,
   html.is-printing-global body {
@@ -36,8 +39,11 @@
   html.is-printing-global .global-print-frame {
     display: block !important;
     width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 5mm 10mm 10mm 5mm !important;
+    box-sizing: border-box !important;
     background: #fff !important;
     background-color: #fff !important;
     background-image: none !important;
@@ -52,7 +58,8 @@
 
   html.is-printing-global .global-print-sheet {
     width: 100% !important;
-    max-width: 186mm !important;
+    max-width: none !important;
+    min-width: 0 !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
