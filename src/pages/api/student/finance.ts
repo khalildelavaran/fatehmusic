@@ -2,9 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
-import { getStudentSession, type StudentEnv } from "../../../server/student-auth";
-import { json } from "../../../server/student-auth";
-import { provisionEnrollmentSessionsForClassSession } from "../../../server/session-provisioning";
+import { getStudentSession, json, type StudentEnv } from "../../../server/student-auth";
 
 export const GET: APIRoute = async ({ request }) => {
   const session = await getStudentSession(request, env as StudentEnv);
@@ -30,8 +28,10 @@ export const GET: APIRoute = async ({ request }) => {
   }>();
 
   const result = [];
+  const today = new Date().toISOString().slice(0,10);
   for (const e of enrollments.results) {
     if (!e.term_id) continue;
+
     const sessions = await db.prepare(`
       SELECT es.id, es.session_id, es.status, es.note, cs.session_date, cs.start_time, cs.end_time
       FROM enrollment_sessions es
@@ -39,12 +39,6 @@ export const GET: APIRoute = async ({ request }) => {
       WHERE es.enrollment_id = ? AND es.enrollment_term_id = ? AND cs.status <> 'cancelled'
       ORDER BY cs.session_date ASC, cs.start_time ASC, es.id ASC
     `).bind(e.enrollment_id, e.term_id).all<{id:number;session_id:number;status:string;note:string;session_date:string;start_time:string;end_time:string}>();
-
-    for (const s of sessions.results) {
-      if (s.session_date <= new Date().toISOString().slice(0,10)) {
-        try { await provisionEnrollmentSessionsForClassSession(db, s.session_id); } catch {}
-      }
-    }
 
     const attendance = sessions.results;
     const completed = attendance.filter(s => s.status === 'present').length;
@@ -62,11 +56,15 @@ export const GET: APIRoute = async ({ request }) => {
     const invoiceAmount = Number(invoice?.amount ?? e.tuition_amount ?? 0);
     const paidAmount = Number(invoice?.paid_amount ?? 0);
     const balance = Math.max(invoiceAmount - paidAmount, 0);
-    const today = new Date().toISOString().slice(0,10);
     const dueDate = invoice?.due_date ?? e.tuition_due_date;
     const overdue = !!dueDate && dueDate < today && balance > 0;
-    const nearDue = !!dueDate && dueDate >= today && Math.ceil((new Date(`${dueDate}T00:00:00Z`).getTime() - Date.now()) / 86400000) <= 7 && balance > 0;
+    const dueDays = dueDate ? Math.ceil((new Date(`${dueDate}T00:00:00Z`).getTime() - Date.now()) / 86400000) : null;
+    const nearDue = dueDays !== null && dueDays >= 0 && dueDays <= 7 && balance > 0;
     const renewalWarning = remaining !== null && remaining <= 1 && balance > 0;
+    const halfTermWarning = e.planned_sessions !== null && e.planned_sessions > 1 && remaining !== null && remaining <= Math.ceil(e.planned_sessions / 2) && balance > 0;
+    const sessionValue = e.planned_sessions && e.planned_sessions > 0 ? invoiceAmount / e.planned_sessions : 0;
+    const amountDueToDate = sessionValue > 0 ? Math.min(invoiceAmount, consumed * sessionValue) : invoiceAmount;
+    const unpaidSessions = sessionValue > 0 ? Math.min(e.planned_sessions ?? consumed, Math.ceil(Math.max(amountDueToDate - paidAmount, 0) / sessionValue)) : null;
 
     const payments = await db.prepare(`
       SELECT p.id,p.amount,p.paid_at,p.method,p.reference
@@ -78,9 +76,10 @@ export const GET: APIRoute = async ({ request }) => {
       enrollmentId:e.enrollment_id,classId:e.class_id,classTitle:e.class_title,instructorName:e.instructor_name,
       termId:e.term_id,termNumber:e.term_number,plannedSessions:e.planned_sessions,billingType:e.billing_type,
       tuitionAmount:e.tuition_amount,completedSessions:completed,absentSessions:absent,leaveSessions:leave,
-      consumedSessions:consumed,remainingSessions:remaining,unpaidSessions:remaining === null ? null : Math.max(consumed - Math.floor(paidAmount / Math.max(Number(e.tuition_amount||0) / Math.max(Number(e.planned_sessions||1),1),1)),0),
-      invoiceId:invoice?.id ?? null,invoiceAmount,paidAmount,balance,dueDate,overdue,nearDue,renewalWarning,
+      consumedSessions:consumed,remainingSessions:remaining,unpaidSessions,
+      invoiceId:invoice?.id ?? null,invoiceAmount,paidAmount,balance,dueDate,overdue,nearDue,renewalWarning,halfTermWarning,
       financialStatus: balance <= 0 && invoice ? 'paid' : overdue ? 'overdue' : paidAmount > 0 ? 'partial' : invoice ? 'pending' : 'none',
+      sessions: attendance,
       payments:payments.results
     });
   }
