@@ -54,7 +54,24 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     const paymentRows=await db.prepare(`SELECT p.id,p.amount,p.paid_at,p.method,p.reference,p.note,i.id AS invoice_id,i.amount AS invoice_amount,et.id AS term_id,e.id AS enrollment_id,s.id AS student_id,TRIM(COALESCE(s.first_name,'')||' '||COALESCE(s.last_name,'')) AS student_name,c.title AS class_title FROM payments p JOIN invoices i ON i.id=p.invoice_id JOIN enrollment_terms et ON et.id=i.enrollment_term_id JOIN enrollments e ON e.id=et.enrollment_id JOIN students s ON s.id=e.student_id LEFT JOIN classes c ON c.id=e.class_id WHERE date(p.paid_at)>=? AND date(p.paid_at)<? AND EXISTS(SELECT 1 FROM enrollment_sessions es JOIN class_sessions cs ON cs.id=es.session_id WHERE es.enrollment_id=e.id AND cs.instructor_id=?) ORDER BY p.paid_at DESC,p.id DESC`).bind(startDate,endDate,auth.instructorId).all();
-    const priorDebt=await db.prepare(`SELECT i.id AS invoice_id,i.amount AS invoice_amount,i.due_date,i.status,e.id AS enrollment_id,s.id AS student_id,TRIM(COALESCE(s.first_name,'')||' '||COALESCE(s.last_name,'')) AS student_name,c.title AS class_title,COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0) AS paid_amount FROM invoices i JOIN enrollment_terms et ON et.id=i.enrollment_term_id JOIN enrollments e ON e.id=et.enrollment_id JOIN students s ON s.id=e.student_id LEFT JOIN classes c ON c.id=e.class_id WHERE i.status<>'cancelled' AND i.due_date IS NOT NULL AND i.due_date<? AND COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)<i.amount AND EXISTS(SELECT 1 FROM enrollment_sessions es JOIN class_sessions cs ON cs.id=es.session_id WHERE es.enrollment_id=e.id AND cs.instructor_id=? AND cs.session_date<?) ORDER BY i.due_date,i.id`).bind(startDate,auth.instructorId,startDate).all<any>();
+
+    const priorDebt=await db.prepare(`
+      SELECT i.id AS invoice_id,i.amount AS invoice_amount,i.due_date,i.status,e.id AS enrollment_id,s.id AS student_id,
+        TRIM(COALESCE(s.first_name,'')||' '||COALESCE(s.last_name,'')) AS student_name,c.title AS class_title,
+        COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0) AS paid_amount
+      FROM invoices i
+      JOIN enrollment_terms et ON et.id=i.enrollment_term_id
+      JOIN enrollments e ON e.id=et.enrollment_id
+      JOIN students s ON s.id=e.student_id
+      LEFT JOIN classes c ON c.id=e.class_id
+      WHERE i.status<>'cancelled'
+        AND i.due_date IS NOT NULL
+        AND i.due_date<?
+        AND i.id=(SELECT i2.id FROM invoices i2 WHERE i2.enrollment_term_id=et.id AND i2.status<>'cancelled' ORDER BY i2.id DESC LIMIT 1)
+        AND COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)<i.amount
+        AND EXISTS(SELECT 1 FROM enrollment_sessions es JOIN class_sessions cs ON cs.id=es.session_id WHERE es.enrollment_id=e.id AND cs.instructor_id=? AND cs.session_date<?)
+      ORDER BY i.due_date,i.id
+    `).bind(startDate,auth.instructorId,startDate).all<any>();
 
     const balanceByGroup=new Map<string,number>();
     for(const row of details){const key=`${row.enrollment_id}:${row.term_id??0}`;balanceByGroup.set(key,Math.max(balanceByGroup.get(key)??0,Number(row.balance)));}
