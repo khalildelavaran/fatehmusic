@@ -12,6 +12,7 @@ if(!session)return Astro.redirect('/student/login');
   <div class="student-sidebar-brand"><img src="/logo.webp" alt="آموزشگاه موسیقی فاتح"/><strong>آموزشگاه موسیقی فاتح</strong></div>
   <nav aria-label="ناوبری داشبورد هنرجو">
     <a href="#courses">دوره‌های من</a>
+    <a href="#finance">وضعیت ترم و شهریه</a>
     <a href="#evaluations">ارزیابی‌ها</a>
     <a href="#makeup">جلسات جبرانی</a>
     <a href="#notifications">اعلان‌ها</a>
@@ -30,81 +31,100 @@ if(!session)return Astro.redirect('/student/login');
 const app=document.querySelector('#studentApp');
 const esc=(v: any)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 const contractForm=(id: any,label='PDF قرارداد')=>`<a class="gold-action" href="/api/admin/contract-generate?registration_id=${encodeURIComponent(Number(id))}" target="_blank" rel="noopener">${label}</a>`;
-
 const MAKEUP_STATUS_LABELS: Record<string,string>={pending:'در انتظار بررسی',approved:'تأیید‌شده',rejected:'رد‌شده',scheduled:'زمان‌بندی‌شده',completed:'برگزارشده'};
+const FINANCE_STATUS_LABELS: Record<string,string>={paid:'تسویه شده',partial:'پرداخت ناقص',overdue:'معوق',pending:'پرداخت نشده',none:'صورتحساب ندارد'};
+const PAYMENT_METHOD_LABELS: Record<string,string>={cash:'نقدی',pos:'کارتخوان آموزشگاه',transfer:'کارت‌به‌کارت / انتقال',online:'آنلاین',other:'سایر'};
 
 async function api(path: string,options?: RequestInit): Promise<any>{const r=await fetch(path,{credentials:'same-origin',...(options||{})});if(r.status===401){location.href='/student/login';throw new Error('unauthorized')}return r.json()}
-
 function enrollmentPicker(enrollments: any[],selectId: string){
   if(!enrollments.length)return '<p class="student-empty">ثبت‌نام فعالی در سامانه جدید یافت نشد.</p>';
   return `<label>انتخاب کلاس<select id="${selectId}">${enrollments.map((e: any)=>`<option value="${e.enrollmentId}">${esc(e.classTitle)} — ${esc(e.instructorName)}</option>`).join('')}</select></label>`;
 }
+function money(v:any){return Number(v??0).toLocaleString('fa-IR')}
+function dateLabel(v:any){if(!v)return '—';const [y,m,d]=String(v).split('-').map(Number);if(!y||!m||!d)return String(v);return new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'long',day:'numeric'}).format(new Date(y,m-1,d,12))}
+function timeLabel(v:any){return v?String(v).slice(0,5):'—'}
 
-async function loadEvaluations(enrollments: any[]){
-  const box=document.querySelector('#evaluationsBody');
-  if(!box)return;
-  if(!enrollments.length){box.innerHTML='<p class="student-empty">ثبت‌نام فعالی یافت نشد.</p>';return}
-  const enrollmentId=(document.querySelector('#evaluationsEnrollmentSelect') as HTMLSelectElement | null)?.value||enrollments[0].enrollmentId;
-  const d:any=await api(`/api/student/evaluations?enrollmentId=${encodeURIComponent(enrollmentId)}`);
-  if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
-  box.innerHTML=d.evaluations.length?d.evaluations.map((e:any)=>`<article class="student-item"><div class="student-item-icon">★</div><h3>نمره کلی: ${esc(e.overall)}</h3><p>فن‌آوری: ${e.technique??'-'} · ریتم: ${e.rhythm??'-'} · تئوری: ${e.theory??'-'} · اجرا: ${e.performance??'-'} · انضباط: ${e.discipline??'-'}</p>${e.comment?`<p>${esc(e.comment)}</p>`:''}</article>`).join(''):'<p class="student-empty">هنوز ارزیابی‌ای برای شما ثبت نشده است.</p>';
+function financeAlert(st:any){
+  if(st.overdue)return `<div class="student-alert finance-alert overdue"><strong>شهریه معوق است.</strong> مانده قابل پرداخت: ${money(st.balance)}.</div>`;
+  if(st.nearDue)return `<div class="student-alert finance-alert"><strong>یادآوری شهریه:</strong> سررسید پرداخت ${dateLabel(st.dueDate)} است.</div>`;
+  if(st.renewalWarning)return `<div class="student-alert finance-alert"><strong>یادآوری تمدید:</strong> فقط یک جلسه یا کمتر از ترم باقی مانده و مانده شهریه ${money(st.balance)} است.</div>`;
+  if(st.halfTermWarning)return `<div class="student-alert finance-alert"><strong>یادآوری شهریه:</strong> وارد نیمه دوم ترم شده‌اید؛ مانده شهریه ${money(st.balance)} است.</div>`;
+  return '';
+}
+function renderFinanceTerm(st:any){
+  const status=FINANCE_STATUS_LABELS[st.financialStatus]||st.financialStatus;
+  const sessions=st.sessions||[];
+  return `<article class="student-item finance-term">
+    <div class="student-item-icon">₮</div>
+    <div class="finance-term-head"><div><h3>${esc(st.classTitle)}</h3><p>مدرس: ${esc(st.instructorName)} · ترم ${esc(st.termNumber??'—')}</p></div><span class="finance-badge ${esc(st.financialStatus)}">${esc(status)}</span></div>
+    ${financeAlert(st)}
+    <div class="finance-stats">
+      <div><span>جلسات گذرانده</span><b>${money(st.consumedSessions)} از ${money(st.plannedSessions)}</b></div>
+      <div><span>حاضر</span><b>${money(st.completedSessions)}</b></div>
+      <div><span>غیبت</span><b>${money(st.absentSessions)}</b></div>
+      <div><span>مرخصی</span><b>${money(st.leaveSessions)}</b></div>
+      <div><span>جلسات باقیمانده</span><b>${st.remainingSessions===null?'—':money(st.remainingSessions)}</b></div>
+      <div><span>جلسات پرداخت‌نشده</span><b>${st.unpaidSessions===null?'—':money(st.unpaidSessions)}</b></div>
+    </div>
+    <div class="finance-money"><span>شهریه: <b>${money(st.invoiceAmount)}</b></span><span>پرداخت‌شده: <b>${money(st.paidAmount)}</b></span><span>مانده: <b>${money(st.balance)}</b></span>${st.dueDate?`<span>سررسید: <b>${dateLabel(st.dueDate)}</b></span>`:''}</div>
+    ${sessions.length?`<div class="finance-session-list"><h4>جلسات ترم</h4>${sessions.map((s:any)=>{const canLeave=s.status==='pending'&&((new Date(`${s.session_date}T${s.start_time}:00`).getTime()-Date.now())/3600000)>=24;const statusLabel=s.status==='present'?'حاضر':s.status==='absent'?'غایب':s.status==='excused'?'مرخصی':'ثبت نشده';return `<div class="finance-session-row"><div><b>${dateLabel(s.session_date)}</b><span>${timeLabel(s.start_time)} تا ${timeLabel(s.end_time)}</span></div><span class="session-status ${esc(s.status)}">${statusLabel}</span>${canLeave?`<button type="button" class="leave-button" data-leave-session="${s.id}">ثبت مرخصی</button>`:''}</div>`}).join('')}</div>`:''}
+    ${st.payments?.length?`<details class="finance-payments"><summary>سوابق پرداخت (${money(st.payments.length)})</summary><div>${st.payments.map((p:any)=>`<div class="payment-history-row"><span>${dateLabel(String(p.paid_at||'').slice(0,10))}</span><span>${esc(PAYMENT_METHOD_LABELS[p.method]||p.method)}</span><b>${money(p.amount)}</b></div>`).join('')}</div></details>`:'<p class="student-empty">هنوز پرداختی برای این ترم ثبت نشده است.</p>'}
+  </article>`;
 }
 
+async function loadFinance(){
+  const box=document.querySelector('#financeBody');if(!box)return;
+  box.innerHTML='<p class="student-loading">در حال دریافت وضعیت ترم و شهریه...</p>';
+  try{const d:any=await api('/api/student/finance');if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}box.innerHTML=d.enrollments?.length?d.enrollments.map(renderFinanceTerm).join(''):'<p class="student-empty">ترم فعالی برای نمایش وضعیت مالی یافت نشد.</p>';
+  }catch(error){box.innerHTML=`<p class="student-empty">${esc(error instanceof Error?error.message:'دریافت اطلاعات مالی ناموفق بود')}</p>`}
+}
+async function loadEvaluations(enrollments: any[]){
+  const box=document.querySelector('#evaluationsBody');if(!box)return;if(!enrollments.length){box.innerHTML='<p class="student-empty">ثبت‌نام فعالی یافت نشد.</p>';return}
+  const enrollmentId=(document.querySelector('#evaluationsEnrollmentSelect') as HTMLSelectElement | null)?.value||enrollments[0].enrollmentId;
+  const d:any=await api(`/api/student/evaluations?enrollmentId=${encodeURIComponent(enrollmentId)}`);if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
+  box.innerHTML=d.evaluations.length?d.evaluations.map((e:any)=>`<article class="student-item"><div class="student-item-icon">★</div><h3>نمره کلی: ${esc(e.overall)}</h3><p>فن‌آوری: ${e.technique??'-'} · ریتم: ${e.rhythm??'-'} · تئوری: ${e.theory??'-'} · اجرا: ${e.performance??'-'} · انضباط: ${e.discipline??'-'}</p>${e.comment?`<p>${esc(e.comment)}</p>`:''}</article>`).join(''):'<p class="student-empty">هنوز ارزیابی‌ای برای شما ثبت نشده است.</p>';
+}
 async function loadMakeup(enrollments: any[]){
-  const box=document.querySelector('#makeupBody');
-  if(!box)return;
-  if(!enrollments.length){box.innerHTML='<p class="student-empty">ثبت‌نام فعالی یافت نشد.</p>';return}
+  const box=document.querySelector('#makeupBody');if(!box)return;if(!enrollments.length){box.innerHTML='<p class="student-empty">ثبت‌نام فعالی یافت نشد.</p>';return}
   const enrollmentId=(document.querySelector('#makeupEnrollmentSelect') as HTMLSelectElement | null)?.value||enrollments[0].enrollmentId;
-  const d:any=await api(`/api/student/makeup-requests?enrollmentId=${encodeURIComponent(enrollmentId)}`);
-  if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
+  const d:any=await api(`/api/student/makeup-requests?enrollmentId=${encodeURIComponent(enrollmentId)}`);if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
   const requestable=(d.requestableAbsences||[]).map((a:any)=>`<article class="student-item"><div class="student-item-icon">↻</div><h3>${esc(a.classTitle)}</h3><p>تاریخ غیبت: ${esc(a.sessionDate)} ساعت ${esc(a.startTime)}</p><div class="student-actions"><button data-request-makeup="${a.enrollmentSessionId}" data-enrollment-id="${enrollmentId}">درخواست جلسه جبرانی</button></div></article>`).join('');
   const requests=(d.requests||[]).map((r:any)=>`<article class="student-item"><div class="student-item-icon">↺</div><h3>وضعیت: ${esc(MAKEUP_STATUS_LABELS[r.status]||r.status)}</h3>${r.reason?`<p>دلیل: ${esc(r.reason)}</p>`:''}${r.reviewNote?`<p>یادداشت بررسی: ${esc(r.reviewNote)}</p>`:''}</article>`).join('');
   box.innerHTML=`${requestable||'<p class="student-empty">غیبت موجهی برای درخواست جلسه جبرانی یافت نشد.</p>'}${requests}`;
 }
-
 async function loadNotifications(){
-  const box=document.querySelector('#notificationsBody');
-  if(!box)return;
-  const d:any=await api('/api/student/notifications');
-  if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
+  const box=document.querySelector('#notificationsBody');if(!box)return;const d:any=await api('/api/student/notifications');if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
   box.innerHTML=d.notifications.length?d.notifications.map((n:any)=>`<article class="student-item${n.readAt?'':' is-unread'}"><div class="student-item-icon">🔔</div><h3>${esc(n.title)}</h3>${n.body?`<p>${esc(n.body)}</p>`:''}${!n.readAt?`<div class="student-actions"><button data-mark-read="${n.id}">علامت‌گذاری به‌عنوان خوانده‌شده</button></div>`:''}</article>`).join(''):'<p class="student-empty">اعلانی برای شما ثبت نشده است.</p>';
 }
-
 async function load(){
-  const r=await fetch('/api/student/me',{credentials:'same-origin'});
-  if(r.status===401){location.href='/student/login';return}
-  const d:any=await r.json();
-  if(!d.success){(app as HTMLElement).innerHTML=`<p>${esc(d.message)}</p>`;return}
-
+  const r=await fetch('/api/student/me',{credentials:'same-origin'});if(r.status===401){location.href='/student/login';return}const d:any=await r.json();if(!d.success){(app as HTMLElement).innerHTML=`<p>${esc(d.message)}</p>`;return}
   const enrollmentsResp:any=await api('/api/student/enrollments').catch(()=>({success:false,enrollments:[]}));
   const enrollments:any[]=enrollmentsResp.success?enrollmentsResp.enrollments.filter((e:any)=>e.status==='active'):[];
-
-  (app as HTMLElement).innerHTML=`${d.must_change_password?`<section class="student-alert"><strong>توجه:</strong> رمز اولیه شما کد ملی است. برای امنیت حساب، رمز دلخواه خود را تعیین کنید.</section>`:''}<section id="courses" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">آموزش</span><h2>دوره‌های من</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">♪</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p><p>زمان: ${esc(x.schedule_weekday)}${x.schedule_duration?` · ${esc(x.schedule_duration)} دقیقه`:''}</p><div class="student-actions">${contractForm(x.id,'دریافت PDF قرارداد')}</div></article>`).join(''):'<p class="student-empty">دوره‌ای برای این کد ملی ثبت نشده است.</p>'}</div></section><section id="evaluations" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">پیشرفت</span><h2>ارزیابی‌ها</h2></div></div>${enrollmentPicker(enrollments,'evaluationsEnrollmentSelect')}<div class="student-grid" id="evaluationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section><section id="makeup" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حضور</span><h2>جلسات جبرانی</h2></div></div>${enrollmentPicker(enrollments,'makeupEnrollmentSelect')}<div class="student-grid" id="makeupBody"><p class="student-loading">در حال بارگذاری...</p></div></section><section id="notifications" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">اطلاع‌رسانی</span><h2>اعلان‌ها</h2></div></div><div class="student-grid" id="notificationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section><section id="contracts" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>قراردادها</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">▤</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p>${contractForm(x.id,'دریافت PDF قرارداد')}</article>`).join(''):'<p class="student-empty">قراردادی برای شما ثبت نشده است.</p>'}</div></section><section id="certificates" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>گواهینامه‌های صادرشده</h2></div></div><div class="student-grid">${d.certificates.length?d.certificates.map((x:any)=>`<article class="student-item certificate-item"><div class="student-item-icon">✓</div><h3>گواهی پایان دوره</h3><p>شماره گواهی: ${esc(x.cert_number)}</p><p>تاریخ صدور: ${esc(x.completion_date_jalali)}</p><div class="student-actions"><a class="gold-action" href="/api/student/certificate?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">PDF گواهینامه</a></div></article>`).join(''):'<p class="student-empty">هنوز گواهینامه‌ای برای شما صادر نشده است.</p>'}</div></section><section id="account" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حساب کاربری</span><h2>تغییر رمز عبور</h2></div></div><form id="passwordForm" class="student-password"><input id="newPassword" type="password" minlength="6" placeholder="رمز جدید، حداقل ۶ کاراکتر" required/><input id="repeatPassword" type="password" minlength="6" placeholder="تکرار رمز جدید" required/><button>ذخیره رمز جدید</button><p id="passwordStatus" class="student-status"></p></form></section>`;
-
-  await Promise.all([loadEvaluations(enrollments),loadMakeup(enrollments),loadNotifications()]);
-
+  (app as HTMLElement).innerHTML=`${d.must_change_password?`<section class="student-alert"><strong>توجه:</strong> رمز اولیه شما کد ملی است. برای امنیت حساب، رمز دلخواه خود را تعیین کنید.</section>`:''}
+  <section id="courses" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">آموزش</span><h2>دوره‌های من</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">♪</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p><p>زمان: ${esc(x.schedule_weekday)}${x.schedule_duration?` · ${esc(x.schedule_duration)} دقیقه`:''}</p><div class="student-actions">${contractForm(x.id,'دریافت PDF قرارداد')}</div></article>`).join(''):'<p class="student-empty">دوره‌ای برای این کد ملی ثبت نشده است.</p>'}</div></section>
+  <section id="finance" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">ترم و شهریه</span><h2>وضعیت ترم و امور مالی</h2></div><button type="button" class="gold-action" id="financeRefresh">به‌روزرسانی</button></div><div id="financeBody" class="student-grid"><p class="student-loading">در حال بارگذاری...</p></div></section>
+  <section id="evaluations" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">پیشرفت</span><h2>ارزیابی‌ها</h2></div></div>${enrollmentPicker(enrollments,'evaluationsEnrollmentSelect')}<div class="student-grid" id="evaluationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
+  <section id="makeup" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حضور</span><h2>جلسات جبرانی</h2></div></div>${enrollmentPicker(enrollments,'makeupEnrollmentSelect')}<div class="student-grid" id="makeupBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
+  <section id="notifications" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">اطلاع‌رسانی</span><h2>اعلان‌ها</h2></div></div><div class="student-grid" id="notificationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
+  <section id="contracts" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>قراردادها</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">▤</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p>${contractForm(x.id,'دریافت PDF قرارداد')}</article>`).join(''):'<p class="student-empty">قراردادی برای شما ثبت نشده است.</p>'}</div></section>
+  <section id="certificates" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>گواهینامه‌های صادرشده</h2></div></div><div class="student-grid">${d.certificates.length?d.certificates.map((x:any)=>`<article class="student-item certificate-item"><div class="student-item-icon">✓</div><h3>گواهی پایان دوره</h3><p>شماره گواهی: ${esc(x.cert_number)}</p><p>تاریخ صدور: ${esc(x.completion_date_jalali)}</p><div class="student-actions"><a class="gold-action" href="/api/student/certificate?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">PDF گواهینامه</a></div></article>`).join(''):'<p class="student-empty">هنوز گواهینامه‌ای برای شما صادر نشده است.</p>'}</div></section>
+  <section id="account" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حساب کاربری</span><h2>تغییر رمز عبور</h2></div></div><form id="passwordForm" class="student-password"><input id="newPassword" type="password" minlength="6" placeholder="رمز جدید، حداقل ۶ کاراکتر" required/><input id="repeatPassword" type="password" minlength="6" placeholder="تکرار رمز جدید" required/><button>ذخیره رمز جدید</button><p id="passwordStatus" class="student-status"></p></form></section>`;
+  await Promise.all([loadFinance(),loadEvaluations(enrollments),loadMakeup(enrollments),loadNotifications()]);
   document.querySelector('#evaluationsEnrollmentSelect')?.addEventListener('change',()=>loadEvaluations(enrollments));
   document.querySelector('#makeupEnrollmentSelect')?.addEventListener('change',()=>loadMakeup(enrollments));
-
-  (app as HTMLElement).addEventListener('click',async (e: Event)=>{
-    const t=e.target;
-    if(!(t instanceof HTMLElement))return;
-    if(t.dataset.requestMakeup){
-      const reason=prompt('دلیل درخواست جلسه جبرانی (اختیاری):')||'';
-      const d:any=await api('/api/student/makeup-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId:Number(t.dataset.enrollmentId),originalEnrollmentSessionId:Number(t.dataset.requestMakeup),reason})});
-      if(!d.success)alert(d.message||'ثبت درخواست انجام نشد.');
-      await loadMakeup(enrollments);
-      return;
-    }
-    if(t.dataset.markRead){
-      await api('/api/student/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Number(t.dataset.markRead)})});
-      await loadNotifications();
-      return;
-    }
-  });
+  document.querySelector('#financeRefresh')?.addEventListener('click',loadFinance);
 }
-app?.addEventListener('submit',async e=>{if(e.target.id!=='passwordForm')return;e.preventDefault();const status=document.querySelector('#passwordStatus');const p=document.querySelector('#newPassword').value;if(p!==document.querySelector('#repeatPassword').value){status.textContent='تکرار رمز یکسان نیست.';return}const r=await fetch('/api/student/password',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({new_password:p})});const d=await r.json();status.textContent=d.message||'انجام شد.';if(r.ok)document.querySelector('#passwordForm').reset()});
+
+app?.addEventListener('click',async e=>{const t=e.target;if(!(t instanceof HTMLElement))return;
+  if(t.dataset.requestMakeup){const reason=prompt('دلیل درخواست جلسه جبرانی (اختیاری):')||'';const d:any=await api('/api/student/makeup-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId:Number(t.dataset.enrollmentId),originalEnrollmentSessionId:Number(t.dataset.requestMakeup),reason})});if(!d.success)alert(d.message||'ثبت درخواست انجام نشد.');await load();return}
+  if(t.dataset.markRead){await api('/api/student/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Number(t.dataset.markRead)})});await loadNotifications();return}
+  if(t.dataset.leaveSession){const note=prompt('یادداشت مرخصی (اختیاری):')||'';t.setAttribute('disabled','true');const d:any=await api('/api/student/leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentSessionId:Number(t.dataset.leaveSession),note})});if(!d.success)alert(d.message||'ثبت مرخصی انجام نشد.');await loadFinance();await loadNotifications();}
+});
+app?.addEventListener('submit',async e=>{if(!(e.target instanceof HTMLFormElement)||e.target.id!=='passwordForm')return;e.preventDefault();const status=document.querySelector('#passwordStatus') as HTMLElement;const p=(document.querySelector('#newPassword') as HTMLInputElement).value;if(p!==(document.querySelector('#repeatPassword') as HTMLInputElement).value){status.textContent='تکرار رمز یکسان نیست.';return}const r=await fetch('/api/student/password',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({new_password:p})});const d=await r.json();status.textContent=d.message||'انجام شد.';if(r.ok)(document.querySelector('#passwordForm') as HTMLFormElement).reset()});
 async function logout(){await fetch('/api/student/logout',{method:'POST',credentials:'same-origin'});location.href='/student/login'}
 document.querySelector('#logoutButton')?.addEventListener('click',logout);load();
 </script>
+<style>
+.finance-term{position:relative}.finance-term-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.finance-term-head h3{margin:0 0 5px}.finance-badge{padding:5px 9px;border:1px solid currentColor;border-radius:999px;font-size:12px;white-space:nowrap}.finance-badge.overdue{color:#c66}.finance-badge.partial,.finance-badge.pending{color:#b89500}.finance-badge.paid{color:#6fb57c}.finance-alert{margin:12px 0}.finance-alert.overdue{border-color:#a33}.finance-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.finance-stats>div{padding:10px;border:1px solid var(--border);border-radius:10px}.finance-stats span,.finance-money span{display:block;font-size:11px;opacity:.65;margin-bottom:4px}.finance-stats b{font-size:15px}.finance-money{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}.finance-session-list{margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}.finance-session-list h4{margin:0 0 9px}.finance-session-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}.finance-session-row>div{display:flex;gap:10px;align-items:center}.finance-session-row>div span{opacity:.65;font-size:12px}.session-status{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border)}.session-status.present{border-color:#2f8f46}.session-status.absent{border-color:#a33}.session-status.excused{border-color:#8a8a8a}.leave-button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 9px;cursor:pointer;font-family:inherit}.leave-button:hover{border-color:var(--primary)}.finance-payments{margin-top:14px}.finance-payments summary{cursor:pointer;padding:8px 0}.payment-history-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}.payment-history-row b{font-size:13px}.gold-action{cursor:pointer}.student-grid .finance-term{min-width:0}@media(max-width:700px){.finance-stats{grid-template-columns:1fr 1fr}.finance-term-head{flex-direction:column}.finance-session-row{grid-template-columns:1fr auto}.finance-session-row .leave-button{grid-column:1/-1;width:100%}}@media(max-width:480px){.finance-stats{grid-template-columns:1fr}.payment-history-row{grid-template-columns:1fr 1fr}.payment-history-row b{grid-column:1/-1}}
+</style>
 </MainLayout>
