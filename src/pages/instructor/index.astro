@@ -5,7 +5,7 @@ import { getInstructorSession, type InstructorEnv } from "../../server/instructo
 import "../../styles/student.css";
 
 const session = await getInstructorSession(Astro.request, env as InstructorEnv);
-if (!session) return Astro.redirect("/instructor/login");
+if (!session) return Astro.redirect("/login");
 ---
 <MainLayout title="داشبورد مدرس | آموزشگاه موسیقی فاتح" noindex={true}>
 <main class="student-dashboard" dir="rtl">
@@ -161,7 +161,7 @@ async function load() {
 
 app?.addEventListener('click', (e) => { const target = e.target; if (!(target instanceof HTMLElement)) return; if (target.dataset.attendance) { markAttendance(target.dataset.esid, target.dataset.attendance); return; } if (target.dataset.evalEnrollment !== undefined) { submitEvaluation(target.dataset.evalEnrollment, target.dataset.evalSession, target.dataset.studentName); return; } });
 app?.addEventListener('submit', async (e) => { if (e.target.id !== 'passwordForm') return; e.preventDefault(); const status = document.querySelector('#passwordStatus'); const p = document.querySelector('#newPassword').value; if (p !== document.querySelector('#repeatPassword').value) { status.textContent = 'تکرار رمز یکسان نیست.'; return; } const d = await api('/api/instructor/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_password: p }) }); status.textContent = d.message || 'انجام شد.'; if (d.success) document.querySelector('#passwordForm').reset(); });
-async function logout() { await fetch('/api/instructor/logout', { method: 'POST', credentials: 'same-origin' }); location.href = '/instructor/login'; }
+async function logout() { await fetch('/api/instructor/logout', { method: 'POST', credentials: 'same-origin' }); location.href = '/login'; }
 document.querySelector('#logoutButton')?.addEventListener('click', logout);
 load();
 </script>
