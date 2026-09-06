@@ -73,3 +73,56 @@ form?.addEventListener("submit", async (event) => {
     submitButton?.removeAttribute("disabled");
   }
 });
+
+const accountForm = document.querySelector("#instructorAccountForm");
+const accountStatusEl = document.querySelector("#instructorAccountFormStatus");
+
+function setAccountStatus(text, isError = false) {
+  if (!accountStatusEl) return;
+  accountStatusEl.textContent = text;
+  accountStatusEl.classList.toggle("is-error", isError);
+}
+
+accountForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const submitButton = accountForm.querySelector('button[type="submit"]');
+  const instructorId = Number(accountForm.dataset.instructorId);
+  const data = new FormData(accountForm);
+  const body = {
+    instructorId,
+    username: String(data.get("username") || "").trim(),
+    password: String(data.get("password") || "")
+  };
+
+  submitButton?.setAttribute("disabled", "true");
+  setAccountStatus("در حال ثبت...");
+
+  try {
+    const response = await fetch("/api/admin/instructor-accounts", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    if (response.status === 401) {
+      location.assign("/admin/login");
+      return;
+    }
+
+    const result = await response.json().catch(() => ({ success: false, message: "پاسخ نامعتبر از سرور." }));
+
+    if (!response.ok || !result.success) {
+      setAccountStatus(result.message || `ثبت حساب کاربری انجام نشد (${response.status}).`, true);
+      return;
+    }
+
+    setAccountStatus(result.message || "حساب کاربری مدرس با موفقیت تنظیم شد.");
+    accountForm.reset();
+  } catch (error) {
+    console.error("[admin/instructor-accounts] save failed", error);
+    setAccountStatus("ارتباط با سرور برقرار نشد. اتصال اینترنت و وضعیت سرور را بررسی کنید.", true);
+  } finally {
+    submitButton?.removeAttribute("disabled");
+  }
+});
