@@ -7,8 +7,12 @@
     max-width:640px;
 }
 
+.admin-panel--certificates:first-of-type{
+    padding:5px 0 !important;
+}
+
 .admin-panel--certificates:first-of-type .admin-form{
-    padding:5px 0;
+    padding:0;
 }
 
 .admin-cert-results{
