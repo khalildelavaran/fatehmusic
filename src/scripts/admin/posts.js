@@ -34,8 +34,10 @@ function renderPosts() {
     <tr>
       <td>
         <strong>${post.title}</strong>
-        ${post.is_ai_generated ? '<span class="admin-ai-badge">تولید با هوش مصنوعی</span>' : ""}
-        <div class="admin-table-subtext" dir="ltr">/blog/${post.slug}</div>
+        <div class="admin-post-meta-row">
+          <div class="admin-table-subtext" dir="ltr">/blog/${post.slug}</div>
+          ${post.is_ai_generated ? '<span class="admin-ai-badge">تولید با هوش مصنوعی</span>' : ""}
+        </div>
       </td>
       <td>${post.topic ?? "—"}</td>
       <td><span class="admin-status-pill" data-status="${post.status}">${statusLabel(post.status)}</span></td>
