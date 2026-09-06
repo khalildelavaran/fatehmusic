@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireInstructor, type InstructorEnv } from "../../../server/instructor-auth";
 import { provisionEnrollmentSessionsForClassSession } from "../../../server/session-provisioning";
+import { calculateFinance, calculateInstructorShare } from "../../../server/finance-calculations";
 
 function monthBounds(month: string) {
   if (!/^\d{4}-\d{2}$/.test(month)) return null;
@@ -105,71 +106,45 @@ export const GET: APIRoute = async ({ request }) => {
       for (const row of group) {
         if (row.compensable) compensableCount += 1;
         const rawSessionValue = Number(row.sessionValue);
-        const earnedToDate = rawSessionValue > 0 ? rawSessionValue * compensableCount : 0;
-        const termTuition = Number(row.tuition_amount ?? 0);
-        const amountDueToDate = row.billing_type === "session_based"
-          ? Math.min(termTuition, earnedToDate)
-          : Number(row.invoice_amount ?? 0);
-        row.amountDueToDate = amountDueToDate;
-        row.balance = Math.max(amountDueToDate - Number(row.paid_amount ?? 0), 0);
-        row.instructorShare = rawSessionValue * payPercentage / 100;
-        row.paymentStatus = row.invoice_id
-          ? row.balance <= 0 ? "paid" : Number(row.paid_amount ?? 0) > 0 ? "partial" : row.invoice_status
-          : "unknown";
+        const finance = calculateFinance({
+          invoiceAmount: Number(row.invoice_amount ?? row.tuition_amount ?? 0),
+          paidAmount: Number(row.paid_amount ?? 0),
+          dueDate: row.due_date,
+          billingType: row.billing_type,
+          plannedSessions: row.planned_sessions,
+          consumedSessions: compensableCount,
+        });
+        row.amountDueToDate = finance.amountDueToDate;
+        row.balance = finance.balance;
+        row.instructorShare = calculateInstructorShare(rawSessionValue, payPercentage);
+        row.paymentStatus = row.invoice_id ? finance.financialStatus : "unknown";
       }
     }
 
     const paymentRows = await db.prepare(`
-      SELECT
-        p.id, p.amount, p.paid_at, p.method, p.reference, p.note,
-        i.id AS invoice_id, i.amount AS invoice_amount,
-        et.id AS term_id, e.id AS enrollment_id, s.id AS student_id,
-        TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
-        c.title AS class_title
-      FROM payments p
-      JOIN invoices i ON i.id = p.invoice_id
-      JOIN enrollment_terms et ON et.id = i.enrollment_term_id
-      JOIN enrollments e ON e.id = et.enrollment_id
-      JOIN students s ON s.id = e.student_id
-      LEFT JOIN classes c ON c.id = e.class_id
+      SELECT p.id,p.amount,p.paid_at,p.method,p.reference,p.note,i.id AS invoice_id,i.amount AS invoice_amount,
+        et.id AS term_id,e.id AS enrollment_id,s.id AS student_id,
+        TRIM(COALESCE(s.first_name,'') || ' ' || COALESCE(s.last_name,'')) AS student_name,c.title AS class_title
+      FROM payments p JOIN invoices i ON i.id=p.invoice_id JOIN enrollment_terms et ON et.id=i.enrollment_term_id
+      JOIN enrollments e ON e.id=et.enrollment_id JOIN students s ON s.id=e.student_id LEFT JOIN classes c ON c.id=e.class_id
       WHERE date(p.paid_at) >= ? AND date(p.paid_at) < ?
-        AND EXISTS (
-          SELECT 1 FROM enrollment_sessions es
-          JOIN class_sessions cs ON cs.id = es.session_id
-          WHERE es.enrollment_id = e.id AND cs.instructor_id = ?
-        )
-      ORDER BY p.paid_at DESC, p.id DESC
-    `).bind(startDate, endDate, auth.instructorId).all<{
-      id: number; amount: number; paid_at: string; method: string | null; reference: string | null; note: string;
-      invoice_id: number; invoice_amount: number; term_id: number; enrollment_id: number; student_id: number;
-      student_name: string; class_title: string | null;
-    }>();
+        AND EXISTS (SELECT 1 FROM enrollment_sessions es JOIN class_sessions cs ON cs.id=es.session_id
+          WHERE es.enrollment_id=e.id AND cs.instructor_id=?)
+      ORDER BY p.paid_at DESC,p.id DESC
+    `).bind(startDate,endDate,auth.instructorId).all();
 
     const priorDebt = await db.prepare(`
-      SELECT
-        i.id AS invoice_id, i.amount AS invoice_amount, i.due_date, i.status,
-        e.id AS enrollment_id, s.id AS student_id,
-        TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
-        c.title AS class_title,
-        COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) AS paid_amount
-      FROM invoices i
-      JOIN enrollment_terms et ON et.id = i.enrollment_term_id
-      JOIN enrollments e ON e.id = et.enrollment_id
-      JOIN students s ON s.id = e.student_id
-      LEFT JOIN classes c ON c.id = e.class_id
-      WHERE i.status <> 'cancelled'
-        AND i.due_date IS NOT NULL AND i.due_date < ?
-        AND COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) < i.amount
-        AND EXISTS (
-          SELECT 1 FROM enrollment_sessions es
-          JOIN class_sessions cs ON cs.id = es.session_id
-          WHERE es.enrollment_id = e.id AND cs.instructor_id = ? AND cs.session_date < ?
-        )
-      ORDER BY i.due_date ASC, i.id ASC
-    `).bind(startDate, auth.instructorId, startDate).all<{
-      invoice_id: number; invoice_amount: number; due_date: string; status: string;
-      enrollment_id: number; student_id: number; student_name: string; class_title: string | null; paid_amount: number;
-    }>();
+      SELECT i.id AS invoice_id,i.amount AS invoice_amount,i.due_date,i.status,e.id AS enrollment_id,s.id AS student_id,
+        TRIM(COALESCE(s.first_name,'') || ' ' || COALESCE(s.last_name,'')) AS student_name,c.title AS class_title,
+        COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0) AS paid_amount
+      FROM invoices i JOIN enrollment_terms et ON et.id=i.enrollment_term_id JOIN enrollments e ON e.id=et.enrollment_id
+      JOIN students s ON s.id=e.student_id LEFT JOIN classes c ON c.id=e.class_id
+      WHERE i.status <> 'cancelled' AND i.due_date IS NOT NULL AND i.due_date < ?
+        AND COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0) < i.amount
+        AND EXISTS (SELECT 1 FROM enrollment_sessions es JOIN class_sessions cs ON cs.id=es.session_id
+          WHERE es.enrollment_id=e.id AND cs.instructor_id=? AND cs.session_date < ?)
+      ORDER BY i.due_date ASC,i.id ASC
+    `).bind(startDate,auth.instructorId,startDate).all();
 
     const balanceByGroup = new Map<string, number>();
     for (const row of details) {
@@ -188,16 +163,13 @@ export const GET: APIRoute = async ({ request }) => {
       priorMonthDebt: priorDebt.results.reduce((sum, x) => sum + Math.max(Number(x.invoice_amount) - Number(x.paid_amount), 0), 0),
     };
 
-    return json({
-      success: true, month, startDate, endDate,
-      instructor: { id: auth.instructorId, name: `${instructor?.first_name ?? ''} ${instructor?.last_name ?? ''}`.trim(), payPercentage },
-      totals,
-      details,
-      payments: paymentRows.results,
-      priorDebt: priorDebt.results.map((row) => ({ ...row, balance: Math.max(Number(row.invoice_amount) - Number(row.paid_amount), 0) })),
+    return json({ success:true,month,startDate,endDate,
+      instructor:{id:auth.instructorId,name:`${instructor?.first_name ?? ''} ${instructor?.last_name ?? ''}`.trim(),payPercentage},
+      totals,details,payments:paymentRows.results,
+      priorDebt:priorDebt.results.map((row) => ({...row,balance:Math.max(Number(row.invoice_amount)-Number(row.paid_amount),0)})),
     });
   } catch (error) {
     console.error("[instructor/finance] request failed:", error);
-    return json({ success: false, message: "دریافت اطلاعات مالی مدرس با خطا مواجه شد." }, 500);
+    return json({ success:false,message:"دریافت اطلاعات مالی مدرس با خطا مواجه شد." },500);
   }
 };
