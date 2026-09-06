@@ -49,6 +49,11 @@ export const GET: APIRoute = async ({ request }) => {
         e.id AS enrollment_id, e.student_id,
         TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
         et.id AS term_id, et.billing_type, et.tuition_amount, et.planned_sessions,
+        COALESCE((SELECT COUNT(*) FROM enrollment_sessions es2
+          JOIN class_sessions cs2 ON cs2.id = es2.session_id
+          WHERE es2.enrollment_id = e.id AND es2.enrollment_term_id = et.id
+            AND cs2.session_date < ? AND cs2.status <> 'cancelled'
+            AND es2.status IN ('present', 'absent')), 0) AS prior_compensable_sessions,
         i.id AS invoice_id, i.amount AS invoice_amount, i.due_date, i.status AS invoice_status,
         COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) AS paid_amount
       FROM class_sessions cs
@@ -65,13 +70,13 @@ export const GET: APIRoute = async ({ request }) => {
         AND cs.session_date >= ? AND cs.session_date < ?
         AND cs.status <> 'cancelled'
       ORDER BY cs.session_date ASC, cs.start_time ASC, student_name, cs.id
-    `).bind(auth.instructorId, startDate, endDate).all<{
+    `).bind(startDate, auth.instructorId, startDate, endDate).all<{
       session_id: number; session_date: string; start_time: string; end_time: string; session_status: string;
       class_title: string | null; enrollment_session_id: number; attendance_status: string;
       enrollment_id: number; student_id: number; student_name: string; term_id: number | null;
       billing_type: string | null; tuition_amount: number | null; planned_sessions: number | null;
-      invoice_id: number | null; invoice_amount: number | null; due_date: string | null;
-      invoice_status: string | null; paid_amount: number;
+      prior_compensable_sessions: number; invoice_id: number | null; invoice_amount: number | null;
+      due_date: string | null; invoice_status: string | null; paid_amount: number;
     }>();
 
     const details = rows.results.map((row) => ({
@@ -96,7 +101,7 @@ export const GET: APIRoute = async ({ request }) => {
     }
 
     for (const group of groups.values()) {
-      let compensableCount = 0;
+      let compensableCount = Number(group[0]?.prior_compensable_sessions ?? 0);
       for (const row of group) {
         if (row.compensable) compensableCount += 1;
         const rawSessionValue = Number(row.sessionValue);
