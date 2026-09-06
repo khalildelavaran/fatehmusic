@@ -37,9 +37,8 @@ export const GET: APIRoute = async ({ request }) => {
       catch (error) { console.warn(`[instructor/finance] session ${row.id} provisioning skipped:`, error); }
     }
 
-    const instructor = await db.prepare(`
-      SELECT id, first_name, last_name, pay_percentage FROM instructors WHERE id = ? LIMIT 1
-    `).bind(auth.instructorId).first<{ id: number; first_name: string; last_name: string; pay_percentage: number | null }>();
+    const instructor = await db.prepare(`SELECT id, first_name, last_name, pay_percentage FROM instructors WHERE id = ? LIMIT 1`)
+      .bind(auth.instructorId).first<{ id: number; first_name: string; last_name: string; pay_percentage: number | null }>();
     const payPercentage = Math.min(100, Math.max(0, Number(instructor?.pay_percentage ?? 50)));
 
     const rows = await db.prepare(`
@@ -57,11 +56,15 @@ export const GET: APIRoute = async ({ request }) => {
       JOIN enrollments e ON e.id = es.enrollment_id AND e.class_id = cs.class_id
       JOIN students s ON s.id = e.student_id
       LEFT JOIN enrollment_terms et ON et.id = es.enrollment_term_id
-      LEFT JOIN invoices i ON i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+      LEFT JOIN invoices i ON i.id = (
+        SELECT i2.id FROM invoices i2
+        WHERE i2.enrollment_term_id = et.id AND i2.status <> 'cancelled'
+        ORDER BY i2.id DESC LIMIT 1
+      )
       WHERE cs.instructor_id = ?
         AND cs.session_date >= ? AND cs.session_date < ?
         AND cs.status <> 'cancelled'
-      ORDER BY cs.session_date DESC, cs.start_time DESC, student_name, cs.id
+      ORDER BY cs.session_date ASC, cs.start_time ASC, student_name, cs.id
     `).bind(auth.instructorId, startDate, endDate).all<{
       session_id: number; session_date: string; start_time: string; end_time: string; session_status: string;
       class_title: string | null; enrollment_session_id: number; attendance_status: string;
@@ -71,21 +74,45 @@ export const GET: APIRoute = async ({ request }) => {
       invoice_status: string | null; paid_amount: number;
     }>();
 
-    const details = rows.results.map((row) => {
-      const compensable = row.attendance_status === "present" || row.attendance_status === "absent";
-      const sessionValue = compensable && row.billing_type === "session_based" && row.tuition_amount != null && row.planned_sessions && row.planned_sessions > 0
-        ? Number(row.tuition_amount) / Number(row.planned_sessions) : 0;
-      const balance = row.invoice_amount != null ? Math.max(Number(row.invoice_amount) - Number(row.paid_amount), 0) : 0;
-      const paymentStatus = balance <= 0 && row.invoice_id ? "paid" : row.paid_amount > 0 ? "partial" : row.invoice_id ? row.invoice_status : "unknown";
-      return {
-        ...row,
-        sessionValue,
-        instructorShare: sessionValue * payPercentage / 100,
-        compensable,
-        balance,
-        paymentStatus,
-      };
-    });
+    const details = rows.results.map((row) => ({
+      ...row,
+      sessionValue: row.attendance_status === "present" || row.attendance_status === "absent"
+        ? row.billing_type === "session_based" && row.tuition_amount != null && row.planned_sessions && row.planned_sessions > 0
+          ? Number(row.tuition_amount) / Number(row.planned_sessions) : 0
+        : 0,
+      instructorShare: 0,
+      compensable: row.attendance_status === "present" || row.attendance_status === "absent",
+      amountDueToDate: 0,
+      balance: 0,
+      paymentStatus: row.invoice_id ? row.invoice_status : "unknown",
+    }));
+
+    const groups = new Map<string, typeof details>();
+    for (const row of details) {
+      const key = `${row.enrollment_id}:${row.term_id ?? 0}`;
+      const group = groups.get(key) ?? [];
+      group.push(row);
+      groups.set(key, group);
+    }
+
+    for (const group of groups.values()) {
+      let compensableCount = 0;
+      for (const row of group) {
+        if (row.compensable) compensableCount += 1;
+        const rawSessionValue = Number(row.sessionValue);
+        const earnedToDate = rawSessionValue > 0 ? rawSessionValue * compensableCount : 0;
+        const termTuition = Number(row.tuition_amount ?? 0);
+        const amountDueToDate = row.billing_type === "session_based"
+          ? Math.min(termTuition, earnedToDate)
+          : Number(row.invoice_amount ?? 0);
+        row.amountDueToDate = amountDueToDate;
+        row.balance = Math.max(amountDueToDate - Number(row.paid_amount ?? 0), 0);
+        row.instructorShare = rawSessionValue * payPercentage / 100;
+        row.paymentStatus = row.invoice_id
+          ? row.balance <= 0 ? "paid" : Number(row.paid_amount ?? 0) > 0 ? "partial" : row.invoice_status
+          : "unknown";
+      }
+    }
 
     const paymentRows = await db.prepare(`
       SELECT
@@ -126,7 +153,7 @@ export const GET: APIRoute = async ({ request }) => {
       JOIN students s ON s.id = e.student_id
       LEFT JOIN classes c ON c.id = e.class_id
       WHERE i.status <> 'cancelled'
-        AND (i.due_date IS NOT NULL AND i.due_date < ?)
+        AND i.due_date IS NOT NULL AND i.due_date < ?
         AND COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id = i.id), 0) < i.amount
         AND EXISTS (
           SELECT 1 FROM enrollment_sessions es
@@ -139,27 +166,26 @@ export const GET: APIRoute = async ({ request }) => {
       enrollment_id: number; student_id: number; student_name: string; class_title: string | null; paid_amount: number;
     }>();
 
+    const balanceByGroup = new Map<string, number>();
+    for (const row of details) {
+      const key = `${row.enrollment_id}:${row.term_id ?? 0}`;
+      balanceByGroup.set(key, Math.max(balanceByGroup.get(key) ?? 0, Number(row.balance)));
+    }
+
     const totals = {
       sessions: new Set(details.map((x) => x.session_id)).size,
       studentSessions: details.length,
       compensableSessions: details.filter((x) => x.compensable).length,
-      sessionValue: details.reduce((sum, x) => sum + x.sessionValue, 0),
-      instructorShare: details.reduce((sum, x) => sum + x.instructorShare, 0),
+      sessionValue: details.reduce((sum, x) => sum + Number(x.sessionValue), 0),
+      instructorShare: details.reduce((sum, x) => sum + Number(x.instructorShare), 0),
       currentPayments: paymentRows.results.reduce((sum, x) => sum + Number(x.amount), 0),
-      currentOutstanding: details.reduce((sum, x) => sum + x.balance, 0),
+      currentOutstanding: [...balanceByGroup.values()].reduce((sum, value) => sum + value, 0),
       priorMonthDebt: priorDebt.results.reduce((sum, x) => sum + Math.max(Number(x.invoice_amount) - Number(x.paid_amount), 0), 0),
     };
 
     return json({
-      success: true,
-      month,
-      startDate,
-      endDate,
-      instructor: {
-        id: auth.instructorId,
-        name: `${instructor?.first_name ?? ''} ${instructor?.last_name ?? ''}`.trim(),
-        payPercentage,
-      },
+      success: true, month, startDate, endDate,
+      instructor: { id: auth.instructorId, name: `${instructor?.first_name ?? ''} ${instructor?.last_name ?? ''}`.trim(), payPercentage },
       totals,
       details,
       payments: paymentRows.results,
