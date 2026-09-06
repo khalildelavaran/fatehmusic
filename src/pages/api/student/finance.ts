@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { getStudentSession, json, type StudentEnv } from "../../../server/student-auth";
+import { calculateFinance } from "../../../server/finance-calculations";
 
 export const GET: APIRoute = async ({ request }) => {
   const session = await getStudentSession(request, env as StudentEnv);
@@ -53,22 +54,18 @@ export const GET: APIRoute = async ({ request }) => {
       FROM invoices i WHERE i.enrollment_term_id=? AND i.status <> 'cancelled'
       ORDER BY i.id DESC LIMIT 1
     `).bind(e.term_id).first<{id:number;amount:number;due_date:string|null;status:string;paid_amount:number}>();
-    const invoiceAmount = Number(invoice?.amount ?? e.tuition_amount ?? 0);
-    const paidAmount = Number(invoice?.paid_amount ?? 0);
-    const balance = Math.max(invoiceAmount - paidAmount, 0);
-    const dueDate = invoice?.due_date ?? e.tuition_due_date;
-    const overdue = !!dueDate && dueDate < today && balance > 0;
-    const dueDays = dueDate ? Math.ceil((new Date(`${dueDate}T00:00:00Z`).getTime() - Date.now()) / 86400000) : null;
-    const nearDue = dueDays !== null && dueDays >= 0 && dueDays <= 7 && balance > 0;
-    const renewalWarning = remaining !== null && remaining <= 1 && balance > 0;
-    const halfTermWarning = e.planned_sessions !== null && e.planned_sessions > 1 && remaining !== null && remaining <= Math.ceil(e.planned_sessions / 2) && balance > 0;
-    const isSessionBased = e.billing_type === 'session_based';
-    const sessionValue = isSessionBased && e.planned_sessions && e.planned_sessions > 0
-      ? invoiceAmount / e.planned_sessions : 0;
-    const amountDueToDate = isSessionBased && sessionValue > 0
-      ? Math.min(invoiceAmount, consumed * sessionValue) : invoiceAmount;
-    const unpaidSessions = isSessionBased && sessionValue > 0
-      ? Math.min(e.planned_sessions ?? consumed, Math.ceil(Math.max(amountDueToDate - paidAmount, 0) / sessionValue)) : null;
+
+    const finance = calculateFinance({
+      invoiceAmount: Number(invoice?.amount ?? e.tuition_amount ?? 0),
+      paidAmount: Number(invoice?.paid_amount ?? 0),
+      dueDate: invoice?.due_date ?? e.tuition_due_date,
+      today,
+      billingType: e.billing_type,
+      plannedSessions: e.planned_sessions,
+      consumedSessions: consumed,
+    });
+    const renewalWarning = remaining !== null && remaining <= 1 && finance.balance > 0;
+    const halfTermWarning = e.planned_sessions !== null && e.planned_sessions > 1 && remaining !== null && remaining <= Math.ceil(e.planned_sessions / 2) && finance.balance > 0;
 
     const payments = await db.prepare(`
       SELECT p.id,p.amount,p.paid_at,p.method,p.reference
@@ -80,9 +77,10 @@ export const GET: APIRoute = async ({ request }) => {
       enrollmentId:e.enrollment_id,classId:e.class_id,classTitle:e.class_title,instructorName:e.instructor_name,
       termId:e.term_id,termNumber:e.term_number,plannedSessions:e.planned_sessions,billingType:e.billing_type,
       tuitionAmount:e.tuition_amount,completedSessions:completed,absentSessions:absent,leaveSessions:leave,
-      consumedSessions:consumed,remainingSessions:remaining,unpaidSessions,
-      invoiceId:invoice?.id ?? null,invoiceAmount,paidAmount,balance,dueDate,overdue,nearDue,renewalWarning,halfTermWarning,
-      financialStatus: balance <= 0 && invoice ? 'paid' : overdue ? 'overdue' : paidAmount > 0 ? 'partial' : invoice ? 'pending' : 'none',
+      consumedSessions:consumed,remainingSessions:remaining,unpaidSessions:finance.unpaidSessions,
+      invoiceId:invoice?.id ?? null,invoiceAmount:finance.invoiceAmount,paidAmount:finance.paidAmount,balance:finance.balance,
+      dueDate:finance.dueDate,overdue:finance.overdue,nearDue:finance.nearDue,renewalWarning,halfTermWarning,
+      financialStatus: invoice ? finance.financialStatus : 'none',
       sessions: attendance,
       payments:payments.results
     });
