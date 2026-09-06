@@ -7,12 +7,16 @@
     max-width:640px;
 }
 
-.admin-panel--certificates:first-of-type{
+/* The global section rule adds 40px vertical padding. This panel must stay compact. */
+.admin-shell .admin-panel.admin-panel--certificates.admin-cert-search-panel{
     padding:5px 0 !important;
+    margin-top:0;
+    margin-bottom:0;
 }
 
-.admin-panel--certificates:first-of-type .admin-form{
-    padding:0;
+.admin-shell .admin-panel.admin-panel--certificates.admin-cert-search-panel > .admin-form{
+    padding:0 !important;
+    margin:0 !important;
 }
 
 .admin-cert-results{
