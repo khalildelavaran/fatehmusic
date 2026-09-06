@@ -1,9 +1,12 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 import "../styles/student.css";
 ---
 <MainLayout title="ورود به سامانه | آموزشگاه موسیقی فاتح" noindex={true}>
-  <main class="student-auth" dir="rtl">
+  <Header />
+  <main class="student-auth" style="padding-top:130px" dir="rtl">
     <section class="student-card">
       <img src="/logo.webp" alt="آموزشگاه موسیقی فاتح" class="student-logo" />
       <h1>ورود به سامانه</h1>
@@ -16,6 +19,7 @@ import "../styles/student.css";
       </form>
     </section>
   </main>
+  <Footer />
   <script>
     const form = document.querySelector('#unifiedLoginForm');
     const status = document.querySelector('#loginStatus');
