@@ -64,6 +64,15 @@
     padding:9px 10px;
 }
 
+/* One continuous separator per row, including the actions column. */
+.admin-panel .admin-table tbody tr{
+    border-bottom:1px solid var(--border);
+}
+
+.admin-panel .admin-table tbody td{
+    border-bottom:0;
+}
+
 /* Center all table headings. */
 .admin-panel .admin-table th{
     text-align:center !important;
