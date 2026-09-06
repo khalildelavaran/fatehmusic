@@ -93,7 +93,7 @@ const formatToman = (value: number) => `${value.toLocaleString("fa-IR")} توم�
           </div>}
         </section>}
 
-        {instructors && instructors.perInstructor.length > 0 && <section id="reportInstructors" class="report-print-section">
+        {instructors && instructors.perInstructor.length > 0 && <section id="reportInstructors" class="report-print-section" data-print-light>
           <div class="admin-section-title"><h2>گزارش مدرسان</h2><button type="button" class="admin-document-btn no-print" data-print-target="#reportInstructors" data-print-title="گزارش مدرسان">چاپ</button></div>
           <div class="admin-table-wrap">
             <table class="admin-table">
