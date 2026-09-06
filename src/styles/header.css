@@ -577,6 +577,51 @@
 }
 
 /* ==========================================================
+   LOGIN BUTTON
+========================================================== */
+
+.login-btn{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    height:50px;
+
+    padding:0 26px;
+
+    border-radius:18px;
+
+    text-decoration:none;
+
+    color:#D4AF37;
+
+    font-weight:700;
+
+    border:1.5px solid rgba(212,175,55,.55);
+
+    background:transparent;
+
+    transition:
+        transform .35s,
+        background .35s,
+        border-color .35s;
+
+}
+
+.login-btn:hover{
+
+    transform:translateY(-3px);
+
+    background:rgba(212,175,55,.08);
+
+    border-color:#D4AF37;
+
+}
+
+/* ==========================================================
    MOBILE TOGGLE
 ========================================================== */
 
@@ -1040,6 +1085,40 @@
     transform:translateY(-2px) !important;
 
 }
+
+/* ==========================================================
+   MOBILE LOGIN
+========================================================== */
+
+.mobile-login{
+
+    margin-top:6px;
+
+    justify-content:center !important;
+
+    color:#D4AF37 !important;
+
+    font-weight:700;
+
+    border:1.5px solid rgba(212,175,55,.5);
+
+    background:transparent;
+
+}
+
+.mobile-login svg{
+
+    display:none;
+
+}
+
+.mobile-login:hover{
+
+    transform:translateY(-2px) !important;
+
+    background:rgba(212,175,55,.08);
+
+}
 /* ==========================================================
    BODY LOCK
 ========================================================== */
@@ -1065,6 +1144,12 @@ body.menu-open{
     }
 
     .register-btn{
+
+        display:none;
+
+    }
+
+    .login-btn{
 
         display:none;
 
