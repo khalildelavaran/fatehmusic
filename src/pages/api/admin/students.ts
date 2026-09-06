@@ -3,7 +3,8 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
-import { getStudentProfile, listStudents, updateStudentProfile, validateStudentPatch, type StudentProfilePatch } from "../../../server/students";
+import { createStudent, getStudentProfile, listStudents, updateStudentProfile, validateStudentPatch, type NewStudentInput, type StudentProfilePatch } from "../../../server/students";
+import { recordAuditEvent } from "../../../server/audit-log";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -35,6 +36,37 @@ export const GET: APIRoute = async ({ request }) => {
   });
 
   return json({ success: true, ...result });
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
+  const db = env.DB;
+  if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
+
+  let body: NewStudentInput;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ success: false, message: "بدنه‌ی درخواست معتبر نیست." }, 400);
+  }
+
+  const result = await createStudent(db, body);
+  if ("error" in result) {
+    const status = result.error === "duplicate" ? 409 : 422;
+    return json({ success: false, message: result.message }, status);
+  }
+
+  await recordAuditEvent(db, {
+    actor: { type: "admin", label: "admin-api" },
+    action: "student.create",
+    entityType: "student",
+    entityId: result.id,
+  });
+
+  const profile = await getStudentProfile(db, result.id);
+  return json({ success: true, profile }, 201);
 };
 
 export const PATCH: APIRoute = async ({ request }) => {
