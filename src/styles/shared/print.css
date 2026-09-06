@@ -4,28 +4,20 @@
    containing only the requested section.
 ========================================================== */
 
-.global-print-frame {
-  display: none;
-}
+.global-print-frame { display: none; }
 
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 5mm 10mm 10mm 5mm;
-  }
-
-  @page landscape {
-    size: A4 landscape;
-    margin: 5mm 10mm 10mm 5mm;
-  }
+  @page { size: A4 portrait; margin: 5mm 10mm 10mm 5mm; }
+  @page landscape { size: A4 landscape; margin: 5mm 10mm 10mm 5mm; }
 
   html.is-printing-global,
   html.is-printing-global body {
-    width: 100%;
-    min-height: 100%;
+    width: 100% !important;
+    min-height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    color: #111 !important;
   }
 
   html.is-printing-global body > *:not(.global-print-frame) {
@@ -34,30 +26,28 @@
 
   html.is-printing-global .global-print-frame {
     display: block !important;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    color: #111 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #fff !important;
+    color: #111 !important;
     direction: rtl;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
 
-  html.is-printing-global .global-print-frame[data-print-orientation="landscape"] {
-    page: landscape;
-  }
+  html.is-printing-global .global-print-frame[data-print-orientation="landscape"] { page: landscape; }
 
   html.is-printing-global .global-print-sheet {
-    width: 100%;
-    max-width: 186mm;
-    min-height: 273mm;
-    margin: 0 auto;
-    padding: 0;
+    width: 100% !important;
+    max-width: 186mm !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box;
-    color: #111 !important;
     background: #fff !important;
-    overflow: visible;
+    color: #111 !important;
+    overflow: visible !important;
   }
 
   html.is-printing-global .global-print-sheet,
@@ -66,34 +56,32 @@
     box-shadow: none !important;
   }
 
-  /* Instructor report: completely neutralize the dark admin theme for print. */
+  /* Instructor report: remove every part of the dark admin theme. */
   html.is-printing-global .global-print-sheet [data-print-light],
   html.is-printing-global .global-print-sheet [data-print-light] *,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table-wrap,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table thead,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table tbody,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table tr,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table td {
+  html.is-printing-global .global-print-sheet [data-print-light]::before,
+  html.is-printing-global .global-print-sheet [data-print-light]::after {
     background: #fff !important;
+    background-image: none !important;
     color: #111 !important;
+    border-color: #bbb !important;
   }
 
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-section-title h2,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th,
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table td {
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-section-title,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-section-title h2 {
     color: #111 !important;
+    background: #fff !important;
   }
 
-  /* The screen table is intentionally wide and scrollable. On paper it must
-     use the available A4 width and print every field without a scroll box. */
   html.is-printing-global .global-print-sheet [data-print-light] .admin-table-wrap {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
     overflow: visible !important;
     padding: 0 !important;
+    margin: 0 !important;
     border: 1px solid #bbb !important;
     border-radius: 0 !important;
   }
@@ -102,32 +90,32 @@
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
-    table-layout: fixed;
+    height: auto !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    background: #fff !important;
   }
 
   html.is-printing-global .global-print-sheet [data-print-light] .admin-table th,
   html.is-printing-global .global-print-sheet [data-print-light] .admin-table td {
-    overflow-wrap: anywhere;
-    word-break: normal;
-    white-space: normal !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
     padding: 7px 6px !important;
     border: 1px solid #bbb !important;
+    background: #fff !important;
+    color: #111 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
     vertical-align: middle;
   }
 
-  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th {
-    font-weight: 700;
-  }
-
-  html.is-printing-global .global-print-sheet img {
-    max-width: 100%;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th { font-weight: 700; }
 
   html.is-printing-global .global-print-sheet table {
-    width: 100%;
-    border-collapse: collapse;
+    width: 100% !important;
+    border-collapse: collapse !important;
   }
 
   html.is-printing-global .global-print-sheet tr,
@@ -138,8 +126,14 @@
     page-break-inside: avoid;
   }
 
+  html.is-printing-global .global-print-sheet img {
+    max-width: 100%;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   html.is-printing-global .global-print-sheet a {
-    color: inherit !important;
+    color: #111 !important;
     text-decoration: none !important;
   }
 
