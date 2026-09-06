@@ -64,6 +64,12 @@
     padding:9px 10px;
 }
 
+/* Center all table headings. */
+.admin-panel .admin-table th{
+    text-align:center !important;
+    vertical-align:middle;
+}
+
 /* Keep only the requested headings on one line. Their columns grow to their content. */
 .admin-panel .admin-table th.posts-th-nowrap{
     white-space:nowrap !important;
