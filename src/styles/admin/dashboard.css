@@ -156,7 +156,6 @@
 .admin-grid span{
     position:relative;
     z-index:2;
-    display:block;
     color:var(--text-secondary);
     line-height:1.9;
 }
