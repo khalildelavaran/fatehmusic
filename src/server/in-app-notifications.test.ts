@@ -9,12 +9,11 @@ function fakeDb(overrides: Partial<Record<string, any>> = {}) {
 }
 
 describe("NOTIFICATION_TYPES / NOTIFICATION_RECIPIENT_TYPES", () => {
-  it("includes all seven types from the spec", () => {
+  it("includes all six types from the spec (assignment was removed from the product)", () => {
     expect(NOTIFICATION_TYPES).toEqual([
       "class_reminder",
       "payment_due",
       "attendance",
-      "assignment",
       "evaluation",
       "certificate",
       "system",
@@ -49,7 +48,7 @@ describe("createNotification", () => {
 
   it("returns true and calls prepare/bind/run for a valid notification", async () => {
     const db = fakeDb();
-    const ok = await createNotification(db, { recipientType: "student", recipientId: 1, type: "assignment", title: "تمرین جدید" });
+    const ok = await createNotification(db, { recipientType: "student", recipientId: 1, type: "evaluation", title: "ارزیابی جدید" });
     expect(ok).toBe(true);
     expect((db as any).prepare).toHaveBeenCalledTimes(1);
   });
