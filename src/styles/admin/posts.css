@@ -100,7 +100,7 @@
     white-space:nowrap;
 }
 
-/* Operation buttons stay together on one row. */
+/* Operation buttons stay together on one row and are vertically centered. */
 .admin-table-actions{
     display:flex;
     align-items:center;
@@ -108,6 +108,12 @@
     flex-wrap:nowrap;
     gap:4px;
     white-space:nowrap;
+    vertical-align:middle !important;
+}
+
+.admin-panel .admin-table td.admin-table-actions{
+    padding-top:9px;
+    padding-bottom:9px;
 }
 
 .admin-table-actions button{
@@ -118,6 +124,7 @@
     font-size:11px;
     line-height:1.2;
     white-space:nowrap;
+    margin:0;
 }
 
 @media(max-width:900px){
@@ -147,9 +154,15 @@
     .admin-panel .admin-table td strong{font-size:10px;}
     .admin-panel .admin-table-subtext{font-size:8px;}
 
+    .admin-panel .admin-table td.admin-table-actions{
+        padding-top:7px;
+        padding-bottom:7px;
+    }
+
     .admin-table-actions button{
         min-height:30px;
         padding:4px 6px;
         font-size:10px;
+        margin:0;
     }
 }
