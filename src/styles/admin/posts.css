@@ -44,49 +44,33 @@
 
 .admin-form-actions button{flex:1;}
 
-/* Posts table: override the global 820px minimum and give each column a real width. */
+/* Let the browser size every column naturally from its content. */
 .admin-panel .admin-table-wrap{
     min-width:0;
     width:100%;
     padding:12px;
-    overflow:hidden;
+    overflow-x:auto;
 }
 
 .admin-panel .admin-table{
-    width:100%;
-    min-width:0 !important;
-    max-width:100%;
-    table-layout:fixed;
+    width:max-content;
+    min-width:100%;
+    table-layout:auto;
 }
 
 .admin-panel .admin-table th,
 .admin-panel .admin-table td{
     box-sizing:border-box;
-    padding:9px 7px;
+    padding:9px 10px;
 }
 
-.admin-panel .admin-table th:nth-child(1),
-.admin-panel .admin-table td:nth-child(1){width:29%;}
-.admin-panel .admin-table th:nth-child(2),
-.admin-panel .admin-table td:nth-child(2){width:14%;}
-.admin-panel .admin-table th:nth-child(3),
-.admin-panel .admin-table td:nth-child(3){width:12%;}
-.admin-panel .admin-table th:nth-child(4),
-.admin-panel .admin-table td:nth-child(4){width:21%;}
-.admin-panel .admin-table th:nth-child(5),
-.admin-panel .admin-table td:nth-child(5){width:24%;}
-
-/* Required headings: never wrap. Use a small fixed base so the short labels always fit. */
+/* Keep only the requested headings on one line. Their columns grow to their content. */
 .admin-panel .admin-table th.posts-th-nowrap{
-    display:table-cell;
     white-space:nowrap !important;
     word-break:keep-all !important;
-    overflow:hidden !important;
-    text-overflow:clip !important;
-    font-size:11px !important;
-    line-height:1.2 !important;
 }
 
+/* Operation buttons stay together on one row. */
 .admin-table-actions{
     display:flex;
     align-items:center;
@@ -123,11 +107,7 @@
 
     .admin-panel .admin-table th,
     .admin-panel .admin-table td{
-        padding:7px 5px;
-    }
-
-    .admin-panel .admin-table th.posts-th-nowrap{
-        font-size:9px !important;
+        padding:7px 7px;
     }
 
     .admin-table-actions button{
