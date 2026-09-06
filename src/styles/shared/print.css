@@ -1,0 +1,106 @@
+/* ==========================================================
+   GLOBAL A4 PRINT SYSTEM
+   The print manager creates a temporary .global-print-frame
+   containing only the requested section.
+========================================================== */
+
+.global-print-frame {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  @page :landscape {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+
+  html.is-printing-global,
+  html.is-printing-global body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  html.is-printing-global body > *:not(.global-print-frame) {
+    display: none !important;
+  }
+
+  html.is-printing-global .global-print-frame {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    color: #111 !important;
+    background: #fff !important;
+    direction: rtl;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  html.is-printing-global .global-print-frame[data-print-orientation="landscape"] {
+    page: landscape;
+  }
+
+  html.is-printing-global .global-print-sheet {
+    width: 100%;
+    max-width: 186mm;
+    min-height: 273mm;
+    margin: 0 auto;
+    padding: 0;
+    box-sizing: border-box;
+    color: #111 !important;
+    background: #fff !important;
+    overflow: visible;
+  }
+
+  html.is-printing-global .global-print-sheet,
+  html.is-printing-global .global-print-sheet * {
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+
+  html.is-printing-global .global-print-sheet img {
+    max-width: 100%;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  html.is-printing-global .global-print-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  html.is-printing-global .global-print-sheet tr,
+  html.is-printing-global .global-print-sheet figure,
+  html.is-printing-global .global-print-sheet .card,
+  html.is-printing-global .global-print-sheet .admin-panel {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  html.is-printing-global .global-print-sheet a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  html.is-printing-global .global-print-sheet input,
+  html.is-printing-global .global-print-sheet textarea,
+  html.is-printing-global .global-print-sheet select {
+    color: #111 !important;
+    background: #fff !important;
+    -webkit-text-fill-color: #111 !important;
+  }
+
+  html.is-printing-global .global-print-sheet [data-no-print],
+  html.is-printing-global .global-print-sheet .no-print,
+  html.is-printing-global .global-print-sheet [data-print-exclude] {
+    display: none !important;
+  }
+}
