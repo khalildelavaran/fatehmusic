@@ -12,7 +12,8 @@
 /* ---------- Form Layout ---------- */
 .admin-panel .admin-form{
     display:grid;
-    gap:10px 18px !important;
+    row-gap:0 !important;
+    column-gap:18px !important;
 }
 
 .admin-panel .admin-form label{
@@ -74,7 +75,8 @@
 
 @media(max-width:640px){
     .admin-panel .admin-form{
-        gap:10px 18px !important;
+        row-gap:0 !important;
+        column-gap:18px !important;
     }
 
     .admin-panel .admin-form label{
