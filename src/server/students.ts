@@ -340,6 +340,97 @@ export async function updateStudentProfile(db: D1Database, id: number, patch: St
 }
 
 // ------------------------------------------------------------------
+// Manual creation from the admin panel (Section 3 of the students
+// list requirements): lets an admin add a student directly, without
+// going through the public registration form. Distinct from
+// findOrCreateStudentForRegistration below -- that path is triggered
+// by the registration approval flow and is idempotent by
+// national_code; this one is an explicit, one-shot admin action and
+// fails loudly (409) on a duplicate national_code rather than silently
+// reusing the existing row, since here the admin is asserting "this is
+// a new student" and a collision likely means a typo.
+// ------------------------------------------------------------------
+
+export interface NewStudentInput {
+  nationalCode: string;
+  firstName: string;
+  lastName: string;
+  fatherName?: string;
+  birthYear?: number | null;
+  phone?: string;
+  email?: string;
+  address?: string;
+  idIssuePlace?: string;
+  occupation?: string;
+  emergencyContact?: string;
+  notes?: string;
+  status?: string;
+}
+
+const NATIONAL_CODE_RE = /^\d{10}$/;
+
+/** Pure validation, independent of the DB call -- see students.test.ts. */
+export function validateNewStudentInput(input: NewStudentInput): PatchValidationResult {
+  const errors: string[] = [];
+  if (!NATIONAL_CODE_RE.test((input.nationalCode ?? "").trim())) {
+    errors.push("کد ملی باید دقیقاً ۱۰ رقم باشد.");
+  }
+  if (!input.firstName?.trim()) errors.push("نام الزامی است.");
+  if (!input.lastName?.trim()) errors.push("نام خانوادگی الزامی است.");
+  if (input.email && input.email !== "" && !EMAIL_RE.test(input.email)) {
+    errors.push("ایمیل معتبر نیست.");
+  }
+  if (input.status !== undefined && !isValidStudentStatus(input.status)) {
+    errors.push("وضعیت هنرجو معتبر نیست.");
+  }
+  if (input.birthYear !== undefined && input.birthYear !== null) {
+    if (!Number.isInteger(input.birthYear) || input.birthYear < 1300 || input.birthYear > 1500) {
+      errors.push("سال تولد معتبر نیست.");
+    }
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+export type CreateStudentResult = { id: number } | { error: "duplicate" | "invalid"; message: string };
+
+export async function createStudent(db: D1Database, input: NewStudentInput): Promise<CreateStudentResult> {
+  const validation = validateNewStudentInput(input);
+  if (!validation.valid) return { error: "invalid", message: validation.errors.join(" ") };
+
+  const nationalCode = input.nationalCode.trim();
+  const existing = await db.prepare("SELECT id FROM students WHERE national_code = ?").bind(nationalCode).first<{ id: number }>();
+  if (existing) return { error: "duplicate", message: "هنرجویی با این کد ملی از قبل ثبت شده است." };
+
+  const result = await db
+    .prepare(
+      `INSERT INTO students
+         (national_code, first_name, last_name, father_name, birth_year, phone, email, address,
+          id_issue_place, occupation, emergency_contact, notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      nationalCode,
+      input.firstName.trim(),
+      input.lastName.trim(),
+      input.fatherName?.trim() ?? "",
+      input.birthYear ?? null,
+      input.phone?.trim() ?? "",
+      input.email?.trim() ?? "",
+      input.address?.trim() ?? "",
+      input.idIssuePlace?.trim() ?? "",
+      input.occupation?.trim() ?? "",
+      input.emergencyContact?.trim() ?? "",
+      input.notes?.trim() ?? "",
+      input.status ?? "active",
+    )
+    .run();
+
+  const id = result.meta?.last_row_id;
+  if (typeof id !== "number") return { error: "invalid", message: "ثبت هنرجو انجام نشد." };
+  return { id };
+}
+
+// ------------------------------------------------------------------
 // Find-or-create (called from /api/register.ts on every new registration
 // so "students" never drifts out of sync with new signups -- Section 2's
 // "don't create a duplicate model" applies just as much to duplicate

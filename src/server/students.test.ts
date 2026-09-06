@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeStudentListParams, validateStudentPatch, isValidStudentStatus } from "./students";
+import { normalizeStudentListParams, validateStudentPatch, validateNewStudentInput, isValidStudentStatus } from "./students";
 
 describe("isValidStudentStatus", () => {
   it("accepts the three known statuses", () => {
@@ -87,5 +87,44 @@ describe("validateStudentPatch", () => {
     const result = validateStudentPatch({ email: "bad", status: "banned" });
     expect(result.valid).toBe(false);
     expect(result.errors).toHaveLength(2);
+  });
+});
+
+describe("validateNewStudentInput", () => {
+  const base = { nationalCode: "0011122233", firstName: "علی", lastName: "رضایی" };
+
+  it("accepts a minimal valid new student", () => {
+    expect(validateNewStudentInput(base)).toEqual({ valid: true, errors: [] });
+  });
+
+  it("requires a 10-digit national code", () => {
+    expect(validateNewStudentInput({ ...base, nationalCode: "123" }).valid).toBe(false);
+    expect(validateNewStudentInput({ ...base, nationalCode: "12345678901" }).valid).toBe(false);
+    expect(validateNewStudentInput({ ...base, nationalCode: "abcdefghij" }).valid).toBe(false);
+  });
+
+  it("requires firstName and lastName", () => {
+    expect(validateNewStudentInput({ ...base, firstName: "" }).valid).toBe(false);
+    expect(validateNewStudentInput({ ...base, firstName: "   " }).valid).toBe(false);
+    expect(validateNewStudentInput({ ...base, lastName: "" }).valid).toBe(false);
+  });
+
+  it("validates email format only when provided", () => {
+    expect(validateNewStudentInput({ ...base, email: "a@b.com" }).valid).toBe(true);
+    expect(validateNewStudentInput({ ...base, email: "not-an-email" }).valid).toBe(false);
+    expect(validateNewStudentInput({ ...base, email: "" }).valid).toBe(true);
+  });
+
+  it("validates status and birthYear the same way validateStudentPatch does", () => {
+    expect(validateNewStudentInput({ ...base, status: "active" }).valid).toBe(true);
+    expect(validateNewStudentInput({ ...base, status: "banned" }).valid).toBe(false);
+    expect(validateNewStudentInput({ ...base, birthYear: 1380 }).valid).toBe(true);
+    expect(validateNewStudentInput({ ...base, birthYear: 1250 }).valid).toBe(false);
+  });
+
+  it("collects multiple errors at once", () => {
+    const result = validateNewStudentInput({ nationalCode: "bad", firstName: "", lastName: "" });
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBeGreaterThanOrEqual(3);
   });
 });
