@@ -8,7 +8,7 @@
 }
 
 .admin-panel--certificates:first-of-type .admin-form{
-    padding:0;
+    padding:5px 0;
 }
 
 .admin-cert-results{
