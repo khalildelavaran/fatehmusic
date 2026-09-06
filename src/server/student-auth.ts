@@ -3,7 +3,7 @@ const COOKIE = "__Host-student_session";
 const ITERATIONS = 100_000;
 
 export interface StudentEnv { DB: D1Database; SESSION: KVNamespace; }
-export interface StudentSession { accountId:number; nationalCode:string; expiresAt:number; token?:string; }
+export interface StudentSession { accountId:number; studentId:number; nationalCode:string; expiresAt:number; token?:string; }
 
 export function json(body:unknown,status=200,headers:HeadersInit={}):Response{return new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json; charset=utf-8",...headers}})}
 function hex(b:Uint8Array){return Array.from(b,x=>x.toString(16).padStart(2,"0")).join("")}
@@ -20,10 +20,12 @@ export async function authenticateStudent(input:string,password:string,env:Stude
  let a=await env.DB.prepare("SELECT id,national_code,password_hash,is_active FROM student_accounts WHERE national_code=? LIMIT 1").bind(nationalCode).first<{id:number;national_code:string;password_hash:string;is_active:number}>();
  if(!a){const r=await env.DB.prepare("SELECT 1 AS found FROM registrations WHERE student_national_code=? LIMIT 1").bind(nationalCode).first();if(!r)return null;const h=await hashStudentPassword(nationalCode);await env.DB.prepare("INSERT OR IGNORE INTO student_accounts (national_code,password_hash,must_change_password) VALUES (?,?,1)").bind(nationalCode,h).run();a=await env.DB.prepare("SELECT id,national_code,password_hash,is_active FROM student_accounts WHERE national_code=? LIMIT 1").bind(nationalCode).first<{id:number;national_code:string;password_hash:string;is_active:number}>()}
  if(!a||a.is_active!==1||!(await verify(password,a.password_hash)))return null;
- const t=token(),s={accountId:a.id,nationalCode:a.national_code,expiresAt:Date.now()+TTL*1000,token:t};const {token:_,...stored}=s;await env.SESSION.put(`student:${t}`,JSON.stringify(stored),{expirationTtl:TTL});await env.DB.prepare("UPDATE student_accounts SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(a.id).run();return s;
+ const student=await env.DB.prepare("SELECT id FROM students WHERE national_code=? LIMIT 1").bind(a.national_code).first<{id:number}>();
+ if(!student)return null;
+ const t=token(),s={accountId:a.id,studentId:student.id,nationalCode:a.national_code,expiresAt:Date.now()+TTL*1000,token:t};const {token:_,...stored}=s;await env.SESSION.put(`student:${t}`,JSON.stringify(stored),{expirationTtl:TTL});await env.DB.prepare("UPDATE student_accounts SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(a.id).run();return s;
 }
 export function createStudentSessionResponse(s:StudentSession){const {token:_,...user}=s;return json({success:true,user},200,{"Set-Cookie":setCookie(s.token??"")})}
-export async function getStudentSession(r:Request,env:StudentEnv){const t=cookie(r);if(!t)return null;const raw=await env.SESSION.get(`student:${t}`);if(!raw)return null;try{const s=JSON.parse(raw) as StudentSession;if(s.expiresAt<=Date.now()){await env.SESSION.delete(`student:${t}`);return null}return s}catch{await env.SESSION.delete(`student:${t}`);return null}}
+export async function getStudentSession(r:Request,env:StudentEnv){const t=cookie(r);if(!t)return null;const raw=await env.SESSION.get(`student:${t}`);if(!raw)return null;try{const s=JSON.parse(raw) as Partial<StudentSession>;if(!s.expiresAt||s.expiresAt<=Date.now()){await env.SESSION.delete(`student:${t}`);return null}let studentId=Number(s.studentId||0);if(!Number.isInteger(studentId)||studentId<=0){if(!s.nationalCode){await env.SESSION.delete(`student:${t}`);return null}const student=await env.DB.prepare("SELECT id FROM students WHERE national_code=? LIMIT 1").bind(s.nationalCode).first<{id:number}>();if(!student){await env.SESSION.delete(`student:${t}`);return null}studentId=student.id;const migrated={accountId:Number(s.accountId||0),studentId,nationalCode:String(s.nationalCode),expiresAt:Number(s.expiresAt)};await env.SESSION.put(`student:${t}`,JSON.stringify(migrated),{expirationTtl:Math.max(1,Math.ceil((Number(s.expiresAt)-Date.now())/1000))});s=migrated}if(!s.accountId||!s.nationalCode)return null;return {accountId:Number(s.accountId),studentId,nationalCode:String(s.nationalCode),expiresAt:Number(s.expiresAt),token:t};}catch{await env.SESSION.delete(`student:${t}`);return null}}
 export async function requireStudent(r:Request,env:StudentEnv){return (await getStudentSession(r,env))??json({success:false,message:"ورود هنرجو معتبر نیست."},401)}
 export async function logoutStudent(r:Request,env:StudentEnv){const t=cookie(r);if(t)await env.SESSION.delete(`student:${t}`)}
 export function clearStudentCookie(){return setCookie("",0)}
