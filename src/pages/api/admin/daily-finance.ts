@@ -72,6 +72,11 @@ export const GET: APIRoute = async ({ request }) => {
       JOIN students s ON s.id = e.student_id
       LEFT JOIN classes c ON c.id = e.class_id
       WHERE i.status <> 'cancelled'
+        AND i.id = (
+          SELECT i2.id FROM invoices i2
+          WHERE i2.enrollment_term_id = et.id AND i2.status <> 'cancelled'
+          ORDER BY i2.id DESC LIMIT 1
+        )
       ORDER BY CASE WHEN i.due_date IS NULL THEN 1 ELSE 0 END, i.due_date ASC, i.id ASC
     `).bind().all<{
       invoice_id: number; invoice_amount: number; due_date: string | null; status: string;
@@ -87,7 +92,7 @@ export const GET: APIRoute = async ({ request }) => {
     const debts = debtRows.results
       .map((row) => ({
         ...row,
-        balance: Math.max(row.invoice_amount - row.paid_amount, 0),
+        balance: Math.max(Number(row.invoice_amount) - Number(row.paid_amount), 0),
         paymentStatus: row.paid_amount >= row.invoice_amount ? "paid" : row.paid_amount > 0 ? "partial" : row.status,
       }))
       .filter((row) => row.balance > 0);
