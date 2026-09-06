@@ -29,3 +29,10 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
   </nav>
   <div class="admin-nav-user"><div class="admin-nav-user-info"><strong>{session.username}</strong><span class="admin-role-badge" data-role={session.role}>{roleLabel}</span></div><form id="navLogoutForm" method="post" action="/api/admin/logout"><button type="submit" class="admin-nav-logout">خروج</button></form></div>
 </aside>
+<script>
+  document.querySelector('#navLogoutForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' });
+    location.href = '/admin/login';
+  });
+</script>
