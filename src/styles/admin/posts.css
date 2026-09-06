@@ -45,6 +45,17 @@
 
 .admin-form-actions button{flex:1;}
 
+.admin-table-wrap{
+    container-type:inline-size;
+}
+
+.admin-table th:nth-child(1),
+.admin-table th:nth-child(2),
+.admin-table th:nth-child(4){
+    white-space:nowrap;
+    font-size:clamp(10px, 2.2cqw, 14px);
+}
+
 .admin-table-actions{
     display:flex;
     align-items:center;
