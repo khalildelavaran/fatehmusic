@@ -45,16 +45,46 @@
 
 .admin-form-actions button{flex:1;}
 
-.admin-table-wrap{
+/* The posts table must actually shrink with its panel.
+   The generic 820px table minimum was forcing narrow headings to wrap. */
+.admin-panel .admin-table-wrap{
+    min-width:0;
     container-type:inline-size;
 }
 
-/* These headings must always occupy one visual line. The font scales with the table container. */
-.admin-table th.posts-th-nowrap{
+.admin-panel .admin-table{
+    width:100%;
+    min-width:0;
+    table-layout:fixed;
+}
+
+.admin-panel .admin-table th,
+.admin-panel .admin-table td{
+    box-sizing:border-box;
+}
+
+/* Stable column widths keep the three requested headings on one line. */
+.admin-panel .admin-table th:nth-child(1),
+.admin-panel .admin-table td:nth-child(1){width:30%;}
+
+.admin-panel .admin-table th:nth-child(2),
+.admin-panel .admin-table td:nth-child(2){width:15%;}
+
+.admin-panel .admin-table th:nth-child(3),
+.admin-panel .admin-table td:nth-child(3){width:13%;}
+
+.admin-panel .admin-table th:nth-child(4),
+.admin-panel .admin-table td:nth-child(4){width:22%;}
+
+.admin-panel .admin-table th:nth-child(5),
+.admin-panel .admin-table td:nth-child(5){width:20%;}
+
+/* These headings are explicitly non-wrapping; their size follows the table width. */
+.admin-panel .admin-table th.posts-th-nowrap{
     white-space:nowrap !important;
     overflow:hidden;
     text-overflow:clip;
-    font-size:clamp(9px, 1.8cqw, 13px) !important;
+    font-size:clamp(9px, 1.55cqw, 13px) !important;
     line-height:1.3;
 }
 
@@ -88,8 +118,12 @@
         column-gap:0;
     }
 
-    .admin-table th.posts-th-nowrap{
-        font-size:clamp(9px, 2.6cqw, 12px) !important;
+    .admin-panel .admin-table{
+        min-width:0;
+    }
+
+    .admin-panel .admin-table th.posts-th-nowrap{
+        font-size:clamp(9px, 2.4cqw, 12px) !important;
     }
 
     .admin-table-actions button{
