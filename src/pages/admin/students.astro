@@ -144,6 +144,7 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
                 <option value="">همه وضعیت‌ها</option>
                 {STUDENT_STATUSES.map((status) => <option value={status}>{STATUS_LABELS_FA[status]}</option>)}
               </select>
+              <a id="studentsExportLink" href="/api/admin/students-export" class="admin-document-btn">خروجی CSV</a>
             </section>
 
             <section class="admin-table-wrap">

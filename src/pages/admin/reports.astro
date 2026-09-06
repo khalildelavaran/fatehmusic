@@ -152,6 +152,7 @@ const formatToman = (value: number) => `${value.toLocaleString("fa-IR")} توم�
         <div class="admin-section-title"><h2>دسترسی سریع</h2></div>
         <nav class="admin-grid" aria-label="بخش‌های گزارش">
           <a href="/admin/audit-log"><strong>گزارش تغییرات</strong><span>عملیات حساس ثبت‌شده توسط ادمین‌ها و مدرسان</span></a>
+          <a href={`/api/admin/finance-export?from=${yearStart}&to=${today}`}><strong>خروجی CSV پرداخت‌ها</strong><span>فهرست کامل تراکنش‌های ثبت‌شده از ابتدای سال</span></a>
         </nav>
       </div>
     </main>

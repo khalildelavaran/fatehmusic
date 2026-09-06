@@ -173,6 +173,16 @@ const pageTitle = profile ? `کلاس ${profile.class.title} | آموزشگاه 
                 <option value="">همه وضعیت‌ها</option>
                 {CLASS_STATUSES.map((s) => <option value={s}>{CLASS_STATUS_LABELS_FA[s]}</option>)}
               </select>
+              <select id="classCourseFilter">
+                <option value="">همه دوره‌ها</option>
+                {courses.map((c: any) => <option value={c.id}>{c.title}</option>)}
+              </select>
+              <select id="classInstructorFilter">
+                <option value="">همه مدرسان</option>
+                {activeInstructors.map((i) => <option value={i.id}>{i.first_name} {i.last_name}</option>)}
+              </select>
+              <input type="text" id="classLevelFilter" placeholder="سطح (مثلاً: مبتدی)" />
+              <a id="classesExportLink" href="/api/admin/classes-export" class="admin-document-btn">خروجی CSV</a>
               <a href="/admin/classes?new=1" class="admin-document-btn">افزودن کلاس جدید</a>
             </section>
 
