@@ -115,8 +115,9 @@ export const GET: APIRoute = async ({ request }) => {
               AND consumed.status IN ('present', 'absent')
           ) AS consumed_sessions,
           (
-            SELECT MIN(i.due_date) FROM invoices i
-            WHERE i.enrollment_term_id = et.id AND i.status IN ('pending', 'overdue')
+            SELECT i.due_date FROM invoices i
+            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+            ORDER BY i.id DESC LIMIT 1
           ) AS invoice_due_date,
           (
             SELECT i.id FROM invoices i
@@ -124,13 +125,17 @@ export const GET: APIRoute = async ({ request }) => {
             ORDER BY i.id DESC LIMIT 1
           ) AS invoice_id,
           (
-            SELECT COALESCE(SUM(i.amount), 0) FROM invoices i
+            SELECT i.amount FROM invoices i
             WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+            ORDER BY i.id DESC LIMIT 1
           ) AS invoice_amount,
           (
             SELECT COALESCE(SUM(p.amount), 0) FROM payments p
-            JOIN invoices i ON i.id = p.invoice_id
-            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+            WHERE p.invoice_id = (
+              SELECT i.id FROM invoices i
+              WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+              ORDER BY i.id DESC LIMIT 1
+            )
           ) AS paid_amount
         FROM enrollment_sessions es
         JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
