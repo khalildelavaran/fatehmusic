@@ -91,7 +91,7 @@
 .admin-grid a,
 .admin-stat-card{
     display:block;
-    padding:20px;
+    padding:10px;
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));
     border:1px solid rgba(255,255,255,.06);
     border-radius:20px;
