@@ -11,7 +11,7 @@ const isAdmin = session.role === ROLES.ADMIN;
 const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
 ---
 <aside class="admin-nav">
-  <div class="admin-nav-brand"><span class="admin-nav-mark">ف</span><div class="admin-nav-brand-text"><strong>آموزشگاه فاتح</strong><span>پنل مدیریت</span></div></div>
+  <div class="admin-nav-brand"><img class="admin-nav-logo" src="/logo.svg" alt="آموزشگاه موسیقی فاتح" width="38" height="38" /><div class="admin-nav-brand-text"><strong>آموزشگاه فاتح</strong><span>پنل مدیریت</span></div></div>
   <nav class="admin-nav-links" aria-label="ناوبری مدیریت">
     <a href="/admin" class:list={["admin-nav-link", active === "dashboard" && "is-active"]}>داشبورد</a>
     <a href="/admin/daily" class:list={["admin-nav-link", active === "daily" && "is-active"]}>داشبورد روزانه</a>
