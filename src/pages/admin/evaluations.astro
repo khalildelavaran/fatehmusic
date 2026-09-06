@@ -16,7 +16,7 @@ const enrollmentIdParam = Astro.url.searchParams.get("enrollmentId");
 const enrollmentId = enrollmentIdParam ? Number(enrollmentIdParam) : null;
 const studentName = Astro.url.searchParams.get("studentName") ?? "";
 
-const pageTitle = studentName ? `ارزیابی و تمرین ${studentName} | آموزشگاه موسیقی فاتح` : "ارزیابی و تمرین | آموزشگاه موسیقی فاتح";
+const pageTitle = studentName ? `ارزیابی ${studentName} | آموزشگاه موسیقی فاتح` : "ارزیابی | آموزشگاه موسیقی فاتح";
 ---
 <MainLayout title={pageTitle} noindex={true}>
   <div class="admin-layout">
@@ -34,10 +34,10 @@ const pageTitle = studentName ? `ارزیابی و تمرین ${studentName} | �
           <Fragment>
             <section class="admin-hero no-print">
               <p><a href="/admin/classes">← بازگشت به کلاس‌ها</a></p>
-              <h1>ارزیابی و تمرین{studentName ? ` — ${studentName}` : ""}</h1>
+              <h1>ارزیابی{studentName ? ` — ${studentName}` : ""}</h1>
             </section>
 
-            <div class="admin-profile-grid no-print">
+            <section class="admin-profile-grid no-print">
               <section class="admin-card">
                 <h2>ثبت ارزیابی جدید</h2>
                 <form id="evaluationForm" class="admin-form" data-enrollment-id={enrollmentId}>
@@ -54,20 +54,7 @@ const pageTitle = studentName ? `ارزیابی و تمرین ${studentName} | �
                   </div>
                 </form>
               </section>
-
-              <section class="admin-card">
-                <h2>ثبت تمرین جدید</h2>
-                <form id="assignmentForm" class="admin-form" data-enrollment-id={enrollmentId}>
-                  <label>عنوان تمرین<input name="title" required /></label>
-                  <label>توضیحات<textarea name="description" rows="2"></textarea></label>
-                  <label>مهلت انجام<input name="dueDate" type="date" /></label>
-                  <div class="admin-form-actions">
-                    <button type="submit">ثبت تمرین</button>
-                    <span id="assignmentFormStatus" class="admin-live-status"></span>
-                  </div>
-                </form>
-              </section>
-            </div>
+            </section>
 
             <section id="evaluationPrintArea" class="evaluation-print-section">
               <div class="admin-section-title">
@@ -79,21 +66,6 @@ const pageTitle = studentName ? `ارزیابی و تمرین ${studentName} | �
                   <thead><tr><th>تاریخ</th><th>نمره کلی</th><th>فن‌آوری</th><th>ریتم</th><th>تئوری</th><th>اجرا</th><th>انضباط</th><th>توضیحات</th></tr></thead>
                   <tbody id="evaluationsBody" data-enrollment-id={enrollmentId}>
                     <tr><td colspan="8" class="admin-table-empty">در حال بارگذاری...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section id="assignmentPrintArea" class="evaluation-print-section">
-              <div class="admin-section-title">
-                <h2>سوابق تمرین</h2>
-                <button type="button" class="admin-document-btn no-print" data-print-target="#assignmentPrintArea" data-print-title="سوابق تمرین">چاپ</button>
-              </div>
-              <div class="admin-table-wrap">
-                <table class="admin-table">
-                  <thead><tr><th>عنوان</th><th>مهلت</th><th>وضعیت</th><th>یادداشت هنرجو</th></tr></thead>
-                  <tbody id="assignmentsBody" data-enrollment-id={enrollmentId}>
-                    <tr><td colspan="4" class="admin-table-empty">در حال بارگذاری...</td></tr>
                   </tbody>
                 </table>
               </div>

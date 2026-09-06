@@ -1,13 +1,8 @@
 const evalForm = document.querySelector("#evaluationForm");
 const evalStatusEl = document.querySelector("#evaluationFormStatus");
-const assignForm = document.querySelector("#assignmentForm");
-const assignStatusEl = document.querySelector("#assignmentFormStatus");
 const evaluationsBody = document.querySelector("#evaluationsBody");
-const assignmentsBody = document.querySelector("#assignmentsBody");
 
 const esc = (v) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-const ASSIGNMENT_STATUS_LABELS = { assigned: "محول‌شده", in_progress: "در حال انجام", completed: "انجام‌شده", reviewed: "بررسی‌شده" };
 
 function setStatus(el, text, isError = false) {
   if (!el) return;
@@ -53,31 +48,6 @@ async function loadEvaluations() {
     .join("");
 }
 
-async function loadAssignments() {
-  const enrollmentId = assignmentsBody?.dataset.enrollmentId;
-  if (!enrollmentId) return;
-  const response = await fetch(`/api/admin/assignments?enrollmentId=${encodeURIComponent(enrollmentId)}`, { credentials: "same-origin" });
-  const data = await response.json();
-  if (!data.success) {
-    assignmentsBody.innerHTML = `<tr><td colspan="4" class="admin-table-empty">${esc(data.message || "خطا در دریافت اطلاعات")}</td></tr>`;
-    return;
-  }
-  if (!data.assignments.length) {
-    assignmentsBody.innerHTML = `<tr><td colspan="4" class="admin-table-empty">هنوز تمرینی ثبت نشده است.</td></tr>`;
-    return;
-  }
-  assignmentsBody.innerHTML = data.assignments
-    .map(
-      (a) => `<tr>
-        <td>${esc(a.title)}</td>
-        <td>${a.dueDate ? formatJalali(a.dueDate) : "-"}</td>
-        <td><span class="admin-status-pill" data-status="${esc(a.status)}">${esc(ASSIGNMENT_STATUS_LABELS[a.status] || a.status)}</span></td>
-        <td>${esc(a.studentComment)}</td>
-      </tr>`
-    )
-    .join("");
-}
-
 evalForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const submitButton = evalForm.querySelector('button[type="submit"]');
@@ -117,39 +87,4 @@ evalForm?.addEventListener("submit", async (event) => {
   }
 });
 
-assignForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const submitButton = assignForm.querySelector('button[type="submit"]');
-  const enrollmentId = Number(assignForm.dataset.enrollmentId);
-  const data = new FormData(assignForm);
-
-  const body = {
-    enrollmentId,
-    title: String(data.get("title") || "").trim(),
-    description: String(data.get("description") || "").trim(),
-    dueDate: data.get("dueDate") ? String(data.get("dueDate")) : null,
-  };
-
-  submitButton?.setAttribute("disabled", "true");
-  setStatus(assignStatusEl, "در حال ثبت...");
-  try {
-    const response = await fetch("/api/admin/assignments", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const result = await response.json();
-    if (!result.success) throw new Error(result.message || "ثبت تمرین انجام نشد.");
-    setStatus(assignStatusEl, "تمرین با موفقیت ثبت شد.");
-    assignForm.reset();
-    await loadAssignments();
-  } catch (error) {
-    setStatus(assignStatusEl, error.message || "خطایی رخ داد.", true);
-  } finally {
-    submitButton?.removeAttribute("disabled");
-  }
-});
-
 loadEvaluations();
-loadAssignments();

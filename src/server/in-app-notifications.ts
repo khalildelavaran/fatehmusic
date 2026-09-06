@@ -10,7 +10,6 @@ export const NOTIFICATION_TYPES = [
   "class_reminder",
   "payment_due",
   "attendance",
-  "assignment",
   "evaluation",
   "certificate",
   "system",
@@ -174,8 +173,8 @@ export async function markAllNotificationsRead(db: D1Database, recipientType: No
  * Intended to be invoked by a scheduled job (e.g. a Cloudflare Cron
  * Trigger) a fixed interval before each class_session's start_time;
  * this function itself is pure with respect to "now" (the caller
- * supplies windowStart/windowEnd) so it stays unit-testable without a
- * live clock.
+ * supplies windowStart/windowEnd) so it stays unit-testable without
+ * a live clock.
  */
 export async function generateClassReminders(
   db: D1Database,
