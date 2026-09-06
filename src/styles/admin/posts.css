@@ -12,12 +12,12 @@
 /* ---------- Form Layout ---------- */
 .admin-panel .admin-form{
     display:grid;
-    gap:2px 18px;
+    gap:2px 18px !important;
 }
 
 .admin-panel .admin-form label{
     display:grid;
-    gap:1px;
+    gap:1px !important;
 }
 
 .admin-form > .form-full{
@@ -73,6 +73,14 @@
 }
 
 @media(max-width:640px){
+    .admin-panel .admin-form{
+        gap:2px !important;
+    }
+
+    .admin-panel .admin-form label{
+        gap:1px !important;
+    }
+
     .admin-table-actions button{
         min-height:32px;
         padding:5px 8px;
