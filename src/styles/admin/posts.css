@@ -2,44 +2,41 @@
    ADMIN POSTS
 ========================================== */
 
-/* ---------- Main Layout ---------- */
 .admin-panel{
     display:grid;
     grid-template-columns:minmax(280px,420px) 1fr;
     gap:24px;
 }
 
-/* ---------- Form Layout ---------- */
-.admin-panel .admin-form{
+/* Posts form owns its grid rhythm so the generic admin form cannot override it. */
+.admin-panel form#postForm.admin-form{
     display:grid;
-    row-gap:0 !important;
-    column-gap:18px !important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-content:start;
+    row-gap:4px;
+    column-gap:18px;
 }
 
-.admin-panel .admin-form label{
+.admin-panel form#postForm.admin-form > label{
     display:grid;
-    gap:4px !important;
+    align-content:start;
+    gap:4px;
+    margin:0;
+    min-height:0;
 }
 
-.admin-form > .form-full{
+.admin-panel form#postForm.admin-form > .form-full,
+.admin-panel form#postForm.admin-form > label:has(textarea[name="excerpt"]),
+.admin-panel form#postForm.admin-form > label:has(textarea[name="content"]),
+.admin-panel form#postForm.admin-form > label:has(textarea[name="meta_description"]){
     grid-column:1 / -1;
 }
 
-.admin-form label:has(textarea[name="content"]),
-.admin-form label:has(textarea[name="excerpt"]),
-.admin-form label:has(textarea[name="meta_description"]){
-    grid-column:1 / -1;
-}
-
-.admin-form textarea[name="content"]{
+.admin-panel form#postForm.admin-form textarea[name="content"]{
     min-height:320px;
 }
 
-/* Form controls are intentionally owned by admin/base.css so every
-   dashboard data-entry screen has one consistent visual language. */
-
-/* ---------- Form actions ---------- */
-.admin-form-actions{
+.admin-panel form#postForm.admin-form .admin-form-actions{
     display:flex;
     align-items:center;
     flex-wrap:wrap;
@@ -48,7 +45,6 @@
 
 .admin-form-actions button{flex:1;}
 
-/* ---------- Table actions ---------- */
 .admin-table-actions{
     display:flex;
     align-items:center;
@@ -68,19 +64,15 @@
     white-space:nowrap;
 }
 
-/* ---------- Responsive ---------- */
 @media(max-width:900px){
     .admin-panel{grid-template-columns:1fr;}
 }
 
 @media(max-width:640px){
-    .admin-panel .admin-form{
-        row-gap:0 !important;
-        column-gap:18px !important;
-    }
-
-    .admin-panel .admin-form label{
-        gap:4px !important;
+    .admin-panel form#postForm.admin-form{
+        grid-template-columns:1fr;
+        row-gap:4px;
+        column-gap:0;
     }
 
     .admin-table-actions button{
