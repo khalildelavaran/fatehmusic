@@ -66,6 +66,25 @@
     box-shadow: none !important;
   }
 
+  /* Instructor report: force the report surface to white instead of the
+     dark admin theme when printing. The data-print-light attribute survives
+     cloning because PrintManager only removes IDs. */
+  html.is-printing-global .global-print-sheet [data-print-light],
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table-wrap,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table thead,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table tbody,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table tr,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table th,
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-table td {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  html.is-printing-global .global-print-sheet [data-print-light] .admin-section-title h2 {
+    color: #111 !important;
+  }
+
   html.is-printing-global .global-print-sheet img {
     max-width: 100%;
     break-inside: avoid;
