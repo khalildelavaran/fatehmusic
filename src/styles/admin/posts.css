@@ -4,7 +4,7 @@
 
 .admin-panel{
     display:grid;
-    grid-template-columns:minmax(280px,420px) 1fr;
+    grid-template-columns:minmax(0,1fr) minmax(280px,420px);
     gap:24px;
 }
 
