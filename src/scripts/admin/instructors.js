@@ -2,10 +2,22 @@ const body = document.querySelector("#instructorsBody");
 const searchInput = document.querySelector("#instructorSearch");
 const statusFilter = document.querySelector("#instructorStatusFilter");
 const pagination = document.querySelector("#instructorsPagination");
+const exportLink = document.querySelector("#instructorsExportLink");
 
 let currentPage = 1;
 const pageSize = 20;
 let debounceTimer = null;
+
+function updateExportLink() {
+  if (!exportLink) return;
+  const params = new URLSearchParams();
+  const search = searchInput?.value.trim();
+  const status = statusFilter?.value;
+  if (search) params.set("search", search);
+  if (status) params.set("status", status);
+  const qs = params.toString();
+  exportLink.href = qs ? `/api/admin/instructors-export?${qs}` : "/api/admin/instructors-export";
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -86,12 +98,14 @@ searchInput?.addEventListener("input", () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     currentPage = 1;
+    updateExportLink();
     loadInstructors();
   }, 350);
 });
 
 statusFilter?.addEventListener("change", () => {
   currentPage = 1;
+  updateExportLink();
   loadInstructors();
 });
 
@@ -104,4 +118,5 @@ pagination?.addEventListener("click", (event) => {
   loadInstructors();
 });
 
+updateExportLink();
 loadInstructors();

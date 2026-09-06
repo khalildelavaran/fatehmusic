@@ -1,7 +1,11 @@
 const body = document.querySelector("#classesBody");
 const searchInput = document.querySelector("#classSearch");
 const statusFilter = document.querySelector("#classStatusFilter");
+const courseFilter = document.querySelector("#classCourseFilter");
+const instructorFilter = document.querySelector("#classInstructorFilter");
+const levelFilter = document.querySelector("#classLevelFilter");
 const pagination = document.querySelector("#classesPagination");
+const exportLink = document.querySelector("#classesExportLink");
 
 const CLASS_TYPE_LABELS_FA = { individual: "خصوصی", group: "گروهی", workshop: "کارگاه", online: "آنلاین" };
 const CLASS_STATUS_LABELS_FA = { active: "فعال", completed: "پایان‌یافته", cancelled: "لغوشده" };
@@ -9,6 +13,27 @@ const CLASS_STATUS_LABELS_FA = { active: "فعال", completed: "پایان‌ی
 let currentPage = 1;
 const pageSize = 20;
 let debounceTimer = null;
+
+function currentFilterParams() {
+  const params = new URLSearchParams();
+  const search = searchInput?.value.trim();
+  const status = statusFilter?.value;
+  const courseId = courseFilter?.value;
+  const instructorId = instructorFilter?.value;
+  const level = levelFilter?.value.trim();
+  if (search) params.set("search", search);
+  if (status) params.set("status", status);
+  if (courseId) params.set("courseId", courseId);
+  if (instructorId) params.set("instructorId", instructorId);
+  if (level) params.set("level", level);
+  return params;
+}
+
+function updateExportLink() {
+  if (!exportLink) return;
+  const qs = currentFilterParams().toString();
+  exportLink.href = qs ? `/api/admin/classes-export?${qs}` : "/api/admin/classes-export";
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -56,11 +81,9 @@ async function loadClasses() {
   if (!body) return;
   body.innerHTML = `<tr><td colspan="6" class="admin-table-empty">در حال بارگذاری...</td></tr>`;
 
-  const params = new URLSearchParams({ page: String(currentPage), pageSize: String(pageSize) });
-  const search = searchInput?.value.trim();
-  const status = statusFilter?.value;
-  if (search) params.set("search", search);
-  if (status) params.set("status", status);
+  const params = currentFilterParams();
+  params.set("page", String(currentPage));
+  params.set("pageSize", String(pageSize));
 
   let response;
   try {
@@ -89,13 +112,36 @@ searchInput?.addEventListener("input", () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     currentPage = 1;
+    updateExportLink();
     loadClasses();
   }, 350);
 });
 
 statusFilter?.addEventListener("change", () => {
   currentPage = 1;
+  updateExportLink();
   loadClasses();
+});
+
+courseFilter?.addEventListener("change", () => {
+  currentPage = 1;
+  updateExportLink();
+  loadClasses();
+});
+
+instructorFilter?.addEventListener("change", () => {
+  currentPage = 1;
+  updateExportLink();
+  loadClasses();
+});
+
+levelFilter?.addEventListener("input", () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    currentPage = 1;
+    updateExportLink();
+    loadClasses();
+  }, 350);
 });
 
 pagination?.addEventListener("click", (event) => {
@@ -107,4 +153,5 @@ pagination?.addEventListener("click", (event) => {
   loadClasses();
 });
 
+updateExportLink();
 loadClasses();

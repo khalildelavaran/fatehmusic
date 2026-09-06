@@ -4,12 +4,24 @@ const body = document.querySelector("#studentsBody");
 const searchInput = document.querySelector("#studentSearch");
 const statusFilter = document.querySelector("#studentStatusFilter");
 const pagination = document.querySelector("#studentsPagination");
+const exportLink = document.querySelector("#studentsExportLink");
 
 const STATUS_LABELS_FA = { active: "فعال", inactive: "غیرفعال", graduated: "فارغ‌التحصیل" };
 
 let currentPage = 1;
 const pageSize = 20;
 let debounceTimer = null;
+
+function updateExportLink() {
+  if (!exportLink) return;
+  const params = new URLSearchParams();
+  const search = searchInput?.value.trim();
+  const status = statusFilter?.value;
+  if (search) params.set("search", search);
+  if (status) params.set("status", status);
+  const qs = params.toString();
+  exportLink.href = qs ? `/api/admin/students-export?${qs}` : "/api/admin/students-export";
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -92,12 +104,14 @@ searchInput?.addEventListener("input", () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     currentPage = 1;
+    updateExportLink();
     loadStudents();
   }, 350);
 });
 
 statusFilter?.addEventListener("change", () => {
   currentPage = 1;
+  updateExportLink();
   loadStudents();
 });
 
@@ -110,4 +124,5 @@ pagination?.addEventListener("click", (event) => {
   loadStudents();
 });
 
+updateExportLink();
 loadStudents();
