@@ -7,7 +7,7 @@
     max-width:640px;
 }
 
-/* The global section rule adds 40px vertical padding. This panel must stay compact. */
+/* Keep the search panel close to the surrounding sections, but preserve the inner form spacing. */
 .admin-shell .admin-panel.admin-panel--certificates.admin-cert-search-panel{
     padding:5px 0 !important;
     margin-top:0;
@@ -15,7 +15,7 @@
 }
 
 .admin-shell .admin-panel.admin-panel--certificates.admin-cert-search-panel > .admin-form{
-    padding:0 !important;
+    padding:26px !important;
     margin:0 !important;
 }
 
