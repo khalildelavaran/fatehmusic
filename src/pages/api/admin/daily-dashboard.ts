@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { listSessionsForDate } from "../../../server/class-sessions";
 import { provisionEnrollmentSessionsForClassSession } from "../../../server/session-provisioning";
+import { calculateFinance } from "../../../server/finance-calculations";
 
 function persianWeekdayIndex(date: string): number {
   const value = new Date(`${date}T12:00:00Z`).getUTCDay();
@@ -108,17 +109,12 @@ export const GET: APIRoute = async ({ request }) => {
           TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
           es.status AS attendance_status, es.attendance_mode, es.note,
           et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
-          et.tuition_due_date AS term_tuition_due_date,
+          et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
           (
             SELECT COUNT(*) FROM enrollment_sessions consumed
             WHERE consumed.enrollment_id = e.id AND consumed.enrollment_term_id = et.id
               AND consumed.status IN ('present', 'absent')
           ) AS consumed_sessions,
-          (
-            SELECT i.due_date FROM invoices i
-            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
-            ORDER BY i.id DESC LIMIT 1
-          ) AS invoice_due_date,
           (
             SELECT i.id FROM invoices i
             WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
@@ -129,6 +125,11 @@ export const GET: APIRoute = async ({ request }) => {
             WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
             ORDER BY i.id DESC LIMIT 1
           ) AS invoice_amount,
+          (
+            SELECT i.due_date FROM invoices i
+            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+            ORDER BY i.id DESC LIMIT 1
+          ) AS invoice_due_date,
           (
             SELECT COALESCE(SUM(p.amount), 0) FROM payments p
             WHERE p.invoice_id = (
@@ -148,8 +149,8 @@ export const GET: APIRoute = async ({ request }) => {
         attendance_status: string; attendance_mode: string | null; note: string;
         term_id: number | null; term_number: number | null; planned_sessions: number | null;
         billing_type: string | null; consumed_sessions: number;
-        term_tuition_due_date: string | null; invoice_due_date: string | null;
-        invoice_id: number | null; invoice_amount: number | null; paid_amount: number | null;
+        term_tuition_amount: number | null; term_tuition_due_date: string | null;
+        invoice_id: number | null; invoice_amount: number | null; invoice_due_date: string | null; paid_amount: number | null;
       }>();
 
       result.push({
@@ -162,13 +163,16 @@ export const GET: APIRoute = async ({ request }) => {
             ? true
             : student.planned_sessions != null && remainingSessions <= 1;
           const tuitionDueDate = student.invoice_due_date ?? student.term_tuition_due_date;
-          const invoiceAmount = Number(student.invoice_amount ?? 0);
-          const paidAmount = Number(student.paid_amount ?? 0);
-          const balance = Math.max(invoiceAmount - paidAmount, 0);
-          const financialStatus = !student.invoice_id ? "none"
-            : balance <= 0 ? "paid"
-            : tuitionDueDate && tuitionDueDate < date ? "overdue"
-            : paidAmount > 0 ? "partial" : "pending";
+          const finance = calculateFinance({
+            invoiceAmount: Number(student.invoice_amount ?? student.term_tuition_amount ?? 0),
+            paidAmount: Number(student.paid_amount ?? 0),
+            dueDate: tuitionDueDate,
+            today: date,
+            billingType: student.billing_type,
+            plannedSessions: student.planned_sessions,
+            consumedSessions,
+          });
+          const financialStatus = student.invoice_id ? finance.financialStatus : "none";
           return {
             enrollmentSessionId: student.enrollment_session_id,
             enrollmentId: student.enrollment_id,
@@ -184,11 +188,16 @@ export const GET: APIRoute = async ({ request }) => {
             remainingSessions,
             renewalReady,
             tuitionDueDate,
-            tuitionWarning: tuitionDueDate != null || renewalReady,
+            tuitionWarning: finance.overdue || finance.nearDue || renewalReady,
             invoiceId: student.invoice_id,
-            invoiceAmount,
-            paidAmount,
-            balance,
+            invoiceAmount: finance.invoiceAmount,
+            paidAmount: finance.paidAmount,
+            amountDueToDate: finance.amountDueToDate,
+            balance: finance.balance,
+            balanceToDate: finance.balanceToDate,
+            unpaidSessions: finance.unpaidSessions,
+            overdue: finance.overdue,
+            nearDue: finance.nearDue,
             financialStatus,
           };
         }),
