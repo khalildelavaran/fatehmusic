@@ -98,6 +98,24 @@ const pageTitle = profile ? `پروفایل ${profile.instructor.firstName} ${pr
                   </div>
                 </form>
               </section>
+
+              {profile && (
+                <section class="admin-card">
+                  <h2>حساب کاربری پنل مدرس</h2>
+                  <p class="admin-table-subtext">
+                    برای اینکه مدرس بتواند وارد پنل خودش شود (نشانی <code>/instructor/login</code>)، برایش نام کاربری و رمز عبور تعیین کنید.
+                    تعیین دوباره، رمز قبلی را جایگزین می‌کند.
+                  </p>
+                  <form id="instructorAccountForm" class="admin-form" data-instructor-id={profile.instructor.id}>
+                    <label>نام کاربری<input name="username" placeholder="مثلاً: نام‌خانوادگی به لاتین" required /></label>
+                    <label>رمز عبور<input name="password" type="password" minlength="8" placeholder="حداقل ۸ کاراکتر" required /></label>
+                    <div class="admin-form-actions">
+                      <button type="submit">تنظیم / بازنشانی حساب کاربری</button>
+                      <span id="instructorAccountFormStatus" class="admin-live-status"></span>
+                    </div>
+                  </form>
+                </section>
+              )}
             </div>
 
             {profile && (

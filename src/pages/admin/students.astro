@@ -18,13 +18,14 @@ if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
 
 const db = (env as AdminEnv).DB;
 const idParam = Astro.url.searchParams.get("id");
+const isNew = Astro.url.searchParams.get("new") === "1";
 const numericId = idParam ? Number(idParam) : null;
 const profile = numericId && db ? await getStudentProfile(db, numericId) : null;
 
 const STATUS_LABELS_FA: Record<string, string> = { active: "فعال", inactive: "غیرفعال", graduated: "فارغ‌التحصیل" };
 const REGISTRATION_STATUS_LABELS_FA: Record<string, string> = { pending: "در انتظار", contacted: "تماس گرفته شد", confirmed: "تأیید شد", cancelled: "لغو شد" };
 
-const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile.student.lastName} | آموزشگاه موسیقی فاتح` : "هنرجویان | آموزشگاه موسیقی فاتح";
+const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile.student.lastName} | آموزشگاه موسیقی فاتح` : isNew ? "افزودن هنرجو | آموزشگاه موسیقی فاتح" : "هنرجویان | آموزشگاه موسیقی فاتح";
 ---
 <MainLayout title={pageTitle} noindex={true}>
   <div class="admin-layout">
@@ -38,6 +39,46 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
             <h1>پرونده‌ای با این شناسه وجود ندارد</h1>
             <p><a href="/admin/students">بازگشت به فهرست هنرجویان</a></p>
           </section>
+        )}
+
+        {isNew && (
+          <Fragment>
+            <section class="admin-hero">
+              <p><a href="/admin/students">← فهرست هنرجویان</a></p>
+              <h1>افزودن هنرجو جدید</h1>
+            </section>
+
+            <div class="admin-profile-grid">
+              <section class="admin-card">
+                <h2>اطلاعات هنرجو</h2>
+                <form id="studentCreateForm" class="admin-form">
+                  <label>کد ملی<input name="nationalCode" dir="ltr" maxlength="10" pattern="\d{10}" placeholder="۱۰ رقم" required /></label>
+                  <label>نام<input name="firstName" required /></label>
+                  <label>نام خانوادگی<input name="lastName" required /></label>
+                  <label>نام پدر<input name="fatherName" /></label>
+                  <label>سال تولد (شمسی)<input name="birthYear" type="number" min="1300" max="1500" /></label>
+                  <label>موبایل<input name="phone" dir="ltr" /></label>
+                  <label>ایمیل<input name="email" type="email" dir="ltr" /></label>
+                  <label>شغل<input name="occupation" /></label>
+                  <label>محل صدور کد ملی<input name="idIssuePlace" /></label>
+                  <label>تماس اضطراری<input name="emergencyContact" /></label>
+                  <label>وضعیت
+                    <select name="status">
+                      {STUDENT_STATUSES.map((status) => (
+                        <option value={status} selected={status === "active"}>{STATUS_LABELS_FA[status]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>آدرس<textarea name="address" rows="2"></textarea></label>
+                  <label>یادداشت داخلی<textarea name="notes" rows="2"></textarea></label>
+                  <div class="admin-form-actions">
+                    <button type="submit">ثبت هنرجو</button>
+                    <span id="studentCreateStatus" class="admin-live-status"></span>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </Fragment>
         )}
 
         {profile && (
@@ -130,7 +171,7 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
           </Fragment>
         )}
 
-        {!idParam && (
+        {!idParam && !isNew && (
           <Fragment>
             <section class="admin-hero no-print">
               <p>هنرجویان</p>
@@ -145,6 +186,7 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
                 {STUDENT_STATUSES.map((status) => <option value={status}>{STATUS_LABELS_FA[status]}</option>)}
               </select>
               <a id="studentsExportLink" href="/api/admin/students-export" class="admin-document-btn">خروجی CSV</a>
+              <a href="/admin/students?new=1" class="admin-document-btn">افزودن هنرجو جدید</a>
             </section>
 
             <section class="admin-table-wrap">
@@ -162,5 +204,6 @@ const pageTitle = profile ? `پرونده ${profile.student.firstName} ${profile
     </main>
   </div>
   {profile && <script>import "../../scripts/admin/student-profile.js";</script>}
-  {!idParam && <script>import "../../scripts/admin/students.js";</script>}
+  {isNew && <script>import "../../scripts/admin/student-create.js";</script>}
+  {!idParam && !isNew && <script>import "../../scripts/admin/students.js";</script>}
 </MainLayout>
