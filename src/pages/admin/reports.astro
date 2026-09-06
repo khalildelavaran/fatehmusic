@@ -17,7 +17,6 @@ const [overview, students, instructors, classes, finance, educational] = db ? aw
   getDashboardOverview(db, today), getStudentReport(db, yearStart, today), getInstructorReport(db), getClassReport(db, today), getFinanceReport(db, today), getEducationalReport(db),
 ]) : [null, null, null, null, null, null];
 const formatToman = (value: number) => `${value.toLocaleString("fa-IR")} تومان`;
-const printButton = (target: string, title: string) => ({ target, title });
 ---
 <MainLayout title="گزارش‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
   <div class="admin-layout">
