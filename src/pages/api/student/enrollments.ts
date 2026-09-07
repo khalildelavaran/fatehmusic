@@ -6,7 +6,7 @@ import { getStudentSession, json, type StudentEnv } from "../../../server/studen
 /**
  * Bridges the legacy registrations-based student session (identified
  * by national_code) to the newer enrollments domain model, which is
- * what evaluations/assignments/attendance/makeup-requests are all
+ * what attendance/makeup-requests are all
  * keyed on. See CLAUDE.md / .agents/skills/music-school-domain for
  * why these are two separate tables rather than one.
  */
