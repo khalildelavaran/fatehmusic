@@ -108,10 +108,23 @@ export const POST: APIRoute = async ({ request }) => {
     } | null;
     const enrollmentSessionId = Number(body?.enrollmentSessionId);
     const enrollmentId = Number(body?.enrollmentId);
-    const status = body?.status;
-    const allowed = new Set(["pending", "present", "absent", "excused"]);
+    const status = String(body?.status || "");
 
-    if (!Number.isInteger(enrollmentSessionId) || enrollmentSessionId < 1 || !allowed.has(String(status))) {
+    if (!Number.isInteger(enrollmentSessionId) || enrollmentSessionId < 1) {
+      return json({ success: false, message: "شناسه هنرجو معتبر نیست." }, 422);
+    }
+
+    const allowedAttendance = new Set(["pending", "present", "absent", "excused"]);
+    if (status === "withdrawn") {
+      if (!Number.isInteger(enrollmentId) || enrollmentId < 1) {
+        return json({ success: false, message: "ثبت انصراف بدون شناسه ثبت‌نام ممکن نیست." }, 422);
+      }
+      const result = await dbUpdateEnrollment(env.DB, enrollmentId);
+      if (!result) return json({ success: false, message: "ثبت‌نام فعال هنرجو پیدا نشد." }, 404);
+      return json({ success: true, enrollmentSessionId, enrollmentId, status });
+    }
+
+    if (!allowedAttendance.has(status)) {
       return json({ success: false, message: "وضعیت حضور معتبر نیست." }, 422);
     }
 
@@ -120,14 +133,17 @@ export const POST: APIRoute = async ({ request }) => {
     `).bind(status, enrollmentSessionId).run();
 
     if (!result.meta.changes) return json({ success: false, message: "رکورد حضور پیدا نشد." }, 404);
-
-    if (String(status) === "withdrawn" && Number.isInteger(enrollmentId) && enrollmentId > 0) {
-      await env.DB.prepare(`UPDATE enrollments SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).bind(enrollmentId).run();
-    }
-
     return json({ success: true, enrollmentSessionId, status });
   } catch (error) {
     console.error("[admin/daily-planner] attendance update failed:", error);
     return json({ success: false, message: "ذخیره وضعیت هنرجو با خطا مواجه شد." }, 500);
   }
 };
+
+async function dbUpdateEnrollment(db: D1Database, enrollmentId: number): Promise<boolean> {
+  const result = await db.prepare(`
+    UPDATE enrollments SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND status = 'active'
+  `).bind(enrollmentId).run();
+  return Boolean(result.meta.changes);
+}
