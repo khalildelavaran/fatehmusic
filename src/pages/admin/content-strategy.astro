@@ -5,6 +5,7 @@ import AdminNav from "../../components/admin/AdminNav.astro";
 import "../../styles/admin/base.css";
 import "../../styles/admin/nav.css";
 import "../../styles/admin/dashboard.css";
+import "../../styles/admin/topics.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
@@ -55,7 +56,8 @@ const opportunities = intelligence.opportunities.filter((item) => {
 const opportunityCount = opportunities.length;
 const highPriorityCount = opportunities.filter((item) => item.priority >= 85).length;
 const newContentCount = opportunities.filter((item) => item.action === "NEW_CONTENT").length;
-const optimizeCount = opportunities.filter((item) => item.action === "OPTIMIZE_EXISTING").length;
+const approvedTopicCount = storedTopics.filter((item) => item.status === "approved").length;
+const candidateTopicCount = storedTopics.filter((item) => item.status === "candidate").length;
 
 const topicCounts = new Map();
 for (const item of opportunities) topicCounts.set(item.topicName, (topicCounts.get(item.topicName) ?? 0) + 1);
@@ -64,63 +66,108 @@ const actionClass = { NEW_CONTENT: "new", OPTIMIZE_EXISTING: "optimize", MERGE_C
 const sourceLabel = { "topic-engine": "موتور موضوعات", gap: "شکاف SEO/GEO", "topic-engine+gap": "هر دو موتور" };
 ---
 
-<MainLayout title="مرکز فرصت‌های محتوا | پنل مدیریت آموزشگاه موسیقی فاتح" noindex={true}>
+<MainLayout title="استراتژی محتوا | پنل مدیریت آموزشگاه موسیقی فاتح" noindex={true}>
   <div class="admin-layout">
     <AdminNav session={session} active="content-strategy" />
     <main class="admin-main"><div class="admin-shell strategy-shell">
-      <section class="admin-hero" aria-label="مرکز فرصت‌های محتوا">
+      <section class="admin-hero" aria-label="استراتژی محتوا">
         <span class="admin-hero-label">SEO / GEO Content Intelligence</span>
-        <h1>مرکز فرصت‌های محتوا</h1>
-        <span class="admin-hero-description">یک صف واحد برای تمام تصمیم‌های محتوایی؛ موضوعات پیشنهادی، شکاف‌های SEO/GEO و امتیازدهی از یک orchestrator مرکزی تغذیه می‌شوند.</span>
+        <h1>استراتژی محتوا</h1>
+        <span class="admin-hero-description">مدیریت استراتژی تولید محتوا و موضوعات پیشنهادی در یک بخش.</span>
       </section>
 
-      <div class="strategy-stats">
-        <div class="strategy-stat"><strong>{opportunityCount}</strong><span>فرصت نهایی</span></div>
-        <div class="strategy-stat strategy-stat-hot"><strong>{highPriorityCount}</strong><span>اولویت بالا</span></div>
-        <div class="strategy-stat"><strong>{newContentCount}</strong><span>مقاله جدید</span></div>
-        <div class="strategy-stat"><strong>{optimizeCount}</strong><span>بهینه‌سازی موجود</span></div>
+      <div class="strategy-tabs" role="tablist" aria-label="استراتژی محتوا">
+        <button type="button" class="strategy-tab is-active" role="tab" aria-selected="true" aria-controls="strategy-panel" data-strategy-tab="strategy">استراتژی محتوا</button>
+        <button type="button" class="strategy-tab" role="tab" aria-selected="false" aria-controls="topics-panel" data-strategy-tab="topics">موضوعات</button>
       </div>
 
-      <section class="strategy-section">
-        <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف نهایی تصمیم‌گیری</h2></div><span class="strategy-count">{opportunityCount} فرصت</span></div>
-        {opportunities.length === 0 ? (
-          <div class="strategy-empty"><strong>در حال حاضر فرصت محتوایی قابل اقدام شناسایی نشده است.</strong><span>با اجرای موتور تولید موضوعات یا انتشار مقاله‌های جدید، این صف خودکار به‌روزرسانی می‌شود.</span></div>
-        ) : (
-          <div class="strategy-list">
-            {opportunities.map((item, index) => (
-              <article class="strategy-card">
-                <div class="strategy-rank">{index + 1}</div>
-                <div class="strategy-card-main">
-                  <div class="strategy-card-top"><div class="strategy-badges">
-                    <span class:list={["strategy-priority", item.priority >= 85 && "high"]}>امتیاز {item.priority}</span>
-                    <span class="strategy-action" class={actionClass[item.action] || "new"}>{actionLabel[item.action] || item.action}</span>
-                    <span class="strategy-intent">{item.searchIntent}</span>
-                    <span class="strategy-topic">{item.topicName}</span>
-                    <span class="strategy-source">{sourceLabel[item.source] || item.source}</span>
-                  </div><span class="strategy-coverage">{item.articleCount} مقاله موجود</span></div>
-                  <h3>{item.title}</h3><p>{item.rationale}</p>
-                  <div class="strategy-meta">
-                    <div><strong>Entity هدف:</strong> {item.targetEntity.name}</div>
-                    {item.course && <div><strong>Course:</strong> {item.course.title}</div>}
-                    <div><strong>Slug:</strong> <code>{item.suggestedSlug}</code></div>
-                    {item.gapDetected && <div><strong>Gap Score:</strong> {item.gapPriority}</div>}
+      <section id="strategy-panel" class="strategy-tab-panel is-active" role="tabpanel">
+        <div class="strategy-stats">
+          <div class="strategy-stat"><strong>{opportunityCount}</strong><span>فرصت نهایی</span></div>
+          <div class="strategy-stat strategy-stat-hot"><strong>{highPriorityCount}</strong><span>اولویت بالا</span></div>
+          <div class="strategy-stat"><strong>{newContentCount}</strong><span>مقاله جدید</span></div>
+          <div class="strategy-stat"><strong>{approvedTopicCount + candidateTopicCount}</strong><span>موضوع فعال</span></div>
+        </div>
+
+        <section class="strategy-section">
+          <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف نهایی تولید محتوا</h2></div><span class="strategy-count">{opportunityCount} فرصت</span></div>
+          {opportunities.length === 0 ? (
+            <div class="strategy-empty"><strong>در حال حاضر فرصت محتوایی قابل اقدام شناسایی نشده است.</strong><span>با تولید موضوعات جدید یا انتشار مقاله‌های جدید، این صف خودکار به‌روزرسانی می‌شود.</span></div>
+          ) : (
+            <div class="strategy-list">
+              {opportunities.map((item, index) => (
+                <article class="strategy-card">
+                  <div class="strategy-rank">{index + 1}</div>
+                  <div class="strategy-card-main">
+                    <div class="strategy-card-top"><div class="strategy-badges">
+                      <span class:list={["strategy-priority", item.priority >= 85 && "high"]}>امتیاز {item.priority}</span>
+                      <span class="strategy-action" class={actionClass[item.action] || "new"}>{actionLabel[item.action] || item.action}</span>
+                      <span class="strategy-intent">{item.searchIntent}</span>
+                      <span class="strategy-topic">{item.topicName}</span>
+                      <span class="strategy-source">{sourceLabel[item.source] || item.source}</span>
+                    </div><span class="strategy-coverage">{item.articleCount} مقاله موجود</span></div>
+                    <h3>{item.title}</h3><p>{item.rationale}</p>
+                    <div class="strategy-meta">
+                      <div><strong>Entity هدف:</strong> {item.targetEntity.name}</div>
+                      {item.course && <div><strong>Course:</strong> {item.course.title}</div>}
+                      <div><strong>Slug:</strong> <code>{item.suggestedSlug}</code></div>
+                      {item.gapDetected && <div><strong>Gap Score:</strong> {item.gapPriority}</div>}
+                    </div>
+                    {item.existingArticleSlugs?.length > 0 && <div class="strategy-existing"><strong>محتوای موجود برای بهینه‌سازی</strong><div>{item.existingArticleSlugs.map((slug) => <code>{slug}</code>)}</div></div>}
+                    <div class="strategy-queries"><strong>Query angles</strong><div>{item.queryAngles.map((query) => <span>{query}</span>)}</div></div>
+                    <div class="strategy-links"><strong>Internal links</strong><div>{item.recommendedLinks.map((url) => <a href={url}>{url.replace(site.url, "") || "/"}</a>)}</div></div>
                   </div>
-                  {item.existingArticleSlugs?.length > 0 && <div class="strategy-existing"><strong>محتوای موجود برای بهینه‌سازی</strong><div>{item.existingArticleSlugs.map((slug) => <code>{slug}</code>)}</div></div>}
-                  <div class="strategy-queries"><strong>Query angles</strong><div>{item.queryAngles.map((query) => <span>{query}</span>)}</div></div>
-                  <div class="strategy-links"><strong>Internal links</strong><div>{item.recommendedLinks.map((url) => <a href={url}>{url.replace(site.url, "") || "/"}</a>)}</div></div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {topicCounts.size > 0 && <section class="strategy-section"><div class="strategy-section-head"><div><span class="admin-hero-label">Coverage Map</span><h2>توزیع فرصت‌ها بر اساس Topic</h2></div></div><div class="strategy-topic-grid">{[...topicCounts.entries()].sort((a, b) => b[1] - a[1]).map(([topic, count]) => <div class="strategy-topic-item"><span>{topic}</span><strong>{count}</strong></div>)}</div></section>}
       </section>
 
-      {topicCounts.size > 0 && <section class="strategy-section"><div class="strategy-section-head"><div><span class="admin-hero-label">Coverage Map</span><h2>توزیع فرصت‌ها بر اساس Topic</h2></div></div><div class="strategy-topic-grid">{[...topicCounts.entries()].sort((a, b) => b[1] - a[1]).map(([topic, count]) => <div class="strategy-topic-item"><span>{topic}</span><strong>{count}</strong></div>)}</div></section>}
+      <section id="topics-panel" class="strategy-tab-panel" role="tabpanel" hidden>
+        <div class="strategy-section">
+          <div class="strategy-section-head"><div><span class="admin-hero-label">Topic Intelligence</span><h2>موضوعات مقالات وبلاگ</h2></div><span class="strategy-count">{approvedTopicCount} تأییدشده · {candidateTopicCount} در انتظار بررسی</span></div>
+          <section class="admin-ai-trigger"><div><strong>تولید موضوعات جدید</strong><span>موضوعات از روی دوره‌های فعال تولید و امتیازدهی می‌شوند.</span></div><button type="button" id="generateTopicsButton">تولید موضوعات جدید</button></section>
+          <p id="generateStatus" role="status" class="admin-ai-status"></p>
+          <section class="admin-panel admin-panel--topics"><div class="admin-topics-toolbar"><div class="admin-topics-filters" role="tablist" aria-label="فیلتر وضعیت"><button type="button" class="is-active" data-filter="approved">تأییدشده</button><button type="button" data-filter="candidate">در انتظار بررسی</button><button type="button" data-filter="used">استفاده‌شده</button><button type="button" data-filter="rejected">ردشده</button><button type="button" data-filter="">همه</button></div><a id="exportCsvLink" href="/api/admin/topics-export?status=approved" class="admin-topics-export">خروجی CSV</a></div>
+            <div class="admin-table-wrap"><table class="admin-table admin-table--topics"><thead><tr><th>عنوان</th><th>دوره / دسته</th><th>نوع</th><th>قصد جستجو</th><th>امتیاز</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody id="topicsList"><tr><td colspan="7" class="admin-table-empty">در حال بارگذاری موضوعات...</td></tr></tbody></table></div>
+          </section>
+        </div>
+      </section>
     </div></main>
   </div>
 </MainLayout>
 
+<script>
+  import "../../scripts/admin/topics.js";
+
+  const tabs = document.querySelectorAll("[data-strategy-tab]");
+  const panels = {
+    strategy: document.querySelector("#strategy-panel"),
+    topics: document.querySelector("#topics-panel")
+  };
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const selected = tab.dataset.strategyTab;
+      tabs.forEach((item) => {
+        const active = item.dataset.strategyTab === selected;
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-selected", String(active));
+      });
+      Object.entries(panels).forEach(([key, panel]) => {
+        if (!panel) return;
+        const active = key === selected;
+        panel.classList.toggle("is-active", active);
+        panel.hidden = !active;
+      });
+    });
+  });
+</script>
+
 <style>
-.strategy-shell{max-width:1280px}.strategy-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:24px 0}.strategy-stat{padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:flex;flex-direction:column;gap:6px}.strategy-stat strong{font-size:30px;line-height:1}.strategy-stat span{color:var(--muted);font-size:13px}.strategy-stat-hot{border-color:rgba(212,175,55,.45)}.strategy-section{margin-top:28px}.strategy-section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}.strategy-section-head h2{margin:4px 0 0}.strategy-count{color:var(--muted);font-size:13px}.strategy-list{display:grid;gap:14px}.strategy-card{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}.strategy-rank{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--background);border:1px solid var(--border);font-weight:800}.strategy-card-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.strategy-badges{display:flex;flex-wrap:wrap;gap:7px}.strategy-badges span{border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:11px}.strategy-priority.high{border-color:rgba(212,175,55,.6)}.strategy-action.new{border-color:rgba(60,170,110,.45)}.strategy-action.optimize{border-color:rgba(80,130,210,.45)}.strategy-action.merge{border-color:rgba(190,130,60,.55)}.strategy-coverage{color:var(--muted);font-size:12px;white-space:nowrap}.strategy-card h3{margin:13px 0 7px;font-size:19px}.strategy-card p{margin:0;color:var(--muted);line-height:1.8}.strategy-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12px;color:var(--muted)}.strategy-meta strong,.strategy-queries strong,.strategy-links strong,.strategy-existing strong{color:var(--text)}code{direction:ltr;unicode-bidi:plaintext}.strategy-existing{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-existing>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-existing code{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-queries,.strategy-links{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-queries>div,.strategy-links>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-queries span{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-links a{padding:6px 9px;border-radius:9px;border:1px solid var(--border);text-decoration:none;overflow-wrap:anywhere}.strategy-empty{padding:28px;border:1px dashed var(--border);border-radius:16px;display:grid;gap:8px;color:var(--muted)}.strategy-topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.strategy-topic-item{display:flex;justify-content:space-between;gap:10px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-@media(max-width:900px){.strategy-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.strategy-stats,.strategy-topic-grid{grid-template-columns:1fr}.strategy-card{grid-template-columns:1fr}.strategy-card-top{align-items:flex-start;flex-direction:column}}
+.strategy-shell{max-width:1280px}.strategy-tabs{display:flex;gap:6px;margin:24px 0 8px;padding:5px;border:1px solid var(--border);border-radius:14px;background:var(--surface);width:max-content;max-width:100%}.strategy-tab{border:0;border-radius:10px;padding:11px 22px;background:transparent;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}.strategy-tab.is-active{background:var(--background);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}.strategy-tab-panel{display:none}.strategy-tab-panel.is-active{display:block}.strategy-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:24px 0}.strategy-stat{padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:flex;flex-direction:column;gap:6px}.strategy-stat strong{font-size:30px;line-height:1}.strategy-stat span{color:var(--muted);font-size:13px}.strategy-stat-hot{border-color:rgba(212,175,55,.45)}.strategy-section{margin-top:28px}.strategy-section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}.strategy-section-head h2{margin:4px 0 0}.strategy-count{color:var(--muted);font-size:13px}.strategy-list{display:grid;gap:14px}.strategy-card{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}.strategy-rank{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--background);border:1px solid var(--border);font-weight:800}.strategy-card-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.strategy-badges{display:flex;flex-wrap:wrap;gap:7px}.strategy-badges span{border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:11px}.strategy-priority.high{border-color:rgba(212,175,55,.6)}.strategy-action.new{border-color:rgba(60,170,110,.45)}.strategy-action.optimize{border-color:rgba(80,130,210,.45)}.strategy-action.merge{border-color:rgba(190,130,60,.55)}.strategy-coverage{color:var(--muted);font-size:12px;white-space:nowrap}.strategy-card h3{margin:13px 0 7px;font-size:19px}.strategy-card p{margin:0;color:var(--muted);line-height:1.8}.strategy-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12px;color:var(--muted)}.strategy-meta strong,.strategy-queries strong,.strategy-links strong,.strategy-existing strong{color:var(--text)}code{direction:ltr;unicode-bidi:plaintext}.strategy-existing{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-existing>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-existing code{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-queries,.strategy-links{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-queries>div,.strategy-links>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-queries span{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-links a{padding:6px 9px;border-radius:9px;border:1px solid var(--border);text-decoration:none;overflow-wrap:anywhere}.strategy-empty{padding:28px;border:1px dashed var(--border);border-radius:16px;display:grid;gap:8px;color:var(--muted)}.strategy-topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.strategy-topic-item{display:flex;justify-content:space-between;gap:10px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+@media(max-width:900px){.strategy-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.strategy-tabs{width:100%}.strategy-tab{flex:1}.strategy-stats,.strategy-topic-grid{grid-template-columns:1fr}.strategy-card{grid-template-columns:1fr}.strategy-card-top{align-items:flex-start;flex-direction:column}}
 </style>
