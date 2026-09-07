@@ -61,9 +61,6 @@ function sessionCard(s, students) {
             <button data-attendance="absent" data-esid="${st.enrollment_session_id}">غایب</button>
             <button data-attendance="excused" data-esid="${st.enrollment_session_id}">مرخصی</button>
           </div>
-          <div class="student-actions">
-            <button data-eval-enrollment="${st.enrollment_session_id}" data-eval-session="${s.session_id}" data-student-name="${esc(st.student_name)}">ثبت ارزیابی</button>
-          </div>
         </div>
       `).join('') : '<p class="student-empty">هنرجویی برای این جلسه یافت نشد.</p>'}
     </div>
@@ -75,7 +72,7 @@ function classCard(c) {
 }
 
 function studentCard(s) {
-  return `<article class="student-item"><div class="student-item-icon">☺</div><h3>${esc(s.firstName)} ${esc(s.lastName)}</h3><p>کلاس: ${esc(s.classTitle)}</p><p>وضعیت ثبت‌نام: ${esc(s.enrollmentStatus === 'active' ? 'فعال' : s.enrollmentStatus)}</p><div class="student-actions"><button data-eval-enrollment="${s.enrollmentId}" data-eval-session="" data-student-name="${esc(s.firstName + ' ' + s.lastName)}">ثبت ارزیابی</button></div></article>`;
+  return `<article class="student-item"><div class="student-item-icon">☺</div><h3>${esc(s.firstName)} ${esc(s.lastName)}</h3><p>کلاس: ${esc(s.classTitle)}</p><p>وضعیت ثبت‌نام: ${esc(s.enrollmentStatus === 'active' ? 'فعال' : s.enrollmentStatus)}</p></article>`;
 }
 
 function financeStudentRows(rows) {
@@ -136,14 +133,6 @@ async function markAttendance(enrollmentSessionId, status) {
   await load();
 }
 
-async function submitEvaluation(enrollmentId, sessionId, studentName) {
-  const overall = Number(prompt(`نمره کلی ارزیابی برای ${studentName} (۰ تا ۱۰۰):`));
-  if (!Number.isFinite(overall)) return;
-  const comment = prompt('توضیحات ارزیابی (اختیاری):') || '';
-  const d = await api('/api/instructor/evaluations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enrollmentId: Number(enrollmentId), sessionId: sessionId ? Number(sessionId) : null, overall, comment }) });
-  alert(d.success ? 'ارزیابی ثبت شد.' : (d.message || 'ثبت ارزیابی انجام نشد.'));
-}
-
 async function load() {
   const [me, dashboard, classes, students] = await Promise.all([api('/api/instructor/me'), api(`/api/instructor/dashboard?date=${todayISO()}`), api('/api/instructor/classes'), api('/api/instructor/students')]);
   if (!me.success) { app.innerHTML = `<p>${esc(me.message)}</p>`; return; }
@@ -159,7 +148,7 @@ async function load() {
   loadFinance();
 }
 
-app?.addEventListener('click', (e) => { const target = e.target; if (!(target instanceof HTMLElement)) return; if (target.dataset.attendance) { markAttendance(target.dataset.esid, target.dataset.attendance); return; } if (target.dataset.evalEnrollment !== undefined) { submitEvaluation(target.dataset.evalEnrollment, target.dataset.evalSession, target.dataset.studentName); return; } });
+app?.addEventListener('click', (e) => { const target = e.target; if (!(target instanceof HTMLElement)) return; if (target.dataset.attendance) { markAttendance(target.dataset.esid, target.dataset.attendance); return; } });
 app?.addEventListener('submit', async (e) => { if (e.target.id !== 'passwordForm') return; e.preventDefault(); const status = document.querySelector('#passwordStatus'); const p = document.querySelector('#newPassword').value; if (p !== document.querySelector('#repeatPassword').value) { status.textContent = 'تکرار رمز یکسان نیست.'; return; } const d = await api('/api/instructor/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ new_password: p }) }); status.textContent = d.message || 'انجام شد.'; if (d.success) document.querySelector('#passwordForm').reset(); });
 async function logout() { await fetch('/api/instructor/logout', { method: 'POST', credentials: 'same-origin' }); location.href = '/login'; }
 document.querySelector('#logoutButton')?.addEventListener('click', logout);
