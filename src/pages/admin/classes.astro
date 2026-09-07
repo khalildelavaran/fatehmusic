@@ -142,11 +142,6 @@ const pageTitle = profile ? `کلاس ${profile.class.title} | آموزشگاه 
                               {s.status === "active" && (
                                 <button type="button" class="admin-withdraw-btn" data-student-id={s.studentId}>انصراف</button>
                               )}
-                              {s.enrollmentId != null ? (
-                                <a href={`/admin/evaluations?enrollmentId=${encodeURIComponent(s.enrollmentId)}&studentName=${encodeURIComponent(s.firstName + " " + s.lastName)}`}>ارزیابی و تمرین</a>
-                              ) : (
-                                <span class="admin-table-subtext">ثبت‌نام هنوز فعال‌سازی نشده</span>
-                              )}
                             </td>
                           </tr>
                         ))

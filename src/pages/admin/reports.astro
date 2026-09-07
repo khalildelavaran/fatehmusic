@@ -82,13 +82,12 @@ const formatToman = (value: number) => `${value.toLocaleString("fa-IR")} توم�
           <div class="admin-section-title"><h2>گزارش آموزشی</h2><button type="button" class="admin-document-btn no-print" data-print-target="#reportEducational" data-print-title="گزارش آموزشی">چاپ</button></div>
           <div class="admin-grid">
             <div class="admin-stat-card"><span class="admin-stat-value">{educational.averageAttendanceRate != null ? `${educational.averageAttendanceRate}%` : "—"}</span><span class="admin-stat-label">میانگین حضور</span></div>
-            <div class="admin-stat-card"><span class="admin-stat-value">{educational.averageEvaluationScore ?? "—"}</span><span class="admin-stat-label">میانگین ارزیابی</span></div>
           </div>
           {educational.atRiskStudents.length > 0 && <div class="admin-table-wrap">
             <table class="admin-table">
               <caption style="text-align:right;color:var(--text-secondary);padding-bottom:10px;">هنرجویان در معرض افت (نرخ حضور کمتر از ۷۰٪)</caption>
-              <thead><tr><th>هنرجو</th><th>تعداد غیبت</th><th>میانگین ارزیابی</th></tr></thead>
-              <tbody>{educational.atRiskStudents.map((s) => <tr><td>{s.studentName}</td><td>{s.absentCount}</td><td>{s.averageEvaluation ?? "—"}</td></tr>)}</tbody>
+              <thead><tr><th>هنرجو</th><th>تعداد غیبت</th></tr></thead>
+              <tbody>{educational.atRiskStudents.map((s) => <tr><td>{s.studentName}</td><td>{s.absentCount}</td></tr>)}</tbody>
             </table>
           </div>}
         </section>}
@@ -97,8 +96,8 @@ const formatToman = (value: number) => `${value.toLocaleString("fa-IR")} توم�
           <div class="admin-section-title"><h2>گزارش مدرسان</h2><button type="button" class="admin-document-btn no-print" data-print-target="#reportInstructors" data-print-title="گزارش مدرسان">چاپ</button></div>
           <div class="admin-table-wrap">
             <table class="admin-table">
-              <thead><tr><th>مدرس</th><th>تعداد کلاس</th><th>تعداد هنرجو</th><th>میانگین حضور</th><th>میانگین ارزیابی</th></tr></thead>
-              <tbody>{instructors.perInstructor.map((i) => <tr><td>{i.name}</td><td>{i.classCount}</td><td>{i.studentCount}</td><td>{i.averageAttendanceRate != null ? `${i.averageAttendanceRate}%` : "—"}</td><td>{i.averageEvaluationScore ?? "—"}</td></tr>)}</tbody>
+              <thead><tr><th>مدرس</th><th>تعداد کلاس</th><th>تعداد هنرجو</th><th>میانگین حضور</th></tr></thead>
+              <tbody>{instructors.perInstructor.map((i) => <tr><td>{i.name}</td><td>{i.classCount}</td><td>{i.studentCount}</td><td>{i.averageAttendanceRate != null ? `${i.averageAttendanceRate}%` : "—"}</td></tr>)}</tbody>
             </table>
           </div>
         </section>}
