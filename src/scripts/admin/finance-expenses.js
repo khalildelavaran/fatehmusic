@@ -12,14 +12,15 @@
 
   const style = document.createElement("style");
   style.textContent = `
-    #financeExpenseLedger{margin-top:16px}.fel-layout{display:grid;grid-template-columns:minmax(300px,.8fr) minmax(0,1.6fr);gap:16px}.fel-form,.fel-list{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}.fel-form h2,.fel-list h2{font-size:15px;margin:0 0 12px}.fel-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fel-field{display:grid;gap:5px}.fel-field.full{grid-column:1/-1}.fel-field label{font-size:11px;opacity:.65}.fel-field input,.fel-field select,.fel-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:9px;font:inherit}.fel-field textarea{min-height:70px;resize:vertical}.fel-actions{display:flex;gap:8px;margin-top:10px}.fel-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer}.fel-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}.fel-btn.danger{border-color:#a33}.fel-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}.fel-card{border:1px solid var(--border);border-radius:11px;padding:10px}.fel-card span{display:block;font-size:11px;opacity:.65;margin-bottom:4px}.fel-card b{font-size:17px}.fel-gold b{color:var(--gold-light)}.fel-table-wrap{overflow:auto}.fel-table{width:100%;border-collapse:collapse;font-size:12px}.fel-table th,.fel-table td{padding:8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}.fel-table th{opacity:.65}.fel-table tr:last-child td{border-bottom:0}.fel-delete{border:0;background:transparent;color:#d77;cursor:pointer;font:inherit;font-weight:800}.fel-status{font-size:11px;min-height:18px;margin-top:7px}.fel-status.ok{color:#6bcf7a}.fel-status.err{color:#d77}@media(max-width:900px){.fel-layout{grid-template-columns:1fr}}@media(max-width:520px){.fel-grid,.fel-summary{grid-template-columns:1fr}.fel-field.full{grid-column:auto}}
+    #financeExpenseLedger{margin-top:16px}.fel-layout{display:grid;grid-template-columns:minmax(300px,.8fr) minmax(0,1.6fr);gap:16px}.fel-form,.fel-list{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}.fel-form h2,.fel-list h2{font-size:15px;margin:0 0 12px}.fel-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.fel-field{display:grid;gap:5px}.fel-field.full{grid-column:1/-1}.fel-field label{font-size:11px;opacity:.65}.fel-field input,.fel-field select,.fel-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:9px;font:inherit}.fel-field textarea{min-height:70px;resize:vertical}.fel-actions{display:flex;gap:8px;margin-top:10px}.fel-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:9px;padding:8px 12px;font:inherit;font-weight:800;cursor:pointer}.fel-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}.fel-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}.fel-card{border:1px solid var(--border);border-radius:11px;padding:10px}.fel-card span{display:block;font-size:11px;opacity:.65;margin-bottom:4px}.fel-card b{font-size:17px}.fel-gold b{color:var(--gold-light)}.fel-table-wrap{overflow:auto}.fel-table{width:100%;border-collapse:collapse;font-size:12px}.fel-table th,.fel-table td{padding:8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}.fel-table th{opacity:.65}.fel-table tr:last-child td{border-bottom:0}.fel-delete{border:0;background:transparent;color:#d77;cursor:pointer;font:inherit;font-weight:800}.fel-status{font-size:11px;min-height:18px;margin-top:7px}.fel-status.ok{color:#6bcf7a}.fel-status.err{color:#d77}.fel-profit{margin-top:16px}.fel-profit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.fel-profit-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}.fel-profit-card span{display:block;font-size:11px;opacity:.65;margin-bottom:5px}.fel-profit-card b{font-size:20px}.fel-profit-card.net{border-color:var(--gold-light)}@media(max-width:900px){.fel-layout{grid-template-columns:1fr}}@media(max-width:520px){.fel-grid,.fel-summary,.fel-profit-grid{grid-template-columns:1fr}.fel-field.full{grid-column:auto}}
   `;
   document.head.appendChild(style);
 
   const section = document.createElement("section");
   section.id = "financeExpenseLedger";
   section.innerHTML = `
-    <div class="fel-layout">
+    <div class="fel-profit"><div class="fel-profit-grid" id="felProfitCards"></div></div>
+    <div class="fel-layout" style="margin-top:16px">
       <form id="felForm" class="fel-form">
         <h2>ثبت هزینه آموزشگاه</h2>
         <div class="fel-grid">
@@ -46,6 +47,7 @@
   const body = document.querySelector("#felBody");
   const summary = document.querySelector("#felSummary");
   const status = document.querySelector("#felStatus");
+  const profitCards = document.querySelector("#felProfitCards");
 
   function currentIso() {
     return dateInput.dataset.iso || new Date().toISOString().slice(0, 10);
@@ -63,15 +65,24 @@
     state.lastDate = date;
     setFormDate();
     try {
-      const r = await fetch(`/api/admin/expenses?date=${encodeURIComponent(date)}`, { credentials: "same-origin", headers: { Accept: "application/json" } });
-      const d = await readJson(r);
-      if (!r.ok || !d.success) throw new Error(d.message || "دریافت هزینه‌ها ناموفق بود.");
+      const [expenseResponse, financeResponse] = await Promise.all([
+        fetch(`/api/admin/expenses?date=${encodeURIComponent(date)}`, { credentials: "same-origin", headers: { Accept: "application/json" } }),
+        fetch(`/api/admin/daily-finance?date=${encodeURIComponent(date)}`, { credentials: "same-origin", headers: { Accept: "application/json" } }),
+      ]);
+      const d = await readJson(expenseResponse);
+      const finance = await readJson(financeResponse);
+      if (!expenseResponse.ok || !d.success) throw new Error(d.message || "دریافت هزینه‌ها ناموفق بود.");
+      if (!financeResponse.ok || !finance.success) throw new Error(finance.message || "دریافت درآمد ناموفق بود.");
       const s = d.summary || {};
+      const income = Number(finance.summary?.receivedTotal || 0);
+      const expense = Number(s.dailyTotal || 0);
+      const net = income - expense;
+      profitCards.innerHTML = `<div class="fel-profit-card"><span>درآمد وصول‌شده امروز</span><b>${money(income)}</b></div><div class="fel-profit-card"><span>هزینه امروز</span><b>${money(expense)}</b></div><div class="fel-profit-card net"><span>سود خالص امروز</span><b>${money(net)}</b></div>`;
       summary.innerHTML = `<div class="fel-card fel-gold"><span>هزینه امروز</span><b>${money(s.dailyTotal)}</b></div><div class="fel-card"><span>هزینه ماه</span><b>${money(s.monthlyTotal)}</b></div><div class="fel-card"><span>تعداد هزینه ماه</span><b>${money(s.count)}</b></div>`;
       const rows = d.dailyExpenses || [];
       body.innerHTML = rows.length ? rows.map(x => `<tr><td>${esc(x.expense_date)}</td><td>${esc(x.category)}</td><td>${esc(x.description || "—")}</td><td>${money(x.amount)}</td><td>${esc(methods[x.payment_method] || x.payment_method)}</td><td><button class="fel-delete" type="button" data-delete-expense="${Number(x.id)}">حذف</button></td></tr>`).join("") : `<tr><td colspan="6" class="fel-status">برای این روز هزینه‌ای ثبت نشده است.</td></tr>`;
     } catch (error) {
-      body.innerHTML = `<tr><td colspan="6" class="fel-status err">${esc(error instanceof Error ? error.message : "دریافت هزینه‌ها ناموفق بود.")}</td></tr>`;
+      body.innerHTML = `<tr><td colspan="6" class="fel-status err">${esc(error instanceof Error ? error.message : "دریافت اطلاعات مالی ناموفق بود.")}</td></tr>`;
     }
   }
 
@@ -90,7 +101,6 @@
       setFormDate();
       state.lastDate = "";
       await load();
-      window.dispatchEvent(new CustomEvent("finance-expense-updated", { detail: d }));
     } catch (error) {
       status.className = "fel-status err";
       status.textContent = error instanceof Error ? error.message : "ثبت هزینه ناموفق بود.";
