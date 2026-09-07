@@ -13,7 +13,6 @@ if(!session)return Astro.redirect('/login');
   <nav aria-label="ناوبری داشبورد هنرجو">
     <a href="#courses">دوره‌های من</a>
     <a href="#finance">وضعیت ترم و شهریه</a>
-    <a href="#evaluations">ارزیابی‌ها</a>
     <a href="#makeup">جلسات جبرانی</a>
     <a href="#notifications">اعلان‌ها</a>
     <a href="#contracts">قراردادها</a>
@@ -23,7 +22,7 @@ if(!session)return Astro.redirect('/login');
   <button class="student-logout" id="logoutButton" type="button">خروج از حساب</button>
 </aside>
 <section class="student-main">
-<header class="student-top"><div><img src="/logo.webp" alt="فاتح"/><div><strong>داشبورد هنرجو</strong><span>کد ملی: {session.nationalCode}</span></div></div></header>
+<header class="student-top"><div><img src="/logo.webp" alt="فاتح"/><div><strong id="studentNameHeading">داشبورد هنرجو</strong><span>کد ملی: {session.nationalCode}</span></div></div></header>
 <div id="studentApp"><p class="student-loading">در حال بارگذاری اطلاعات...</p></div>
 </section>
 </main>
@@ -78,12 +77,6 @@ async function loadFinance(){
   try{const d:any=await api('/api/student/finance');if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}box.innerHTML=d.enrollments?.length?d.enrollments.map(renderFinanceTerm).join(''):'<p class="student-empty">ترم فعالی برای نمایش وضعیت مالی یافت نشد.</p>';
   }catch(error){box.innerHTML=`<p class="student-empty">${esc(error instanceof Error?error.message:'دریافت اطلاعات مالی ناموفق بود')}</p>`}
 }
-async function loadEvaluations(enrollments: any[]){
-  const box=document.querySelector('#evaluationsBody');if(!box)return;if(!enrollments.length){box.innerHTML='<p class="student-empty">ثبت‌نام فعالی یافت نشد.</p>';return}
-  const enrollmentId=(document.querySelector('#evaluationsEnrollmentSelect') as HTMLSelectElement | null)?.value||enrollments[0].enrollmentId;
-  const d:any=await api(`/api/student/evaluations?enrollmentId=${encodeURIComponent(enrollmentId)}`);if(!d.success){box.innerHTML=`<p class="student-empty">${esc(d.message)}</p>`;return}
-  box.innerHTML=d.evaluations.length?d.evaluations.map((e:any)=>`<article class="student-item"><div class="student-item-icon">★</div><h3>نمره کلی: ${esc(e.overall)}</h3><p>فن‌آوری: ${e.technique??'-'} · ریتم: ${e.rhythm??'-'} · تئوری: ${e.theory??'-'} · اجرا: ${e.performance??'-'} · انضباط: ${e.discipline??'-'}</p>${e.comment?`<p>${esc(e.comment)}</p>`:''}</article>`).join(''):'<p class="student-empty">هنوز ارزیابی‌ای برای شما ثبت نشده است.</p>';
-}
 async function loadMakeup(enrollments: any[]){
   const box=document.querySelector('#makeupBody');if(!box)return;if(!enrollments.length){box.innerHTML='<p class="student-empty">ثبت‌نام فعالی یافت نشد.</p>';return}
   const enrollmentId=(document.querySelector('#makeupEnrollmentSelect') as HTMLSelectElement | null)?.value||enrollments[0].enrollmentId;
@@ -97,20 +90,20 @@ async function loadNotifications(){
   box.innerHTML=d.notifications.length?d.notifications.map((n:any)=>`<article class="student-item${n.readAt?'':' is-unread'}"><div class="student-item-icon">🔔</div><h3>${esc(n.title)}</h3>${n.body?`<p>${esc(n.body)}</p>`:''}${!n.readAt?`<div class="student-actions"><button data-mark-read="${n.id}">علامت‌گذاری به‌عنوان خوانده‌شده</button></div>`:''}</article>`).join(''):'<p class="student-empty">اعلانی برای شما ثبت نشده است.</p>';
 }
 async function load(){
-  const r=await fetch('/api/student/me',{credentials:'same-origin'});if(r.status===401){location.href='/student/login';return}const d:any=await r.json();if(!d.success){(app as HTMLElement).innerHTML=`<p>${esc(d.message)}</p>`;return}
+  const r=await fetch('/api/student/me',{credentials:'same-origin'});if(r.status===401){location.href='/login';return}const d:any=await r.json();if(!d.success){(app as HTMLElement).innerHTML=`<p>${esc(d.message)}</p>`;return}
+  const nameHeading=document.querySelector('#studentNameHeading');
+  if(nameHeading&&d.student){const fullName=`${d.student.student_first_name??''} ${d.student.student_last_name??''}`.trim();if(fullName)nameHeading.textContent=fullName;}
   const enrollmentsResp:any=await api('/api/student/enrollments').catch(()=>({success:false,enrollments:[]}));
   const enrollments:any[]=enrollmentsResp.success?enrollmentsResp.enrollments.filter((e:any)=>e.status==='active'):[];
   (app as HTMLElement).innerHTML=`${d.must_change_password?`<section class="student-alert"><strong>توجه:</strong> رمز اولیه شما کد ملی است. برای امنیت حساب، رمز دلخواه خود را تعیین کنید.</section>`:''}
   <section id="courses" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">آموزش</span><h2>دوره‌های من</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">♪</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p><p>زمان: ${esc(x.schedule_weekday)}${x.schedule_duration?` · ${esc(x.schedule_duration)} دقیقه`:''}</p><div class="student-actions">${contractForm(x.id,'دریافت PDF قرارداد')}</div></article>`).join(''):'<p class="student-empty">دوره‌ای برای این کد ملی ثبت نشده است.</p>'}</div></section>
   <section id="finance" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">ترم و شهریه</span><h2>وضعیت ترم و امور مالی</h2></div><button type="button" class="student-refresh-action" id="financeRefresh">به‌روزرسانی</button></div><div id="financeBody" class="student-grid"><p class="student-loading">در حال بارگذاری...</p></div></section>
-  <section id="evaluations" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">پیشرفت</span><h2>ارزیابی‌ها</h2></div></div>${enrollmentPicker(enrollments,'evaluationsEnrollmentSelect')}<div class="student-grid" id="evaluationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
   <section id="makeup" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حضور</span><h2>جلسات جبرانی</h2></div></div>${enrollmentPicker(enrollments,'makeupEnrollmentSelect')}<div class="student-grid" id="makeupBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
   <section id="notifications" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">اطلاع‌رسانی</span><h2>اعلان‌ها</h2></div></div><div class="student-grid" id="notificationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
   <section id="contracts" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>قراردادها</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">▤</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p>${contractForm(x.id,'دریافت PDF قرارداد')}</article>`).join(''):'<p class="student-empty">قراردادی برای شما ثبت نشده است.</p>'}</div></section>
   <section id="certificates" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>گواهینامه‌های صادرشده</h2></div></div><div class="student-grid">${d.certificates.length?d.certificates.map((x:any)=>`<article class="student-item certificate-item"><div class="student-item-icon">✓</div><h3>گواهی پایان دوره</h3><p>شماره گواهی: ${esc(x.cert_number)}</p><p>تاریخ صدور: ${esc(x.completion_date_jalali)}</p><div class="student-actions"><a class="gold-action" href="/api/student/certificate?id=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">PDF گواهینامه</a></div></article>`).join(''):'<p class="student-empty">هنوز گواهینامه‌ای برای شما صادر نشده است.</p>'}</div></section>
   <section id="account" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حساب کاربری</span><h2>تغییر رمز عبور</h2></div></div><form id="passwordForm" class="student-password"><input id="newPassword" type="password" minlength="6" placeholder="رمز جدید، حداقل ۶ کاراکتر" required/><input id="repeatPassword" type="password" minlength="6" placeholder="تکرار رمز جدید" required/><button>ذخیره رمز جدید</button><p id="passwordStatus" class="student-status"></p></form></section>`;
-  await Promise.all([loadFinance(),loadEvaluations(enrollments),loadMakeup(enrollments),loadNotifications()]);
-  document.querySelector('#evaluationsEnrollmentSelect')?.addEventListener('change',()=>loadEvaluations(enrollments));
+  await Promise.all([loadFinance(),loadMakeup(enrollments),loadNotifications()]);
   document.querySelector('#makeupEnrollmentSelect')?.addEventListener('change',()=>loadMakeup(enrollments));
   document.querySelector('#financeRefresh')?.addEventListener('click',loadFinance);
 }
