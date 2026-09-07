@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { createStudent, getStudentProfile, listStudents, updateStudentProfile, validateStudentPatch, type NewStudentInput, type StudentProfilePatch } from "../../../server/students";
+import { enrollStudent } from "../../../server/classes";
 import { recordAuditEvent } from "../../../server/audit-log";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
@@ -45,17 +46,30 @@ export const POST: APIRoute = async ({ request }) => {
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
 
-  let body: NewStudentInput;
+  let body: NewStudentInput & { classId?: number };
   try {
     body = await request.json();
   } catch {
     return json({ success: false, message: "بدنه‌ی درخواست معتبر نیست." }, 400);
   }
 
-  const result = await createStudent(db, body);
+  const classId = body.classId == null ? null : Number(body.classId);
+  if (classId !== null && (!Number.isInteger(classId) || classId <= 0)) {
+    return json({ success: false, message: "کلاس انتخاب‌شده معتبر نیست." }, 422);
+  }
+
+  const { classId: _classId, ...studentBody } = body;
+  const result = await createStudent(db, studentBody);
   if ("error" in result) {
     const status = result.error === "duplicate" ? 409 : 422;
     return json({ success: false, message: result.message }, status);
+  }
+
+  if (classId !== null) {
+    const enrollment = await enrollStudent(db, classId, result.id);
+    if (!enrollment.ok) {
+      return json({ success: false, message: `هنرجو ایجاد شد، اما ثبت در کلاس انجام نشد: ${enrollment.error ?? "خطای نامشخص"}`, studentId: result.id }, 422);
+    }
   }
 
   await recordAuditEvent(db, {
