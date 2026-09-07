@@ -1,58 +1,23 @@
 name: Temp finance tabs patch
-
 on:
   push:
     paths:
-      - ".github/workflows/temp-finance-tabs.yml"
-
+      - .github/workflows/temp-finance-tabs.yml
 permissions:
   contents: write
-
 jobs:
   patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch finance dashboard
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          p = Path("src/pages/admin/daily.astro")
-          s = p.read_text(encoding="utf-8")
-
-          nav = '''        <nav class="finance-context-tabs" aria-label="بخش‌های مالی">
-            <a class="is-active" href="/admin/daily#finance">آموزشگاه</a>
-            <a href="/admin/instructors">استاد</a>
-            <a href="/admin/students">هنرجو</a>
-        </nav>
-'''
-          shell_needle = '      <div class="admin-shell daily-shell" dir="rtl">\n'
-          if 'class="finance-context-tabs"' not in s:
-              s = s.replace(shell_needle, shell_needle + nav, 1)
-
-          css_needle = '.daily-shell{max-width:none;margin:0;padding:32px clamp(18px,3vw,36px) 64px}\n'
-          css = '''\n.finance-context-tabs{display:flex;justify-content:center;gap:6px;margin-bottom:14px;padding:5px;border:1px solid var(--border);background:var(--surface);border-radius:14px}
-.finance-context-tabs a{padding:9px 22px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:700;font-size:13px;transition:.2s;white-space:nowrap}
-.finance-context-tabs a:hover{background:rgba(212,175,55,.08)}
-.finance-context-tabs a.is-active{background:var(--primary);color:#fff}
-@media(max-width:600px){.finance-context-tabs{width:100%;overflow-x:auto;justify-content:stretch}.finance-context-tabs a{flex:1 0 auto;text-align:center}}
-'''
-          if '.finance-context-tabs{' not in s:
-              s = s.replace(css_needle, css_needle + css, 1)
-
-          p.write_text(s, encoding="utf-8")
-          PY
-
+      - name: Patch dashboard
+        run: >-
+          python -c 'from pathlib import Path; p=Path("src/pages/admin/daily.astro"); s=p.read_text(encoding="utf-8"); shell_needle="      <div class=\"admin-shell daily-shell\" dir=\"rtl\">\n"; nav="        <nav class=\"finance-context-tabs\" aria-label=\"بخش‌های مالی\">\n            <a class=\"is-active\" href=\"/admin/daily#finance\">آموزشگاه</a>\n            <a href=\"/admin/instructors\">استاد</a>\n            <a href=\"/admin/students\">هنرجو</a>\n        </nav>\n"; s=s.replace(shell_needle,shell_needle+nav,1) if "class=\"finance-context-tabs\"" not in s else s; css_needle=".daily-shell{max-width:none;margin:0;padding:32px clamp(18px,3vw,36px) 64px}\n"; css=\n".finance-context-tabs{display:flex;justify-content:center;gap:6px;margin-bottom:14px;padding:5px;border:1px solid var(--border);background:var(--surface);border-radius:14px}\n.finance-context-tabs a{padding:9px 22px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:700;font-size:13px;transition:.2s;white-space:nowrap}\n.finance-context-tabs a:hover{background:rgba(212,175,55,.08)}\n.finance-context-tabs a.is-active{background:var(--primary);color:#fff}\n@media(max-width:600px){.finance-context-tabs{width:100%;overflow-x:auto;justify-content:stretch}.finance-context-tabs a{flex:1 0 auto;text-align:center}}\n"; s=s.replace(css_needle,css_needle+css,1) if ".finance-context-tabs{" not in s else s; p.write_text(s,encoding="utf-8")'
       - name: Commit patch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pages/admin/daily.astro
-          if git diff --cached --quiet; then
-            echo "No patch required"
-            exit 0
-          fi
+          git diff --cached --quiet && exit 0
           git commit -m "feat(finance): add academy teacher student tabs"
           git push
