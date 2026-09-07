@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { createClass, getClassProfile, listClasses, updateClass, validateClassInput, type ClassInput } from "../../../server/classes";
+import { listClassSchedules } from "../../../server/class-schedules";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -37,7 +38,12 @@ export const GET: APIRoute = async ({ request }) => {
     pageSize: url.searchParams.get("pageSize") ? Number(url.searchParams.get("pageSize")) : undefined
   });
 
-  return json({ success: true, ...result });
+  const classes = await Promise.all(result.classes.map(async (item) => ({
+    ...item,
+    schedules: await listClassSchedules(db, item.id)
+  })));
+
+  return json({ success: true, ...result, classes });
 };
 
 export const POST: APIRoute = async ({ request }) => {
