@@ -132,3 +132,90 @@
   setFormDate();
   load();
 })();
+
+(() => {
+  if (location.pathname !== "/admin/finance") return;
+  const panel = document.querySelector("#instructorsTab");
+  const dateInput = document.querySelector("#financeDate");
+  if (!panel || !dateInput || document.querySelector("#instructorSettlementLedger")) return;
+
+  const money = value => Number(value ?? 0).toLocaleString("fa-IR");
+  const esc = value => { const d = document.createElement("div"); d.textContent = String(value ?? ""); return d.innerHTML; };
+  const methods = { cash: "نقدی", pos: "کارتخوان", transfer: "انتقال", online: "آنلاین", other: "سایر" };
+  const state = { month: "", loaded: false };
+
+  const style = document.createElement("style");
+  style.textContent = `
+    #instructorSettlementLedger{margin-top:16px}.isl-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.isl-card,.isl-panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}.isl-card span{display:block;font-size:11px;opacity:.65;margin-bottom:5px}.isl-card b{font-size:19px}.isl-card.gold{border-color:var(--gold-light)}.isl-card.warn{border-color:#b89500}.isl-card.paid{border-color:#2f8f46}.isl-wrap{overflow:auto}.isl-table{width:100%;border-collapse:collapse;font-size:12px}.isl-table th,.isl-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}.isl-table th{font-size:11px;opacity:.65}.isl-table tr:last-child td{border-bottom:0}.isl-status{display:inline-flex;align-items:center;gap:5px;border:1px solid #b89500;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:800}.isl-status.paid{border-color:#2f8f46}.isl-action{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 10px;font:inherit;font-weight:800;cursor:pointer}.isl-action.primary{background:var(--primary);color:#fff;border-color:var(--primary)}.isl-action:disabled{opacity:.5;cursor:not-allowed}.isl-note{font-size:11px;opacity:.58;margin-top:9px}.isl-error{padding:12px;border:1px solid #a33;border-radius:10px;color:#d77}.isl-empty{padding:24px;text-align:center;opacity:.65}@media(max-width:900px){.isl-summary{grid-template-columns:1fr 1fr}}@media(max-width:600px){.isl-summary{grid-template-columns:1fr}.isl-table{min-width:850px}}
+  `;
+  document.head.appendChild(style);
+
+  const section = document.createElement("section");
+  section.id = "instructorSettlementLedger";
+  section.innerHTML = `<div id="islSummary" class="isl-summary"></div><article class="isl-panel"><h2 style="font-size:15px;margin:0 0 12px">دفتر تسویه اساتید</h2><div id="islBody"></div><div class="isl-note">مبلغ قابل پرداخت از کارکرد ماه و درصد سهم استاد محاسبه می‌شود. «پرداخت شده» فقط پس از ثبت واقعی تسویه نمایش داده می‌شود.</div></article>`;
+  panel.appendChild(section);
+
+  const summary = section.querySelector("#islSummary");
+  const body = section.querySelector("#islBody");
+
+  function monthOfIso(date) { return String(date).slice(0, 7); }
+  function currentMonth() { return monthOfIso(dateInput.dataset.iso || new Date().toISOString().slice(0, 10)); }
+  async function readJson(response) {
+    const text = await response.text();
+    try { return JSON.parse(text); } catch { throw new Error(`پاسخ نامعتبر از سرور (${response.status})`); }
+  }
+  async function load(force = false) {
+    const month = currentMonth();
+    if (!force && state.loaded && state.month === month) return;
+    state.month = month;
+    state.loaded = false;
+    body.innerHTML = `<div class="isl-empty">در حال دریافت کارکرد و وضعیت تسویه...</div>`;
+    try {
+      const response = await fetch(`/api/admin/teacher-workload?month=${encodeURIComponent(month)}`, { credentials: "same-origin", headers: { Accept: "application/json" } });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) throw new Error(data.message || "دریافت کارکرد اساتید ناموفق بود.");
+      const t = data.totals || {};
+      summary.innerHTML = `<div class="isl-card gold"><span>کل مبلغ قابل پرداخت</span><b>${money(t.payableAmount)}</b></div><div class="isl-card paid"><span>تسویه‌شده</span><b>${money(t.paidAmount)}</b></div><div class="isl-card warn"><span>در انتظار تسویه</span><b>${money(t.pendingAmount)}</b></div><div class="isl-card"><span>تعداد اساتید</span><b>${money((data.instructors || []).length)}</b></div>`;
+      const rows = data.instructors || [];
+      body.innerHTML = rows.length ? `<div class="isl-wrap"><table class="isl-table"><thead><tr><th>استاد</th><th>درصد سهم</th><th>جلسات قابل پرداخت</th><th>مبلغ قابل پرداخت</th><th>وضعیت</th><th>عملیات</th></tr></thead><tbody>${rows.map(x => {
+        const paid = x.settlement?.status === "paid";
+        const amount = Number(x.payableAmount || 0);
+        const disabled = amount <= 0 ? "disabled" : "";
+        return `<tr><td>${esc(x.instructorName)}</td><td>${money(x.payPercentage)}٪</td><td>${money(x.compensableSessions)}</td><td><b>${money(amount)}</b></td><td><span class="isl-status ${paid ? "paid" : ""}">${paid ? "پرداخت شده" : "در انتظار تسویه"}</span></td><td><button class="isl-action ${paid ? "" : "primary"}" type="button" data-settle-id="${Number(x.instructorId)}" data-settle-name="${esc(x.instructorName)}" data-settle-amount="${amount}" ${disabled}>${paid ? "برگرداندن به انتظار" : "ثبت تسویه"}</button></td></tr>`;
+      }).join("")}</tbody></table></div>` : `<div class="isl-empty">استاد فعالی برای این ماه وجود ندارد.</div>`;
+      state.loaded = true;
+    } catch (error) {
+      summary.innerHTML = "";
+      body.innerHTML = `<div class="isl-error">${esc(error instanceof Error ? error.message : "دریافت اطلاعات تسویه ناموفق بود.")}</div>`;
+    }
+  }
+
+  body.addEventListener("click", async event => {
+    const button = event.target.closest("button[data-settle-id]");
+    if (!button) return;
+    const instructorId = Number(button.dataset.settleId);
+    const amountDue = Number(button.dataset.settleAmount);
+    const paid = button.textContent.includes("برگرداندن");
+    const name = button.dataset.settleName || "استاد";
+    if (!instructorId) return;
+    const message = paid ? `وضعیت تسویه ${name} به «در انتظار تسویه» برگردد؟` : `تسویه ${name} به مبلغ ${money(amountDue)} تومان ثبت شود؟`;
+    if (!confirm(message)) return;
+    button.disabled = true;
+    try {
+      const response = await fetch("/api/admin/teacher-workload", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ instructorId, month: state.month, amountDue, status: paid ? "pending" : "paid", paymentMethod: "cash" }) });
+      const data = await readJson(response);
+      if (!response.ok || !data.success) throw new Error(data.message || "ثبت وضعیت تسویه ناموفق بود.");
+      await load(true);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "ثبت وضعیت تسویه ناموفق بود.");
+      button.disabled = false;
+    }
+  });
+
+  const observer = new MutationObserver(() => {
+    const month = currentMonth();
+    if (month !== state.month) load(true);
+  });
+  observer.observe(dateInput, { attributes: true, attributeFilter: ["data-iso"] });
+  load();
+})();
