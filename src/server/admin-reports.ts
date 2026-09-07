@@ -102,7 +102,6 @@ export interface InstructorReportRow {
   classCount: number;
   studentCount: number;
   averageAttendanceRate: number | null;
-  averageEvaluationScore: number | null;
 }
 
 export interface InstructorReport {
@@ -127,8 +126,7 @@ export async function getInstructorReport(db: D1Database): Promise<InstructorRep
          (SELECT AVG(CASE WHEN es.status = 'present' THEN 1.0 WHEN es.status = 'absent' THEN 0.0 END)
             FROM enrollment_sessions es
             JOIN class_sessions cs ON cs.id = es.session_id
-            WHERE cs.instructor_id = i.id AND es.status IN ('present', 'absent')) AS avg_attendance,
-         (SELECT AVG(ev.overall_score) FROM evaluations ev WHERE ev.instructor_id = i.id) AS avg_evaluation
+            WHERE cs.instructor_id = i.id AND es.status IN ('present', 'absent')) AS avg_attendance
        FROM instructors i
        WHERE i.is_active = 1
        ORDER BY name`,
@@ -141,7 +139,6 @@ export async function getInstructorReport(db: D1Database): Promise<InstructorRep
     classCount: Number(row.class_count) || 0,
     studentCount: Number(row.student_count) || 0,
     averageAttendanceRate: row.avg_attendance === null ? null : Math.round(Number(row.avg_attendance) * 1000) / 10,
-    averageEvaluationScore: row.avg_evaluation === null ? null : Math.round(Number(row.avg_evaluation) * 10) / 10,
   }));
 
   return { total: Number(total?.n) || 0, active: Number(active?.n) || 0, perInstructor };
@@ -246,32 +243,27 @@ export interface AtRiskStudent {
   studentId: number;
   studentName: string;
   absentCount: number;
-  averageEvaluation: number | null;
 }
 
 export interface EducationalReport {
   averageAttendanceRate: number | null;
-  averageEvaluationScore: number | null;
   mostAbsences: AtRiskStudent[];
   atRiskStudents: AtRiskStudent[];
 }
 
-/** A student is "at risk" if their recent attendance rate is low or their
- * evaluations are trending low; this uses a simple, explainable threshold
- * (attendance rate < 70% over their last 10 recorded sessions) rather than
- * a black-box score, so admins can see exactly why a student is flagged. */
+/** A student is "at risk" if their recent attendance rate is low; this
+ * uses a simple, explainable threshold (attendance rate < 70% over
+ * their recorded sessions) rather than a black-box score, so admins
+ * can see exactly why a student is flagged. */
 const AT_RISK_ATTENDANCE_THRESHOLD = 0.7;
 
 export async function getEducationalReport(db: D1Database): Promise<EducationalReport> {
-  const [overallAttendance, overallEvaluation] = await Promise.all([
-    db
-      .prepare(
-        `SELECT AVG(CASE WHEN status = 'present' THEN 1.0 WHEN status = 'absent' THEN 0.0 END) AS n
-         FROM enrollment_sessions WHERE status IN ('present', 'absent')`,
-      )
-      .first<{ n: number | null }>(),
-    db.prepare("SELECT AVG(overall_score) AS n FROM evaluations").first<{ n: number | null }>(),
-  ]);
+  const overallAttendance = await db
+    .prepare(
+      `SELECT AVG(CASE WHEN status = 'present' THEN 1.0 WHEN status = 'absent' THEN 0.0 END) AS n
+       FROM enrollment_sessions WHERE status IN ('present', 'absent')`,
+    )
+    .first<{ n: number | null }>();
 
   const perStudentRows = await db
     .prepare(
@@ -279,8 +271,7 @@ export async function getEducationalReport(db: D1Database): Promise<EducationalR
          s.id AS student_id,
          TRIM(s.first_name || ' ' || s.last_name) AS student_name,
          SUM(CASE WHEN es.status = 'absent' THEN 1 ELSE 0 END) AS absent_count,
-         AVG(CASE WHEN es.status = 'present' THEN 1.0 WHEN es.status = 'absent' THEN 0.0 END) AS attendance_rate,
-         (SELECT AVG(ev.overall_score) FROM evaluations ev JOIN enrollments e2 ON e2.id = ev.enrollment_id WHERE e2.student_id = s.id) AS avg_evaluation
+         AVG(CASE WHEN es.status = 'present' THEN 1.0 WHEN es.status = 'absent' THEN 0.0 END) AS attendance_rate
        FROM enrollment_sessions es
        JOIN enrollments e ON e.id = es.enrollment_id
        JOIN students s ON s.id = e.student_id
@@ -295,24 +286,22 @@ export async function getEducationalReport(db: D1Database): Promise<EducationalR
     studentName: String(row.student_name || ""),
     absentCount: Number(row.absent_count) || 0,
     attendanceRate: row.attendance_rate === null ? null : Number(row.attendance_rate),
-    averageEvaluation: row.avg_evaluation === null ? null : Math.round(Number(row.avg_evaluation) * 10) / 10,
   }));
 
   const mostAbsences = [...perStudent]
     .filter((s) => s.absentCount > 0)
     .sort((a, b) => b.absentCount - a.absentCount)
     .slice(0, 10)
-    .map(({ studentId, studentName, absentCount, averageEvaluation }) => ({ studentId, studentName, absentCount, averageEvaluation }));
+    .map(({ studentId, studentName, absentCount }) => ({ studentId, studentName, absentCount }));
 
   const atRiskStudents = perStudent
     .filter((s) => s.attendanceRate !== null && s.attendanceRate < AT_RISK_ATTENDANCE_THRESHOLD)
     .sort((a, b) => (a.attendanceRate ?? 0) - (b.attendanceRate ?? 0))
     .slice(0, 20)
-    .map(({ studentId, studentName, absentCount, averageEvaluation }) => ({ studentId, studentName, absentCount, averageEvaluation }));
+    .map(({ studentId, studentName, absentCount }) => ({ studentId, studentName, absentCount }));
 
   return {
     averageAttendanceRate: overallAttendance?.n == null ? null : Math.round(Number(overallAttendance.n) * 1000) / 10,
-    averageEvaluationScore: overallEvaluation?.n == null ? null : Math.round(Number(overallEvaluation.n) * 10) / 10,
     mostAbsences,
     atRiskStudents,
   };

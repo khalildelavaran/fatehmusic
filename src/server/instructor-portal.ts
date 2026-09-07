@@ -206,7 +206,7 @@ export async function listPendingAssignments(db: D1Database, instructorId: numbe
 /**
  * Authorization guard shared by every instructor-portal write endpoint:
  * confirms the enrollment's class actually belongs to this instructor.
- * Must be checked server-side before any evaluation/assignment/attendance
+ * Must be checked server-side before any attendance
  * write, per SCHOOL-MANAGEMENT-IMPLEMENTATION.md section 49.
  */
 export async function instructorOwnsEnrollment(db: D1Database, instructorId: number, enrollmentId: number): Promise<boolean> {

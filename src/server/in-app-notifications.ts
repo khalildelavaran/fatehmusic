@@ -10,7 +10,6 @@ export const NOTIFICATION_TYPES = [
   "class_reminder",
   "payment_due",
   "attendance",
-  "evaluation",
   "certificate",
   "system",
 ] as const;
