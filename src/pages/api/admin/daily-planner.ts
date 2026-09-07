@@ -28,7 +28,6 @@ export const PATCH: APIRoute = async ({ request }) => {
       startTime?: string;
       endTime?: string;
     } | null;
-
     const sessionId = Number(body?.sessionId);
     const sessionDate = body?.sessionDate;
     const startTime = body?.startTime;
@@ -43,45 +42,16 @@ export const PATCH: APIRoute = async ({ request }) => {
 
     const db = env.DB;
     const session = await db.prepare(`
-      SELECT id, class_id, session_date, instructor_id, room_id, status
-      FROM class_sessions WHERE id = ? LIMIT 1
-    `).bind(sessionId).first<{
-      id: number; class_id: number; session_date: string; instructor_id: number; room_id: number | null; status: string;
-    }>();
+      SELECT id, session_date, status FROM class_sessions WHERE id = ? LIMIT 1
+    `).bind(sessionId).first<{ id: number; session_date: string; status: string }>();
 
     if (!session || session.status === "cancelled" || session.session_date !== sessionDate) {
       return json({ success: false, message: "جلسه موردنظر پیدا نشد یا قابل ویرایش نیست." }, 404);
     }
 
-    const conflict = await db.prepare(`
-      SELECT cs.id, cs.start_time, cs.end_time,
-        c.title AS class_title,
-        CASE WHEN cs.instructor_id = ? THEN 'instructor' ELSE 'room' END AS conflict_type
-      FROM class_sessions cs
-      JOIN classes c ON c.id = cs.class_id
-      WHERE cs.id <> ?
-        AND cs.session_date = ?
-        AND cs.status <> 'cancelled'
-        AND (cs.instructor_id = ? OR (? IS NOT NULL AND cs.room_id = ?))
-        AND cs.start_time < ?
-        AND cs.end_time > ?
-      ORDER BY cs.start_time
-      LIMIT 1
-    `).bind(
-      session.instructor_id, sessionId, sessionDate, session.instructor_id,
-      session.room_id, session.room_id, endTime, startTime,
-    ).first<{ id: number; start_time: string; end_time: string; class_title: string; conflict_type: string }>();
-
-    if (conflict) {
-      const who = conflict.conflict_type === "instructor" ? "استاد" : "اتاق";
-      return json({
-        success: false,
-        conflict: true,
-        message: `تداخل زمانی با ${who} وجود دارد: ${conflict.start_time} تا ${conflict.end_time}`,
-        conflictingSession: conflict,
-      }, 409);
-    }
-
+    // Intentionally do not reject overlapping instructor/room assignments here.
+    // Fateh supports concurrent teaching: one instructor may use two rooms, and
+    // some lessons allow multiple students in the same time window.
     await db.prepare(`
       UPDATE class_sessions
       SET start_time = ?, end_time = ?, updated_at = CURRENT_TIMESTAMP
@@ -119,8 +89,11 @@ export const POST: APIRoute = async ({ request }) => {
       if (!Number.isInteger(enrollmentId) || enrollmentId < 1) {
         return json({ success: false, message: "ثبت انصراف بدون شناسه ثبت‌نام ممکن نیست." }, 422);
       }
-      const result = await dbUpdateEnrollment(env.DB, enrollmentId);
-      if (!result) return json({ success: false, message: "ثبت‌نام فعال هنرجو پیدا نشد." }, 404);
+      const result = await env.DB.prepare(`
+        UPDATE enrollments SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status = 'active'
+      `).bind(enrollmentId).run();
+      if (!result.meta.changes) return json({ success: false, message: "ثبت‌نام فعال هنرجو پیدا نشد." }, 404);
       return json({ success: true, enrollmentSessionId, enrollmentId, status });
     }
 
@@ -131,19 +104,11 @@ export const POST: APIRoute = async ({ request }) => {
     const result = await env.DB.prepare(`
       UPDATE enrollment_sessions SET status = ? WHERE id = ?
     `).bind(status, enrollmentSessionId).run();
-
     if (!result.meta.changes) return json({ success: false, message: "رکورد حضور پیدا نشد." }, 404);
+
     return json({ success: true, enrollmentSessionId, status });
   } catch (error) {
     console.error("[admin/daily-planner] attendance update failed:", error);
     return json({ success: false, message: "ذخیره وضعیت هنرجو با خطا مواجه شد." }, 500);
   }
 };
-
-async function dbUpdateEnrollment(db: D1Database, enrollmentId: number): Promise<boolean> {
-  const result = await db.prepare(`
-    UPDATE enrollments SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
-    WHERE id = ? AND status = 'active'
-  `).bind(enrollmentId).run();
-  return Boolean(result.meta.changes);
-}
