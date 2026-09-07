@@ -155,6 +155,12 @@ export const GET: APIRoute = async ({ request }) => {
 
       result.push({
         ...session,
+        // Camel-case aliases are kept for the interactive planner. The snake_case
+        // fields remain the API's database-oriented representation.
+        startTime: session.start_time,
+        endTime: session.end_time,
+        student_names: students.results.map((student) => student.student_name).join("، "),
+        course_names: session.class_title,
         students: students.results.map((student) => {
           const consumedSessions = student.consumed_sessions ?? 0;
           const remainingSessions = student.billing_type === "monthly" || student.planned_sessions == null
