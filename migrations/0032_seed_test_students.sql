@@ -44,8 +44,9 @@ SELECT
 FROM course_ids CROSS JOIN student_slots;
 
 -- Dedicated test class for each canonical course ID.
--- Prefer the first instructor from a D1 course override when present;
--- otherwise use the first active D1 instructor as a safe fallback.
+-- Prefer the first instructor from a D1 course override when that
+-- instructor actually exists in D1; otherwise use the first active
+-- D1 instructor as a safe fallback.
 WITH RECURSIVE course_ids(course_id) AS (
   SELECT 1
   UNION ALL
@@ -59,10 +60,16 @@ SELECT
   printf('تست — دوره %02d', c.course_id),
   c.course_id,
   COALESCE(
-    CAST(json_extract(
-      (SELECT co.data FROM course_overrides co WHERE co.id = c.course_id LIMIT 1),
-      '$.instructors[0]'
-    ) AS INTEGER),
+    (
+      SELECT CAST(json_extract(co.data, '$.instructors[0]') AS INTEGER)
+      FROM course_overrides co
+      WHERE co.id = c.course_id
+        AND EXISTS (
+          SELECT 1 FROM instructors i
+          WHERE i.id = CAST(json_extract(co.data, '$.instructors[0]') AS INTEGER)
+        )
+      LIMIT 1
+    ),
     (SELECT MIN(i.id) FROM instructors i WHERE i.status = 'active'),
     (SELECT MIN(i.id) FROM instructors i)
   ),
