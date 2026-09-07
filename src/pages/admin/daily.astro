@@ -16,6 +16,11 @@ if (session.role !== ROLES.ADMIN && session.role !== ROLES.REGISTRAR) return new
     <AdminNav session={session} active="daily" />
     <main class="admin-main">
       <div class="admin-shell daily-shell" dir="rtl">
+        <nav class="finance-context-tabs" aria-label="بخش‌های مالی">
+            <a class="is-active" href="/admin/daily#finance">آموزشگاه</a>
+            <a href="/admin/instructors">استاد</a>
+            <a href="/admin/students">هنرجو</a>
+        </nav>
         <header class="admin-hero daily-topbar" aria-label="داشبورد روزانه">
           <div class="daily-topbar-side daily-topbar-title">
             <span class="admin-hero-label">عملیات آموزشگاه</span>
@@ -41,6 +46,11 @@ if (session.role !== ROLES.ADMIN && session.role !== ROLES.REGISTRAR) return new
 </MainLayout>
 <style>
 .daily-shell{max-width:none;margin:0;padding:32px clamp(18px,3vw,36px) 64px}
+.finance-context-tabs{display:flex;justify-content:center;gap:6px;margin-bottom:14px;padding:5px;border:1px solid var(--border);background:var(--surface);border-radius:14px}
+.finance-context-tabs a{padding:9px 22px;border-radius:10px;color:var(--text);text-decoration:none;font-weight:700;font-size:13px;transition:.2s;white-space:nowrap}
+.finance-context-tabs a:hover{background:rgba(212,175,55,.08)}
+.finance-context-tabs a.is-active{background:var(--primary);color:#fff}
+@media(max-width:600px){.finance-context-tabs{width:100%;overflow-x:auto;justify-content:stretch}.finance-context-tabs a{flex:1 0 auto;text-align:center}}
 .daily-topbar{margin-bottom:24px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px}
 .daily-topbar-title{justify-self:start;display:flex;align-items:center;gap:14px;min-width:0}
 .daily-topbar-title h1{margin:0;color:var(--text);font-size:18px;white-space:nowrap}
