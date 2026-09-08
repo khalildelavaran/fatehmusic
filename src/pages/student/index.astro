@@ -2,9 +2,14 @@
 import { env } from "cloudflare:workers";
 import MainLayout from "../../layouts/MainLayout.astro";
 import { getStudentSession, type StudentEnv } from "../../server/student-auth";
+import { courses } from "../../data/courses.js";
 import "../../styles/student.css";
 const session=await getStudentSession(Astro.request,env as StudentEnv);
 if(!session)return Astro.redirect('/login');
+const activeCoursesForRequest = courses.filter((c) => c.active).sort((a, b) => a.priority - b.priority).map((c) => ({ id: c.id, title: c.title, instructors: c.instructors ?? [] }));
+const db = (env as StudentEnv).DB;
+const instructorRows = db ? await db.prepare("SELECT id, first_name, last_name FROM instructors WHERE is_active = 1").all<{ id: number; first_name: string; last_name: string }>() : { results: [] };
+const instructorDirectory = (instructorRows.results ?? []).map((r) => ({ id: r.id, name: `${r.first_name} ${r.last_name}`.trim() }));
 ---
 <MainLayout title="داشبورد هنرجو | آموزشگاه موسیقی فاتح" noindex={true}>
 <main class="student-dashboard" dir="rtl">
@@ -12,7 +17,9 @@ if(!session)return Astro.redirect('/login');
   <div class="student-sidebar-brand"><img src="/logo.webp" alt="آموزشگاه موسیقی فاتح"/><strong>آموزشگاه موسیقی فاتح</strong></div>
   <nav aria-label="ناوبری داشبورد هنرجو">
     <a href="#courses">دوره‌های من</a>
+    <a href="#profile">پروفایل</a>
     <a href="#finance">وضعیت ترم و شهریه</a>
+    <a href="#new-course">ثبت‌نام دوره جدید</a>
     <a href="#makeup">جلسات جبرانی</a>
     <a href="#notifications">اعلان‌ها</a>
     <a href="#contracts">قراردادها</a>
@@ -24,11 +31,15 @@ if(!session)return Astro.redirect('/login');
 <section class="student-main">
 <header class="student-top"><div><img src="/logo.webp" alt="فاتح"/><div><strong id="studentNameHeading">داشبورد هنرجو</strong><span>کد ملی: {session.nationalCode}</span></div></div></header>
 <div id="studentApp"><p class="student-loading">در حال بارگذاری اطلاعات...</p></div>
+<script type="application/json" id="studentDashboardData" set:html={JSON.stringify({ courses: activeCoursesForRequest, instructors: instructorDirectory })} is:inline></script>
 </section>
 </main>
 <script>
 const app=document.querySelector('#studentApp');
 const esc=(v: any)=>String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const DASHBOARD_DATA:any=JSON.parse(document.querySelector('#studentDashboardData')?.textContent||'{"courses":[],"instructors":[]}');
+const COURSE_DIRECTORY:any[]=DASHBOARD_DATA.courses||[];
+const INSTRUCTOR_DIRECTORY:any[]=DASHBOARD_DATA.instructors||[];
 const contractForm=(id: any,label='PDF قرارداد')=>`<a class="gold-action" href="/api/admin/contract-generate?registration_id=${encodeURIComponent(Number(id))}" target="_blank" rel="noopener">${label}</a>`;
 const MAKEUP_STATUS_LABELS: Record<string,string>={pending:'در انتظار بررسی',approved:'تأیید‌شده',rejected:'رد‌شده',scheduled:'زمان‌بندی‌شده',completed:'برگزارشده'};
 const FINANCE_STATUS_LABELS: Record<string,string>={paid:'تسویه شده',partial:'پرداخت ناقص',overdue:'معوق',pending:'پرداخت نشده',none:'صورتحساب ندارد'};
@@ -65,7 +76,7 @@ function renderFinanceTerm(st:any){
       <div><span>جلسات باقیمانده</span><b>${st.remainingSessions===null?'—':money(st.remainingSessions)}</b></div>
       <div><span>جلسات پرداخت‌نشده</span><b>${st.unpaidSessions===null?'—':money(st.unpaidSessions)}</b></div>
     </div>
-    <div class="finance-money"><span>شهریه: <b>${money(st.invoiceAmount)}</b></span><span>پرداخت‌شده: <b>${money(st.paidAmount)}</b></span><span>مانده: <b>${money(st.balance)}</b></span>${st.dueDate?`<span>سررسید: <b>${dateLabel(st.dueDate)}</b></span>`:''}</div>
+    <div class="finance-money"><span>شهریه: <b>${money(st.invoiceAmount)}</b></span><span>پرداخت‌شده: <b>${money(st.paidAmount)}</b></span><span>مانده: <b>${money(st.balance)}</b></span>${st.dueDate?`<span>سررسید: <b>${dateLabel(st.dueDate)}</b></span>`:''}${st.balance>0?`<button type="button" class="student-refresh-action" data-pay-tuition="${st.termId??''}" disabled title="درگاه پرداخت به‌زودی متصل می‌شود">پرداخت آنلاین شهریه</button>`:''}</div>
     ${sessions.length?`<div class="finance-session-list"><h4>جلسات ترم</h4>${sessions.map((s:any)=>{const canLeave=s.status==='pending'&&((new Date(`${s.session_date}T${s.start_time}:00`).getTime()-Date.now())/3600000)>=24;const statusLabel=s.status==='present'?'حاضر':s.status==='absent'?'غایب':s.status==='excused'?'مرخصی':'ثبت نشده';return `<div class="finance-session-row"><div><b>${dateLabel(s.session_date)}</b><span>${timeLabel(s.start_time)} تا ${timeLabel(s.end_time)}</span></div><span class="session-status ${esc(s.status)}">${statusLabel}</span>${canLeave?`<button type="button" class="leave-button" data-leave-session="${s.id}">ثبت مرخصی</button>`:''}</div>`}).join('')}</div>`:''}
     ${st.payments?.length?`<details class="finance-payments"><summary>سوابق پرداخت (${money(st.payments.length)})</summary><div>${st.payments.map((p:any)=>`<div class="payment-history-row"><span>${dateLabel(String(p.paid_at||'').slice(0,10))}</span><span>${esc(PAYMENT_METHOD_LABELS[p.method]||p.method)}</span><b>${money(p.amount)}</b></div>`).join('')}</div></details>`:'<p class="student-empty">هنوز پرداختی برای این ترم ثبت نشده است.</p>'}
   </article>`;
@@ -96,8 +107,35 @@ async function load(){
   const enrollmentsResp:any=await api('/api/student/enrollments').catch(()=>({success:false,enrollments:[]}));
   const enrollments:any[]=enrollmentsResp.success?enrollmentsResp.enrollments.filter((e:any)=>e.status==='active'):[];
   (app as HTMLElement).innerHTML=`${d.must_change_password?`<section class="student-alert"><strong>توجه:</strong> رمز اولیه شما کد ملی است. برای امنیت حساب، رمز دلخواه خود را تعیین کنید.</section>`:''}
-  <section id="courses" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">آموزش</span><h2>دوره‌های من</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">♪</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p><p>زمان: ${esc(x.schedule_weekday)}${x.schedule_duration?` · ${esc(x.schedule_duration)} دقیقه`:''}</p><div class="student-actions">${contractForm(x.id,'دریافت PDF قرارداد')}</div></article>`).join(''):'<p class="student-empty">دوره‌ای برای این کد ملی ثبت نشده است.</p>'}</div></section>
+  <section id="courses" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">آموزش</span><h2>دوره‌های من</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">♪</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p><p>زمان: ${esc(x.schedule_weekday)}${x.schedule_duration?` · ${esc(x.schedule_duration)} دقیقه`:''}</p><div class="student-actions">${contractForm(x.id,'دریافت PDF قرارداد')}</div></article>`).join(''):'<p class="student-empty">دوره‌ای برای این کد ملی ثبت نشده است.</p>'}</div>
+    ${enrollments.length?`<div class="student-grid" style="margin-top:14px">${enrollments.filter((e:any)=>e.status==='active').map((e:any)=>`<article class="student-item"><div class="student-item-icon">↻</div><h3>${esc(e.classTitle)}</h3><p>مدرس: ${esc(e.instructorName)}</p><div class="student-actions"><button data-renew-enrollment="${e.enrollmentId}">درخواست ادامه ترم بعد</button></div></article>`).join('')}</div>`:''}
+  </section>
+  <section id="profile" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">پروفایل</span><h2>اطلاعات شخصی</h2></div><span id="profileStatus" class="student-status"></span></div>
+    <form id="profileForm" class="student-password" style="grid-template-columns:repeat(2,1fr);gap:12px">
+      <input name="firstName" placeholder="نام" required/>
+      <input name="lastName" placeholder="نام خانوادگی" required/>
+      <input name="fatherName" placeholder="نام پدر"/>
+      <input name="birthYear" type="number" min="1300" max="1500" placeholder="سال تولد (شمسی)"/>
+      <input name="phone" dir="ltr" placeholder="موبایل"/>
+      <input name="email" type="email" dir="ltr" placeholder="ایمیل"/>
+      <input name="occupation" placeholder="شغل"/>
+      <input name="emergencyContact" placeholder="تماس اضطراری"/>
+      <input name="idIssuePlace" placeholder="محل صدور کد ملی"/>
+      <input name="address" placeholder="آدرس" style="grid-column:1/-1"/>
+      <button style="grid-column:1/-1">ذخیره تغییرات پروفایل</button>
+    </form>
+  </section>
   <section id="finance" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">ترم و شهریه</span><h2>وضعیت ترم و امور مالی</h2></div><button type="button" class="student-refresh-action" id="financeRefresh">به‌روزرسانی</button></div><div id="financeBody" class="student-grid"><p class="student-loading">در حال بارگذاری...</p></div></section>
+  <section id="new-course" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">ثبت‌نام</span><h2>درخواست ثبت‌نام دوره جدید</h2></div></div>
+    <form id="newCourseForm" class="student-password" style="grid-template-columns:repeat(2,1fr);gap:12px">
+      <label style="grid-column:1/-1">دوره<select name="courseId" id="newCourseSelect" required><option value="">انتخاب کنید...</option>${COURSE_DIRECTORY.map((c:any)=>`<option value="${c.id}">${esc(c.title)}</option>`).join('')}</select></label>
+      <label style="grid-column:1/-1">مدرس (اختیاری)<select name="instructorId" id="newCourseInstructorSelect"><option value="">بدون ترجیح خاص</option></select></label>
+      <input name="preferredDay" placeholder="روز مدنظر (مثلاً: شنبه‌ها)" style="grid-column:1/-1"/>
+      <textarea name="note" placeholder="توضیحات (اختیاری)" rows="2" style="grid-column:1/-1"></textarea>
+      <button style="grid-column:1/-1">ثبت درخواست</button>
+      <span id="newCourseStatus" class="student-status" style="grid-column:1/-1"></span>
+    </form>
+  </section>
   <section id="makeup" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">حضور</span><h2>جلسات جبرانی</h2></div></div>${enrollmentPicker(enrollments,'makeupEnrollmentSelect')}<div class="student-grid" id="makeupBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
   <section id="notifications" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">اطلاع‌رسانی</span><h2>اعلان‌ها</h2></div></div><div class="student-grid" id="notificationsBody"><p class="student-loading">در حال بارگذاری...</p></div></section>
   <section id="contracts" class="student-section"><div class="student-section-heading"><div><span class="student-eyebrow">مدارک</span><h2>قراردادها</h2></div></div><div class="student-grid">${d.registrations.length?d.registrations.map((x:any)=>`<article class="student-item"><div class="student-item-icon">▤</div><h3>${esc(x.instrument_title)}</h3><p>مدرس: ${esc(x.instructor_name)}</p>${contractForm(x.id,'دریافت PDF قرارداد')}</article>`).join(''):'<p class="student-empty">قراردادی برای شما ثبت نشده است.</p>'}</div></section>
@@ -106,12 +144,93 @@ async function load(){
   await Promise.all([loadFinance(),loadMakeup(enrollments),loadNotifications()]);
   document.querySelector('#makeupEnrollmentSelect')?.addEventListener('change',()=>loadMakeup(enrollments));
   document.querySelector('#financeRefresh')?.addEventListener('click',loadFinance);
+  await loadProfile();
+  wireNewCourseForm();
+  wireProfileForm();
+}
+
+async function loadProfile(){
+  const profileForm=document.querySelector('#profileForm') as HTMLFormElement|null;
+  if(!profileForm)return;
+  const d:any=await api('/api/student/profile');
+  if(!d.success)return;
+  const p=d.profile;
+  for(const key of ['firstName','lastName','fatherName','birthYear','phone','email','occupation','emergencyContact','idIssuePlace','address']){
+    const input=profileForm.querySelector(`[name="${key}"]`) as HTMLInputElement|null;
+    if(input&&p[key]!=null)input.value=String(p[key]);
+  }
+}
+
+function wireProfileForm(){
+  const form=document.querySelector('#profileForm') as HTMLFormElement|null;
+  const status=document.querySelector('#profileStatus');
+  form?.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    if(status)status.textContent='در حال ذخیره...';
+    const data=new FormData(form);
+    const body:any={};
+    for(const key of ['firstName','lastName','fatherName','phone','email','occupation','emergencyContact','idIssuePlace','address']){
+      const v=String(data.get(key)||'').trim();
+      if(v)body[key]=v;
+    }
+    const birthYear=data.get('birthYear');
+    if(birthYear)body.birthYear=Number(birthYear);
+    const d:any=await api('/api/student/profile',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(status)status.textContent=d.success?'پروفایل با موفقیت به‌روزرسانی شد.':(d.message||'خطایی رخ داد.');
+  });
+}
+
+function wireNewCourseForm(){
+  const courseSelect=document.querySelector('#newCourseSelect') as HTMLSelectElement|null;
+  const instructorSelect=document.querySelector('#newCourseInstructorSelect') as HTMLSelectElement|null;
+  const form=document.querySelector('#newCourseForm') as HTMLFormElement|null;
+  const status=document.querySelector('#newCourseStatus');
+
+  courseSelect?.addEventListener('change',()=>{
+    if(!instructorSelect)return;
+    instructorSelect.innerHTML='<option value="">بدون ترجیح خاص</option>';
+    const course=COURSE_DIRECTORY?.find((c:any)=>String(c.id)===courseSelect.value);
+    if(!course)return;
+    for(const instructorId of course.instructors||[]){
+      const instructor=INSTRUCTOR_DIRECTORY?.find((i:any)=>i.id===instructorId);
+      if(instructor){const opt=document.createElement('option');opt.value=String(instructor.id);opt.textContent=instructor.name;instructorSelect.appendChild(opt);}
+    }
+  });
+
+  form?.addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    if(status)status.textContent='در حال ثبت...';
+    const data=new FormData(form);
+    const body={courseId:Number(data.get('courseId')),instructorId:data.get('instructorId')?Number(data.get('instructorId')):null,preferredDay:String(data.get('preferredDay')||''),note:String(data.get('note')||'')};
+    const d:any=await api('/api/student/new-course-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(status)status.textContent=d.success?'درخواست شما ثبت شد و پس از بررسی ادمین اطلاع‌رسانی می‌شود.':(d.message||'ثبت درخواست انجام نشد.');
+    if(d.success)form.reset();
+  });
 }
 
 app?.addEventListener('click',async e=>{const t=e.target;if(!(t instanceof HTMLElement))return;
   if(t.dataset.requestMakeup){const reason=prompt('دلیل درخواست جلسه جبرانی (اختیاری):')||'';const d:any=await api('/api/student/makeup-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId:Number(t.dataset.enrollmentId),originalEnrollmentSessionId:Number(t.dataset.requestMakeup),reason})});if(!d.success)alert(d.message||'ثبت درخواست انجام نشد.');await load();return}
   if(t.dataset.markRead){await api('/api/student/notifications',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:Number(t.dataset.markRead)})});await loadNotifications();return}
   if(t.dataset.leaveSession){const note=prompt('یادداشت مرخصی (اختیاری):')||'';t.setAttribute('disabled','true');const d:any=await api('/api/student/leave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentSessionId:Number(t.dataset.leaveSession),note})});if(!d.success)alert(d.message||'ثبت مرخصی انجام نشد.');await loadFinance();await loadNotifications();}
+  if(t.dataset.renewEnrollment){
+    const enrollmentId=Number(t.dataset.renewEnrollment);
+    const enrollmentsResp:any=await api('/api/student/enrollments').catch(()=>({success:false,enrollments:[]}));
+    const enrollment=enrollmentsResp.success?enrollmentsResp.enrollments.find((e:any)=>e.enrollmentId===enrollmentId):null;
+    let instructorId:number|null=null;
+    if(enrollment){
+      const course=COURSE_DIRECTORY?.find((c:any)=>c.id===enrollment.courseId);
+      const options:number[]=course?.instructors||[];
+      if(options.length>1){
+        const names=options.map((id:number)=>{const i=INSTRUCTOR_DIRECTORY?.find((x:any)=>x.id===id);return i?`${i.id}: ${i.name}`:String(id)}).join('\n');
+        const chosen=prompt(`این دوره چند مدرس دارد. شناسه مدرس مدنظر خود را وارد کنید:\n${names}`, String(enrollment.instructorId));
+        if(chosen===null)return;
+        instructorId=Number(chosen)||null;
+      }
+    }
+    const note=prompt('توضیح تکمیلی (اختیاری):')||'';
+    const d:any=await api('/api/student/term-renewal-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enrollmentId,instructorId,note})});
+    alert(d.success?'درخواست ادامه ترم ثبت شد.':(d.message||'ثبت درخواست انجام نشد.'));
+  }
 });
 app?.addEventListener('submit',async e=>{if(!(e.target instanceof HTMLFormElement)||e.target.id!=='passwordForm')return;e.preventDefault();const status=document.querySelector('#passwordStatus') as HTMLElement;const p=(document.querySelector('#newPassword') as HTMLInputElement).value;if(p!==(document.querySelector('#repeatPassword') as HTMLInputElement).value){status.textContent='تکرار رمز یکسان نیست.';return}const r=await fetch('/api/student/password',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({new_password:p})});const d=await r.json();status.textContent=d.message||'انجام شد.';if(r.ok)(document.querySelector('#passwordForm') as HTMLFormElement).reset()});
 async function logout(){await fetch('/api/student/logout',{method:'POST',credentials:'same-origin'});location.href='/login'}

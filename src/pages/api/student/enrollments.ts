@@ -20,8 +20,8 @@ export const GET: APIRoute = async ({ request }) => {
 
   const rows = await db
     .prepare(
-      `SELECT e.id AS enrollment_id, e.class_id, e.status, c.title AS class_title,
-              TRIM(i.first_name || ' ' || i.last_name) AS instructor_name
+      `SELECT e.id AS enrollment_id, e.class_id, c.course_id, e.status, c.title AS class_title,
+              c.instructor_id AS instructor_id, TRIM(i.first_name || ' ' || i.last_name) AS instructor_name
        FROM enrollments e
        JOIN classes c ON c.id = e.class_id
        JOIN instructors i ON i.id = c.instructor_id
@@ -34,7 +34,9 @@ export const GET: APIRoute = async ({ request }) => {
   const enrollments = (rows.results ?? []).map((row: any) => ({
     enrollmentId: Number(row.enrollment_id),
     classId: Number(row.class_id),
+    courseId: Number(row.course_id),
     classTitle: String(row.class_title || ""),
+    instructorId: Number(row.instructor_id),
     instructorName: String(row.instructor_name || ""),
     status: String(row.status || ""),
   }));

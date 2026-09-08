@@ -70,7 +70,7 @@ SELECT
         )
       LIMIT 1
     ),
-    (SELECT MIN(i.id) FROM instructors i WHERE i.status = 'active'),
+    (SELECT MIN(i.id) FROM instructors i WHERE i.is_active = 1),
     (SELECT MIN(i.id) FROM instructors i)
   ),
   '', 'group', 10, 'تستی', '2026-09-01', '2026-12-31', 'active',
