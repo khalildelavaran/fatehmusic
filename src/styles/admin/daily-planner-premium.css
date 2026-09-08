@@ -6,245 +6,87 @@
   margin: 0 0 28px;
   border: 1px solid rgba(255,255,255,.09);
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 82% 0%, rgba(212,175,55,.10), transparent 28%),
-    linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  background: radial-gradient(circle at 82% 0%, rgba(212,175,55,.10), transparent 28%), linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
   box-shadow: 0 20px 60px rgba(0,0,0,.16);
+  overflow: hidden;
 }
 
 #dailyPlanner .dp-head {
   min-height: 68px;
   padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
   background: linear-gradient(90deg, rgba(212,175,55,.055), transparent 42%);
 }
 
-#dailyPlanner .dp-title h2 {
-  font-size: 17px;
-  letter-spacing: -.02em;
-}
+#dailyPlanner .dp-title { display:flex; align-items:center; min-width:0; }
+#dailyPlanner .dp-title h2 { margin:0; font-size:17px; letter-spacing:-.02em; }
+#dailyPlanner .dp-title small { display:block; margin-top:3px; font-size:11px; opacity:.48; }
+#dailyPlanner .dp-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#dailyPlanner .dp-select { min-width:170px; background:rgba(0,0,0,.12); border-color:rgba(255,255,255,.11); border-radius:12px; }
+#dailyPlanner .dp-save { padding:7px 10px; min-width:82px; border-radius:999px; background:rgba(255,255,255,.035); text-align:center; }
 
-#dailyPlanner .dp-title small {
-  font-size: 11px;
-  opacity: .48;
-}
+#dailyPlanner .dp-scroll { overflow:auto; padding:0 20px 20px; }
+#dailyPlanner .dp-grid { position:relative; min-width:980px; margin-top:12px; }
+#dailyPlanner .dp-hours { position:relative; height:40px; margin-inline-start:112px; border-bottom:1px solid rgba(255,255,255,.08); }
+#dailyPlanner .dp-hour { position:absolute; top:9px; transform:translateX(-50%); font-size:10px; font-weight:700; opacity:.45; font-variant-numeric:tabular-nums; direction:ltr; }
+#dailyPlanner .dp-body { position:relative; min-height:390px; }
+#dailyPlanner .dp-row { position:relative; min-height:94px; border-bottom:1px solid rgba(255,255,255,.055); }
+#dailyPlanner .dp-row-label { position:absolute; inset-inline-start:0; top:13px; width:98px; padding-inline-end:10px; box-sizing:border-box; font-size:12px; line-height:1.5; }
+#dailyPlanner .dp-row-label::before { content:""; display:inline-block; width:6px; height:6px; margin-inline-start:6px; border-radius:50%; background:var(--dp-gold); box-shadow:0 0 10px rgba(212,175,55,.45); vertical-align:middle; }
+#dailyPlanner .dp-row-label small { display:block; padding-inline-start:12px; font-size:10px; opacity:.43; }
+#dailyPlanner .dp-track { position:absolute; inset-inline-start:112px; inset-inline-end:0; top:0; bottom:0; background-image:repeating-linear-gradient(to right, transparent 0, transparent calc(3.125% - 1px), rgba(255,255,255,.045) calc(3.125% - 1px), rgba(255,255,255,.045) 3.125%), linear-gradient(to bottom, transparent 0, transparent 50%, rgba(255,255,255,.018) 50%, rgba(255,255,255,.018) 100%); }
 
-#dailyPlanner .dp-controls {
-  gap: 10px;
-}
-
-#dailyPlanner .dp-select {
-  min-width: 170px;
-  background: rgba(0,0,0,.12);
-  border-color: rgba(255,255,255,.11);
-  border-radius: 12px;
-}
-
-#dailyPlanner .dp-save {
-  padding: 7px 10px;
-  min-width: 82px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.035);
-}
-
-#dailyPlanner .dp-scroll {
-  padding: 0 20px 20px;
-}
-
-#dailyPlanner .dp-grid {
-  min-width: 980px;
-  margin-top: 12px;
-}
-
-#dailyPlanner .dp-hours {
-  height: 40px;
-  margin-inline-start: 112px;
-  border-bottom-color: rgba(255,255,255,.08);
-}
-
-#dailyPlanner .dp-hour {
-  top: 9px;
-  font-size: 10px;
-  font-weight: 700;
-  opacity: .45;
-}
-
-#dailyPlanner .dp-body {
-  min-height: 390px;
-}
-
-#dailyPlanner .dp-row {
-  height: 94px;
-  border-bottom: 1px solid rgba(255,255,255,.055);
-}
-
-#dailyPlanner .dp-row-label {
-  top: 13px;
-  width: 98px;
-  padding-inline-end: 10px;
-  box-sizing: border-box;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-#dailyPlanner .dp-row-label::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-inline-start: 6px;
-  border-radius: 50%;
-  background: var(--dp-gold);
-  box-shadow: 0 0 10px rgba(212,175,55,.45);
-  vertical-align: middle;
-}
-
-#dailyPlanner .dp-row-label small {
-  padding-inline-start: 12px;
-  font-size: 10px;
-  opacity: .43;
-}
-
-#dailyPlanner .dp-track {
-  inset-inline-start: 112px;
-  background-image:
-    repeating-linear-gradient(to right, transparent 0, transparent calc(3.125% - 1px), rgba(255,255,255,.045) calc(3.125% - 1px), rgba(255,255,255,.045) 3.125%),
-    linear-gradient(to bottom, transparent 0, transparent 50%, rgba(255,255,255,.018) 50%, rgba(255,255,255,.018) 100%);
-}
-
-/* Student/session card */
 #dailyPlanner .dp-card {
-  top: 10px;
-  height: 74px;
-  min-width: 76px;
-  padding: 9px 12px 8px;
-  border: 1px solid var(--dp-card-border);
-  border-radius: 14px;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(212,175,55,.16), transparent 42%),
-    linear-gradient(135deg, rgba(255,255,255,.075), var(--dp-card-bg));
-  box-shadow: 0 9px 26px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.055);
-  backdrop-filter: blur(8px);
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
-  cursor: grab;
+  position:absolute;
+  box-sizing:border-box;
+  min-width:76px;
+  padding:9px 12px 8px;
+  border:1px solid var(--dp-card-border);
+  border-radius:14px;
+  background:radial-gradient(circle at 100% 0%, rgba(212,175,55,.16), transparent 42%), linear-gradient(135deg, rgba(255,255,255,.075), var(--dp-card-bg));
+  box-shadow:0 9px 26px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.055);
+  backdrop-filter:blur(8px);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  cursor:grab;
+  overflow:hidden;
+  user-select:none;
+  z-index:1;
 }
+#dailyPlanner .dp-card::before { content:""; position:absolute; inset-inline-start:0; top:10px; bottom:10px; width:3px; border-radius:0 4px 4px 0; background:var(--dp-gold); box-shadow:0 0 12px rgba(212,175,55,.32); }
+#dailyPlanner .dp-card:hover { transform:translateY(-2px); border-color:rgba(212,175,55,.75); box-shadow:0 14px 34px rgba(0,0,0,.22), 0 0 0 1px rgba(212,175,55,.07); z-index:5; }
+#dailyPlanner .dp-card:active { transform:translateY(0); cursor:grabbing; }
+#dailyPlanner .dp-card[data-dragging="1"] { z-index:20; transition:none; }
+#dailyPlanner .dp-card strong { display:block; padding-inline-start:5px; padding-inline-end:22px; font-size:13px; font-weight:800; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#dailyPlanner .dp-card span { display:block; margin-top:5px; padding-inline-start:5px; padding-inline-end:4px; font-size:10px; line-height:1.4; opacity:.62; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#dailyPlanner .dp-card time { position:absolute; inset-inline-end:10px; bottom:7px; padding:2px 6px; border:1px solid rgba(255,255,255,.08); border-radius:999px; background:rgba(0,0,0,.18); font-size:9px; font-weight:700; opacity:.72; direction:ltr; }
+#dailyPlanner .dp-resize { position:absolute; top:0; bottom:0; width:12px; opacity:.25; transition:opacity .15s ease; cursor:ew-resize; }
+#dailyPlanner .dp-resize.start { inset-inline-start:0; }
+#dailyPlanner .dp-resize.end { inset-inline-end:0; }
+#dailyPlanner .dp-card:hover .dp-resize { opacity:.75; }
+#dailyPlanner .dp-resize::after { content:""; position:absolute; top:25px; width:3px; height:24px; border-radius:3px; background:var(--dp-gold); opacity:.65; inset-inline-start:4px; }
 
-#dailyPlanner .dp-card::before {
-  content: "";
-  position: absolute;
-  inset-inline-start: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 4px 4px 0;
-  background: var(--dp-gold);
-  box-shadow: 0 0 12px rgba(212,175,55,.32);
-}
-
-#dailyPlanner .dp-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(212,175,55,.75);
-  box-shadow: 0 14px 34px rgba(0,0,0,.22), 0 0 0 1px rgba(212,175,55,.07);
-}
-
-#dailyPlanner .dp-card:active {
-  transform: translateY(0);
-}
-
-#dailyPlanner .dp-card strong {
-  padding-inline-start: 5px;
-  padding-inline-end: 22px;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-#dailyPlanner .dp-card span {
-  margin-top: 5px;
-  padding-inline-start: 5px;
-  padding-inline-end: 4px;
-  font-size: 10px;
-  line-height: 1.4;
-  opacity: .62;
-}
-
-#dailyPlanner .dp-card time {
-  inset-inline-end: 10px;
-  bottom: 7px;
-  padding: 2px 6px;
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 999px;
-  background: rgba(0,0,0,.18);
-  font-size: 9px;
-  font-weight: 700;
-  opacity: .72;
-}
-
-#dailyPlanner .dp-resize {
-  width: 12px;
-  opacity: .25;
-  transition: opacity .15s ease;
-}
-
-#dailyPlanner .dp-card:hover .dp-resize {
-  opacity: .75;
-}
-
-#dailyPlanner .dp-resize::after {
-  top: 25px;
-  width: 3px;
-  height: 24px;
-  border-radius: 3px;
-  background: var(--dp-gold);
-  opacity: .65;
-}
-
-/* Conflict is a warning, not a destructive-looking card. */
-#dailyPlanner .dp-card.is-conflict {
-  border-color: rgba(214,102,102,.78);
-  background:
-    radial-gradient(circle at 100% 0%, rgba(214,102,102,.14), transparent 42%),
-    linear-gradient(135deg, rgba(255,255,255,.055), rgba(160,40,40,.08));
-}
-
-#dailyPlanner .dp-card.is-conflict::before {
-  background: #d66;
-  box-shadow: 0 0 12px rgba(214,102,102,.35);
-}
-
-#dailyPlanner .dp-empty {
-  margin-top: 10px;
-  border: 1px dashed rgba(255,255,255,.10);
-  border-radius: 14px;
-  background: rgba(255,255,255,.018);
-}
-
-#dailyPlanner .dp-legend {
-  padding: 11px 20px;
-  gap: 18px;
-  border-top-color: rgba(255,255,255,.07);
-  font-size: 10px;
-}
-
-#dailyPlanner .dp-dot {
-  width: 7px;
-  height: 7px;
-}
-
-#dailyPlanner .dp-context {
-  min-width: 190px;
-  padding: 7px;
-  border-radius: 14px;
-  border-color: rgba(212,175,55,.25);
-  background: rgba(20,20,20,.96);
-  backdrop-filter: blur(12px);
-}
-
-#dailyPlanner .dp-context button {
-  padding: 10px 12px;
-  font-size: 12px;
-}
+#dailyPlanner .dp-card.is-conflict { border-color:rgba(214,102,102,.78); background:radial-gradient(circle at 100% 0%, rgba(214,102,102,.14), transparent 42%), linear-gradient(135deg, rgba(255,255,255,.055), rgba(160,40,40,.08)); }
+#dailyPlanner .dp-card.is-conflict::before { background:#d66; box-shadow:0 0 12px rgba(214,102,102,.35); }
+#dailyPlanner .dp-card.is-saving { opacity:.65; }
+#dailyPlanner .dp-empty { margin-top:10px; padding:28px; text-align:center; opacity:.55; border:1px dashed rgba(255,255,255,.10); border-radius:14px; background:rgba(255,255,255,.018); }
+#dailyPlanner .dp-legend { display:flex; align-items:center; padding:11px 20px; gap:18px; border-top:1px solid rgba(255,255,255,.07); font-size:10px; opacity:.65; }
+#dailyPlanner .dp-dot { display:inline-block; width:7px; height:7px; margin-inline-end:5px; border-radius:50%; }
+#dailyPlanner .dp-dot.gold { background:var(--dp-gold); }
+#dailyPlanner .dp-dot.gray { background:#777; }
+#dailyPlanner .dp-dot.red { background:#c66; }
+#dailyPlanner .dp-context { position:fixed; z-index:9999; min-width:190px; padding:7px; border:1px solid rgba(212,175,55,.25); border-radius:14px; background:rgba(20,20,20,.96); box-shadow:0 18px 50px rgba(0,0,0,.28); backdrop-filter:blur(12px); display:none; }
+#dailyPlanner .dp-context button { display:block; width:100%; border:0; background:transparent; color:var(--text); padding:10px 12px; text-align:right; border-radius:8px; font-family:inherit; font-size:12px; cursor:pointer; }
+#dailyPlanner .dp-context button:hover { background:rgba(212,175,55,.1); }
+#dailyPlanner .dp-context .danger { color:#d77; }
 
 @media(max-width:700px) {
-  #dailyPlanner .dp-head { padding: 14px 16px; }
-  #dailyPlanner .dp-scroll { padding-inline: 16px; }
+  #dailyPlanner .dp-head { align-items:flex-start; flex-direction:column; padding:14px 16px; }
+  #dailyPlanner .dp-controls { width:100%; }
+  #dailyPlanner .dp-select { flex:1; }
+  #dailyPlanner .dp-save { margin-inline-start:auto; }
+  #dailyPlanner .dp-scroll { padding-inline:16px; }
 }
