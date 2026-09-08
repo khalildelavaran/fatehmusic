@@ -72,6 +72,26 @@
       minutes(other.startTime) < minutes(item.endTime) && minutes(other.endTime) > minutes(item.startTime));
   }
 
+  // Put overlapping sessions into separate visual lanes. This allows one instructor
+  // to teach in two rooms, and also allows multiple students in the same room/time,
+  // without cards painting over each other.
+  function assignLanes(items) {
+    const sorted = [...items].sort((a, b) => {
+      const byStart = minutes(a.startTime) - minutes(b.startTime);
+      return byStart || (minutes(a.endTime) - minutes(b.endTime));
+    });
+    const lanes = [];
+    for (const item of sorted) {
+      const start = minutes(item.startTime);
+      let lane = 0;
+      while (lane < lanes.length && lanes[lane] > start) lane++;
+      if (lane === lanes.length) lanes.push(minutes(item.endTime));
+      else lanes[lane] = minutes(item.endTime);
+      item.__lane = lane;
+    }
+    return lanes.length;
+  }
+
   function render() {
     const grid = document.querySelector("#dpGrid");
     if (!grid) return;
@@ -89,23 +109,28 @@
     }
 
     const rows = [...grouped.values()];
-    grid.innerHTML = `<div class="dp-hours">${hours.join("")}</div><div class="dp-body">${rows.length ? rows.map(row => `
-      <div class="dp-row">
-        <div class="dp-row-label">${esc(row.name)}<small>${esc(row.room)}</small></div>
+    grid.innerHTML = `<div class="dp-hours">${hours.join("")}</div><div class="dp-body">${rows.length ? rows.map(row => {
+      const laneCount = assignLanes(row.items);
+      const rowHeight = Math.max(94, laneCount * 84 + 10);
+      return `
+      <div class="dp-row" style="height:${rowHeight}px">
+        <div class="dp-row-label">${esc(row.name)}<small>${esc(row.room)}${laneCount > 1 ? ` · ${laneCount} برنامه همزمان` : ""}</small></div>
         <div class="dp-track">${row.items.map(item => {
           const left = ((minutes(item.startTime) - start) / total) * 100;
           const width = Math.max(2, ((minutes(item.endTime) - minutes(item.startTime)) / total) * 100);
+          const lane = item.__lane || 0;
           const students = Array.isArray(item.students) ? item.students : [];
           const names = students.map(s => s.studentName).filter(Boolean).join("، ") || item.student_names || "بدون هنرجو";
           const courses = students.map(s => s.courseName).filter(Boolean).join("، ") || item.course_names || item.class_title || "جلسه";
-          return `<article class="dp-card ${conflict(item, items) ? "is-conflict" : ""}" data-session-id="${esc(item.id)}" style="left:${left}%;width:${width}%" title="برای جابه‌جایی بکشید">
+          return `<article class="dp-card ${conflict(item, items) ? "is-conflict" : ""}" data-session-id="${esc(item.id)}" style="left:${left}%;width:${width}%;top:${10 + lane * 84}px" title="برای جابه‌جایی بکشید">
             <strong>${esc(names)}</strong>
             <span>${esc(courses)} · ${esc(item.room_name || "اتاق")}</span>
             <time>${esc(item.startTime)}–${esc(item.endTime)}</time>
             <i class="dp-resize start" data-resize="start"></i><i class="dp-resize end" data-resize="end"></i>
           </article>`;
         }).join("")}</div>
-      </div>`).join("") : `<div class="dp-empty">برای این روز جلسه زمان‌بندی‌شده‌ای پیدا نشد.</div>`}</div>`;
+      </div>`;
+    }).join("") : `<div class="dp-empty">برای این روز جلسه زمان‌بندی‌شده‌ای پیدا نشد.</div>`}</div>`;
     bindCards();
   }
 
@@ -128,7 +153,8 @@
       setSave(`${state.sessions.length} جلسه · ذخیره خودکار`, "is-saved");
     } catch (error) {
       setSave(error instanceof Error ? error.message : "خطا در دریافت برنامه", "is-error");
-      document.querySelector("#dpGrid").innerHTML = `<div class="dp-empty">دریافت برنامه روزانه انجام نشد. صفحه را دوباره بارگذاری کنید.</div>`;
+      const grid = document.querySelector("#dpGrid");
+      if (grid) grid.innerHTML = `<div class="dp-empty">دریافت برنامه روزانه انجام نشد. صفحه را دوباره بارگذاری کنید.</div>`;
     }
   }
 
@@ -201,6 +227,7 @@
         delete card.dataset.dragging;
         if (changed) await save(item, oldStart, oldEnd);
       });
+      card.addEventListener("pointercancel", () => { mode = null; pointerId = null; delete card.dataset.dragging; });
       card.addEventListener("contextmenu", event => {
         event.preventDefault();
         const item = state.sessions.find(s => String(s.id) === String(card.dataset.sessionId));
@@ -230,9 +257,9 @@
       contextStudent = null;
     }
   });
+
   document.addEventListener("click", () => { menu.style.display = "none"; });
   document.querySelector("#dpInstructor")?.addEventListener("change", event => { state.instructor = event.target.value; render(); });
-
   document.querySelector("#dpDate")?.addEventListener("change", event => {
     if (!event.target.value) return;
     state.date = event.target.value;
