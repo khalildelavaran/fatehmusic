@@ -13,29 +13,49 @@
   if (!shell || !summary || document.querySelector("#dailyPlanner")) return;
 
   const state = { date: localDateString(), instructor: "all", sessions: [], saving: 0 };
-  const esc = (value) => {
-    const el = document.createElement("div");
-    el.textContent = String(value ?? "");
-    return el.innerHTML;
-  };
-  const minutes = (value) => {
-    const [h, m] = String(value || "00:00").split(":").map(Number);
-    return h * 60 + m;
-  };
+  const esc = (value) => { const el = document.createElement("div"); el.textContent = String(value ?? ""); return el.innerHTML; };
+  const minutes = (value) => { const [h, m] = String(value || "00:00").split(":").map(Number); return h * 60 + m; };
   const time = (value) => `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
   const snap = (value) => Math.round(value / 15) * 15;
+
+  const style = document.createElement("style");
+  style.textContent = `
+    #dailyPlanner .dp-track{direction:ltr;overflow:visible}
+    #dailyPlanner .dp-card{direction:rtl;touch-action:none}
+    #dailyPlanner .dp-resize.start{left:0;right:auto;inset-inline-start:auto;inset-inline-end:auto}
+    #dailyPlanner .dp-resize.end{right:0;left:auto;inset-inline-start:auto;inset-inline-end:auto}
+    #dailyPlanner .dp-room-label{display:flex;flex-direction:column;gap:2px}
+    #dailyPlanner .dp-room-label strong{font-size:12px}
+    #dailyPlanner .dp-room-label small{font-size:10px;opacity:.5}
+    #dailyPlanner .dp-students{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
+    #dailyPlanner .dp-students-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+    #dailyPlanner .dp-students-head strong{font-size:13px}
+    #dailyPlanner .dp-students-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:9px}
+    #dailyPlanner .dp-student-card{min-height:74px;border:1px solid rgba(255,255,255,.09);border-radius:13px;padding:10px 12px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.018));box-sizing:border-box;cursor:context-menu;transition:border-color .15s,transform .15s,box-shadow .15s}
+    #dailyPlanner .dp-student-card:hover{transform:translateY(-1px);border-color:rgba(212,175,55,.45);box-shadow:0 8px 22px rgba(0,0,0,.14)}
+    #dailyPlanner .dp-student-card.is-present{border-color:rgba(47,143,70,.55)}
+    #dailyPlanner .dp-student-card.is-absent{border-color:rgba(214,102,102,.55)}
+    #dailyPlanner .dp-student-card.is-excused{border-color:rgba(184,149,0,.55)}
+    #dailyPlanner .dp-student-card.is-withdrawn{opacity:.55}
+    #dailyPlanner .dp-student-name{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #dailyPlanner .dp-student-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:10px;opacity:.62;white-space:nowrap;overflow:hidden}
+    #dailyPlanner .dp-student-meta span{overflow:hidden;text-overflow:ellipsis}
+    #dailyPlanner .dp-status{margin-top:7px;display:inline-flex;padding:2px 7px;border-radius:999px;font-size:9px;border:1px solid rgba(255,255,255,.09);opacity:.72}
+    #dailyPlanner .dp-hour-major{opacity:.9;font-weight:800}
+    #dailyPlanner .dp-hour-minor{opacity:.28}
+    #dailyPlanner .dp-track{background-image:repeating-linear-gradient(to right,rgba(255,255,255,.10) 0,rgba(255,255,255,.10) 1px,transparent 1px,transparent 3.125%)}
+    #dailyPlanner .dp-track::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(to right,transparent 0,transparent calc(12.5% - 2px),rgba(212,175,55,.13) calc(12.5% - 2px),rgba(212,175,55,.13) 12.5%)}
+    @media(max-width:700px){#dailyPlanner .dp-students-grid{grid-template-columns:1fr}}
+  `;
+  document.head.appendChild(style);
 
   const planner = document.createElement("section");
   planner.id = "dailyPlanner";
   planner.dir = "rtl";
   planner.innerHTML = `
-    <header class="dp-head">
-      <div class="dp-title"><div><h2>برنامه‌ریزی روزانه</h2><small>برنامه جلسات و هنرجویان · شبکه ۱۵ دقیقه‌ای</small></div></div>
-      <div class="dp-controls"><select id="dpInstructor" class="dp-select" aria-label="مدرس"><option value="all">همه مدرسان</option></select><span id="dpSave" class="dp-save">در حال بارگذاری…</span></div>
-    </header>
-    <div class="dp-scroll"><div id="dpGrid" class="dp-grid"></div></div>
-    <div class="dp-legend"><span><i class="dp-dot gold"></i>جلسه</span><span><i class="dp-dot gray"></i>شبکه ۱۵ دقیقه‌ای</span><span><i class="dp-dot red"></i>تداخل زمانی</span></div>
-  `;
+    <header class="dp-head"><div class="dp-title"><div><h2>برنامه‌ریزی روزانه</h2><small>تایم‌لاین بر اساس اتاق · شبکه ۱۵ دقیقه‌ای · جابه‌جایی و تغییر طول کارت‌ها</small></div></div><div class="dp-controls"><select id="dpInstructor" class="dp-select" aria-label="مدرس"><option value="all">همه مدرسان</option></select><span id="dpSave" class="dp-save">در حال بارگذاری…</span></div></header>
+    <div class="dp-scroll"><div id="dpGrid" class="dp-grid"></div><div id="dpStudents" class="dp-students"></div></div>
+    <div class="dp-legend"><span><i class="dp-dot gold"></i>جلسه</span><span><i class="dp-dot gray"></i>شبکه ۱۵ دقیقه‌ای</span><span><i class="dp-dot red"></i>تداخل زمانی</span></div>`;
   summary.insertAdjacentElement("afterend", planner);
 
   const menu = document.createElement("div");
@@ -44,227 +64,52 @@
   document.body.appendChild(menu);
   let contextStudent = null;
 
-  const setSave = (text, cls = "") => {
-    const el = document.querySelector("#dpSave");
-    if (el) { el.textContent = text; el.className = `dp-save ${cls}`; }
-  };
+  const setSave = (text, cls = "") => { const el = document.querySelector("#dpSave"); if (el) { el.textContent = text; el.className = `dp-save ${cls}`; } };
   const filtered = () => state.instructor === "all" ? state.sessions : state.sessions.filter(s => String(s.instructor_id) === String(state.instructor));
+  function range(){const starts=state.sessions.map(s=>minutes(s.startTime)),ends=state.sessions.map(s=>minutes(s.endTime));return{start:Math.floor(Math.min(16*60,...(starts.length?[Math.min(...starts)-30]:[]))/60)*60,end:Math.ceil(Math.max(22*60,...(ends.length?[Math.max(...ends)+30]:[]))/60)*60};}
+  function fillInstructors(){const select=document.querySelector("#dpInstructor");if(!select)return;const values=[...new Map(state.sessions.map(s=>[s.instructor_id,s.instructor_name||`مدرس ${s.instructor_id}`])).entries()];select.innerHTML=`<option value="all">همه مدرسان</option>`+values.map(([id,name])=>`<option value="${esc(id)}">${esc(name)}</option>`).join("");select.value=values.some(([id])=>String(id)===String(state.instructor))?state.instructor:"all";}
+  function conflict(item,all){return all.some(other=>other.id!==item.id&&String(other.instructor_id)===String(item.instructor_id)&&(item.room_id==null||other.room_id==null||String(item.room_id)===String(other.room_id))&&minutes(other.startTime)<minutes(item.endTime)&&minutes(other.endTime)>minutes(item.startTime));}
+  function assignLanes(items){const sorted=[...items].sort((a,b)=>minutes(a.startTime)-minutes(b.startTime)||minutes(a.endTime)-minutes(b.endTime));const lanes=[];for(const item of sorted){const start=minutes(item.startTime);let lane=0;while(lane<lanes.length&&lanes[lane]>start)lane++;if(lane===lanes.length)lanes.push(minutes(item.endTime));else lanes[lane]=minutes(item.endTime);item.__lane=lane;}return lanes.length;}
+  function studentEntries(items){const result=[];for(const item of items){for(const student of Array.isArray(item.students)?item.students:[])result.push({...student,session:item});}return result;}
+  function statusLabel(status){return({present:"حاضر",absent:"غیبت",excused:"مرخصی",withdrawn:"انصراف",pending:"ثبت نشده"})[status]||"ثبت نشده";}
 
-  function range() {
-    const starts = state.sessions.map(s => minutes(s.startTime));
-    const ends = state.sessions.map(s => minutes(s.endTime));
-    const start = Math.floor(Math.min(16 * 60, ...(starts.length ? [Math.min(...starts) - 30] : [])) / 60) * 60;
-    const end = Math.ceil(Math.max(22 * 60, ...(ends.length ? [Math.max(...ends) + 30] : [])) / 60) * 60;
-    return { start, end };
+  function renderStudents(items){
+    const host=document.querySelector("#dpStudents");if(!host)return;const entries=studentEntries(items);
+    host.innerHTML=`<div class="dp-students-head"><strong>هنرجویان امروز</strong><span class="dp-save">${entries.length} هنرجو</span></div>${entries.length?`<div class="dp-students-grid">${entries.map(entry=>{const status=entry.status||entry.attendanceStatus||"pending",item=entry.session;return `<article class="dp-student-card is-${esc(status)}" data-student-session="${esc(entry.enrollmentSessionId||"")}" data-enrollment-id="${esc(entry.enrollmentId||"")}" data-student-name="${esc(entry.studentName||"")}"><div class="dp-student-name">${esc(entry.studentName||"بدون نام")}</div><div class="dp-student-meta"><span>${esc(entry.courseName||item.course_names||item.class_title||"جلسه")}</span><span dir="ltr">${esc(item.startTime)}–${esc(item.endTime)}</span></div><div class="dp-student-meta"><span>${esc(item.instructor_name||"مدرس")}</span><span>${esc(item.room_name||"اتاق")}</span></div><span class="dp-status">${statusLabel(status)}</span></article>`;}).join("")}</div>`:`<div class="dp-empty">هنرجوی زمان‌بندی‌شده‌ای برای این روز وجود ندارد.</div>`}`;
+    host.querySelectorAll(".dp-student-card").forEach(card=>card.addEventListener("contextmenu",event=>{event.preventDefault();contextStudent={enrollmentSessionId:card.dataset.studentSession,enrollmentId:card.dataset.enrollmentId,studentName:card.dataset.studentName};menu.style.display="block";menu.style.left=`${event.clientX}px`;menu.style.top=`${event.clientY}px`;}));
   }
 
-  function fillInstructors() {
-    const select = document.querySelector("#dpInstructor");
-    if (!select) return;
-    const values = [...new Map(state.sessions.map(s => [s.instructor_id, s.instructor_name || `مدرس ${s.instructor_id}`])).entries()];
-    select.innerHTML = `<option value="all">همه مدرسان</option>` + values.map(([id, name]) => `<option value="${esc(id)}">${esc(name)}</option>`).join("");
-    select.value = values.some(([id]) => String(id) === String(state.instructor)) ? state.instructor : "all";
+  function render(){
+    const grid=document.querySelector("#dpGrid");if(!grid)return;const items=filtered(),{start,end}=range(),total=Math.max(60,end-start),hours=[];
+    for(let m=start;m<=end;m+=15){const major=m%60===0;hours.push(`<span class="dp-hour ${major?"dp-hour-major":"dp-hour-minor"}" style="left:${((m-start)/total)*100}%">${major?time(m):""}</span>`);}
+    const rooms=new Map();
+    for(const item of items){const key=item.room_id!=null?`room:${item.room_id}`:`room:${item.room_name||"free"}`;if(!rooms.has(key))rooms.set(key,{name:item.room_name||"اتاق آزاد",items:[]});rooms.get(key).items.push(item);}
+    const rows=[...rooms.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),"fa"));
+    grid.innerHTML=`<div class="dp-hours">${hours.join("")}</div><div class="dp-body">${rows.length?rows.map(row=>{const laneCount=assignLanes(row.items),rowHeight=Math.max(94,laneCount*84+10);return `<div class="dp-row" style="height:${rowHeight}px"><div class="dp-row-label dp-room-label"><strong>${esc(row.name)}</strong><small>${row.items.length} جلسه · ${[...new Set(row.items.map(x=>x.instructor_name).filter(Boolean))].map(esc).join("، ")}</small></div><div class="dp-track">${row.items.map(item=>{const left=((minutes(item.startTime)-start)/total)*100,width=Math.max(1.8,((minutes(item.endTime)-minutes(item.startTime))/total)*100),lane=item.__lane||0,students=Array.isArray(item.students)?item.students:[],names=students.map(s=>s.studentName).filter(Boolean).join("، ")||item.student_names||"بدون هنرجو",courses=students.map(s=>s.courseName).filter(Boolean).join("، ")||item.course_names||item.class_title||"جلسه";return `<article class="dp-card ${conflict(item,items)?"is-conflict":""}" data-session-id="${esc(item.id)}" style="left:${left}%;width:${width}%;top:${10+lane*84}px" title="برای جابه‌جایی بکشید"><strong>${esc(names)}</strong><span>${esc(courses)} · ${esc(item.instructor_name||"مدرس")}</span><time>${esc(item.startTime)}–${esc(item.endTime)}</time><i class="dp-resize start" data-resize="start" aria-label="تغییر زمان شروع"></i><i class="dp-resize end" data-resize="end" aria-label="تغییر زمان پایان"></i></article>`;}).join("")}</div></div>`;}).join(""):`<div class="dp-empty">برای این روز جلسه زمان‌بندی‌شده‌ای پیدا نشد.</div>`}</div>`;
+    renderStudents(items);bindCards();
   }
 
-  function conflict(item, all) {
-    return all.some(other => other.id !== item.id && String(other.instructor_id) === String(item.instructor_id) &&
-      (item.room_id == null || other.room_id == null || String(item.room_id) === String(other.room_id)) &&
-      minutes(other.startTime) < minutes(item.endTime) && minutes(other.endTime) > minutes(item.startTime));
+  async function load(){
+    setSave("در حال بارگذاری…","is-saving");
+    try{const response=await fetch(`/api/admin/daily-dashboard?date=${encodeURIComponent(state.date)}`,{credentials:"same-origin",headers:{accept:"application/json"}}),data=await response.json().catch(()=>({}));if(!response.ok||!data.success)throw new Error(data.message||"دریافت برنامه ناموفق بود");state.sessions=(data.sessions||[]).map(s=>({...s,startTime:s.start_time||s.startTime,endTime:s.end_time||s.endTime,students:Array.isArray(s.students)?s.students:[],student_names:s.student_names||(Array.isArray(s.students)?s.students.map(x=>x.studentName).filter(Boolean).join("، "):""),course_names:s.course_names||(Array.isArray(s.students)?s.students.map(x=>x.courseName).filter(Boolean).join("، "):"")})).filter(s=>s.startTime&&s.endTime);fillInstructors();render();setSave(`${state.sessions.length} جلسه · ذخیره خودکار`,"is-saved");}
+    catch(error){setSave(error instanceof Error?error.message:"خطا در دریافت برنامه","is-error");const grid=document.querySelector("#dpGrid");if(grid)grid.innerHTML=`<div class="dp-empty">دریافت برنامه روزانه انجام نشد. صفحه را دوباره بارگذاری کنید.</div>`;}
   }
 
-  // Put overlapping sessions into separate visual lanes. This allows one instructor
-  // to teach in two rooms, and also allows multiple students in the same room/time,
-  // without cards painting over each other.
-  function assignLanes(items) {
-    const sorted = [...items].sort((a, b) => {
-      const byStart = minutes(a.startTime) - minutes(b.startTime);
-      return byStart || (minutes(a.endTime) - minutes(b.endTime));
-    });
-    const lanes = [];
-    for (const item of sorted) {
-      const start = minutes(item.startTime);
-      let lane = 0;
-      while (lane < lanes.length && lanes[lane] > start) lane++;
-      if (lane === lanes.length) lanes.push(minutes(item.endTime));
-      else lanes[lane] = minutes(item.endTime);
-      item.__lane = lane;
-    }
-    return lanes.length;
-  }
+  async function save(item,oldStart,oldEnd){state.saving++;setSave("در حال ذخیره…","is-saving");try{const response=await fetch("/api/admin/daily-planner",{method:"PATCH",credentials:"same-origin",headers:{"content-type":"application/json",accept:"application/json"},body:JSON.stringify({sessionId:item.id,sessionDate:state.date,startTime:item.startTime,endTime:item.endTime})}),data=await response.json().catch(()=>({}));if(!response.ok||!data.success)throw new Error(data.message||"ذخیره ناموفق بود");setSave("ذخیره شد","is-saved");}catch(error){item.startTime=oldStart;item.endTime=oldEnd;render();setSave(error instanceof Error?error.message:"ذخیره ناموفق بود","is-error");}finally{state.saving=Math.max(0,state.saving-1);if(!state.saving)setTimeout(()=>setSave("ذخیره خودکار"),1200);}}
 
-  function render() {
-    const grid = document.querySelector("#dpGrid");
-    if (!grid) return;
-    const items = filtered();
-    const { start, end } = range();
-    const total = Math.max(60, end - start);
-    const hours = [];
-    for (let m = start; m <= end; m += 60) hours.push(`<span class="dp-hour" style="left:${((m - start) / total) * 100}%">${time(m)}</span>`);
-
-    const grouped = new Map();
-    for (const item of items) {
-      const key = String(item.instructor_id);
-      if (!grouped.has(key)) grouped.set(key, { name: item.instructor_name || "مدرس", room: item.room_name || "اتاق آزاد", items: [] });
-      grouped.get(key).items.push(item);
-    }
-
-    const rows = [...grouped.values()];
-    grid.innerHTML = `<div class="dp-hours">${hours.join("")}</div><div class="dp-body">${rows.length ? rows.map(row => {
-      const laneCount = assignLanes(row.items);
-      const rowHeight = Math.max(94, laneCount * 84 + 10);
-      return `
-      <div class="dp-row" style="height:${rowHeight}px">
-        <div class="dp-row-label">${esc(row.name)}<small>${esc(row.room)}${laneCount > 1 ? ` · ${laneCount} برنامه همزمان` : ""}</small></div>
-        <div class="dp-track">${row.items.map(item => {
-          const left = ((minutes(item.startTime) - start) / total) * 100;
-          const width = Math.max(2, ((minutes(item.endTime) - minutes(item.startTime)) / total) * 100);
-          const lane = item.__lane || 0;
-          const students = Array.isArray(item.students) ? item.students : [];
-          const names = students.map(s => s.studentName).filter(Boolean).join("، ") || item.student_names || "بدون هنرجو";
-          const courses = students.map(s => s.courseName).filter(Boolean).join("، ") || item.course_names || item.class_title || "جلسه";
-          return `<article class="dp-card ${conflict(item, items) ? "is-conflict" : ""}" data-session-id="${esc(item.id)}" style="left:${left}%;width:${width}%;top:${10 + lane * 84}px" title="برای جابه‌جایی بکشید">
-            <strong>${esc(names)}</strong>
-            <span>${esc(courses)} · ${esc(item.room_name || "اتاق")}</span>
-            <time>${esc(item.startTime)}–${esc(item.endTime)}</time>
-            <i class="dp-resize start" data-resize="start"></i><i class="dp-resize end" data-resize="end"></i>
-          </article>`;
-        }).join("")}</div>
-      </div>`;
-    }).join("") : `<div class="dp-empty">برای این روز جلسه زمان‌بندی‌شده‌ای پیدا نشد.</div>`}</div>`;
-    bindCards();
-  }
-
-  async function load() {
-    setSave("در حال بارگذاری…", "is-saving");
-    try {
-      const response = await fetch(`/api/admin/daily-dashboard?date=${encodeURIComponent(state.date)}`, { credentials: "same-origin", headers: { accept: "application/json" } });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) throw new Error(data.message || "دریافت برنامه ناموفق بود");
-      state.sessions = (data.sessions || []).map(s => ({
-        ...s,
-        startTime: s.start_time || s.startTime,
-        endTime: s.end_time || s.endTime,
-        students: Array.isArray(s.students) ? s.students : [],
-        student_names: s.student_names || (Array.isArray(s.students) ? s.students.map(x => x.studentName).filter(Boolean).join("، ") : ""),
-        course_names: s.course_names || (Array.isArray(s.students) ? s.students.map(x => x.courseName).filter(Boolean).join("، ") : "")
-      })).filter(s => s.startTime && s.endTime);
-      fillInstructors();
-      render();
-      setSave(`${state.sessions.length} جلسه · ذخیره خودکار`, "is-saved");
-    } catch (error) {
-      setSave(error instanceof Error ? error.message : "خطا در دریافت برنامه", "is-error");
-      const grid = document.querySelector("#dpGrid");
-      if (grid) grid.innerHTML = `<div class="dp-empty">دریافت برنامه روزانه انجام نشد. صفحه را دوباره بارگذاری کنید.</div>`;
-    }
-  }
-
-  async function save(item, oldStart, oldEnd) {
-    state.saving++;
-    setSave("در حال ذخیره…", "is-saving");
-    try {
-      const response = await fetch("/api/admin/daily-planner", { method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ sessionId: item.id, sessionDate: state.date, startTime: item.startTime, endTime: item.endTime }) });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) throw new Error(data.message || "ذخیره ناموفق بود");
-      setSave("ذخیره شد", "is-saved");
-    } catch (error) {
-      item.startTime = oldStart;
-      item.endTime = oldEnd;
-      render();
-      setSave(error instanceof Error ? error.message : "ذخیره ناموفق بود", "is-error");
-    } finally {
-      state.saving = Math.max(0, state.saving - 1);
-    }
-  }
-
-  function bindCards() {
-    document.querySelectorAll(".dp-card").forEach(card => {
-      let mode = null;
-      let pointerId = null;
-      let oldStart = "";
-      let oldEnd = "";
-      card.addEventListener("pointerdown", event => {
-        const item = state.sessions.find(s => String(s.id) === String(card.dataset.sessionId));
-        if (!item) return;
-        mode = event.target.closest(".dp-resize")?.dataset.resize || "move";
-        pointerId = event.pointerId;
-        oldStart = item.startTime;
-        oldEnd = item.endTime;
-        card.setPointerCapture?.(pointerId);
-        card.dataset.dragging = "1";
-      });
-      card.addEventListener("pointermove", event => {
-        if (!mode || event.pointerId !== pointerId) return;
-        const item = state.sessions.find(s => String(s.id) === String(card.dataset.sessionId));
-        if (!item) return;
-        const track = card.parentElement;
-        const rect = track.getBoundingClientRect();
-        const { start, end } = range();
-        const raw = start + ((event.clientX - rect.left) / Math.max(1, rect.width)) * (end - start);
-        const value = Math.max(start, Math.min(end, snap(raw)));
-        if (mode === "move") {
-          const duration = minutes(item.endTime) - minutes(item.startTime);
-          const next = Math.max(start, Math.min(end - duration, value));
-          item.startTime = time(next);
-          item.endTime = time(next + duration);
-        } else if (mode === "start") {
-          item.startTime = time(Math.max(start, Math.min(minutes(item.endTime) - 15, value)));
-        } else {
-          item.endTime = time(Math.max(minutes(item.startTime) + 15, Math.min(end, value)));
-        }
-        const left = ((minutes(item.startTime) - start) / (end - start)) * 100;
-        const width = ((minutes(item.endTime) - minutes(item.startTime)) / (end - start)) * 100;
-        card.style.left = `${left}%`;
-        card.style.width = `${Math.max(2, width)}%`;
-        const timeEl = card.querySelector("time");
-        if (timeEl) timeEl.textContent = `${item.startTime}–${item.endTime}`;
-      });
-      card.addEventListener("pointerup", async event => {
-        if (!mode || event.pointerId !== pointerId) return;
-        const item = state.sessions.find(s => String(s.id) === String(card.dataset.sessionId));
-        const changed = item && (item.startTime !== oldStart || item.endTime !== oldEnd);
-        mode = null;
-        pointerId = null;
-        delete card.dataset.dragging;
-        if (changed) await save(item, oldStart, oldEnd);
-      });
-      card.addEventListener("pointercancel", () => { mode = null; pointerId = null; delete card.dataset.dragging; });
-      card.addEventListener("contextmenu", event => {
-        event.preventDefault();
-        const item = state.sessions.find(s => String(s.id) === String(card.dataset.sessionId));
-        const student = item?.students?.[0];
-        if (!student) return;
-        contextStudent = student;
-        menu.style.display = "block";
-        menu.style.left = `${event.clientX}px`;
-        menu.style.top = `${event.clientY}px`;
-      });
+  function bindCards(){
+    document.querySelectorAll(".dp-card").forEach(card=>{let mode=null,pointerId=null,oldStart="",oldEnd="";
+      card.addEventListener("pointerdown",event=>{const item=state.sessions.find(s=>String(s.id)===String(card.dataset.sessionId));if(!item)return;mode=event.target.closest(".dp-resize")?.dataset.resize||"move";pointerId=event.pointerId;oldStart=item.startTime;oldEnd=item.endTime;card.setPointerCapture?.(pointerId);card.dataset.dragging="1";event.preventDefault();});
+      card.addEventListener("pointermove",event=>{if(!mode||event.pointerId!==pointerId)return;const item=state.sessions.find(s=>String(s.id)===String(card.dataset.sessionId));if(!item)return;const track=card.parentElement,rect=track.getBoundingClientRect(),{start,end}=range();const raw=start+((event.clientX-rect.left)/Math.max(1,rect.width))*(end-start),value=Math.max(start,Math.min(end,snap(raw)));if(mode==="move"){const duration=minutes(item.endTime)-minutes(item.startTime),next=Math.max(start,Math.min(end-duration,value));item.startTime=time(next);item.endTime=time(next+duration);}else if(mode==="start"){item.startTime=time(Math.max(start,Math.min(minutes(item.endTime)-15,value)));}else{item.endTime=time(Math.max(minutes(item.startTime)+15,Math.min(end,value)));}const left=((minutes(item.startTime)-start)/(end-start))*100,width=((minutes(item.endTime)-minutes(item.startTime))/(end-start))*100;card.style.left=`${left}%`;card.style.width=`${Math.max(1.8,width)}%`;const timeEl=card.querySelector("time");if(timeEl)timeEl.textContent=`${item.startTime}–${item.endTime}`;});
+      card.addEventListener("pointerup",async event=>{if(!mode||event.pointerId!==pointerId)return;const item=state.sessions.find(s=>String(s.id)===String(card.dataset.sessionId)),changed=item&&(item.startTime!==oldStart||item.endTime!==oldEnd);mode=null;pointerId=null;delete card.dataset.dragging;if(changed)await save(item,oldStart,oldEnd);});
+      card.addEventListener("pointercancel",()=>{mode=null;pointerId=null;delete card.dataset.dragging;});
+      card.addEventListener("contextmenu",event=>{event.preventDefault();const item=state.sessions.find(s=>String(s.id)===String(card.dataset.sessionId)),student=item?.students?.[0];if(!student)return;contextStudent=student;menu.style.display="block";menu.style.left=`${event.clientX}px`;menu.style.top=`${event.clientY}px`;});
     });
   }
 
-  menu.addEventListener("click", async event => {
-    const button = event.target.closest("button[data-status]");
-    if (!button || !contextStudent) return;
-    const status = button.dataset.status;
-    try {
-      const response = await fetch("/api/admin/daily-planner", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ enrollmentSessionId: contextStudent.enrollmentSessionId, enrollmentId: contextStudent.enrollmentId, status }) });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.success) throw new Error(data.message || "ثبت وضعیت ناموفق بود");
-      await load();
-    } catch (error) {
-      setSave(error instanceof Error ? error.message : "ثبت وضعیت ناموفق بود", "is-error");
-    } finally {
-      menu.style.display = "none";
-      contextStudent = null;
-    }
-  });
-
-  document.addEventListener("click", () => { menu.style.display = "none"; });
-  document.querySelector("#dpInstructor")?.addEventListener("change", event => { state.instructor = event.target.value; render(); });
-  document.querySelector("#dpDate")?.addEventListener("change", event => {
-    if (!event.target.value) return;
-    state.date = event.target.value;
-    load();
-  });
+  menu.addEventListener("click",async event=>{const button=event.target.closest("button[data-status]");if(!button||!contextStudent)return;const status=button.dataset.status;try{const response=await fetch("/api/admin/daily-planner",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({enrollmentSessionId:contextStudent.enrollmentSessionId,enrollmentId:contextStudent.enrollmentId,status})}),data=await response.json().catch(()=>({}));if(!response.ok||!data.success)throw new Error(data.message||"ثبت وضعیت ناموفق بود");await load();}catch(error){setSave(error instanceof Error?error.message:"ثبت وضعیت ناموفق بود","is-error");}finally{menu.style.display="none";contextStudent=null;}});
+  document.addEventListener("click",()=>{menu.style.display="none";});
+  document.querySelector("#dpInstructor")?.addEventListener("change",event=>{state.instructor=event.target.value;render();});
 
   load();
 })();
