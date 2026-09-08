@@ -11,8 +11,6 @@
 
   const css = document.createElement("style");
   css.textContent = `
-    #dailyPlanner .dp-track{background-image:none!important}
-    #dailyPlanner .dp-track::after{display:none!important}
     #dailyPlanner .dp-student-card{position:relative;overflow:hidden;touch-action:none;cursor:grab}
     #dailyPlanner .dp-student-card::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:4px;border-radius:4px 4px 0 0;background:var(--dp-instructor-color,rgba(255,255,255,.28));box-shadow:0 0 12px color-mix(in srgb,var(--dp-instructor-color,#fff) 35%,transparent)}
     #dailyPlanner .dp-student-card.dp-future{background:#fff;color:#202020;border-color:rgba(0,0,0,.10)}
