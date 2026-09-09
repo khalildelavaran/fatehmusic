@@ -8,13 +8,29 @@
 
     #dailyPlanner .dp-student-card{
       position:relative!important;
-      background:#fff!important;
       color:#202020!important;
-      border-color:rgba(0,0,0,.12)!important;
+      border:1px solid rgba(0,0,0,.12)!important;
       box-shadow:0 6px 18px rgba(0,0,0,.08)!important;
       min-height:86px!important;
       padding:10px 12px 38px!important;
       overflow:hidden!important;
+      transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .15s ease!important;
+    }
+    #dailyPlanner .dp-student-card.is-pending{
+      background:#fff!important;
+      border-color:rgba(0,0,0,.12)!important;
+    }
+    #dailyPlanner .dp-student-card.is-present{
+      background:#dff5e5!important;
+      border-color:#42a85f!important;
+    }
+    #dailyPlanner .dp-student-card.is-absent{
+      background:#ffe1e1!important;
+      border-color:#df5a5a!important;
+    }
+    #dailyPlanner .dp-student-card.is-excused{
+      background:#deebff!important;
+      border-color:#5b8fe8!important;
     }
     #dailyPlanner .dp-student-card>div{color:#202020!important}
     #dailyPlanner .dp-student-card .dp-status{display:none!important}
@@ -67,6 +83,7 @@
 
   const statusLabels={present:"حاضر",absent:"غایب",excused:"مرخصی",pending:"هنوز ساعت برگزاری نرسیده"};
   const statusShort={present:"ح",absent:"غ",excused:"م",pending:""};
+  const attendanceStatuses=["present","absent","excused","pending"];
 
   const selectedDate=()=>{
     const input=document.querySelector('input[type="date"][data-daily-date],input[type="date"][data-date],.daily-shell input[type="date"]');
@@ -89,6 +106,12 @@
   const sourceCards=()=>[...document.querySelectorAll("#dailyPlanner .dp-student-card")];
   const setSave=(text,cls="")=>{const el=document.querySelector("#dpSave");if(el){el.textContent=text;el.className=`dp-save ${cls}`;}};
 
+  function applyCardStatus(source,status){
+    attendanceStatuses.forEach(value=>source.classList.remove(`is-${value}`));
+    source.classList.add(`is-${status}`);
+    source.dataset.attendanceStatus=status;
+  }
+
   async function saveAttendance(source,status){
     const enrollmentSessionId=Number(source.dataset.studentSession||0);
     const enrollmentId=Number(source.dataset.enrollmentId||0);
@@ -105,14 +128,23 @@
 
   function decorate(){
     sourceCards().forEach(source=>{
-      if(source.querySelector(".dp-attendance-buttons")) return;
-      const current=source.dataset.attendanceStatus||"pending";
+      const current=source.dataset.attendanceStatus||((attendanceStatuses.find(value=>source.classList.contains(`is-${value}`)))||"pending");
       const future=isFuture(source);
+      applyCardStatus(source,current);
+
+      if(source.querySelector(".dp-attendance-buttons")){
+        source.querySelectorAll(".dp-attendance-button").forEach(button=>{
+          const status=button.dataset.attendance;
+          button.classList.toggle("active",status===current);
+          button.disabled=future&&status!=="pending";
+        });
+        return;
+      }
 
       const buttons=document.createElement("div");
       buttons.className="dp-attendance-buttons";
 
-      ["present","absent","excused","pending"].forEach(status=>{
+      attendanceStatuses.forEach(status=>{
         const button=document.createElement("button");
         button.type="button";
         button.className=`dp-attendance-button ${status}`;
@@ -128,14 +160,17 @@
           event.preventDefault();
           event.stopPropagation();
           if(future&&status!=="pending") return;
+          const previous=source.dataset.attendanceStatus||"pending";
           buttons.querySelectorAll("button").forEach(b=>b.disabled=true);
           try{
             await saveAttendance(source,status);
-            source.dataset.attendanceStatus=status;
-            buttons.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b===button));
+            applyCardStatus(source,status);
+            buttons.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.attendance===status));
             setSave("وضعیت ذخیره شد","is-saved");
             setTimeout(()=>setSave("آماده",""),900);
           }catch(error){
+            applyCardStatus(source,previous);
+            buttons.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.attendance===previous));
             setSave(error instanceof Error?error.message:"ذخیره وضعیت حضور ناموفق بود","is-error");
           }finally{
             buttons.querySelectorAll("button").forEach(b=>b.disabled=false);
