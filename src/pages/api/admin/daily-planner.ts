@@ -16,6 +16,32 @@ function minutes(value: string): number {
   return h * 60 + m;
 }
 
+export const GET: APIRoute = async ({ request }) => {
+  try {
+    const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
+    if (denied) return denied;
+    if (!env.DB) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
+
+    const url = new URL(request.url);
+    if (url.searchParams.get("resource") !== "rooms") {
+      return json({ success: false, message: "منبع درخواستی معتبر نیست." }, 400);
+    }
+
+    const rooms = await env.DB.prepare(`
+      SELECT id, name, capacity, status
+      FROM rooms
+      WHERE status = 'active'
+      ORDER BY id ASC
+      LIMIT 3
+    `).all<{ id: number; name: string; capacity: number; status: string }>();
+
+    return json({ success: true, rooms: rooms.results || [] });
+  } catch (error) {
+    console.error("[admin/daily-planner] rooms failed:", error);
+    return json({ success: false, message: "دریافت اتاق‌ها با خطا مواجه شد." }, 500);
+  }
+};
+
 export const PATCH: APIRoute = async ({ request }) => {
   try {
     const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -27,11 +53,13 @@ export const PATCH: APIRoute = async ({ request }) => {
       sessionDate?: string;
       startTime?: string;
       endTime?: string;
+      roomId?: number | null;
     } | null;
     const sessionId = Number(body?.sessionId);
     const sessionDate = body?.sessionDate;
     const startTime = body?.startTime;
     const endTime = body?.endTime;
+    const roomId = body?.roomId == null || body?.roomId === "" ? null : Number(body.roomId);
 
     if (!Number.isInteger(sessionId) || sessionId < 1 || !sessionDate || !DATE_RE.test(sessionDate) || !validTime(startTime) || !validTime(endTime)) {
       return json({ success: false, message: "اطلاعات زمان‌بندی معتبر نیست." }, 422);
@@ -39,14 +67,24 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (minutes(endTime) <= minutes(startTime)) {
       return json({ success: false, message: "زمان پایان باید بعد از زمان شروع باشد." }, 422);
     }
+    if (roomId !== null && (!Number.isInteger(roomId) || roomId < 1)) {
+      return json({ success: false, message: "شناسه اتاق معتبر نیست." }, 422);
+    }
 
     const db = env.DB;
     const session = await db.prepare(`
-      SELECT id, session_date, status FROM class_sessions WHERE id = ? LIMIT 1
-    `).bind(sessionId).first<{ id: number; session_date: string; status: string }>();
+      SELECT id, session_date, status, room_id FROM class_sessions WHERE id = ? LIMIT 1
+    `).bind(sessionId).first<{ id: number; session_date: string; status: string; room_id: number | null }>();
 
     if (!session || session.status === "cancelled" || session.session_date !== sessionDate) {
       return json({ success: false, message: "جلسه موردنظر پیدا نشد یا قابل ویرایش نیست." }, 404);
+    }
+
+    if (roomId !== null) {
+      const room = await db.prepare(`
+        SELECT id FROM rooms WHERE id = ? AND status = 'active' LIMIT 1
+      `).bind(roomId).first<{ id: number }>();
+      if (!room) return json({ success: false, message: "اتاق انتخاب‌شده فعال نیست." }, 404);
     }
 
     // Intentionally do not reject overlapping instructor/room assignments here.
@@ -54,11 +92,11 @@ export const PATCH: APIRoute = async ({ request }) => {
     // some lessons allow multiple students in the same time window.
     await db.prepare(`
       UPDATE class_sessions
-      SET start_time = ?, end_time = ?, updated_at = CURRENT_TIMESTAMP
+      SET start_time = ?, end_time = ?, room_id = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).bind(startTime, endTime, sessionId).run();
+    `).bind(startTime, endTime, roomId, sessionId).run();
 
-    return json({ success: true, sessionId, sessionDate, startTime, endTime });
+    return json({ success: true, sessionId, sessionDate, startTime, endTime, roomId });
   } catch (error) {
     console.error("[admin/daily-planner] update failed:", error);
     return json({ success: false, message: "ذخیره تغییر برنامه با خطا مواجه شد." }, 500);
