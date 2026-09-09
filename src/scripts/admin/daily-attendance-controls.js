@@ -3,25 +3,123 @@
 
   const style = document.createElement("style");
   style.textContent = `
+    /* The separate student list is only a data source for the timeline cards. */
     #dailyPlanner #dpStudents{display:none!important}
-    #dailyPlanner .dp-card{background:#fff!important;color:#202020!important;border-color:rgba(0,0,0,.12)!important;box-shadow:0 6px 18px rgba(0,0,0,.08)}
-    #dailyPlanner .dp-card>strong,#dailyPlanner .dp-card>span,#dailyPlanner .dp-card>time{color:#202020!important}
-    #dailyPlanner .dp-attendance-list{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px;direction:rtl}
-    #dailyPlanner .dp-attendance-item{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#333;white-space:nowrap}
-    #dailyPlanner .dp-attendance-buttons{display:inline-flex;gap:4px;direction:rtl}
-    #dailyPlanner .dp-attendance-button{width:24px;height:24px;padding:0;border-radius:50%;border:1px solid rgba(0,0,0,.22);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font:700 10px/1 inherit;box-sizing:border-box;transition:transform .12s,box-shadow .12s,border-color .12s;touch-action:manipulation}
-    #dailyPlanner .dp-attendance-button:hover{transform:scale(1.08);box-shadow:0 3px 8px rgba(0,0,0,.15)}
-    #dailyPlanner .dp-attendance-button.active{box-shadow:0 0 0 2px rgba(0,0,0,.22);border-color:rgba(0,0,0,.45)}
-    #dailyPlanner .dp-attendance-button.present{background:#25a244;color:#fff}
-    #dailyPlanner .dp-attendance-button.absent{background:#d62828;color:#fff}
-    #dailyPlanner .dp-attendance-button.excused{background:#3b82f6;color:#fff}
-    #dailyPlanner .dp-attendance-button.pending{background:#fff;color:#555}
-    #dailyPlanner .dp-attendance-button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+    /* Keep the actual white timeline cards visible and give the attendance controls room. */
+    #dailyPlanner .dp-card{
+      background:#fff!important;
+      color:#202020!important;
+      border-color:rgba(0,0,0,.12)!important;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+      min-height:88px!important;
+      padding:8px 9px 34px!important;
+      overflow:hidden!important;
+    }
+    #dailyPlanner .dp-card>strong,
+    #dailyPlanner .dp-card>span,
+    #dailyPlanner .dp-card>time{color:#202020!important}
+    #dailyPlanner .dp-card>strong{padding-inline-end:4px!important}
+    #dailyPlanner .dp-card>span{padding-inline-end:4px!important}
+    #dailyPlanner .dp-card>time{
+      top:7px!important;
+      bottom:auto!important;
+      inset-inline-end:7px!important;
+      background:rgba(0,0,0,.045)!important;
+      border-color:rgba(0,0,0,.10)!important;
+      color:#333!important;
+    }
+
+    /* Attendance controls live inside the white session card. */
+    #dailyPlanner .dp-attendance-list{
+      position:absolute;
+      left:7px;
+      right:7px;
+      bottom:6px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      gap:5px;
+      flex-wrap:wrap;
+      margin:0;
+      direction:rtl;
+      z-index:8;
+    }
+    #dailyPlanner .dp-attendance-item{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      min-width:0;
+      font-size:9px;
+      color:#333;
+      white-space:nowrap;
+    }
+    #dailyPlanner .dp-attendance-item>span:first-child{
+      max-width:72px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    #dailyPlanner .dp-attendance-buttons{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      direction:rtl;
+    }
+    #dailyPlanner .dp-attendance-button{
+      appearance:none!important;
+      -webkit-appearance:none!important;
+      width:25px!important;
+      height:25px!important;
+      min-width:25px!important;
+      min-height:25px!important;
+      padding:0!important;
+      margin:0!important;
+      border-radius:50%!important;
+      border:1px solid rgba(0,0,0,.28)!important;
+      display:inline-flex!important;
+      align-items:center!important;
+      justify-content:center!important;
+      position:relative!important;
+      z-index:10!important;
+      cursor:pointer!important;
+      font:700 10px/1 inherit!important;
+      box-sizing:border-box!important;
+      transition:transform .12s,box-shadow .12s,border-color .12s!important;
+      touch-action:manipulation!important;
+    }
+    #dailyPlanner .dp-attendance-button:hover:not(:disabled){
+      transform:scale(1.08)!important;
+      box-shadow:0 3px 8px rgba(0,0,0,.18)!important;
+    }
+    #dailyPlanner .dp-attendance-button.active{
+      box-shadow:0 0 0 2px rgba(0,0,0,.25)!important;
+      border-color:rgba(0,0,0,.55)!important;
+    }
+    #dailyPlanner .dp-attendance-button.present{background:#25a244!important;color:#fff!important}
+    #dailyPlanner .dp-attendance-button.absent{background:#d62828!important;color:#fff!important}
+    #dailyPlanner .dp-attendance-button.excused{background:#3b82f6!important;color:#fff!important}
+    #dailyPlanner .dp-attendance-button.pending{background:#fff!important;color:#555!important}
+    #dailyPlanner .dp-attendance-button:disabled{
+      opacity:.45!important;
+      cursor:not-allowed!important;
+      transform:none!important;
+      box-shadow:none!important;
+    }
     #dailyPlanner .dp-card.dp-attendance-saving{opacity:.72}
+
+    @media(max-width:900px){
+      #dailyPlanner .dp-attendance-item>span:first-child{max-width:52px}
+      #dailyPlanner .dp-attendance-button{width:23px!important;height:23px!important;min-width:23px!important;min-height:23px!important}
+    }
   `;
   document.head.appendChild(style);
 
-  const statusLabels = { present:"حاضر", absent:"غایب", excused:"مرخصی", pending:"هنوز ساعت برگزاری نرسیده" };
+  const statusLabels = {
+    present:"حاضر",
+    absent:"غایب",
+    excused:"مرخصی",
+    pending:"هنوز ساعت برگزاری نرسیده"
+  };
   const statusShort = { present:"ح", absent:"غ", excused:"م", pending:"" };
 
   const selectedDate = () => {
@@ -31,11 +129,11 @@
 
   const today = () => new Date().toLocaleDateString("en-CA");
 
-  const isFuture = card => {
+  const isFuture = source => {
     const selected = selectedDate();
     if (selected > today()) return true;
     if (selected < today()) return false;
-    const value = card.querySelector(".dp-student-meta span[dir='ltr']")?.textContent?.trim() || "";
+    const value = source.querySelector(".dp-student-meta span[dir='ltr']")?.textContent?.trim() || "";
     const match = value.match(/^(\d{1,2}):(\d{2})/);
     if (!match) return false;
     const start = Number(match[1]) * 60 + Number(match[2]);
@@ -65,6 +163,7 @@
     const enrollmentSessionId = Number(source.dataset.studentSession || 0);
     const enrollmentId = Number(source.dataset.enrollmentId || 0);
     if (!enrollmentSessionId) throw new Error("شناسه رکورد حضور هنرجو پیدا نشد.");
+
     const response = await fetch("/api/admin/daily-planner", {
       method: "POST",
       credentials: "same-origin",
@@ -76,10 +175,22 @@
     return data;
   }
 
+  const removeStudentSection = () => {
+    const host = document.querySelector("#dailyPlanner #dpStudents");
+    if (host) host.remove();
+  };
+
   function decorate() {
+    const studentCards = sourceCards();
+    if (!studentCards.length) return;
+
     document.querySelectorAll("#dailyPlanner .dp-card").forEach(card => {
       if (card.querySelector(".dp-attendance-list")) return;
-      const names = (card.querySelector("strong")?.textContent || "").split("،").map(v => v.trim()).filter(Boolean);
+
+      const names = (card.querySelector("strong")?.textContent || "")
+        .split("،")
+        .map(v => v.trim())
+        .filter(Boolean);
       const timeText = card.querySelector("time")?.textContent?.trim() || "";
       const sources = names.map(name => findSource(name, timeText)).filter(Boolean);
       if (!sources.length) return;
@@ -92,8 +203,11 @@
         const current = source.dataset.attendanceStatus || "pending";
         const item = document.createElement("span");
         item.className = "dp-attendance-item";
+
         const label = document.createElement("span");
         label.textContent = source.dataset.studentName || "هنرجو";
+        label.title = source.dataset.studentName || "هنرجو";
+
         const buttons = document.createElement("span");
         buttons.className = "dp-attendance-buttons";
 
@@ -105,6 +219,7 @@
           button.title = statusLabels[status];
           button.setAttribute("aria-label", `${statusLabels[status]} ${source.dataset.studentName || "هنرجو"}`);
           button.textContent = statusShort[status];
+
           if (current === status && (!future || status === "pending")) button.classList.add("active");
           if (future) button.disabled = status !== "pending";
 
@@ -113,6 +228,7 @@
             event.preventDefault();
             event.stopPropagation();
             if (future && status !== "pending") return;
+
             buttons.querySelectorAll("button").forEach(b => { b.disabled = true; });
             card.classList.add("dp-attendance-saving");
             try {
@@ -129,14 +245,19 @@
               if (future) buttons.querySelectorAll("button").forEach(b => { b.disabled = b.dataset.attendance !== "pending"; });
             }
           });
+
           buttons.appendChild(button);
         });
 
         item.append(label, buttons);
         holder.appendChild(item);
       });
+
       card.appendChild(holder);
     });
+
+    /* The source list is not shown to the registrar; the controls now live on the white cards. */
+    removeStudentSection();
   }
 
   const observer = new MutationObserver(() => requestAnimationFrame(decorate));
