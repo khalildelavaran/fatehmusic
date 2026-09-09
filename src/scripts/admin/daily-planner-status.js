@@ -45,11 +45,12 @@
 
   const correctGridLines = () => {
     const labels = [...document.querySelectorAll("#dailyPlanner .dp-hours .dp-hour")];
-    const quarterCount = Math.max(1,labels.length-1);
-    const quarterStep = 100/quarterCount;
-    const hourStep = quarterStep*4;
+    const count = labels.length;
+    if (count < 2) return;
+    const step = 100 / (count - 1);
+    const majorStep = step * 4;
     document.querySelectorAll("#dailyPlanner .dp-track").forEach(track => {
-      track.style.backgroundImage = `repeating-linear-gradient(to right,rgba(255,255,255,.075) 0,rgba(255,255,255,.075) 1px,transparent 1px,transparent ${quarterStep}%),repeating-linear-gradient(to right,transparent 0,transparent calc(${hourStep}% - 2px),rgba(212,175,55,.16) calc(${hourStep}% - 2px),rgba(212,175,55,.16) ${hourStep}%)`;
+      track.style.backgroundImage = `repeating-linear-gradient(to right, rgba(255,255,255,.075) 0, rgba(255,255,255,.075) 1px, transparent 1px, transparent ${step}%), repeating-linear-gradient(to right, rgba(212,175,55,.16) 0, rgba(212,175,55,.16) 1px, transparent 1px, transparent ${majorStep}%)`;
     });
   };
 
@@ -62,17 +63,22 @@
       const instructor = meta[1]?.querySelector("span")?.textContent?.trim() || "مدرس";
       card.style.setProperty("--dp-instructor-color",instructorColor(instructor));
       card.classList.remove("dp-future","dp-present","dp-absent","dp-excused","dp-withdrawn");
-      const status = (card.querySelector(".dp-status")?.textContent || "").trim();
+      const statusEl = card.querySelector(".dp-status");
+      if (statusEl && !card.dataset.attendanceStatus) card.dataset.attendanceStatus = statusEl.textContent.trim();
+      const status = card.dataset.attendanceStatus || "";
       const timeText = meta[0]?.querySelectorAll("span")[1]?.textContent?.trim() || "";
       const start = parseMinutes(timeText.split(/[–-]/)[0]?.trim());
       if (status === "انصراف") { card.classList.add("dp-withdrawn"); return; }
-      if (!isToday || start === null || start > nowMinutes) { card.classList.add("dp-future"); card.querySelector(".dp-status")?.replaceChildren(document.createTextNode("هنوز نرسیده")); return; }
+      if (!isToday || start === null || start > nowMinutes) { card.classList.add("dp-future"); statusEl?.replaceChildren(document.createTextNode("هنوز نرسیده")); return; }
+      if (statusEl) statusEl.replaceChildren(document.createTextNode(statusLabel(status)));
       if (status === "حاضر") card.classList.add("dp-present");
       else if (status === "غیبت") card.classList.add("dp-absent");
       else if (status === "مرخصی") card.classList.add("dp-excused");
       else card.classList.add("dp-future");
     });
   };
+
+  const statusLabel = (status) => ({حاضر:"حاضر",غیبت:"غیبت",مرخصی:"مرخصی",انصراف:"انصراف"}[status] || status || "ثبت نشده");
 
   const findSessionCard = (studentCard) => {
     const name = studentCard.dataset.studentName || "";
@@ -126,12 +132,12 @@
 
   const enhance = () => {
     correctGridLines();
-    document.querySelectorAll("#dailyPlanner .dp-student-card").forEach(card=>{bindEditor(card);});
+    document.querySelectorAll("#dailyPlanner .dp-student-card").forEach(bindEditor);
     decorate();
   };
 
   const observer=new MutationObserver(()=>requestAnimationFrame(enhance));
   observer.observe(document.body,{childList:true,subtree:true});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",enhance,{once:true});else enhance();
-  setInterval(()=>document.querySelectorAll("#dailyPlanner .dp-student-card").forEach(card=>{const state=card.classList.contains("dp-present")?"حاضر":card.classList.contains("dp-absent")?"غیبت":card.classList.contains("dp-excused")?"مرخصی":card.classList.contains("dp-withdrawn")?"انصراف":"ثبت نشده"; if(state){} decorate();}),30000);
+  setInterval(decorate,30000);
 })();
