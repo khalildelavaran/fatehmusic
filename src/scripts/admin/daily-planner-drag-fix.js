@@ -115,6 +115,7 @@
   const clearDrop = () => root.querySelectorAll(".dp-row[data-dp-drop='1']").forEach(row => delete row.dataset.dpDrop);
 
   root.addEventListener("pointerdown", event => {
+    if (event.target.closest(".dp-student-time-value,.dp-student-time-form")) return;
     const card = event.target.closest(".dp-card");
     if (!card) return;
     const resize = event.target.closest(".dp-resize")?.dataset.resize || null;
