@@ -62,6 +62,7 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard))(?:\/|$)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{seo.metadata.title}</title>
     <meta name="description" content={seo.metadata.description} />
+    <meta name="keywords" content={seo.metadata.keywords.join(", ")} />
     <meta name="robots" content={seo.metadata.robots} />
     <meta name="author" content={seo.metadata.author} />
     <meta name="theme-color" content={seo.metadata.themeColor} />
