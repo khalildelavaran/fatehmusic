@@ -52,7 +52,7 @@ const getInstructorCourseTitle = (title: string) => {
               <img src={ins.media.images.profile} alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`} width="1200" height="1500" loading="lazy" decoding="async" />
             </a>
             {ins.id === 1 && <span class="badge">مدیر آموزشگاه</span>}
-            <a href={`/register?instructor=${ins.slug}`} class="card-register-badge" aria-label={`ثبت‌نام با ${ins.name}`}>ثبت‌نام</a>
+            <a href={`/register?instructor=${ins.slug}`} rel="nofollow" class="card-register-badge" aria-label={`ثبت‌نام با ${ins.name}`}>ثبت‌نام با {ins.name}</a>
           </div>
 
           <div class="instructor-content">
