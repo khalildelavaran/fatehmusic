@@ -14,179 +14,63 @@ import {
 ---
 
 <footer class="footer">
-
     <div class="container">
-
         <div class="footer-grid">
-
-            <!-- معرفی -->
-
             <section class="footer-about">
-
                 <a href="/" class="footer-logo">
-
-                    <img
-                        src="/images/logo.webp"
-                        alt="آموزشگاه موسیقی فاتح"
-                        loading="lazy"
-                    />
-
-                    <h2>
-                        آموزشگاه موسیقی فاتح
-                    </h2>
-
+                    <img src="/images/logo.webp" alt="آموزشگاه موسیقی فاتح" loading="lazy" />
+                    <h3>آموزشگاه موسیقی فاتح</h3>
                 </a>
 
                 <p>
-
                     آموزشگاه موسیقی فاتح، مرکز تخصصی آموزش موسیقی در شوشتر،
                     برگزارکننده دوره‌های آموزش گیتار، پیانو، ویولن، سنتور،
                     تار، سه‌تار، نی، نی‌انبان، دف، تنبک، آواز و سایر سازهای
                     ایرانی و جهانی برای کودکان، نوجوانان و بزرگسالان با
                     بهره‌گیری از اساتید مجرب و برنامه آموزشی استاندارد.
-
                 </p>
-
             </section>
 
-            <!-- دسترسی سریع -->
-
             <nav class="footer-links">
-
-                <h3>
-
-                    دسترسی سریع
-
-                </h3>
-
-                <a href="/">
-
-                    <House />
-
-                    صفحه اصلی
-
-                </a>
-
-                <a href="/courses">
-
-                    <GraduationCap />
-
-                    دوره‌های آموزشی
-
-                </a>
-
-                <a href="/instructors">
-
-                    <Users />
-
-                    اساتید
-
-                </a>
-
-                <a href="/about">
-
-                    <Info />
-
-                    درباره ما
-
-                </a>
-
-                <a href="/contact">
-
-                    <Phone />
-
-                    تماس با ما
-
-                </a>
-
+                <h3>دسترسی سریع</h3>
+                <a href="/"><House />صفحه اصلی</a>
+                <a href="/courses"><GraduationCap />دوره‌های آموزشی</a>
+                <a href="/instructors"><Users />اساتید</a>
+                <a href="/about"><Info />درباره ما</a>
+                <a href="/contact"><Phone />تماس با ما</a>
             </nav>
 
-            <!-- ارتباط -->
-
             <section class="footer-contact">
+                <h3>ارتباط با ما</h3>
 
-                <h3>
-
-                    ارتباط با ما
-
-                </h3>
-
-                <a
-                    href={contact.map.navigation}
-                    target="_blank"
-                    rel="noopener noreferrer">
-
+                <a href={contact.map.navigation} target="_blank" rel="noopener noreferrer">
                     <MapPinned />
-
-                    <span>
-
-                        {contact.address.full}
-
-                    </span>
-
+                    <span>{contact.address.full}</span>
                 </a>
 
                 <a href={"tel:+" + contact.phones.mobile.raw}>
-
                     <Smartphone />
-
-                    <span>
-
-                        {contact.phones.mobile.display}
-
-                    </span>
-
+                    <span>{contact.phones.mobile.display}</span>
                 </a>
 
-                <a
-                    href={contact.social.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer">
-
+                <a href={contact.social.instagram} target="_blank" rel="noopener noreferrer">
                     <img
                         src="/icons/instagram.svg"
-                        alt=""
-                        aria-hidden="true"
+                        alt="اینستاگرام آموزشگاه موسیقی فاتح"
                         class="social-brand-icon"
                     />
-
-                    <span>
-
-                        اینستاگرام
-
-                    </span>
-
+                    <span>اینستاگرام</span>
                 </a>
 
-                <a
-                    href={contact.social.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer">
-
+                <a href={contact.social.whatsapp} target="_blank" rel="noopener noreferrer">
                     <MessageCircle />
-
-                    <span>
-
-                        واتس‌اپ
-
-                    </span>
-
+                    <span>واتس‌اپ</span>
                 </a>
-
             </section>
-
         </div>
 
         <div class="footer-bottom">
-
-            <p>
-
-                © ۲۰۲۶ آموزشگاه موسیقی فاتح | تمامی حقوق محفوظ است.
-
-            </p>
-
+            <p>© ۲۰۲۶ آموزشگاه موسیقی فاتح | تمامی حقوق محفوظ است.</p>
         </div>
-
     </div>
-
 </footer>
