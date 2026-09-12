@@ -24,7 +24,7 @@
       if (direct) return direct;
     }
     const name = card.dataset.studentName || "";
-    const time = card.querySelector(".dp-student-meta span[dir='ltr']")?.textContent?.trim() || "";
+    const time = card.querySelector(".dp-student-meta span[dir='ltr'],.dp-student-meta [data-time-value]")?.textContent?.trim() || "";
     const cards = [...document.querySelectorAll("#dailyPlanner .dp-card")];
     return cards.find(item => item.textContent.includes(name) && item.querySelector("time")?.textContent?.trim() === time)
       || cards.find(item => item.textContent.includes(name));
@@ -36,11 +36,12 @@
     document.querySelectorAll("#dailyPlanner .dp-student-card").forEach(card => {
       const cardSessionId = card.dataset.sessionId || "";
       const name = card.dataset.studentName || "";
-      const timeEl = card.querySelector(".dp-student-meta span[dir='ltr']");
+      const timeEl = card.querySelector(".dp-student-meta span[dir='ltr'],.dp-student-meta [data-time-value]");
+      if (!timeEl) return;
       const matchesId = sessionId && cardSessionId && String(sessionId) === String(cardSessionId);
       const matchesName = name && sessionName && sessionName.includes(name);
-      const matchesTime = timeEl && (timeEl.textContent.trim() === oldTime || timeEl.textContent.trim() === newTime);
-      if ((matchesId || (matchesName && matchesTime)) && timeEl) timeEl.textContent = newTime;
+      const matchesTime = timeEl.textContent.trim() === oldTime || timeEl.textContent.trim() === newTime;
+      if (matchesId || (matchesName && matchesTime)) timeEl.textContent = newTime;
     });
   };
 
@@ -63,7 +64,8 @@
 
   const openEditor = card => {
     if (card.dataset.timeEditing === "1") return;
-    const source = card.querySelector(".dp-student-meta span[data-time-value]") || card.querySelector(".dp-student-meta span[dir='ltr']");
+    // The displayed control is a button after decoration; support both the original span and the button.
+    const source = card.querySelector(".dp-student-meta [data-time-action='edit'],.dp-student-meta span[data-time-value],.dp-student-meta span[dir='ltr']");
     if (!source) return;
     const sessionCard = findSessionCard(card);
     if (!sessionCard) return;
@@ -95,10 +97,20 @@
     const error = form.querySelector("[data-error]");
 
     const restore = text => {
-      const replacement = document.createElement("span");
+      const replacement = document.createElement("button");
+      replacement.type = "button";
+      replacement.className = "dp-student-time-value";
+      replacement.dataset.timeAction = "edit";
+      replacement.setAttribute("aria-label", "ویرایش زمان کلاس");
+      replacement.setAttribute("title", "ویرایش زمان کلاس");
       replacement.setAttribute("dir", "ltr");
-      replacement.dataset.timeValue = "1";
       replacement.textContent = text;
+      replacement.addEventListener("pointerdown", event => event.stopPropagation());
+      replacement.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        openEditor(card);
+      });
       if (form.parentElement === host) host.replaceChild(replacement, form);
       card.dataset.timeEditing = "0";
     };
@@ -151,6 +163,7 @@
   const decorate = () => {
     const cards = document.querySelectorAll("#dailyPlanner .dp-student-card");
     cards.forEach(card => {
+      if (card.dataset.timeEditing === "1") return;
       const timeEl = card.querySelector(".dp-student-meta span[dir='ltr'],.dp-student-meta span[data-time-value]");
       if (!timeEl || card.dataset.timeEditBound === "1") return;
 
@@ -179,9 +192,9 @@
 
   const css = document.createElement("style");
   css.textContent = `
-    #dailyPlanner .dp-student-time-value{display:inline-flex;align-items:center;border:1px solid rgba(212,175,55,.28);background:rgba(212,175,55,.06);color:inherit;font:inherit;font-size:11px;font-weight:800;padding:3px 7px;border-radius:6px;cursor:pointer;direction:ltr;white-space:nowrap}
+    #dailyPlanner .dp-student-time-value{display:inline-flex;align-items:center;border:1px solid rgba(212,175,55,.28);background:rgba(212,175,55,.06);color:inherit;font:inherit;font-size:11px;font-weight:800;padding:3px 7px;border-radius:6px;cursor:pointer;direction:ltr;white-space:nowrap;position:relative;z-index:20;pointer-events:auto}
     #dailyPlanner .dp-student-time-value:hover{background:rgba(212,175,55,.15);border-color:rgba(212,175,55,.65)}
-    #dailyPlanner .dp-student-time-form{display:inline-flex;align-items:center;gap:4px;direction:ltr;flex-wrap:wrap}
+    #dailyPlanner .dp-student-time-form{display:inline-flex;align-items:center;gap:4px;direction:ltr;flex-wrap:wrap;position:relative;z-index:20;pointer-events:auto}
     #dailyPlanner .dp-student-time-form input{width:68px;height:28px;box-sizing:border-box;border:1px solid rgba(0,0,0,.22);border-radius:6px;background:#fff;color:#202020;padding:2px 5px;font:600 12px Vazirmatn,sans-serif;direction:ltr}
     #dailyPlanner .dp-student-time-form button{height:28px;border:1px solid rgba(0,0,0,.18);border-radius:6px;background:#fff;color:#202020;padding:2px 7px;cursor:pointer;font:600 11px Vazirmatn,sans-serif}
     #dailyPlanner .dp-student-time-form button.save{background:#d4af37;border-color:#b89500;color:#111}
