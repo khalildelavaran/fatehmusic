@@ -3,7 +3,7 @@ import { ROLES, ROLE_LABELS_FA } from "../../server/admin-auth";
 
 export interface Props {
   session: { username: string; role: string };
-  active: "dashboard" | "daily" | "reports" | "finance" | "posts" | "books" | "certificates" | "courses" | "registration" | "students" | "instructors" | "classes" | "content-strategy";
+  active: "dashboard" | "daily" | "reports" | "finance" | "posts" | "books" | "certificates" | "courses" | "registration" | "students" | "instructors" | "classes" | "content-strategy" | "settings";
 }
 
 const { session, active } = Astro.props;
@@ -26,6 +26,7 @@ const roleLabel = ROLE_LABELS_FA[session.role] ?? session.role;
     <a href="/admin/instructors" class:list={["admin-nav-link", active === "instructors" && "is-active"]}>مدرسان</a>
     <a href="/admin/classes" class:list={["admin-nav-link", active === "classes" && "is-active"]}>کلاس‌ها</a>
     <a href="/admin/registration" class:list={["admin-nav-link", active === "registration" && "is-active"]}>ثبت‌نام‌ها</a>
+    {isAdmin && <a href="/admin/settings" class:list={["admin-nav-link", active === "settings" && "is-active"]}>تنظیمات</a>}
   </nav>
   <div class="admin-nav-user"><div class="admin-nav-user-info"><strong>{session.username}</strong><span class="admin-role-badge" data-role={session.role}>{roleLabel}</span></div><form id="navLogoutForm" method="post" action="/api/admin/logout"><button type="submit" class="admin-nav-logout">خروج</button></form></div>
 </aside>

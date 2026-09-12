@@ -6,6 +6,7 @@ import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { listSessionsForDate } from "../../../server/class-sessions";
 import { provisionEnrollmentSessionsForClassSession } from "../../../server/session-provisioning";
 import { calculateFinance } from "../../../server/finance-calculations";
+import { listActiveRooms } from "../../../server/rooms";
 
 function persianWeekdayIndex(date: string): number {
   const value = new Date(`${date}T12:00:00Z`).getUTCDay();
@@ -34,11 +35,17 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
   }>();
 
   for (const schedule of schedules.results) {
+    // Idempotency check: must key on the schedule itself (source_schedule_id),
+    // not on start_time and not on a notes-text marker. Both of those are
+    // values this feature is explicitly designed to let users change (time
+    // via drag/resize/inline edit; notes via the manual session editor) --
+    // keying on either meant an edited session would silently get a
+    // duplicate re-inserted on the next dashboard load.
     const existing = await db.prepare(`
       SELECT id FROM class_sessions
-      WHERE class_id = ? AND session_date = ? AND start_time = ? AND status <> 'cancelled'
+      WHERE source_schedule_id = ? AND session_date = ? AND status <> 'cancelled'
       ORDER BY id DESC LIMIT 1
-    `).bind(schedule.class_id, date, schedule.start_time).first<{ id: number }>();
+    `).bind(schedule.schedule_id, date).first<{ id: number }>();
     if (existing) continue;
 
     const locationType = schedule.delivery_mode === 'online' || schedule.delivery_mode === 'hybrid'
@@ -47,12 +54,13 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
     const inserted = await db.prepare(`
       INSERT INTO class_sessions
         (class_id, session_date, start_time, end_time, instructor_id, room_id,
-         location_type, type, status, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'regular', 'scheduled', ?)
+         location_type, type, status, notes, source_schedule_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'regular', 'scheduled', ?, ?)
     `).bind(
       schedule.class_id, date, schedule.start_time, schedule.end_time,
       schedule.instructor_id, roomId, locationType,
       `ایجاد خودکار از برنامه هفتگی #${schedule.schedule_id}`,
+      schedule.schedule_id,
     ).run();
     if (typeof inserted.meta.last_row_id !== 'number') throw new Error(`SESSION_CREATE_FAILED:${schedule.schedule_id}`);
   }
@@ -79,7 +87,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     const sessionRows = await db.prepare(`
       SELECT cs.id, cs.class_id, cs.session_date, cs.start_time, cs.end_time,
-        cs.instructor_id, cs.room_id, cs.location_type, cs.type, cs.status, cs.original_session_id,
+        cs.instructor_id, cs.room_id, cs.location_type, cs.type, cs.status, cs.original_session_id, cs.notes,
         c.title AS class_title, r.name AS room_name,
         TRIM(COALESCE(i.first_name, '') || ' ' || COALESCE(i.last_name, '')) AS instructor_name,
         COALESCE(tsa.status, 'pending') AS teacher_attendance_status,
@@ -96,7 +104,7 @@ export const GET: APIRoute = async ({ request }) => {
     `).bind(date).all<{
       id: number; class_id: number; session_date: string; start_time: string; end_time: string;
       instructor_id: number; room_id: number | null; location_type: string; type: string;
-      status: string; original_session_id: number | null; class_title: string;
+      status: string; original_session_id: number | null; notes: string; class_title: string;
       room_name: string | null; instructor_name: string; teacher_attendance_status: string;
       teacher_check_in_at: string | null; calendar_exception_type: string | null; calendar_exception_title: string | null;
     }>();
@@ -163,11 +171,15 @@ export const GET: APIRoute = async ({ request }) => {
         course_names: session.class_title,
         students: students.results.map((student) => {
           const consumedSessions = student.consumed_sessions ?? 0;
+          // Intentionally NOT clamped to zero: a negative remainingSessions
+          // means the student attended more sessions than their paid term
+          // covers, and the daily dashboard's quick-payment badge (spec 45.3)
+          // must be able to surface that as an alarm state.
           const remainingSessions = student.billing_type === "monthly" || student.planned_sessions == null
-            ? null : Math.max(student.planned_sessions - consumedSessions, 0);
+            ? null : student.planned_sessions - consumedSessions;
           const renewalReady = student.billing_type === "monthly"
             ? true
-            : student.planned_sessions != null && remainingSessions <= 1;
+            : student.planned_sessions != null && remainingSessions != null && remainingSessions <= 1;
           const tuitionDueDate = student.invoice_due_date ?? student.term_tuition_due_date;
           const finance = calculateFinance({
             invoiceAmount: Number(student.invoice_amount ?? student.term_tuition_amount ?? 0),
@@ -210,7 +222,11 @@ export const GET: APIRoute = async ({ request }) => {
       });
     }
 
-    return json({ success: true, date, sessions: result });
+    // Active rooms drive the daily dashboard timeline columns (spec section
+    // 46.4): the frontend must never hard-code a room count or list.
+    const rooms = await listActiveRooms(db);
+
+    return json({ success: true, date, sessions: result, rooms });
   } catch (error) {
     console.error("[admin/daily-dashboard] request failed:", error);
     return json({ success: false, message: "دریافت اطلاعات داشبورد روزانه با خطا مواجه شد." }, 500);

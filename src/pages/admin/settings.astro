@@ -1,0 +1,52 @@
+---
+export const prerender = false;
+import MainLayout from "../../layouts/MainLayout.astro";
+import AdminNav from "../../components/admin/AdminNav.astro";
+import "../../styles/admin/base.css";
+import "../../styles/admin/nav.css";
+import "../../styles/admin/dashboard.css";
+import "../../styles/admin/daily-dashboard.css";
+import { env } from "cloudflare:workers";
+import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+const session = await getAdminSession(Astro.request, env as AdminEnv);
+if (!session) return Astro.redirect("/login");
+if (session.role !== ROLES.ADMIN) return new Response("Forbidden", { status: 403 });
+---
+<MainLayout title="تنظیمات | آموزشگاه موسیقی فاتح" noindex={true}>
+  <div class="admin-layout">
+    <AdminNav session={session} active="settings" />
+    <main class="admin-main">
+      <div class="admin-shell" dir="rtl" id="settingsRoot">
+        <header class="admin-hero">
+          <span class="admin-hero-label">مدیریت آموزشگاه</span>
+          <h1>تنظیمات</h1>
+        </header>
+
+        <div class="settings-tabs" role="tablist">
+          <button type="button" class="settings-tab is-active" data-tab="rooms" role="tab" aria-selected="true">اتاق‌ها</button>
+        </div>
+
+        <section id="roomsPanel" class="settings-panel" aria-label="مدیریت اتاق‌ها">
+          <div class="settings-panel-head">
+            <div>
+              <h2>اتاق‌های آموزشگاه</h2>
+              <p>اتاق‌های فعال در نوار زمانی داشبورد روزانه به‌عنوان ستون نمایش داده می‌شوند.</p>
+            </div>
+          </div>
+          <div id="roomList" class="room-list"></div>
+          <form id="roomForm" class="room-form" onsubmit="return false">
+            <label>نام اتاق
+              <input type="text" name="name" placeholder="مثلاً اتاق ۱ — پیانو" maxlength="80" required />
+            </label>
+            <label>ظرفیت
+              <input type="number" name="capacity" min="1" value="1" />
+            </label>
+            <button type="submit">افزودن اتاق</button>
+          </form>
+          <div id="roomMessage" class="settings-message" hidden></div>
+        </section>
+      </div>
+    </main>
+  </div>
+</MainLayout>
+<script src="../../scripts/admin/settings-rooms.js"></script>
