@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES, type AdminEnv } from "../../../server/admin-auth";
 import { getDailyDashboard } from "../../../server/daily-dashboard";
 import { askDailyAssistant } from "../../../ai/daily-assistant";
+import { listActiveRooms } from "../../../server/rooms";
 
 export const POST: APIRoute = async ({ request }) => {
   const denied = await requireRole(request, env as AdminEnv, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -20,9 +21,12 @@ export const POST: APIRoute = async ({ request }) => {
   if (!env.DB) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
 
   try {
-    const sessions = await getDailyDashboard(env.DB, date);
+    const [sessions, rooms] = await Promise.all([
+      getDailyDashboard(env.DB, date),
+      listActiveRooms(env.DB),
+    ]);
     const runtimeEnv = env as unknown as { ANTHROPIC_API_KEY?: string };
-    const result = await askDailyAssistant(runtimeEnv.ANTHROPIC_API_KEY, date, sessions, question);
+    const result = await askDailyAssistant(runtimeEnv.ANTHROPIC_API_KEY, date, sessions, question, rooms);
     return json(result, result.success ? 200 : 502);
   } catch (error) {
     console.error("[admin/daily-assistant] request failed:", error);
