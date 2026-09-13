@@ -9,15 +9,52 @@ export type DailyAssistantResult = {
   message: string;
 };
 
-function compactContext(date: string, sessions: DailySession[]) {
+type RoomLike = { id: number; name: string; capacity: number; status: string };
+
+function minutes(value: string): number {
+  const [h, m] = String(value || "00:00").split(":").map(Number);
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 0;
+}
+
+function overlaps(a: DailySession, b: DailySession): boolean {
+  return a.sessionId !== b.sessionId
+    && a.status !== "cancelled"
+    && b.status !== "cancelled"
+    && minutes(a.startTime) < minutes(b.endTime)
+    && minutes(b.startTime) < minutes(a.endTime);
+}
+
+function compactContext(date: string, sessions: DailySession[], rooms: RoomLike[]) {
+  const active = sessions.filter((s) => s.status !== "cancelled");
+  const conflicts = active.flatMap((session) => active
+    .filter((other) => other.sessionId > session.sessionId && overlaps(session, other))
+    .map((other) => ({
+      firstSessionId: session.sessionId,
+      firstClass: session.className,
+      firstInstructor: session.instructorName,
+      firstRoom: session.roomName,
+      firstTime: `${session.startTime}-${session.endTime}`,
+      secondSessionId: other.sessionId,
+      secondClass: other.className,
+      secondInstructor: other.instructorName,
+      secondRoom: other.roomName,
+      secondTime: `${other.startTime}-${other.endTime}`,
+      instructorConflict: session.instructorId === other.instructorId,
+      roomConflict: session.roomId != null && session.roomId === other.roomId,
+    })));
+
   return {
     date,
+    rooms: rooms.map((room) => ({ id: room.id, name: room.name, capacity: room.capacity })),
+    conflicts,
     sessions: sessions.map((session) => ({
       id: session.sessionId,
       classId: session.classId,
       class: session.className,
       time: `${session.startTime}-${session.endTime}`,
+      instructorId: session.instructorId,
       instructor: session.instructorName,
+      roomId: session.roomId,
       room: session.roomName ?? "بدون اتاق",
       status: session.status,
       type: session.type,
@@ -37,20 +74,22 @@ export async function askDailyAssistant(
   date: string,
   sessions: DailySession[],
   question: string,
+  rooms: RoomLike[] = [],
 ): Promise<DailyAssistantResult> {
   if (!apiKey) {
     return { success: false, message: "ANTHROPIC_API_KEY برای دستیار روزانه تنظیم نشده است." };
   }
 
-  const system = `تو دستیار هوشمند منشی آموزشگاه موسیقی فاتح هستی.
+  const system = `تو دستیار هوشمند عملیاتی منشی آموزشگاه موسیقی فاتح هستی.
 وظیفه تو کمک به نظم‌دهی کلاس‌ها، زمان هنرجویان، استادها و اتاق‌هاست.
-فقط بر اساس داده‌ای که در پیام کاربر و context داده شده پاسخ بده؛ اگر داده کافی نیست صریحاً بگو.
+داده‌های context منبع حقیقت هستند و نباید اطلاعات، استاد، اتاق یا ساعت ساختگی تولید کنی.
+اگر کاربر درباره جابه‌جایی یا زمان جایگزین سؤال کرد، فقط گزینه‌هایی را پیشنهاد کن که با داده‌های موجود سازگار باشند و صریحاً بگو برای رزرو نهایی نیاز به تأیید منشی است.
+اگر تداخل استاد یا اتاق وجود دارد، آن را واضح و جداگانه اعلام کن.
+اگر اطلاعات لازم برای تصمیم قطعی موجود نیست، سؤال کوتاه و مشخص بپرس یا محدودیت را اعلام کن.
 هیچ رزرو، جابه‌جایی، لغو، پرداخت یا تغییر اطلاعات را خودکار انجام نده.
-برای پیشنهاد زمان، تداخل استاد/اتاق و وضعیت کلاس‌ها تحلیل عملی و کوتاه ارائه کن.
-اگر چند گزینه وجود دارد، آن‌ها را از بهترین به ضعیف‌تر مرتب کن و دلیل هر گزینه را بگو.
-پاسخ فارسی، روشن و مناسب منشی باشد. از ساختن اطلاعات یا ساعت‌هایی که در context نیستند خودداری کن.`;
+پاسخ فارسی، عملیاتی، کوتاه و مناسب منشی باشد. برای چند گزینه، بهترین گزینه را اول بیاور و دلیل آن را بنویس.`;
 
-  const userPrompt = `تاریخ کاری: ${date}\n\nداده فعلی داشبورد:\n${JSON.stringify(compactContext(date, sessions), null, 2)}\n\nدرخواست منشی:\n${question.trim()}`;
+  const userPrompt = `تاریخ کاری: ${date}\n\nداده فعلی برنامه:\n${JSON.stringify(compactContext(date, sessions, rooms), null, 2)}\n\nدرخواست منشی:\n${question.trim()}`;
 
   try {
     const response = await fetch(ENDPOINT, {
@@ -62,7 +101,7 @@ export async function askDailyAssistant(
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1200,
+        max_tokens: 1400,
         system,
         messages: [{ role: "user", content: userPrompt }],
       }),
