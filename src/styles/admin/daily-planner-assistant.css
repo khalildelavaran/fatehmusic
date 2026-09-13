@@ -1,0 +1,17 @@
+.daily-planner-assistant{margin:0 0 20px;padding:16px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.018)}
+.daily-planner-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.daily-planner-head strong{display:block;color:var(--text);font-size:15px}
+.daily-planner-head span{display:block;margin-top:4px;color:var(--muted);font-size:11px;line-height:1.8}
+.daily-planner-controls{display:grid;grid-template-columns:1fr auto;gap:8px}
+.daily-planner-controls select,.daily-planner-controls button{min-height:44px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;padding:8px 11px}
+.daily-planner-controls button{border-color:var(--gold-light);color:var(--gold-light);font-weight:700;cursor:pointer;white-space:nowrap}
+.daily-planner-controls button:disabled{opacity:.5;cursor:not-allowed}
+.daily-planner-output{margin-top:12px}.daily-planner-output.is-empty{display:none}
+.planner-context{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:9px;color:var(--muted);font-size:12px}.planner-context strong{color:var(--text)}
+.planner-candidates{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px}
+.planner-candidate{padding:11px;border:1px solid var(--border);border-radius:12px;background:rgba(0,0,0,.12)}
+.planner-candidate>div:first-child{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.planner-candidate>div:first-child span{color:var(--muted);font-size:12px}
+.planner-reasons{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}.planner-reasons span{padding:4px 7px;border-radius:7px;background:rgba(212,175,55,.06);color:var(--muted);font-size:10px}
+.planner-candidate button{width:100%;min-height:38px;border:1px solid var(--gold-light);border-radius:9px;background:transparent;color:var(--gold-light);font:inherit;font-size:12px;font-weight:700;cursor:pointer}.planner-candidate button:disabled{opacity:.55;cursor:wait}
+.planner-loading,.planner-empty,.planner-error,.planner-success{padding:10px 12px;border-radius:9px;background:rgba(0,0,0,.12);color:var(--muted);font-size:12px;line-height:1.8}.planner-error{color:#fca5a5}.planner-success{color:#86efac}
+@media(max-width:720px){.daily-planner-controls{grid-template-columns:1fr}.daily-planner-controls button{width:100%}.daily-planner-head{display:block}}
