@@ -93,7 +93,7 @@ export async function getDailyPlannerSuggestions(
   if (duration <= 0) throw new Error("INVALID_SESSION_DURATION");
 
   const studentSessions = studentIds.length
-    ? (await db.prepare(`
+    ? await db.prepare(`
         SELECT DISTINCT cs.id, cs.start_time, cs.end_time
         FROM enrollment_sessions es
         JOIN enrollments e ON e.id = es.enrollment_id
@@ -102,16 +102,12 @@ export async function getDailyPlannerSuggestions(
           AND cs.session_date = ?
           AND cs.status <> 'cancelled'
           AND cs.id <> ?
-      `).bind(...studentIds, session.session_date, sessionId).all<{ id: number; start_time: string; end_time: string }>())
+      `).bind(...studentIds, session.session_date, sessionId).all<{ id: number; start_time: string; end_time: string }>()
     : { results: [] as { id: number; start_time: string; end_time: string }[] };
 
   const candidates: PlannerCandidate[] = [];
   const originalStart = minutes(session.start_time);
   const originalRoomId = session.room_id;
-
-  // The planner uses a conservative school-day window and never invents a
-  // slot outside it. Existing sessions are also considered, so the result is
-  // based on actual availability rather than an AI guess.
   const MIN_DAY = 8 * 60;
   const MAX_DAY = 22 * 60;
   const roomOptions: Array<RoomRow | null> = rooms.length ? rooms : [null];
@@ -134,6 +130,7 @@ export async function getDailyPlannerSuggestions(
 
     for (const room of roomOptions) {
       if (room) {
+        if (room.capacity < studentIds.length) continue;
         const roomBusy = sessions.some((other) => (
           other.id !== sessionId && other.room_id === room.id
           && overlaps(start, end, minutes(other.start_time), minutes(other.end_time))
@@ -149,7 +146,7 @@ export async function getDailyPlannerSuggestions(
         score -= 45;
         reasons.push("همان اتاق حفظ می‌شود");
       } else if (room) {
-        reasons.push(`اتاق ${room.name} آزاد است`);
+        reasons.push(`اتاق ${room.name} آزاد و دارای ظرفیت کافی است`);
       } else {
         reasons.push("بدون اتاق");
       }
