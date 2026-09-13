@@ -66,8 +66,10 @@
 
     const run = window.fatehDailyAutoPlanAfterAttendance;
     if (typeof run !== "function") return;
+    const plannedDate = selectedDate;
 
     window.setTimeout(() => {
+      if (selectedDate !== plannedDate) return;
       run(sessionId);
     }, 1200);
   });
