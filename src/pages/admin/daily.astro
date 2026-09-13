@@ -58,10 +58,24 @@ Astro.response.headers.set("Cache-Control", "no-store");
             <button type="button" data-question="کلاس‌هایی که نیاز به پیگیری منشی دارند را مشخص کن.">نیازمند پیگیری</button>
           </div>
           <div class="daily-ai-output" data-assistant-output aria-live="polite">هنوز پرسشی ارسال نشده است.</div>
+
+          <div class="daily-planner-box" aria-label="پیشنهاد جابه‌جایی جلسه">
+            <div class="daily-planner-head">
+              <div>
+                <strong>پیشنهاد زمان جایگزین</strong>
+                <span>گزینه‌ها توسط قواعد زمان‌بندی سایت بررسی می‌شوند؛ قبل از اعمال، دوباره اعتبارسنجی می‌شوند.</span>
+              </div>
+            </div>
+            <div class="daily-planner-controls">
+              <select id="dailyPlannerSession" aria-label="انتخاب جلسه"></select>
+              <button id="dailyPlannerFind" type="button">پیدا کردن گزینه‌ها</button>
+            </div>
+            <div id="dailyPlannerResults" class="daily-planner-results" aria-live="polite"></div>
+            <div id="dailyPlannerStatus" class="daily-planner-status"></div>
+          </div>
         </section>
 
         <section id="timeline" class="dd-timeline" aria-label="نوار زمانی جلسات امروز"></section>
-
         <section id="sessionsPanel" class="dd-sessions" aria-label="فهرست جلسات و هنرجویان امروز"></section>
 
         <div id="quickPaymentModal" class="dd-modal" hidden aria-hidden="true">
@@ -90,4 +104,103 @@ Astro.response.headers.set("Cache-Control", "no-store");
       input.focus();
     });
   });
+
+  const plannerSelect = document.querySelector("#dailyPlannerSession");
+  const plannerFind = document.querySelector("#dailyPlannerFind");
+  const plannerResults = document.querySelector("#dailyPlannerResults");
+  const plannerStatus = document.querySelector("#dailyPlannerStatus");
+  const dashboardRoot = document.querySelector("#dailyDashboardRoot");
+
+  function refreshPlannerSessions() {
+    if (!plannerSelect) return;
+    const seen = new Set();
+    const options = [];
+    document.querySelectorAll("#sessionsPanel [data-session-id]").forEach((node) => {
+      const id = String(node.dataset.sessionId || "");
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      const text = (node.textContent || "").replace(/\s+/g, " ").trim();
+      options.push(`<option value="${id}">${id} — ${text.slice(0, 90)}</option>`);
+    });
+    plannerSelect.innerHTML = options.length
+      ? options.join("")
+      : '<option value="">جلسه‌ای برای این روز وجود ندارد</option>';
+    plannerSelect.disabled = !options.length;
+    plannerFind.disabled = !options.length;
+  }
+
+  function escPlanner(value) {
+    const el = document.createElement("div");
+    el.textContent = String(value ?? "");
+    return el.innerHTML;
+  }
+
+  async function loadPlannerSuggestions() {
+    const sessionId = plannerSelect?.value;
+    if (!sessionId) return;
+    plannerFind.disabled = true;
+    plannerResults.innerHTML = "";
+    plannerStatus.textContent = "در حال بررسی ظرفیت مدرس، هنرجوها و اتاق‌ها…";
+    try {
+      const response = await fetch(`/api/admin/daily-planner/suggestions?sessionId=${encodeURIComponent(sessionId)}&limit=8`, { credentials: "same-origin", headers: { Accept: "application/json" } });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) throw new Error(data?.message || "دریافت پیشنهادها ناموفق بود.");
+      if (!data.candidates?.length) {
+        plannerStatus.textContent = "برای این جلسه در محدوده زمانی فعلی گزینه آزاد پیدا نشد.";
+        return;
+      }
+      plannerStatus.textContent = `برای «${data.session.class_name}» ${data.candidates.length} گزینه پیدا شد.`;
+      plannerResults.innerHTML = data.candidates.map((candidate) => `
+        <div class="daily-planner-candidate">
+          <div>
+            <strong>${escPlanner(candidate.startTime)} — ${escPlanner(candidate.endTime)}</strong>
+            <small>${escPlanner(candidate.roomName ? `اتاق ${candidate.roomName}` : "بدون اتاق")} · ${escPlanner((candidate.reasons || []).join(" · "))}</small>
+          </div>
+          <button type="button" data-planner-apply data-session-id="${escPlanner(sessionId)}" data-session-date="${escPlanner(data.session.session_date)}" data-start="${escPlanner(candidate.startTime)}" data-end="${escPlanner(candidate.endTime)}" data-room="${candidate.roomId ?? ""}">تأیید و اعمال</button>
+        </div>
+      `).join("");
+    } catch (error) {
+      plannerStatus.textContent = error instanceof Error ? error.message : String(error);
+    } finally {
+      plannerFind.disabled = false;
+    }
+  }
+
+  async function applyPlannerCandidate(button) {
+    button.disabled = true;
+    plannerStatus.textContent = "در حال اعتبارسنجی نهایی و اعمال تغییر…";
+    try {
+      const response = await fetch("/api/admin/daily-planner/suggestions", {
+        method: "POST", credentials: "same-origin",
+        headers: { "content-type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          sessionId: Number(button.dataset.sessionId),
+          sessionDate: button.dataset.sessionDate,
+          startTime: button.dataset.start,
+          endTime: button.dataset.end,
+          roomId: button.dataset.room || null,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) throw new Error(data?.message || "اعمال تغییر ناموفق بود.");
+      plannerStatus.textContent = data.message || "تغییر برنامه اعمال شد.";
+      plannerResults.innerHTML = "";
+      document.querySelector("#refresh")?.click();
+      setTimeout(refreshPlannerSessions, 300);
+    } catch (error) {
+      plannerStatus.textContent = error instanceof Error ? error.message : String(error);
+      button.disabled = false;
+    }
+  }
+
+  plannerFind?.addEventListener("click", loadPlannerSuggestions);
+  plannerResults?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-planner-apply]");
+    if (button) applyPlannerCandidate(button);
+  });
+  plannerSelect?.addEventListener("focus", refreshPlannerSessions);
+  document.querySelectorAll("#prev,#next,#today,#refresh").forEach((button) => {
+    button.addEventListener("click", () => setTimeout(refreshPlannerSessions, 350));
+  });
+  setTimeout(refreshPlannerSessions, 400);
 </script>
