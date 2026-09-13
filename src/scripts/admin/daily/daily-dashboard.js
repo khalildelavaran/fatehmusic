@@ -314,10 +314,10 @@
     const attentionChips = alarmStudents.slice(0, 6).map((st) => `<span>${esc(st.studentName)}</span>`).join("");
 
     els.summary.innerHTML = `
-      <div class="stat"><strong>${formatNumber(sessions.length)}</strong><span>جلسه امروز${cancelledCount ? ` (${formatNumber(cancelledCount)} لغو شده)` : ""}</span></div>
-      <div class="stat"><strong>${formatNumber(totalStudents)}</strong><span>هنرجوی امروز</span></div>
-      <div class="stat"><strong>${formatNumber(presentCount)} / ${formatNumber(totalStudents)}</strong><span>حضور ثبت‌شده${pendingCount ? ` — ${formatNumber(pendingCount)} در انتظار` : ""}</span></div>
-      <div class="stat ${alarmStudents.length ? "warning attention-list" : ""}">
+      <div class="dd-stat"><strong>${formatNumber(sessions.length)}</strong><span>جلسه امروز${cancelledCount ? ` (${formatNumber(cancelledCount)} لغو شده)` : ""}</span></div>
+      <div class="dd-stat"><strong>${formatNumber(totalStudents)}</strong><span>هنرجوی امروز</span></div>
+      <div class="dd-stat"><strong>${formatNumber(presentCount)} / ${formatNumber(totalStudents)}</strong><span>حضور ثبت‌شده${pendingCount ? ` — ${formatNumber(pendingCount)} در انتظار` : ""}</span></div>
+      <div class="dd-stat ${alarmStudents.length ? "warning attention-list" : ""}">
         <strong>${formatNumber(alarmStudents.length)}</strong><span>هنرجو بدون جلسه باقیمانده</span>
         ${attentionChips ? `<div class="attention-chips">${attentionChips}${alarmStudents.length > 6 ? `<span>+${formatNumber(alarmStudents.length - 6)}</span>` : ""}</div>` : ""}
       </div>`;
@@ -413,6 +413,19 @@
       </form>`;
   }
 
+  /**
+   * Time badge shown inside each student card (spec section 11.1). Reads
+   * the exact same session.startTime/endTime as the timeline card and the
+   * session-panel header, and its edit action calls the same saveSessionTime
+   * on the same session.id — there is no per-student time, only per-session
+   * time shown in three places. Editing from here re-renders everywhere
+   * because render() always redraws the whole panel from state.sessions.
+   */
+  function renderStudentTimeBadge(session, editing) {
+    if (editing) return renderTimeForm(session, "student");
+    return `<span class="dd-time-value" data-action="edit-time" data-session-id="${session.id}" data-source="student">${session.startTime}–${session.endTime}</span>`;
+  }
+
   function renderSessionsPanel() {
     const sessions = visibleSessions();
     if (!sessions.length) {
@@ -452,7 +465,7 @@
           </div>
         </div>
         ${exceptionBanner}
-        <div class="students">${students || `<div class="empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}</div>
+        <div class="dd-students">${students || `<div class="dd-empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}</div>
       </article>`;
   }
 
@@ -485,19 +498,20 @@
       : remaining <= 0
         ? "جلسه باقیمانده‌ای ندارد — نیاز به تمدید/پرداخت"
         : `${formatNumber(remaining)} جلسه باقیمانده`;
+    const editing = state.editingSessionId === session.id;
 
     return `
-      <div class="student-card is-${status}" data-enrollment-session-id="${student.enrollmentSessionId}">
-        <div class="student-card-head">
-          <div class="student-name-row">
-            <button type="button" class="session-badge ${badgeClassFor(remaining)}"
+      <div class="dd-student-card is-${status}" data-enrollment-session-id="${student.enrollmentSessionId}">
+        <div class="dd-student-head">
+          <div class="dd-student-name-row">
+            <button type="button" class="dd-badge ${badgeClassFor(remaining)}"
                     data-action="open-quick-payment" data-enrollment-session-id="${student.enrollmentSessionId}"
                     title="${esc(badgeTitle)}" aria-label="${esc(student.studentName)} — ${esc(badgeTitle)}">${badgeLabelFor(remaining)}</button>
-            <span class="student-name">${esc(student.studentName)}</span>
+            <span class="dd-student-name">${esc(student.studentName)}</span>
           </div>
-          <div class="attendance-buttons" role="group" aria-label="وضعیت حضور ${esc(student.studentName)}">
+          <div class="dd-attendance-buttons" role="group" aria-label="وضعیت حضور ${esc(student.studentName)}">
             ${["present", "absent", "excused", "withdrawn"].map((value) => `
-              <button type="button" class="attendance-button ${value} ${status === value ? "active" : ""}"
+              <button type="button" class="dd-attendance-button ${value} ${status === value ? "active" : ""}"
                       data-action="attendance" data-enrollment-session-id="${student.enrollmentSessionId}"
                       data-enrollment-id="${student.enrollmentId}" data-status="${value}"
                       aria-pressed="${status === value}" title="${attendanceLabels[value]}"
@@ -505,7 +519,10 @@
             `).join("")}
           </div>
         </div>
-        <div class="student-meta-row">
+        <div class="dd-student-time-row">
+          ${renderStudentTimeBadge(session, editing)}
+        </div>
+        <div class="dd-student-meta">
           <span>${financeLabels[financeStatus] || financeLabels.none}</span>
           <span>${student.instrument ? esc(student.instrument) : ""}</span>
         </div>
@@ -704,6 +721,11 @@
     } catch (err) {
       student.attendanceStatus = prevStatus;
       state.error = err.message || "ثبت حضور ناموفق بود.";
+    } finally {
+      // This used to only decrement on the catch path, so every successful
+      // attendance click left state.saving stuck above zero forever — which
+      // disables the attendance buttons (they render with `disabled` while
+      // state.saving > 0) on every student card, not just the one clicked.
       state.saving -= 1; render();
     }
   }

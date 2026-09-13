@@ -1,0 +1,211 @@
+diff --git a/src/scripts/admin/daily/daily-dashboard.js b/src/scripts/admin/daily/daily-dashboard.js
+index f56825d..0ebda20 100644
+--- a/src/scripts/admin/daily/daily-dashboard.js
++++ b/src/scripts/admin/daily/daily-dashboard.js
+@@ -314,10 +314,10 @@
+     const attentionChips = alarmStudents.slice(0, 6).map((st) => `<span>${esc(st.studentName)}</span>`).join("");
+ 
+     els.summary.innerHTML = `
+-      <div class="stat"><strong>${formatNumber(sessions.length)}</strong><span>جلسه امروز${cancelledCount ? ` (${formatNumber(cancelledCount)} لغو شده)` : ""}</span></div>
+-      <div class="stat"><strong>${formatNumber(totalStudents)}</strong><span>هنرجوی امروز</span></div>
+-      <div class="stat"><strong>${formatNumber(presentCount)} / ${formatNumber(totalStudents)}</strong><span>حضور ثبت‌شده${pendingCount ? ` — ${formatNumber(pendingCount)} در انتظار` : ""}</span></div>
+-      <div class="stat ${alarmStudents.length ? "warning attention-list" : ""}">
++      <div class="dd-stat"><strong>${formatNumber(sessions.length)}</strong><span>جلسه امروز${cancelledCount ? ` (${formatNumber(cancelledCount)} لغو شده)` : ""}</span></div>
++      <div class="dd-stat"><strong>${formatNumber(totalStudents)}</strong><span>هنرجوی امروز</span></div>
++      <div class="dd-stat"><strong>${formatNumber(presentCount)} / ${formatNumber(totalStudents)}</strong><span>حضور ثبت‌شده${pendingCount ? ` — ${formatNumber(pendingCount)} در انتظار` : ""}</span></div>
++      <div class="dd-stat ${alarmStudents.length ? "warning attention-list" : ""}">
+         <strong>${formatNumber(alarmStudents.length)}</strong><span>هنرجو بدون جلسه باقیمانده</span>
+         ${attentionChips ? `<div class="attention-chips">${attentionChips}${alarmStudents.length > 6 ? `<span>+${formatNumber(alarmStudents.length - 6)}</span>` : ""}</div>` : ""}
+       </div>`;
+@@ -413,6 +413,19 @@
+       </form>`;
+   }
+ 
++  /**
++   * Time badge shown inside each student card (spec section 11.1). Reads
++   * the exact same session.startTime/endTime as the timeline card and the
++   * session-panel header, and its edit action calls the same saveSessionTime
++   * on the same session.id — there is no per-student time, only per-session
++   * time shown in three places. Editing from here re-renders everywhere
++   * because render() always redraws the whole panel from state.sessions.
++   */
++  function renderStudentTimeBadge(session, editing) {
++    if (editing) return renderTimeForm(session, "student");
++    return `<span class="dd-time-value" data-action="edit-time" data-session-id="${session.id}" data-source="student">${session.startTime}–${session.endTime}</span>`;
++  }
++
+   function renderSessionsPanel() {
+     const sessions = visibleSessions();
+     if (!sessions.length) {
+@@ -452,7 +465,7 @@
+           </div>
+         </div>
+         ${exceptionBanner}
+-        <div class="students">${students || `<div class="empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}</div>
++        <div class="dd-students">${students || `<div class="dd-empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}</div>
+       </article>`;
+   }
+ 
+@@ -485,19 +498,20 @@
+       : remaining <= 0
+         ? "جلسه باقیمانده‌ای ندارد — نیاز به تمدید/پرداخت"
+         : `${formatNumber(remaining)} جلسه باقیمانده`;
++    const editing = state.editingSessionId === session.id;
+ 
+     return `
+-      <div class="student-card is-${status}" data-enrollment-session-id="${student.enrollmentSessionId}">
+-        <div class="student-card-head">
+-          <div class="student-name-row">
+-            <button type="button" class="session-badge ${badgeClassFor(remaining)}"
++      <div class="dd-student-card is-${status}" data-enrollment-session-id="${student.enrollmentSessionId}">
++        <div class="dd-student-head">
++          <div class="dd-student-name-row">
++            <button type="button" class="dd-badge ${badgeClassFor(remaining)}"
+                     data-action="open-quick-payment" data-enrollment-session-id="${student.enrollmentSessionId}"
+                     title="${esc(badgeTitle)}" aria-label="${esc(student.studentName)} — ${esc(badgeTitle)}">${badgeLabelFor(remaining)}</button>
+-            <span class="student-name">${esc(student.studentName)}</span>
++            <span class="dd-student-name">${esc(student.studentName)}</span>
+           </div>
+-          <div class="attendance-buttons" role="group" aria-label="وضعیت حضور ${esc(student.studentName)}">
++          <div class="dd-attendance-buttons" role="group" aria-label="وضعیت حضور ${esc(student.studentName)}">
+             ${["present", "absent", "excused", "withdrawn"].map((value) => `
+-              <button type="button" class="attendance-button ${value} ${status === value ? "active" : ""}"
++              <button type="button" class="dd-attendance-button ${value} ${status === value ? "active" : ""}"
+                       data-action="attendance" data-enrollment-session-id="${student.enrollmentSessionId}"
+                       data-enrollment-id="${student.enrollmentId}" data-status="${value}"
+                       aria-pressed="${status === value}" title="${attendanceLabels[value]}"
+@@ -505,7 +519,10 @@
+             `).join("")}
+           </div>
+         </div>
+-        <div class="student-meta-row">
++        <div class="dd-student-time-row">
++          ${renderStudentTimeBadge(session, editing)}
++        </div>
++        <div class="dd-student-meta">
+           <span>${financeLabels[financeStatus] || financeLabels.none}</span>
+           <span>${student.instrument ? esc(student.instrument) : ""}</span>
+         </div>
+@@ -704,6 +721,11 @@
+     } catch (err) {
+       student.attendanceStatus = prevStatus;
+       state.error = err.message || "ثبت حضور ناموفق بود.";
++    } finally {
++      // This used to only decrement on the catch path, so every successful
++      // attendance click left state.saving stuck above zero forever — which
++      // disables the attendance buttons (they render with `disabled` while
++      // state.saving > 0) on every student card, not just the one clicked.
+       state.saving -= 1; render();
+     }
+   }
+diff --git a/src/styles/admin/daily-dashboard.css b/src/styles/admin/daily-dashboard.css
+index 9fb1944..9a6a06d 100644
+--- a/src/styles/admin/daily-dashboard.css
++++ b/src/styles/admin/daily-dashboard.css
+@@ -27,14 +27,14 @@
+ 
+ /* ---------- Summary cards ---------- */
+ .daily-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+-.daily-summary .stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+-.daily-summary .stat strong{font-size:26px;color:var(--gold-light);font-variant-numeric:tabular-nums}
+-.daily-summary .stat span{font-size:12px;color:var(--text-secondary)}
+-.daily-summary .stat.warning{border-color:rgba(230,161,60,.4)}
+-.daily-summary .stat.warning strong{color:#e6a13c}
+-.daily-summary .stat.attention-list{grid-column:span 1}
+-.daily-summary .stat .attention-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+-.daily-summary .stat .attention-chips span{font-size:10.5px;padding:2px 7px;border-radius:999px;background:rgba(230,161,60,.14);border:1px solid rgba(230,161,60,.3);color:#e6a13c}
++.daily-summary .dd-stat{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
++.daily-summary .dd-stat strong{font-size:26px;color:var(--gold-light);font-variant-numeric:tabular-nums}
++.daily-summary .dd-stat span{font-size:12px;color:var(--text-secondary)}
++.daily-summary .dd-stat.warning{border-color:rgba(230,161,60,.4)}
++.daily-summary .dd-stat.warning strong{color:#e6a13c}
++.daily-summary .dd-stat.attention-list{grid-column:span 1}
++.daily-summary .dd-stat .attention-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
++.daily-summary .dd-stat .attention-chips span{font-size:10.5px;padding:2px 7px;border-radius:999px;background:rgba(230,161,60,.14);border:1px solid rgba(230,161,60,.3);color:#e6a13c}
+ 
+ @media(max-width:900px){.daily-topbar{grid-template-columns:1fr}.daily-topbar-title,.daily-clock,.date-nav{justify-self:stretch}.daily-clock{text-align:center}.daily-topbar-title{justify-content:center}.date-nav{justify-content:center}.daily-date{font-size:19px}.daily-time{font-size:25px}}
+ @media(max-width:800px){.daily-shell{padding:16px}.daily-summary{grid-template-columns:repeat(2,1fr)}}
+@@ -113,37 +113,38 @@
+ .dd-teacher-status.pending{border-color:#b89500;color:#e6c34a}
+ .dd-exception-banner{margin:8px 0;padding:8px 12px;border-radius:10px;border:1px solid rgba(230,161,60,.4);background:rgba(230,161,60,.08);font-size:12px;color:#e6c34a}
+ 
+-.students{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+-.student-card{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:8px}
+-.student-card.is-present{border-color:rgba(47,143,70,.5)}
+-.student-card.is-absent{border-color:rgba(214,102,102,.5)}
+-.student-card.is-excused{border-color:rgba(59,130,246,.5)}
+-.student-card.is-withdrawn{opacity:.55}
+-.student-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+-.student-name-row{display:flex;align-items:center;gap:8px;min-width:0}
+-.student-name{font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+-.student-meta-row{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
++.dd-students{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
++.dd-student-card{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:8px}
++.dd-student-card.is-present{border-color:rgba(47,143,70,.5)}
++.dd-student-card.is-absent{border-color:rgba(214,102,102,.5)}
++.dd-student-card.is-excused{border-color:rgba(59,130,246,.5)}
++.dd-student-card.is-withdrawn{opacity:.55}
++.dd-student-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
++.dd-student-name-row{display:flex;align-items:center;gap:8px;min-width:0}
++.dd-student-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
++.dd-student-time-row{display:flex}
++.dd-student-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
+ 
+ /* ---------- Remaining-sessions round badge + quick payment (spec 45) ---------- */
+-.session-badge{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid transparent;cursor:pointer;font-variant-numeric:tabular-nums;color:#111}
+-.session-badge.badge-green{background:#5fbf72;border-color:#3d8a4c}
+-.session-badge.badge-orange{background:#e6a13c;border-color:#b6791f}
+-.session-badge.badge-red{background:#d66;border-color:#a33;color:#fff}
+-.session-badge.badge-red.badge-alarm{animation:dd-badge-pulse 1.6s ease-in-out infinite}
+-.session-badge.badge-neutral{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:var(--text)}
++.dd-badge{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid transparent;cursor:pointer;font-variant-numeric:tabular-nums;color:#111}
++.dd-badge.badge-green{background:#5fbf72;border-color:#3d8a4c}
++.dd-badge.badge-orange{background:#e6a13c;border-color:#b6791f}
++.dd-badge.badge-red{background:#d66;border-color:#a33;color:#fff}
++.dd-badge.badge-red.badge-alarm{animation:dd-badge-pulse 1.6s ease-in-out infinite}
++.dd-badge.badge-neutral{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);color:var(--text)}
+ @keyframes dd-badge-pulse{0%,100%{box-shadow:0 0 0 0 rgba(214,102,102,.55)}50%{box-shadow:0 0 0 6px rgba(214,102,102,0)}}
+ @media(prefers-reduced-motion:reduce){
+-  .session-badge.badge-red.badge-alarm{animation:none;box-shadow:0 0 0 2px rgba(214,102,102,.85)}
++  .dd-badge.badge-red.badge-alarm{animation:none;box-shadow:0 0 0 2px rgba(214,102,102,.85)}
+ }
+ 
+-.attendance-buttons{display:flex;gap:5px}
+-.attendance-button{width:26px;height:26px;min-width:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font:700 10px inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
+-.attendance-button:hover:not(:disabled){transform:scale(1.06)}
+-.attendance-button:disabled{opacity:.4;cursor:not-allowed}
+-.attendance-button.present.active{background:#2f8f46;border-color:#2f8f46;color:#fff}
+-.attendance-button.absent.active{background:#a33;border-color:#a33;color:#fff}
+-.attendance-button.excused.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
+-.attendance-button.withdrawn.active{background:#666;border-color:#666;color:#fff}
++.dd-attendance-buttons{display:flex;gap:5px}
++.dd-attendance-button{width:26px;height:26px;min-width:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font:700 10px inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
++.dd-attendance-button:hover:not(:disabled){transform:scale(1.06)}
++.dd-attendance-button:disabled{opacity:.4;cursor:not-allowed}
++.dd-attendance-button.present.active{background:#2f8f46;border-color:#2f8f46;color:#fff}
++.dd-attendance-button.absent.active{background:#a33;border-color:#a33;color:#fff}
++.dd-attendance-button.excused.active{background:#3b82f6;border-color:#3b82f6;color:#fff}
++.dd-attendance-button.withdrawn.active{background:#666;border-color:#666;color:#fff}
+ 
+ /* ---------- Finance box ---------- */
+ .finance-box{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+@@ -177,7 +178,7 @@
+ .renewal-result.error{border-color:#a33;background:rgba(163,51,51,.08)}
+ 
+ @media(max-width:900px){.payment-form{grid-template-columns:1fr 1fr}.payment-form button{grid-column:1/-1}}
+-@media(max-width:800px){.dd-session-head{flex-direction:column;align-items:stretch}.students{grid-template-columns:1fr}.finance-grid{grid-template-columns:1fr 1fr}}
++@media(max-width:800px){.dd-session-head{flex-direction:column;align-items:stretch}.dd-students{grid-template-columns:1fr}.finance-grid{grid-template-columns:1fr 1fr}}
+ @media(max-width:480px){.finance-grid{grid-template-columns:1fr}.renewal-form{grid-template-columns:1fr}.renewal-form button{width:100%}}
+ 
+ /* ---------- Quick payment modal (spec 45.4) ---------- */
+@@ -193,9 +194,7 @@
+ .dd-modal-body .payment-form{grid-template-columns:1fr;gap:9px}
+ 
+ /* ---------- Empty state / errors shared ---------- */
+-.empty{opacity:.65;padding:30px;text-align:center}
+-.empty-title{font-size:16px;font-weight:700;opacity:.9;margin-bottom:8px}
+-.empty-note{font-size:13px;opacity:.7}
++.empty-note{opacity:.65;padding:16px;text-align:center;font-size:13px}
+ 
+ /* ==========================================
+    SETTINGS PAGE (/admin/settings)
