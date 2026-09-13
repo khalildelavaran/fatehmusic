@@ -1,0 +1,17 @@
+.daily-ai-panel{margin:18px 0 24px;padding:18px;border:1px solid var(--border);border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.035),rgba(255,255,255,.015));box-shadow:0 12px 30px rgba(0,0,0,.14)}
+.daily-ai-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.daily-ai-head strong{display:block;color:var(--text);font-size:16px}
+.daily-ai-head span{display:block;margin-top:4px;color:var(--muted);font-size:12px;line-height:1.8}
+.daily-ai-form{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.daily-ai-form textarea{min-height:54px;width:100%;resize:vertical;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;line-height:1.8;box-sizing:border-box}
+.daily-ai-form textarea:focus{outline:none;border-color:var(--gold-light);box-shadow:0 0 0 3px rgba(212,175,55,.1)}
+.daily-ai-form button{min-height:46px;padding:10px 16px;border:1px solid var(--gold-light);border-radius:12px;background:transparent;color:var(--gold-light);font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.daily-ai-form button:hover{background:rgba(212,175,55,.08)}
+.daily-ai-form button:disabled{opacity:.55;cursor:wait}
+.daily-ai-output{margin-top:12px;padding:13px 15px;border-radius:12px;background:rgba(0,0,0,.18);color:var(--text);white-space:pre-wrap;line-height:2;font-size:13px;min-height:20px}
+.daily-ai-output.is-loading{color:var(--muted)}
+.daily-ai-output.is-error{border:1px solid rgba(220,80,80,.35);color:#fca5a5}
+.daily-ai-suggestions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.daily-ai-suggestions button{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font:inherit;font-size:11px;cursor:pointer}
+.daily-ai-suggestions button:hover{color:var(--text);border-color:var(--gold-light)}
+@media(max-width:720px){.daily-ai-form{grid-template-columns:1fr}.daily-ai-form button{width:100%}.daily-ai-head{display:block}}
