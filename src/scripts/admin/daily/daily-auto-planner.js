@@ -30,16 +30,29 @@
     return el.innerHTML;
   };
 
-  const currentDate = () => {
-    const label = root.querySelector("#dateLabel");
-    return root.dataset.date || label?.dataset?.date || new Date().toISOString().slice(0, 10);
-  };
+  let selectedDate = root.dataset.date || (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  })();
+
+  function shiftDate(value, days) {
+    const date = new Date(`${value}T12:00:00`);
+    date.setDate(date.getDate() + days);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  document.querySelector("#prev")?.addEventListener("click", () => { selectedDate = shiftDate(selectedDate, -1); });
+  document.querySelector("#next")?.addEventListener("click", () => { selectedDate = shiftDate(selectedDate, 1); });
+  document.querySelector("#today")?.addEventListener("click", () => {
+    const now = new Date();
+    selectedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
 
   async function loadPlan(removeIds = []) {
     runButton.disabled = true;
     status.textContent = "در حال تحلیل برنامه، سوابق هنرجویان، اتاق‌ها و زمان‌های آزاد…";
     results.innerHTML = "";
-    const params = new URLSearchParams({ date: currentDate() });
+    const params = new URLSearchParams({ date: selectedDate });
     if (removeIds.length) params.set("removeSessionIds", removeIds.join(","));
 
     try {
