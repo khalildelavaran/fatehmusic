@@ -21,187 +21,44 @@ Astro.response.headers.set("Cache-Control", "no-store");
       <div class="admin-shell daily-shell" dir="rtl" id="dailyDashboardRoot">
         <header class="admin-hero daily-topbar" aria-label="داشبورد روزانه">
           <div class="daily-topbar-side daily-topbar-title">
-            <span class="admin-hero-label">عملیات آموزشگاه</span>
-            <h1>داشبورد روزانه</h1>
+            <span class="admin-hero-label">عملیات آموزشگاه</span><h1>داشبورد روزانه</h1>
           </div>
-          <div class="daily-clock" aria-live="polite">
-            <div id="dateLabel" class="daily-date" dir="rtl"></div>
-            <div id="timeLabel" class="daily-time" dir="ltr"></div>
-          </div>
-          <div class="date-nav" aria-label="تغییر روز">
-            <button id="prev" type="button">روز قبل</button>
-            <button id="today" type="button">امروز</button>
-            <button id="next" type="button">روز بعد</button>
-            <button id="refresh" type="button" aria-label="بازخوانی">بازخوانی</button>
-          </div>
+          <div class="daily-clock" aria-live="polite"><div id="dateLabel" class="daily-date" dir="rtl"></div><div id="timeLabel" class="daily-time" dir="ltr"></div></div>
+          <div class="date-nav" aria-label="تغییر روز"><button id="prev" type="button">روز قبل</button><button id="today" type="button">امروز</button><button id="next" type="button">روز بعد</button><button id="refresh" type="button" aria-label="بازخوانی">بازخوانی</button></div>
         </header>
-
-        <div id="lastSync" class="daily-sync" aria-live="polite"></div>
-        <div id="error" class="daily-error" role="alert" hidden></div>
-
+        <div id="lastSync" class="daily-sync" aria-live="polite"></div><div id="error" class="daily-error" role="alert" hidden></div>
         <section id="summary" class="daily-summary" aria-label="خلاصه امروز"></section>
-
         <section id="dailyAssistant" class="daily-ai-panel" aria-label="دستیار هوشمند منشی">
-          <div class="daily-ai-head">
-            <div>
-              <strong>دستیار هوشمند منشی</strong>
-              <span>برنامه همین روز را بررسی می‌کند و برای نظم کلاس‌ها، تداخل‌ها و جابه‌جایی‌ها پیشنهاد می‌دهد.</span>
-            </div>
-          </div>
-          <form class="daily-ai-form">
-            <textarea maxlength="1200" placeholder="مثلاً: کلاس‌هایی که تداخل دارند را پیدا کن و بهترین راه‌حل را پیشنهاد بده."></textarea>
-            <button type="submit">پرسش از دستیار</button>
-          </form>
-          <div class="daily-ai-suggestions" aria-label="پرسش‌های پیشنهادی">
-            <button type="button" data-question="کلاس‌هایی که تداخل استاد یا اتاق دارند را پیدا کن.">تداخل‌ها را پیدا کن</button>
-            <button type="button" data-question="وضعیت کلی امروز را برای منشی خلاصه کن.">خلاصه امروز</button>
-            <button type="button" data-question="کلاس‌هایی که نیاز به پیگیری منشی دارند را مشخص کن.">نیازمند پیگیری</button>
-          </div>
+          <div class="daily-ai-head"><div><strong>دستیار هوشمند منشی</strong><span>ابتدا چینش روز را بررسی می‌کند؛ موارد مبهم یا تداخل‌های نیازمند تصمیم را به منشی اعلام می‌کند.</span></div></div>
+          <form class="daily-ai-form"><textarea maxlength="1200" placeholder="مثلاً: وضعیت امروز را بررسی کن و اگر لازم است چینش را بهینه کن."></textarea><button type="submit">پرسش از دستیار</button></form>
+          <div class="daily-ai-suggestions" aria-label="پرسش‌های پیشنهادی"><button type="button" data-question="تداخل‌های امروز را پیدا کن و اگر ممکن است چینش را بهینه کن.">تداخل‌ها را بررسی کن</button><button type="button" data-question="وضعیت کلی امروز را برای منشی خلاصه کن.">خلاصه امروز</button><button type="button" data-question="کلاس‌هایی که نیاز به تصمیم منشی دارند را مشخص کن.">نیازمند تصمیم</button></div>
           <div class="daily-ai-output" data-assistant-output aria-live="polite">هنوز پرسشی ارسال نشده است.</div>
-
-          <div class="daily-planner-box" aria-label="پیشنهاد جابه‌جایی جلسه">
-            <div class="daily-planner-head">
-              <div>
-                <strong>پیشنهاد زمان جایگزین</strong>
-                <span>گزینه‌ها توسط قواعد زمان‌بندی سایت بررسی می‌شوند؛ قبل از اعمال، دوباره اعتبارسنجی می‌شوند.</span>
-              </div>
-            </div>
-            <div class="daily-planner-controls">
-              <select id="dailyPlannerSession" aria-label="انتخاب جلسه"></select>
-              <button id="dailyPlannerFind" type="button">پیدا کردن گزینه‌ها</button>
-            </div>
-            <div id="dailyPlannerResults" class="daily-planner-results" aria-live="polite"></div>
-            <div id="dailyPlannerStatus" class="daily-planner-status"></div>
+          <div class="daily-auto-plan-box" aria-label="چینش هوشمند روز">
+            <div class="daily-planner-head"><div><strong>چینش هوشمند روز</strong><span>سوابق ساعت هنرجویان، استاد، اتاق، ظرفیت و وضعیت حضور بررسی می‌شود.</span></div><button id="dailyAutoPlanRun" type="button">ساخت چینش هوشمند</button></div>
+            <div id="dailyAutoPlanStatus" class="daily-planner-status" aria-live="polite"></div><div id="dailyAutoPlanResults" class="daily-planner-results" aria-live="polite"></div>
           </div>
+          <div class="daily-planner-box" aria-label="پیشنهاد زمان جایگزین"><div class="daily-planner-head"><div><strong>پیشنهاد زمان جایگزین</strong><span>قبل از اعمال، گزینه دوباره در Backend اعتبارسنجی می‌شود.</span></div></div><div class="daily-planner-controls"><select id="dailyPlannerSession" aria-label="انتخاب جلسه"></select><button id="dailyPlannerFind" type="button">پیدا کردن گزینه‌ها</button></div><div id="dailyPlannerResults" class="daily-planner-results" aria-live="polite"></div><div id="dailyPlannerStatus" class="daily-planner-status"></div></div>
         </section>
-
-        <section id="timeline" class="dd-timeline" aria-label="نوار زمانی جلسات امروز"></section>
-        <section id="sessionsPanel" class="dd-sessions" aria-label="فهرست جلسات و هنرجویان امروز"></section>
-
-        <div id="quickPaymentModal" class="dd-modal" hidden aria-hidden="true">
-          <div class="dd-modal-backdrop" data-action="close-modal"></div>
-          <div class="dd-modal-box" role="dialog" aria-modal="true" aria-labelledby="quickPaymentTitle">
-            <div class="dd-modal-head">
-              <strong id="quickPaymentTitle">ثبت پرداخت سریع</strong>
-              <button type="button" class="dd-modal-close" data-action="close-modal" aria-label="بستن">×</button>
-            </div>
-            <div id="quickPaymentBody" class="dd-modal-body"></div>
-          </div>
-        </div>
+        <section id="timeline" class="dd-timeline" aria-label="نوار زمانی جلسات امروز"></section><section id="sessionsPanel" class="dd-sessions" aria-label="فهرست جلسات و هنرجویان امروز"></section>
+        <div id="quickPaymentModal" class="dd-modal" hidden aria-hidden="true"><div class="dd-modal-backdrop" data-action="close-modal"></div><div class="dd-modal-box" role="dialog" aria-modal="true" aria-labelledby="quickPaymentTitle"><div class="dd-modal-head"><strong id="quickPaymentTitle">ثبت پرداخت سریع</strong><button type="button" class="dd-modal-close" data-action="close-modal" aria-label="بستن">×</button></div><div id="quickPaymentBody" class="dd-modal-body"></div></div></div>
       </div>
     </main>
   </div>
 </MainLayout>
 <script src="../../scripts/admin/daily/daily-dashboard.js"></script>
 <script src="../../scripts/admin/daily/daily-assistant.js"></script>
-<script src="../../scripts/admin/daily/daily-auto-planner.js"></script>
 <script>
-  const assistant = document.querySelector("#dailyAssistant");
-  const input = assistant?.querySelector("textarea");
-  assistant?.querySelectorAll("[data-question]").forEach((button) => {
-    button.addEventListener("click", () => {
-      if (!input) return;
-      input.value = button.dataset.question || "";
-      input.focus();
-    });
-  });
-
-  const plannerSelect = document.querySelector("#dailyPlannerSession");
-  const plannerFind = document.querySelector("#dailyPlannerFind");
-  const plannerResults = document.querySelector("#dailyPlannerResults");
-  const plannerStatus = document.querySelector("#dailyPlannerStatus");
-  const dashboardRoot = document.querySelector("#dailyDashboardRoot");
-
-  function refreshPlannerSessions() {
-    if (!plannerSelect) return;
-    const seen = new Set();
-    const options = [];
-    document.querySelectorAll("#sessionsPanel [data-session-id]").forEach((node) => {
-      const id = String(node.dataset.sessionId || "");
-      if (!id || seen.has(id)) return;
-      seen.add(id);
-      const text = (node.textContent || "").replace(/\s+/g, " ").trim();
-      options.push(`<option value="${id}">${id} — ${text.slice(0, 90)}</option>`);
-    });
-    plannerSelect.innerHTML = options.length
-      ? options.join("")
-      : '<option value="">جلسه‌ای برای این روز وجود ندارد</option>';
-    plannerSelect.disabled = !options.length;
-    plannerFind.disabled = !options.length;
-  }
-
-  function escPlanner(value) {
-    const el = document.createElement("div");
-    el.textContent = String(value ?? "");
-    return el.innerHTML;
-  }
-
-  async function loadPlannerSuggestions() {
-    const sessionId = plannerSelect?.value;
-    if (!sessionId) return;
-    plannerFind.disabled = true;
-    plannerResults.innerHTML = "";
-    plannerStatus.textContent = "در حال بررسی ظرفیت مدرس، هنرجوها و اتاق‌ها…";
-    try {
-      const response = await fetch(`/api/admin/daily-planner/suggestions?sessionId=${encodeURIComponent(sessionId)}&limit=8`, { credentials: "same-origin", headers: { Accept: "application/json" } });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.success) throw new Error(data?.message || "دریافت پیشنهادها ناموفق بود.");
-      if (!data.candidates?.length) {
-        plannerStatus.textContent = "برای این جلسه در محدوده زمانی فعلی گزینه آزاد پیدا نشد.";
-        return;
-      }
-      plannerStatus.textContent = `برای «${data.session.class_name}» ${data.candidates.length} گزینه پیدا شد.`;
-      plannerResults.innerHTML = data.candidates.map((candidate) => `
-        <div class="daily-planner-candidate">
-          <div>
-            <strong>${escPlanner(candidate.startTime)} — ${escPlanner(candidate.endTime)}</strong>
-            <small>${escPlanner(candidate.roomName ? `اتاق ${candidate.roomName}` : "بدون اتاق")} · ${escPlanner((candidate.reasons || []).join(" · "))}</small>
-          </div>
-          <button type="button" data-planner-apply data-session-id="${escPlanner(sessionId)}" data-session-date="${escPlanner(data.session.session_date)}" data-start="${escPlanner(candidate.startTime)}" data-end="${escPlanner(candidate.endTime)}" data-room="${candidate.roomId ?? ""}">تأیید و اعمال</button>
-        </div>
-      `).join("");
-    } catch (error) {
-      plannerStatus.textContent = error instanceof Error ? error.message : String(error);
-    } finally {
-      plannerFind.disabled = false;
-    }
-  }
-
-  async function applyPlannerCandidate(button) {
-    button.disabled = true;
-    plannerStatus.textContent = "در حال اعتبارسنجی نهایی و اعمال تغییر…";
-    try {
-      const response = await fetch("/api/admin/daily-planner/suggestions", {
-        method: "POST", credentials: "same-origin",
-        headers: { "content-type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          sessionId: Number(button.dataset.sessionId),
-          sessionDate: button.dataset.sessionDate,
-          startTime: button.dataset.start,
-          endTime: button.dataset.end,
-          roomId: button.dataset.room || null,
-        }),
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.success) throw new Error(data?.message || "اعمال تغییر ناموفق بود.");
-      plannerStatus.textContent = data.message || "تغییر برنامه اعمال شد.";
-      plannerResults.innerHTML = "";
-      document.querySelector("#refresh")?.click();
-      setTimeout(refreshPlannerSessions, 300);
-    } catch (error) {
-      plannerStatus.textContent = error instanceof Error ? error.message : String(error);
-      button.disabled = false;
-    }
-  }
-
-  plannerFind?.addEventListener("click", loadPlannerSuggestions);
-  plannerResults?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-planner-apply]");
-    if (button) applyPlannerCandidate(button);
-  });
-  plannerSelect?.addEventListener("focus", refreshPlannerSessions);
-  document.querySelectorAll("#prev,#next,#today,#refresh").forEach((button) => {
-    button.addEventListener("click", () => setTimeout(refreshPlannerSessions, 350));
-  });
-  setTimeout(refreshPlannerSessions, 400);
+(() => {
+  const root=document.querySelector('#dailyDashboardRoot'), assistant=document.querySelector('#dailyAssistant'), input=assistant?.querySelector('textarea');
+  const ps=document.querySelector('#dailyPlannerSession'), pf=document.querySelector('#dailyPlannerFind'), pr=document.querySelector('#dailyPlannerResults'), pst=document.querySelector('#dailyPlannerStatus');
+  const ar=document.querySelector('#dailyAutoPlanRun'), ast=document.querySelector('#dailyAutoPlanStatus'), ars=document.querySelector('#dailyAutoPlanResults');
+  const date=()=>root?.dataset?.date||new Date().toLocaleDateString('en-CA');
+  const esc=v=>{const e=document.createElement('div');e.textContent=String(v??'');return e.innerHTML};
+  assistant?.querySelectorAll('[data-question]').forEach(b=>b.addEventListener('click',()=>{if(input){input.value=b.dataset.question||'';input.focus()}}));
+  function refresh(){if(!ps)return;const seen=new Set(),o=[];document.querySelectorAll('#sessionsPanel [data-session-id]').forEach(n=>{const id=String(n.dataset.sessionId||'');if(!id||seen.has(id))return;seen.add(id);o.push(`<option value="${esc(id)}">${esc(id)} — ${esc((n.textContent||'').replace(/\s+/g,' ').trim().slice(0,90))}</option>`)});ps.innerHTML=o.length?o.join(''):'<option value="">جلسه‌ای برای این روز وجود ندارد</option>';ps.disabled=!o.length;pf.disabled=!o.length}
+  async function suggest(){const id=ps?.value;if(!id)return;pf.disabled=true;pst.textContent='در حال بررسی…';pr.innerHTML='';try{const r=await fetch(`/api/admin/daily-planner/suggestions?sessionId=${encodeURIComponent(id)}&limit=8`,{credentials:'same-origin'}),d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'خطا');pst.textContent=d.candidates?.length?`برای «${d.session.class_name}» گزینه پیدا شد.`:'گزینه آزاد پیدا نشد.';pr.innerHTML=(d.candidates||[]).map(c=>`<div class="daily-planner-candidate"><div><strong>${esc(c.startTime)} — ${esc(c.endTime)}</strong><small>${esc(c.roomName?`اتاق ${c.roomName}`:'بدون اتاق')} · ${esc((c.reasons||[]).join(' · '))}</small></div><button type="button" data-apply data-id="${esc(id)}" data-date="${esc(d.session.session_date)}" data-start="${esc(c.startTime)}" data-end="${esc(c.endTime)}" data-room="${c.roomId??''}">تأیید و اعمال</button></div>`).join('')}catch(e){pst.textContent=e instanceof Error?e.message:String(e)}finally{pf.disabled=false}}
+  async function apply(b){b.disabled=true;pst.textContent='در حال اعتبارسنجی نهایی…';try{const r=await fetch('/api/admin/daily-planner/suggestions',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',Accept:'application/json'},body:JSON.stringify({sessionId:Number(b.dataset.id),sessionDate:b.dataset.date,startTime:b.dataset.start,endTime:b.dataset.end,roomId:b.dataset.room||null})}),d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'اعمال تغییر ناموفق بود.');pst.textContent=d.message||'اعمال شد.';pr.innerHTML='';document.querySelector('#refresh')?.click();setTimeout(refresh,400)}catch(e){pst.textContent=e instanceof Error?e.message:String(e);b.disabled=false}}
+  async function autoPlan(removeIds=[]){if(!ar)return;ar.disabled=true;ast.textContent='در حال تحلیل سوابق، استاد، اتاق و وضعیت حضور…';ars.innerHTML='';try{const q=new URLSearchParams({date:date()});if(removeIds.length)q.set('removeSessionIds',removeIds.join(','));const r=await fetch(`/api/admin/daily-planner/auto?${q}`,{credentials:'same-origin'}),d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'ساخت چینش ناموفق بود.');const p=d.plan;ast.textContent=p.summary;ars.innerHTML=[...(p.removedSessionIds||[]).map(id=>`<div class="daily-planner-candidate"><div><strong>جلسه ${esc(id)} حذف پیشنهادی</strong><small>همه هنرجویان جلسه غیبت/مرخصی ثبت‌شده دارند.</small></div></div>`),...(p.changes||[]).map(c=>`<div class="daily-planner-candidate"><div><strong>${esc(c.className)} · ${esc(c.instructorName)}</strong><small>${esc(c.from.startTime)}–${esc(c.from.endTime)} → ${esc(c.to.startTime)}–${esc(c.to.endTime)} · ${esc(c.to.roomName?`اتاق ${c.to.roomName}`:'بدون اتاق')}</small><small>${esc((c.reasons||[]).join(' · '))}</small></div><button type="button" data-auto-apply data-id="${esc(c.sessionId)}" data-date="${esc(p.date)}" data-start="${esc(c.to.startTime)}" data-end="${esc(c.to.endTime)}" data-room="${c.to.roomId??''}">تأیید جابه‌جایی</button></div>`),...(p.questions||[]).map(q=>`<div class="daily-planner-candidate"><div><strong>نیازمند تصمیم منشی</strong><small>${esc(q.message)}</small></div></div>`)].join('')||'<div class="daily-planner-status">تغییری پیشنهاد نشد.</div>'}catch(e){ast.textContent=e instanceof Error?e.message:String(e)}finally{ar.disabled=false}}
+  ar?.addEventListener('click',()=>autoPlan());pf?.addEventListener('click',suggest);pr?.addEventListener('click',e=>{const b=e.target.closest('[data-apply]');if(b)apply(b)});ars?.addEventListener('click',e=>{const b=e.target.closest('[data-auto-apply]');if(b)apply(b)});document.querySelectorAll('#prev,#next,#today,#refresh').forEach(b=>b.addEventListener('click',()=>setTimeout(refresh,400)));setTimeout(refresh,500);
+})();
 </script>
