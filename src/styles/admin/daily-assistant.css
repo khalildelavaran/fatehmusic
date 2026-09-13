@@ -14,4 +14,19 @@
 .daily-ai-suggestions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .daily-ai-suggestions button{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font:inherit;font-size:11px;cursor:pointer}
 .daily-ai-suggestions button:hover{color:var(--text);border-color:var(--gold-light)}
-@media(max-width:720px){.daily-ai-form{grid-template-columns:1fr}.daily-ai-form button{width:100%}.daily-ai-head{display:block}}
+.daily-planner-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.daily-planner-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.daily-planner-head strong{font-size:13px;color:var(--text)}
+.daily-planner-head span{font-size:11px;color:var(--muted)}
+.daily-planner-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.daily-planner-controls select{min-height:42px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;padding:8px 10px}
+.daily-planner-controls button{min-height:42px;padding:8px 14px;border:1px solid var(--gold-light);border-radius:10px;background:transparent;color:var(--gold-light);font:inherit;font-weight:700;cursor:pointer}
+.daily-planner-controls button:disabled{opacity:.55;cursor:wait}
+.daily-planner-results{display:grid;gap:7px;margin-top:10px}
+.daily-planner-candidate{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:rgba(0,0,0,.14)}
+.daily-planner-candidate strong{display:block;font-size:12px;color:var(--text);direction:ltr;text-align:right}
+.daily-planner-candidate small{display:block;margin-top:3px;color:var(--muted);line-height:1.7}
+.daily-planner-candidate button{padding:7px 10px;border:1px solid var(--gold-light);border-radius:8px;background:transparent;color:var(--gold-light);font:inherit;font-size:11px;cursor:pointer;white-space:nowrap}
+.daily-planner-candidate button:disabled{opacity:.55;cursor:wait}
+.daily-planner-status{margin-top:8px;color:var(--muted);font-size:11px;line-height:1.8;min-height:18px}
+@media(max-width:720px){.daily-ai-form{grid-template-columns:1fr}.daily-ai-form button{width:100%}.daily-ai-head{display:block}.daily-planner-controls{grid-template-columns:1fr}.daily-planner-candidate{grid-template-columns:1fr}.daily-planner-candidate button{width:100%}}
