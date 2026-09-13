@@ -11,6 +11,11 @@ import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/login");
 if (session.role !== ROLES.ADMIN && session.role !== ROLES.REGISTRAR) return new Response("Forbidden", { status: 403 });
+// The daily dashboard shows live attendance/finance state and is fetched
+// fresh on every load anyway (see loadDashboard() in daily-dashboard.js) --
+// never let a browser or intermediary cache serve a stale HTML shell that
+// still references an old, already-replaced client script bundle.
+Astro.response.headers.set("Cache-Control", "no-store");
 ---
 <MainLayout title="داشبورد روزانه | آموزشگاه موسیقی فاتح" noindex={true}>
   <div class="admin-layout">

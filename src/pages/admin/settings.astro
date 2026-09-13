@@ -11,6 +11,7 @@ import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/login");
 if (session.role !== ROLES.ADMIN) return new Response("Forbidden", { status: 403 });
+Astro.response.headers.set("Cache-Control", "no-store");
 ---
 <MainLayout title="تنظیمات | آموزشگاه موسیقی فاتح" noindex={true}>
   <div class="admin-layout">

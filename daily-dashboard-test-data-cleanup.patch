@@ -1,0 +1,79 @@
+diff --git a/migrations/0040_deactivate_seeded_test_dataset.sql b/migrations/0040_deactivate_seeded_test_dataset.sql
+new file mode 100644
+index 0000000..12c1de5
+--- /dev/null
++++ b/migrations/0040_deactivate_seeded_test_dataset.sql
+@@ -0,0 +1,45 @@
++-- Deactivates the synthetic test dataset introduced in migration 0032
++-- (230 test students, 23 dedicated test classes, one per course) so it no
++-- longer appears on the daily dashboard alongside real classes.
++--
++-- Why deactivate instead of delete: these rows are referenced by
++-- enrollments, enrollment_terms, invoices, payments and class_sessions
++-- created since 0032 was applied (including in real, deployed academies
++-- that have been running with this seed data live). Deleting could violate
++-- foreign keys or silently destroy financial/attendance history that some
++-- installs may have already accumulated against these rows. Deactivating
++-- is reversible and immediately removes them from the operational daily
++-- dashboard and from future automatic session generation, without
++-- touching history.
++--
++-- This does not touch real classes/students/schedules -- everything here
++-- is scoped to the exact rows migration 0032 created, identified the same
++-- way 0032 identifies them: title = 'تست — دوره %' for classes, and the
++-- 'TEST DATA' marker in notes for students.
++
++UPDATE classes
++SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
++WHERE title LIKE 'تست — دوره %'
++  AND notes LIKE '%TEST DATA%';
++
++UPDATE class_schedules
++SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
++WHERE class_id IN (
++  SELECT id FROM classes WHERE title LIKE 'تست — دوره %' AND notes LIKE '%TEST DATA%'
++);
++
++-- Cancel (not delete) any class_sessions already materialized for these
++-- test classes -- e.g. for "today" on whichever day this migration
++-- happens to run -- so they stop showing up on the daily dashboard
++-- immediately, while preserving any attendance/finance rows that already
++-- reference them.
++UPDATE class_sessions
++SET status = 'cancelled', notes = notes || ' | غیرفعال‌شده به‌صورت خودکار: کلاس تستی', updated_at = CURRENT_TIMESTAMP
++WHERE status NOT IN ('cancelled', 'completed')
++  AND class_id IN (
++    SELECT id FROM classes WHERE title LIKE 'تست — دوره %' AND notes LIKE '%TEST DATA%'
++  );
++
++UPDATE students
++SET status = 'inactive', updated_at = CURRENT_TIMESTAMP
++WHERE notes LIKE '%TEST DATA%';
+diff --git a/src/pages/admin/daily.astro b/src/pages/admin/daily.astro
+index a949a95..0ae1c9e 100644
+--- a/src/pages/admin/daily.astro
++++ b/src/pages/admin/daily.astro
+@@ -11,6 +11,11 @@ import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+ const session = await getAdminSession(Astro.request, env as AdminEnv);
+ if (!session) return Astro.redirect("/login");
+ if (session.role !== ROLES.ADMIN && session.role !== ROLES.REGISTRAR) return new Response("Forbidden", { status: 403 });
++// The daily dashboard shows live attendance/finance state and is fetched
++// fresh on every load anyway (see loadDashboard() in daily-dashboard.js) --
++// never let a browser or intermediary cache serve a stale HTML shell that
++// still references an old, already-replaced client script bundle.
++Astro.response.headers.set("Cache-Control", "no-store");
+ ---
+ <MainLayout title="داشبورد روزانه | آموزشگاه موسیقی فاتح" noindex={true}>
+   <div class="admin-layout">
+diff --git a/src/pages/admin/settings.astro b/src/pages/admin/settings.astro
+index 20acf5a..f2e976c 100644
+--- a/src/pages/admin/settings.astro
++++ b/src/pages/admin/settings.astro
+@@ -11,6 +11,7 @@ import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
+ const session = await getAdminSession(Astro.request, env as AdminEnv);
+ if (!session) return Astro.redirect("/login");
+ if (session.role !== ROLES.ADMIN) return new Response("Forbidden", { status: 403 });
++Astro.response.headers.set("Cache-Control", "no-store");
+ ---
+ <MainLayout title="تنظیمات | آموزشگاه موسیقی فاتح" noindex={true}>
+   <div class="admin-layout">
