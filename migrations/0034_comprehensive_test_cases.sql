@@ -45,7 +45,18 @@ WHERE c.title LIKE 'تست — %'
 -- 2. Keep TEST session rows provisioned; add any missing rows.
 -- Cancelled sessions intentionally receive NO enrollment-session row;
 -- the operational integrity trigger forbids attendance rows on them.
+-- The DELETE also makes this migration recoverable if an earlier failed
+-- run left partial TEST attendance rows before the migration was recorded.
 -- --------------------------------------------------------------------
+DELETE FROM enrollment_sessions
+WHERE session_id IN (
+  SELECT cs.id
+  FROM class_sessions cs
+  JOIN classes c ON c.id = cs.class_id
+  WHERE c.title LIKE 'تست — %'
+    AND cs.status = 'cancelled'
+);
+
 INSERT OR IGNORE INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note
 )
