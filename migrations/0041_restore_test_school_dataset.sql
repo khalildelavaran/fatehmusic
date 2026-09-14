@@ -3,11 +3,10 @@
 --
 -- Migration 0040 intentionally deactivated the synthetic dataset created
 -- by migrations 0032-0036. The operational test suite requires the full
--- dataset to be active again, including all 230 test students and all
--- TEST classes/schedules.
+-- dataset to be active again, including all 230 test students and TEST
+-- classes, memberships, enrollments, terms and session rows.
 --
--- TEST DATA ONLY: every mutation is scoped to deterministic TEST markers.
--- Idempotent: safe to run more than once.
+-- TEST DATA ONLY. Idempotent and safe to run after a partially failed run.
 -- ====================================================================
 
 -- --------------------------------------------------------------------
@@ -20,7 +19,7 @@ WHERE national_code LIKE '99%'
   AND notes LIKE '%TEST DATA%';
 
 -- --------------------------------------------------------------------
--- 2. Restore the 23 dedicated course test classes disabled by 0040.
+-- 2. Restore all dedicated TEST classes from migration 0032.
 -- --------------------------------------------------------------------
 UPDATE classes
 SET status = 'active',
@@ -29,7 +28,7 @@ WHERE title LIKE 'تست — دوره %'
   AND notes LIKE '%TEST DATA%';
 
 -- --------------------------------------------------------------------
--- 3. Restore their recurring schedules.
+-- 3. Restore their schedules.
 -- --------------------------------------------------------------------
 UPDATE class_schedules
 SET status = 'active',
@@ -42,12 +41,9 @@ WHERE class_id IN (
 );
 
 -- --------------------------------------------------------------------
--- 4. Restore legacy memberships for all test students whose national
---    code maps to the corresponding course.
+-- 4. Restore legacy class memberships.
 -- --------------------------------------------------------------------
-INSERT OR IGNORE INTO class_students (
-  class_id, student_id, enrollment_date, status
-)
+INSERT INTO class_students (class_id, student_id, enrollment_date, status)
 SELECT
   c.id,
   s.id,
@@ -69,8 +65,6 @@ WHERE c.title LIKE 'تست — دوره %'
       AND existing.status = 'active'
   );
 
--- Existing TEST memberships must also be active again.
--- class_students has no updated_at column, so only status is restored.
 UPDATE class_students
 SET status = 'active'
 WHERE class_id IN (
@@ -87,10 +81,10 @@ AND student_id IN (
 );
 
 -- --------------------------------------------------------------------
--- 5. Restore normalized enrollments for every TEST class/student pair.
---    Do not rely on INSERT OR IGNORE here: some deployments may have a
---    broader UNIQUE(class_id, student_id) constraint. We explicitly skip
---    any existing row, then activate all existing TEST enrollments below.
+-- 5. Restore normalized enrollments WITHOUT INSERT OR IGNORE.
+-- SQLite's partial unique index on (class_id, student_id) rejects an
+-- INSERT OR IGNORE if another unique/trigger path makes the conflict
+-- non-ignorable. NOT EXISTS is deterministic and migration-safe here.
 -- --------------------------------------------------------------------
 INSERT INTO enrollments (
   class_id, student_id, enrolled_at, status, source_class_student_id
@@ -118,9 +112,10 @@ WHERE c.title LIKE 'تست — %'
     FROM enrollments existing
     WHERE existing.class_id = c.id
       AND existing.student_id = s.id
-  );
+);
 
--- Any existing TEST enrollment that was deactivated is restored.
+-- Any existing TEST enrollment is restored to active. This includes
+-- rows that may have been present before 0040 deactivated the dataset.
 UPDATE enrollments
 SET status = 'active',
     updated_at = CURRENT_TIMESTAMP
@@ -183,22 +178,24 @@ WHERE enrollment_id IN (
 AND term_number = 1;
 
 -- --------------------------------------------------------------------
--- 7. Restore all non-cancelled TEST session attendance rows.
---    Cancelled sessions remain without attendance rows by design.
+-- 7. Restore all non-cancelled TEST session rows.
+-- Existing attendance statuses are preserved by NOT EXISTS.
 -- --------------------------------------------------------------------
-INSERT OR IGNORE INTO enrollment_sessions (
+INSERT INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status,
   attendance_mode, note
 )
 SELECT
   e.id,
   cs.id,
-  (SELECT et.id
-   FROM enrollment_terms et
-   WHERE et.enrollment_id = e.id
-     AND et.status = 'active'
-   ORDER BY et.term_number DESC
-   LIMIT 1),
+  (
+    SELECT et.id
+    FROM enrollment_terms et
+    WHERE et.enrollment_id = e.id
+      AND et.status = 'active'
+    ORDER BY et.term_number DESC
+    LIMIT 1
+  ),
   'pending',
   CASE WHEN cs.location_type = 'online' THEN 'online' ELSE 'in_person' END,
   'TEST DATA — restored attendance row'
@@ -219,8 +216,8 @@ WHERE c.title LIKE 'تست — %'
   );
 
 -- --------------------------------------------------------------------
--- 8. Restore future/current TEST sessions that 0040 cancelled.
---    Historical completed/cancelled state is preserved.
+-- 8. Restore TEST future/current regular sessions that 0040 cancelled.
+-- Historical completed/cancelled records remain untouched.
 -- --------------------------------------------------------------------
 UPDATE class_sessions
 SET status = 'scheduled',
@@ -240,20 +237,21 @@ AND session_date >= '2026-09-14'
 AND status = 'cancelled'
 AND type = 'regular';
 
--- Recreate attendance rows for restored scheduled sessions.
-INSERT OR IGNORE INTO enrollment_sessions (
+INSERT INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status,
   attendance_mode, note
 )
 SELECT
   e.id,
   cs.id,
-  (SELECT et.id
-   FROM enrollment_terms et
-   WHERE et.enrollment_id = e.id
-     AND et.status = 'active'
-   ORDER BY et.term_number DESC
-   LIMIT 1),
+  (
+    SELECT et.id
+    FROM enrollment_terms et
+    WHERE et.enrollment_id = e.id
+      AND et.status = 'active'
+    ORDER BY et.term_number DESC
+    LIMIT 1
+  ),
   'pending',
   CASE WHEN cs.location_type = 'online' THEN 'online' ELSE 'in_person' END,
   'TEST DATA — restored current/future attendance row'
@@ -265,13 +263,18 @@ WHERE c.title LIKE 'تست — %'
   AND c.notes LIKE '%TEST DATA%'
   AND s.national_code LIKE '99%'
   AND s.notes LIKE '%TEST DATA%'
-  AND cs.status = 'scheduled';
+  AND cs.status = 'scheduled'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM enrollment_sessions existing
+    WHERE existing.enrollment_id = e.id
+      AND existing.session_id = cs.id
+  );
 
 -- --------------------------------------------------------------------
--- 9. Restore teacher attendance rows only where the session is not
---    cancelled. Existing attendance values are preserved.
+-- 9. Restore teacher attendance where absent from the table.
 -- --------------------------------------------------------------------
-INSERT OR IGNORE INTO teacher_session_attendance (
+INSERT INTO teacher_session_attendance (
   session_id, instructor_id, status, note
 )
 SELECT
@@ -283,4 +286,10 @@ FROM class_sessions cs
 JOIN classes c ON c.id = cs.class_id
 WHERE c.title LIKE 'تست — %'
   AND c.notes LIKE '%TEST DATA%'
-  AND cs.status <> 'cancelled';
+  AND cs.status <> 'cancelled'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM teacher_session_attendance existing
+    WHERE existing.session_id = cs.id
+      AND existing.instructor_id = cs.instructor_id
+  );
