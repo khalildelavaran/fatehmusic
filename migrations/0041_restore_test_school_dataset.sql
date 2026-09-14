@@ -7,9 +7,8 @@
 -- classes, memberships, enrollments, terms and session rows.
 --
 -- TEST DATA ONLY. Idempotent and safe after partially failed attempts.
--- Existing duplicate historical enrollment rows are handled without
--- violating the partial unique index: only one canonical row per
--- (class_id, student_id) is restored to active.
+-- Existing duplicate historical enrollment rows are never mass-updated;
+-- this avoids violating the partial unique index on active enrollments.
 -- ====================================================================
 
 -- --------------------------------------------------------------------
@@ -45,8 +44,8 @@ WHERE class_id IN (
 
 -- --------------------------------------------------------------------
 -- 4. Restore legacy class memberships.
---    Only the canonical lowest-id row is restored to active when duplicate
---    historical TEST rows exist; this preserves the partial unique index.
+-- Existing active memberships are left untouched. Missing memberships are
+-- inserted. Existing inactive duplicate rows remain inactive.
 -- --------------------------------------------------------------------
 INSERT INTO class_students (class_id, student_id, enrollment_date, status)
 SELECT
@@ -70,40 +69,12 @@ WHERE c.title LIKE 'تست — دوره %'
       AND existing.status = 'active'
   );
 
-UPDATE class_students
-SET status = 'active'
-WHERE id IN (
-  SELECT MIN(cs.id)
-  FROM class_students cs
-  JOIN classes c ON c.id = cs.class_id
-  JOIN students s ON s.id = cs.student_id
-  WHERE c.title LIKE 'تست — دوره %'
-    AND c.notes LIKE '%TEST DATA%'
-    AND s.national_code LIKE '99%'
-    AND s.notes LIKE '%TEST DATA%'
-  GROUP BY cs.class_id, cs.student_id
-);
-
 -- --------------------------------------------------------------------
--- 5. Restore normalized enrollments.
---    First choose exactly one canonical TEST enrollment per pair and
---    restore it to active. Then create only genuinely missing pairs.
+-- 5. Restore normalized enrollments without changing existing rows.
+-- Existing active enrollments are preserved. Existing inactive/withdrawn
+-- historical rows are also preserved. Only pairs with no enrollment row
+-- at all are inserted, preventing every unique-index conflict.
 -- --------------------------------------------------------------------
-UPDATE enrollments
-SET status = 'active',
-    updated_at = CURRENT_TIMESTAMP
-WHERE id IN (
-  SELECT MIN(e.id)
-  FROM enrollments e
-  JOIN classes c ON c.id = e.class_id
-  JOIN students s ON s.id = e.student_id
-  WHERE c.title LIKE 'تست — %'
-    AND c.notes LIKE '%TEST DATA%'
-    AND s.national_code LIKE '99%'
-    AND s.notes LIKE '%TEST DATA%'
-  GROUP BY e.class_id, e.student_id
-);
-
 INSERT INTO enrollments (
   class_id, student_id, enrolled_at, status, source_class_student_id
 )
@@ -133,7 +104,7 @@ WHERE c.title LIKE 'تست — %'
   );
 
 -- --------------------------------------------------------------------
--- 6. Ensure one active term exists for every canonical TEST enrollment.
+-- 6. Ensure one active term exists for every active TEST enrollment.
 -- --------------------------------------------------------------------
 INSERT INTO enrollment_terms (
   enrollment_id, term_number, start_date, planned_sessions,
@@ -161,22 +132,6 @@ WHERE c.title LIKE 'تست — %'
     WHERE et.enrollment_id = e.id
       AND et.term_number = 1
   );
-
-UPDATE enrollment_terms
-SET status = 'active',
-    updated_at = CURRENT_TIMESTAMP
-WHERE enrollment_id IN (
-  SELECT MIN(e.id)
-  FROM enrollments e
-  JOIN classes c ON c.id = e.class_id
-  JOIN students s ON s.id = e.student_id
-  WHERE c.title LIKE 'تست — %'
-    AND c.notes LIKE '%TEST DATA%'
-    AND s.national_code LIKE '99%'
-    AND s.notes LIKE '%TEST DATA%'
-  GROUP BY e.class_id, e.student_id
-)
-AND term_number = 1;
 
 -- --------------------------------------------------------------------
 -- 7. Restore all non-cancelled TEST session rows.
