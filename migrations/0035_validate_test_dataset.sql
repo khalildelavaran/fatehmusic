@@ -48,7 +48,9 @@ WHERE c.title LIKE 'تست — %'
       AND x.end_time = cs.end_time
   );
 
--- Ensure enrollment-session rows exist for the historical sessions.
+-- Ensure enrollment-session rows exist for historical sessions.
+-- Cancelled sessions intentionally receive NO enrollment-session row;
+-- the operational integrity trigger forbids attendance rows on them.
 INSERT OR IGNORE INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note
 )
@@ -65,14 +67,14 @@ JOIN enrollments e ON e.class_id = cs.class_id AND e.status = 'active'
 LEFT JOIN enrollment_terms et
   ON et.enrollment_id = e.id AND et.status = 'active'
 WHERE c.title LIKE 'تست — %'
-  AND cs.session_date BETWEEN '2026-09-01' AND '2026-09-13';
+  AND cs.session_date BETWEEN '2026-09-01' AND '2026-09-13'
+  AND cs.status <> 'cancelled';
 
 -- Historical attendance matrix. The national-code suffix (1..10) gives
 -- each student a stable cohort without relying on generated database IDs.
 UPDATE enrollment_sessions
 SET
   status = CASE
-    WHEN cs.status = 'cancelled' THEN 'pending'
     WHEN ((CAST(substr(st.national_code, -1) AS INTEGER) + CAST(strftime('%d', cs.session_date) AS INTEGER)) % 10) IN (0,1) THEN 'excused'
     WHEN ((CAST(substr(st.national_code, -1) AS INTEGER) + CAST(strftime('%d', cs.session_date) AS INTEGER)) % 10) IN (2,3,4) THEN 'absent'
     ELSE 'present'
@@ -85,7 +87,7 @@ JOIN classes c ON c.id = cs.class_id
 WHERE enrollment_sessions.session_id = cs.id
   AND c.title LIKE 'تست — %'
   AND cs.session_date BETWEEN '2026-09-01' AND '2026-09-13'
-  AND cs.status != 'cancelled';
+  AND cs.status <> 'cancelled';
 
 -- A small deterministic set of current-day records stays pending so the
 -- attendance UI can still be tested from an unmarked state.
@@ -139,7 +141,7 @@ SET
     ELSE 1800000
   END,
   billing_type = CASE WHEN (enrollment_id % 6) = 0 THEN 'monthly' ELSE 'session_based' END,
-  planned_sessions = CASE WHEN billing_type = 'monthly' THEN planned_sessions ELSE 16 END,
+  planned_sessions = CASE WHEN (enrollment_id % 6) = 0 THEN 4 ELSE 16 END,
   tuition_due_date = CASE
     WHEN (enrollment_id % 5) = 4 THEN '2026-09-05'
     WHEN (enrollment_id % 5) = 3 THEN '2026-09-20'
