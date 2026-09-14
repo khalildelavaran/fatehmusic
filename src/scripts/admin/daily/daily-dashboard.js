@@ -69,6 +69,16 @@
   function timelineColumns() { const columns = state.rooms.map((room) => ({ id: room.id, name: room.name, items: [] })); const byId = new Map(columns.map((c) => [String(c.id), c])); let unassigned = null; for (const item of visibleSessions()) { if (item.room_id != null && byId.has(String(item.room_id))) byId.get(String(item.room_id)).items.push(item); else { if (!unassigned) unassigned = { id: null, name: item.room_name || "بدون اتاق", items: [] }; unassigned.items.push(item); } } if (unassigned) columns.push(unassigned); return columns; }
   function findSession(sessionId) { return state.sessions.find((s) => String(s.id) === String(sessionId)) || null; }
   function findStudent(session, enrollmentSessionId) { return (session?.students || []).find((st) => String(st.enrollmentSessionId) === String(enrollmentSessionId)) || null; }
+  function normalizeSession(session) {
+    return {
+      ...session,
+      className: session.class_title ?? session.className ?? "",
+      instructorName: session.instructor_name ?? session.instructorName ?? "",
+      teacherAttendanceStatus: session.teacher_attendance_status ?? session.teacherAttendanceStatus ?? "pending",
+      cancelReason: session.status === "cancelled" ? (session.notes ?? session.cancelReason ?? "") : (session.cancelReason ?? ""),
+      students: Array.isArray(session.students) ? session.students : [],
+    };
+  }
 
   const els = { dateLabel: root.querySelector("#dateLabel"), timeLabel: root.querySelector("#timeLabel"), sync: root.querySelector("#lastSync"), error: root.querySelector("#error"), summary: root.querySelector("#summary"), timeline: root.querySelector("#timeline"), sessionsPanel: root.querySelector("#sessionsPanel"), modal: root.querySelector("#quickPaymentModal"), modalBody: root.querySelector("#quickPaymentBody") };
   function render() { renderClock(); renderSync(); renderError(); renderSummary(); renderTimeline(); renderSessionsPanel(); renderModal(); }
