@@ -35,12 +35,6 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
   }>();
 
   for (const schedule of schedules.results) {
-    // Idempotency check: must key on the schedule itself (source_schedule_id),
-    // not on start_time and not on a notes-text marker. Both of those are
-    // values this feature is explicitly designed to let users change (time
-    // via drag/resize/inline edit; notes via the manual session editor) --
-    // keying on either meant an edited session would silently get a
-    // duplicate re-inserted on the next dashboard load.
     const existing = await db.prepare(`
       SELECT id FROM class_sessions
       WHERE source_schedule_id = ? AND session_date = ? AND status <> 'cancelled'
@@ -67,24 +61,38 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
 }
 
 export const GET: APIRoute = async ({ request }) => {
+  let stage = "start";
   try {
+    stage = "auth";
     const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
     if (denied) return denied;
+
+    stage = "database";
     const db = env.DB;
     if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
 
+    stage = "date";
     const url = new URL(request.url);
     const date = url.searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ success: false, message: "تاریخ معتبر نیست." }, 422);
 
+    stage = "materialize";
     await materializeScheduledSessions(db, date);
+
+    stage = "list-sessions";
     const sessions = await listSessionsForDate(db, date);
+
+    stage = "provision";
     for (const session of sessions) {
       if (session.status === "cancelled") continue;
-      try { await provisionEnrollmentSessionsForClassSession(db, session.id); }
-      catch (error) { console.error(`[admin/daily-dashboard] provisioning failed for session ${session.id}:`, error); }
+      try {
+        await provisionEnrollmentSessionsForClassSession(db, session.id);
+      } catch (error) {
+        console.error(`[admin/daily-dashboard] provisioning failed for session ${session.id}:`, error);
+      }
     }
 
+    stage = "session-query";
     const sessionRows = await db.prepare(`
       SELECT cs.id, cs.class_id, cs.session_date, cs.start_time, cs.end_time,
         cs.instructor_id, cs.room_id, cs.location_type, cs.type, cs.status, cs.original_session_id, cs.notes,
@@ -111,6 +119,7 @@ export const GET: APIRoute = async ({ request }) => {
 
     const result = [];
     for (const session of sessionRows.results) {
+      stage = `student-query:${session.id}`;
       const students = await db.prepare(`
         SELECT
           es.id AS enrollment_session_id, e.id AS enrollment_id, e.student_id,
@@ -161,20 +170,15 @@ export const GET: APIRoute = async ({ request }) => {
         invoice_id: number | null; invoice_amount: number | null; invoice_due_date: string | null; paid_amount: number | null;
       }>();
 
+      stage = `student-map:${session.id}`;
       result.push({
         ...session,
-        // Camel-case aliases are kept for the interactive planner. The snake_case
-        // fields remain the API's database-oriented representation.
         startTime: session.start_time,
         endTime: session.end_time,
         student_names: students.results.map((student) => student.student_name).join("، "),
         course_names: session.class_title,
         students: students.results.map((student) => {
           const consumedSessions = student.consumed_sessions ?? 0;
-          // Intentionally NOT clamped to zero: a negative remainingSessions
-          // means the student attended more sessions than their paid term
-          // covers, and the daily dashboard's quick-payment badge (spec 45.3)
-          // must be able to surface that as an alarm state.
           const remainingSessions = student.billing_type === "monthly" || student.planned_sessions == null
             ? null : student.planned_sessions - consumedSessions;
           const renewalReady = student.billing_type === "monthly"
@@ -222,13 +226,17 @@ export const GET: APIRoute = async ({ request }) => {
       });
     }
 
-    // Active rooms drive the daily dashboard timeline columns (spec section
-    // 46.4): the frontend must never hard-code a room count or list.
+    stage = "rooms";
     const rooms = await listActiveRooms(db);
 
+    stage = "response";
     return json({ success: true, date, sessions: result, rooms });
   } catch (error) {
-    console.error("[admin/daily-dashboard] request failed:", error);
-    return json({ success: false, message: "دریافت اطلاعات داشبورد روزانه با خطا مواجه شد." }, 500);
+    console.error("[admin/daily-dashboard] request failed:", { stage, error });
+    const detail = error instanceof Error ? error.message : String(error);
+    return json({
+      success: false,
+      message: `دریافت اطلاعات داشبورد روزانه با خطا مواجه شد. [${stage}] ${detail}`,
+    }, 500);
   }
 };
