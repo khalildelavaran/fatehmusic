@@ -43,6 +43,8 @@ WHERE c.title LIKE 'تست — %'
 
 -- --------------------------------------------------------------------
 -- 2. Keep TEST session rows provisioned; add any missing rows.
+-- Cancelled sessions intentionally receive NO enrollment-session row;
+-- the operational integrity trigger forbids attendance rows on them.
 -- --------------------------------------------------------------------
 INSERT OR IGNORE INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note
@@ -56,7 +58,8 @@ JOIN classes c ON c.id = cs.class_id AND c.title LIKE 'تست — %'
 JOIN enrollments e ON e.class_id = c.id AND e.status = 'active'
 LEFT JOIN enrollment_terms et
   ON et.enrollment_id = e.id AND et.status = 'active' AND et.term_number = 1
-WHERE cs.type = 'regular';
+WHERE cs.type = 'regular'
+  AND cs.status <> 'cancelled';
 
 -- --------------------------------------------------------------------
 -- 3. Historical attendance matrix.
@@ -64,7 +67,6 @@ WHERE cs.type = 'regular';
 UPDATE enrollment_sessions
 SET
   status = CASE
-    WHEN cs.status = 'cancelled' THEN 'pending'
     WHEN cs.session_date > '2026-09-14' THEN 'pending'
     WHEN cs.session_date = '2026-09-14' THEN
       CASE (e.id % 4)
@@ -88,7 +90,6 @@ SET
     ELSE CASE WHEN (e.id % 7) = 0 THEN 'online' ELSE 'in_person' END
   END,
   note = CASE
-    WHEN cs.status = 'cancelled' THEN 'TEST DATA — cancelled; attendance intentionally unmarked'
     WHEN cs.session_date = '2026-09-14' AND (e.id % 4) = 2 THEN 'TEST DATA — leave / excused'
     WHEN cs.session_date < '2026-09-14' AND ((e.id + cs.id) % 6) = 0 THEN 'TEST DATA — leave / excused'
     ELSE 'TEST DATA — attendance scenario'
@@ -119,7 +120,8 @@ SELECT cs.id, cs.instructor_id,
        'TEST DATA — teacher attendance'
 FROM class_sessions cs
 JOIN classes c ON c.id = cs.class_id
-WHERE c.title LIKE 'تست — %';
+WHERE c.title LIKE 'تست — %'
+  AND cs.status <> 'cancelled';
 
 -- --------------------------------------------------------------------
 -- 5. Makeup sessions for a deterministic subset of historical leaves.
@@ -184,7 +186,8 @@ WHERE status = 'active'
 
 INSERT INTO invoices (enrollment_term_id, amount, due_date, status, description)
 SELECT
-  et.id, et.tuition_amount, et.tuition_due_date,
+  et.id, et.tuition_amount,
+  et.tuition_due_date,
   CASE (e.id % 6)
     WHEN 1 THEN 'pending'
     WHEN 2 THEN 'pending'
