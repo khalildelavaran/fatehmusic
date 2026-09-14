@@ -42,9 +42,10 @@ WHERE class_id IN (
 );
 
 -- --------------------------------------------------------------------
--- 4. Restore legacy memberships for all test students.
+-- 4. Restore legacy memberships for all test students whose national
+--    code maps to the corresponding course.
 -- --------------------------------------------------------------------
-INSERT INTO class_students (
+INSERT OR IGNORE INTO class_students (
   class_id, student_id, enrollment_date, status
 )
 SELECT
@@ -69,7 +70,7 @@ WHERE c.title LIKE 'تست — دوره %'
   );
 
 -- Existing TEST memberships must also be active again.
--- class_students has no updated_at column.
+-- class_students has no updated_at column, so only status is restored.
 UPDATE class_students
 SET status = 'active'
 WHERE class_id IN (
@@ -86,32 +87,11 @@ AND student_id IN (
 );
 
 -- --------------------------------------------------------------------
--- 5. Restore normalized enrollments without creating duplicate active
---    class/student pairs. Existing TEST enrollments are activated first.
+-- 5. Restore normalized enrollments for every TEST class/student pair.
+--    Do not rely on INSERT OR IGNORE here: some deployments may have a
+--    broader UNIQUE(class_id, student_id) constraint. We explicitly skip
+--    any existing row, then activate all existing TEST enrollments below.
 -- --------------------------------------------------------------------
-UPDATE enrollments
-SET status = 'active',
-    updated_at = CURRENT_TIMESTAMP
-WHERE class_id IN (
-  SELECT id
-  FROM classes
-  WHERE title LIKE 'تست — %'
-    AND notes LIKE '%TEST DATA%'
-)
-AND student_id IN (
-  SELECT id
-  FROM students
-  WHERE national_code LIKE '99%'
-    AND notes LIKE '%TEST DATA%'
-)
-AND EXISTS (
-  SELECT 1
-  FROM class_students cs
-  WHERE cs.class_id = enrollments.class_id
-    AND cs.student_id = enrollments.student_id
-    AND cs.status = 'active'
-);
-
 INSERT INTO enrollments (
   class_id, student_id, enrolled_at, status, source_class_student_id
 )
@@ -138,8 +118,24 @@ WHERE c.title LIKE 'تست — %'
     FROM enrollments existing
     WHERE existing.class_id = c.id
       AND existing.student_id = s.id
-      AND existing.status = 'active'
   );
+
+-- Any existing TEST enrollment that was deactivated is restored.
+UPDATE enrollments
+SET status = 'active',
+    updated_at = CURRENT_TIMESTAMP
+WHERE class_id IN (
+  SELECT id
+  FROM classes
+  WHERE title LIKE 'تست — %'
+    AND notes LIKE '%TEST DATA%'
+)
+AND student_id IN (
+  SELECT id
+  FROM students
+  WHERE national_code LIKE '99%'
+    AND notes LIKE '%TEST DATA%'
+);
 
 -- --------------------------------------------------------------------
 -- 6. Ensure one active term exists for every restored TEST enrollment.
@@ -188,9 +184,9 @@ AND term_number = 1;
 
 -- --------------------------------------------------------------------
 -- 7. Restore all non-cancelled TEST session attendance rows.
---    Cancelled historical sessions remain excluded by design.
+--    Cancelled sessions remain without attendance rows by design.
 -- --------------------------------------------------------------------
-INSERT INTO enrollment_sessions (
+INSERT OR IGNORE INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status,
   attendance_mode, note
 )
@@ -245,7 +241,7 @@ AND status = 'cancelled'
 AND type = 'regular';
 
 -- Recreate attendance rows for restored scheduled sessions.
-INSERT INTO enrollment_sessions (
+INSERT OR IGNORE INTO enrollment_sessions (
   enrollment_id, session_id, enrollment_term_id, status,
   attendance_mode, note
 )
@@ -269,19 +265,13 @@ WHERE c.title LIKE 'تست — %'
   AND c.notes LIKE '%TEST DATA%'
   AND s.national_code LIKE '99%'
   AND s.notes LIKE '%TEST DATA%'
-  AND cs.status = 'scheduled'
-  AND NOT EXISTS (
-    SELECT 1
-    FROM enrollment_sessions existing
-    WHERE existing.enrollment_id = e.id
-      AND existing.session_id = cs.id
-  );
+  AND cs.status = 'scheduled';
 
 -- --------------------------------------------------------------------
 -- 9. Restore teacher attendance rows only where the session is not
 --    cancelled. Existing attendance values are preserved.
 -- --------------------------------------------------------------------
-INSERT INTO teacher_session_attendance (
+INSERT OR IGNORE INTO teacher_session_attendance (
   session_id, instructor_id, status, note
 )
 SELECT
@@ -293,10 +283,4 @@ FROM class_sessions cs
 JOIN classes c ON c.id = cs.class_id
 WHERE c.title LIKE 'تست — %'
   AND c.notes LIKE '%TEST DATA%'
-  AND cs.status <> 'cancelled'
-  AND NOT EXISTS (
-    SELECT 1
-    FROM teacher_session_attendance existing
-    WHERE existing.session_id = cs.id
-      AND existing.instructor_id = cs.instructor_id
-  );
+  AND cs.status <> 'cancelled';
