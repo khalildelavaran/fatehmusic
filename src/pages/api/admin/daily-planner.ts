@@ -74,11 +74,23 @@ export const PATCH: APIRoute = async ({ request }) => {
 
     const db = env.DB;
     const session = await db.prepare(`
-      SELECT id, session_date, status, room_id FROM class_sessions WHERE id = ? LIMIT 1
-    `).bind(sessionId).first<{ id: number; session_date: string; status: string; room_id: number | null }>();
+      SELECT cs.id, cs.session_date, cs.status, cs.room_id, c.class_type
+      FROM class_sessions cs
+      JOIN classes c ON c.id = cs.class_id
+      WHERE cs.id = ? LIMIT 1
+    `).bind(sessionId).first<{ id: number; session_date: string; status: string; room_id: number | null; class_type: string }>();
 
     if (!session || session.status === "cancelled" || session.session_date !== sessionDate) {
       return json({ success: false, message: "جلسه موردنظر پیدا نشد یا قابل ویرایش نیست." }, 404);
+    }
+
+    // Every class at this school is one-on-one except the group children's
+    // class (class_type = 'group' | 'workshop') -- see AGENTS.md. A solo
+    // session's duration is always exactly 30 minutes; there is no separate
+    // "instructor time" to configure, the student's slot IS the session.
+    const isIndividual = session.class_type !== "group" && session.class_type !== "workshop";
+    if (isIndividual && minutes(endTime) - minutes(startTime) !== 30) {
+      return json({ success: false, message: "مدت جلسه تکی باید دقیقاً ۳۰ دقیقه باشد." }, 422);
     }
 
     const nextRoomId = roomId === undefined ? session.room_id : roomId;
