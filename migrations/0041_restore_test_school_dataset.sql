@@ -63,9 +63,9 @@ WHERE c.title LIKE 'تست — دوره %'
   AND c.status = 'active';
 
 -- Existing TEST memberships must also be active again.
+-- class_students has no updated_at column, so only status is restored.
 UPDATE class_students
-SET status = 'active',
-    updated_at = CURRENT_TIMESTAMP
+SET status = 'active'
 WHERE class_id IN (
   SELECT id
   FROM classes
