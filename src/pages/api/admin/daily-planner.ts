@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { listActiveRooms } from "../../../server/rooms";
+import { setStudentSessionStatus } from "../../../server/student-session-operations";
 
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -57,10 +58,6 @@ export const PATCH: APIRoute = async ({ request }) => {
     const sessionDate = body?.sessionDate;
     const startTime = body?.startTime;
     const endTime = body?.endTime;
-    // Distinguish "roomId key absent" (keep the session's current room)
-    // from "roomId explicitly sent as null/empty" (clear the room) — the
-    // daily dashboard's time-only edits (panel/timeline click, not drag)
-    // never include roomId, and must not silently clear the session's room.
     const roomIdProvided = body != null && Object.prototype.hasOwnProperty.call(body, "roomId");
     const roomId = !roomIdProvided ? undefined
       : (body.roomId == null || (body.roomId as unknown) === "" ? null : Number(body.roomId));
@@ -84,8 +81,6 @@ export const PATCH: APIRoute = async ({ request }) => {
       return json({ success: false, message: "جلسه موردنظر پیدا نشد یا قابل ویرایش نیست." }, 404);
     }
 
-    // Resolve the room to persist: explicit value from the request, or the
-    // session's existing room when the client didn't mention roomId at all.
     const nextRoomId = roomId === undefined ? session.room_id : roomId;
 
     if (nextRoomId !== null) {
@@ -95,9 +90,6 @@ export const PATCH: APIRoute = async ({ request }) => {
       if (!room) return json({ success: false, message: "اتاق انتخاب‌شده فعال نیست." }, 404);
     }
 
-    // Intentionally do not reject overlapping instructor/room assignments here.
-    // Fateh supports concurrent teaching: one instructor may use two rooms, and
-    // some lessons allow multiple students in the same time window.
     await db.prepare(`
       UPDATE class_sessions
       SET start_time = ?, end_time = ?, room_id = ?, updated_at = CURRENT_TIMESTAMP
@@ -125,9 +117,6 @@ export const POST: APIRoute = async ({ request }) => {
       teacherAttendanceStatus?: string;
     } | null;
 
-    // Teacher (instructor) attendance for a class session — separate from
-    // student attendance below, and stored in teacher_session_attendance
-    // rather than enrollment_sessions.
     if (body?.classSessionId !== undefined) {
       const sessionId = Number(body.classSessionId);
       const status = String(body.teacherAttendanceStatus || "");
@@ -179,14 +168,25 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ success: false, message: "وضعیت حضور معتبر نیست." }, 422);
     }
 
-    const result = await env.DB.prepare(`
-      UPDATE enrollment_sessions SET status = ? WHERE id = ?
-    `).bind(status, enrollmentSessionId).run();
-    if (!result.meta.changes) return json({ success: false, message: "رکورد حضور پیدا نشد." }, 404);
+    if (status === "pending") {
+      const result = await env.DB.prepare(`
+        UPDATE enrollment_sessions SET status = ? WHERE id = ?
+      `).bind(status, enrollmentSessionId).run();
+      if (!result.meta.changes) return json({ success: false, message: "رکورد حضور پیدا نشد." }, 404);
+    } else {
+      await setStudentSessionStatus(env.DB, enrollmentSessionId, status as "present" | "absent" | "excused");
+    }
 
     return json({ success: true, enrollmentSessionId, status });
   } catch (error) {
-    console.error("[admin/daily-planner] attendance update failed:", error);
-    return json({ success: false, message: "ذخیره وضعیت هنرجو با خطا مواجه شد." }, 500);
+    const code = error instanceof Error ? error.message : "ATTENDANCE_UPDATE_FAILED";
+    const messages: Record<string, string> = {
+      ENROLLMENT_SESSION_NOT_FOUND: "جلسه هنرجو یافت نشد.",
+      ENROLLMENT_INACTIVE: "ثبت‌نام هنرجو فعال نیست.",
+      SESSION_CANCELLED: "برای جلسه لغوشده حضور ثبت نمی‌شود.",
+      EXCUSED_SESSION_HAS_MAKEUP: "برای این مرخصی جلسه جبرانی ایجاد شده است؛ وضعیت جلسه اصلی دیگر قابل تغییر نیست.",
+    };
+    console.error("[admin/daily-planner] attendance update failed:", code, error);
+    return json({ success: false, code, message: messages[code] ?? "ذخیره وضعیت هنرجو با خطا مواجه شد." }, 422);
   }
 };
