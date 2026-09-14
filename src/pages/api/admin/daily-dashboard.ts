@@ -3,8 +3,6 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
-import { listSessionsForDate } from "../../../server/class-sessions";
-import { provisionEnrollmentSessionsForClassSession } from "../../../server/session-provisioning";
 import { calculateFinance } from "../../../server/finance-calculations";
 import { listActiveRooms } from "../../../server/rooms";
 
@@ -13,51 +11,85 @@ function persianWeekdayIndex(date: string): number {
   return (value + 1) % 7;
 }
 
+/**
+ * Materialize the day's recurring sessions with one set-based INSERT.
+ * The old implementation performed one SELECT + INSERT per schedule.
+ */
 async function materializeScheduledSessions(db: D1Database, date: string): Promise<void> {
   const dayOfWeek = persianWeekdayIndex(date);
-  const schedules = await db.prepare(`
+  await db.prepare(`
+    INSERT INTO class_sessions (
+      class_id, session_date, start_time, end_time, instructor_id, room_id,
+      location_type, type, status, notes, source_schedule_id
+    )
     SELECT
-      cs.id AS schedule_id, cs.class_id, cs.start_time, cs.end_time,
-      cs.room_id AS schedule_room_id, cs.effective_from, cs.effective_to,
-      c.instructor_id, c.default_room_id, c.delivery_mode
+      cs.class_id,
+      ?,
+      cs.start_time,
+      cs.end_time,
+      c.instructor_id,
+      COALESCE(cs.room_id, c.default_room_id),
+      CASE WHEN c.delivery_mode IN ('online', 'hybrid') THEN c.delivery_mode ELSE 'in_person' END,
+      'regular',
+      'scheduled',
+      'ایجاد خودکار از برنامه هفتگی #' || cs.id,
+      cs.id
     FROM class_schedules cs
     JOIN classes c ON c.id = cs.class_id
-    WHERE cs.day_of_week = ? AND cs.status = 'active' AND c.status = 'active'
+    WHERE cs.day_of_week = ?
+      AND cs.status = 'active'
+      AND c.status = 'active'
       AND (cs.effective_from IS NULL OR cs.effective_from <= ?)
       AND (cs.effective_to IS NULL OR cs.effective_to >= ?)
       AND (c.start_date IS NULL OR c.start_date <= ?)
       AND (c.end_date IS NULL OR c.end_date >= ?)
-    ORDER BY cs.start_time, cs.id
-  `).bind(dayOfWeek, date, date, date, date).all<{
-    schedule_id: number; class_id: number; start_time: string; end_time: string;
-    schedule_room_id: number | null; effective_from: string | null; effective_to: string | null;
-    instructor_id: number; default_room_id: number | null; delivery_mode: string | null;
-  }>();
+      AND NOT EXISTS (
+        SELECT 1
+        FROM class_sessions existing
+        WHERE existing.source_schedule_id = cs.id
+          AND existing.session_date = ?
+          AND existing.status <> 'cancelled'
+      )
+  `).bind(dayOfWeek, dayOfWeek, date, date, date, date, date).run();
+}
 
-  for (const schedule of schedules.results) {
-    const existing = await db.prepare(`
-      SELECT id FROM class_sessions
-      WHERE source_schedule_id = ? AND session_date = ? AND status <> 'cancelled'
-      ORDER BY id DESC LIMIT 1
-    `).bind(schedule.schedule_id, date).first<{ id: number }>();
-    if (existing) continue;
-
-    const locationType = schedule.delivery_mode === 'online' || schedule.delivery_mode === 'hybrid'
-      ? schedule.delivery_mode : 'in_person';
-    const roomId = schedule.schedule_room_id ?? schedule.default_room_id ?? null;
-    const inserted = await db.prepare(`
-      INSERT INTO class_sessions
-        (class_id, session_date, start_time, end_time, instructor_id, room_id,
-         location_type, type, status, notes, source_schedule_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'regular', 'scheduled', ?, ?)
-    `).bind(
-      schedule.class_id, date, schedule.start_time, schedule.end_time,
-      schedule.instructor_id, roomId, locationType,
-      `ایجاد خودکار از برنامه هفتگی #${schedule.schedule_id}`,
-      schedule.schedule_id,
-    ).run();
-    if (typeof inserted.meta.last_row_id !== 'number') throw new Error(`SESSION_CREATE_FAILED:${schedule.schedule_id}`);
-  }
+/**
+ * Ensure attendance rows exist for all active enrollments of the selected
+ * day's sessions in one set-based statement. A missing term never blocks
+ * attendance; the term link is nullable by design.
+ */
+async function provisionDailyEnrollmentSessions(db: D1Database, date: string): Promise<void> {
+  await db.prepare(`
+    INSERT INTO enrollment_sessions (
+      enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note
+    )
+    SELECT
+      e.id,
+      cs.id,
+      (
+        SELECT et.id
+        FROM enrollment_terms et
+        WHERE et.enrollment_id = e.id
+          AND et.status = 'active'
+        ORDER BY et.term_number DESC, et.id DESC
+        LIMIT 1
+      ),
+      'pending',
+      CASE WHEN cs.location_type = 'online' THEN 'online' ELSE 'in_person' END,
+      'ایجاد خودکار برای داشبورد روزانه'
+    FROM class_sessions cs
+    JOIN enrollments e
+      ON e.class_id = cs.class_id
+     AND e.status = 'active'
+    WHERE cs.session_date = ?
+      AND cs.status <> 'cancelled'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM enrollment_sessions existing
+        WHERE existing.enrollment_id = e.id
+          AND existing.session_id = cs.id
+      )
+  `).bind(date).run();
 }
 
 export const GET: APIRoute = async ({ request }) => {
@@ -79,18 +111,8 @@ export const GET: APIRoute = async ({ request }) => {
     stage = "materialize";
     await materializeScheduledSessions(db, date);
 
-    stage = "list-sessions";
-    const sessions = await listSessionsForDate(db, date);
-
     stage = "provision";
-    for (const session of sessions) {
-      if (session.status === "cancelled") continue;
-      try {
-        await provisionEnrollmentSessionsForClassSession(db, session.id);
-      } catch (error) {
-        console.error(`[admin/daily-dashboard] provisioning failed for session ${session.id}:`, error);
-      }
-    }
+    await provisionDailyEnrollmentSessions(db, date);
 
     stage = "session-query";
     const sessionRows = await db.prepare(`
