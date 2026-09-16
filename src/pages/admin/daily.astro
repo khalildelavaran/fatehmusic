@@ -78,6 +78,16 @@ Astro.response.headers.set("Cache-Control", "no-store");
       row.classList.toggle('is-near-due',Boolean(student.nearDue&&!student.overdue));row.classList.toggle('is-overdue',Boolean(student.overdue));
       row.innerHTML=`<span>سررسید شهریه</span><strong>${esc(dateLabel(student.tuitionDueDate))}</strong>`;
     });
+    const modal=document.querySelector('#quickPaymentBody');
+    if(!modal)return;
+    const name=modal.querySelector('strong')?.textContent?.trim();
+    if(!name)return;
+    const student=[...studentById.values()].find(s=>String(s.studentName||'').trim()===name);
+    if(!student?.invoiceId||!student.tuitionDueDate)return;
+    let row=modal.querySelector('[data-modal-finance-due]');
+    if(!row){row=document.createElement('div');row.className='finance-due';row.dataset.modalFinanceDue='1';modal.querySelector('.finance-status')?.before(row)||modal.prepend(row);}
+    row.classList.toggle('is-near-due',Boolean(student.nearDue&&!student.overdue));row.classList.toggle('is-overdue',Boolean(student.overdue));
+    row.innerHTML=`<span>سررسید شهریه</span><strong>${esc(dateLabel(student.tuitionDueDate))}</strong>`;
   }
   async function load(date){try{const r=await fetch(`/api/admin/daily-dashboard?date=${encodeURIComponent(date)}`,{credentials:'same-origin',headers:{Accept:'application/json'}});const d=await r.json();if(!r.ok||!d.success)return;remember(d);decorate();}catch(e){console.warn('[daily-finance-due]',e);}}
   function syncDate(){const text=document.querySelector('#dateLabel')?.textContent||'';if(text.includes('امروز'))currentDate=new Date().toLocaleDateString('en-CA');}
