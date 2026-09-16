@@ -17,7 +17,7 @@ export const GET: APIRoute = async ({ request }) => {
   const q = clean(url.searchParams.get("q"));
   try {
     if (q) {
-      const like = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
+      const like = `%${q.replace(/[\\%_]/g, "\\$&`)}%`;
       const result = await db.prepare(`
         SELECT * FROM (
           SELECT 'student' AS result_type,s.id,TRIM(COALESCE(s.first_name,'')||' '||COALESCE(s.last_name,'')) AS name,e.id AS enrollment_id,e.class_id,c.title AS class_title,NULL AS instructor_name,NULL AS session_date,NULL AS start_time,NULL AS end_time,
@@ -37,14 +37,14 @@ export const GET: APIRoute = async ({ request }) => {
     }
     const metrics=await db.prepare(`
       WITH daily AS (SELECT id,status,room_id FROM class_sessions WHERE session_date=?),
-      attendance AS (SELECT es.status FROM enrollment_sessions es JOIN daily d ON d.id=es.session_id WHERE d.status<>'cancelled'),
+      attendance AS (SELECT e.student_id,es.status FROM enrollment_sessions es JOIN enrollments e ON e.id=es.enrollment_id JOIN daily d ON d.id=es.session_id WHERE d.status<>'cancelled'),
       financial AS (SELECT et.id AS term_id,et.billing_type,et.planned_sessions,et.tuition_due_date,i.id AS invoice_id,i.amount AS invoice_amount,COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0) AS paid_amount
         FROM enrollment_terms et JOIN enrollments e ON e.id=et.enrollment_id AND e.status='active'
         LEFT JOIN invoices i ON i.enrollment_term_id=et.id AND i.status<>'cancelled' AND i.id=(SELECT MAX(i2.id) FROM invoices i2 WHERE i2.enrollment_term_id=et.id AND i2.status<>'cancelled') WHERE et.status='active')
-      SELECT (SELECT COUNT(*) FROM daily WHERE status<>'cancelled') active_sessions,(SELECT COUNT(*) FROM daily WHERE status='cancelled') cancelled_sessions,(SELECT COUNT(*) FROM attendance WHERE status='pending') pending_attendance,(SELECT COUNT(*) FROM daily WHERE room_id IS NULL AND status<>'cancelled') no_room_sessions,
+      SELECT (SELECT COUNT(*) FROM daily WHERE status<>'cancelled') active_sessions,(SELECT COUNT(*) FROM daily WHERE status='cancelled') cancelled_sessions,(SELECT COUNT(*) FROM attendance WHERE status='pending') pending_attendance,(SELECT COUNT(DISTINCT student_id) FROM attendance) unique_students,(SELECT COUNT(DISTINCT student_id) FROM attendance WHERE status='present') unique_present_students,(SELECT COUNT(DISTINCT student_id) FROM attendance WHERE status='pending') unique_pending_students,(SELECT COUNT(*) FROM daily WHERE room_id IS NULL AND status<>'cancelled') no_room_sessions,
         (SELECT COUNT(*) FROM financial WHERE invoice_id IS NOT NULL AND (invoice_amount-paid_amount)>0) outstanding_terms,
         (SELECT COUNT(*) FROM financial WHERE invoice_id IS NOT NULL AND paid_amount>0 AND (invoice_amount-paid_amount)>0) partial_payment_terms,
-        (SELECT COUNT(*) FROM financial WHERE invoice_id IS NOT NULL AND tuition_due_date IS NOT NULL AND tuition_due_date<? AND (invoice_amount-paid_amount)>0) overdue_terms
+        (SELECT COUNT(*) FROM financial WHERE invoice_id IS NOT NULL AND tuition_due_date<? AND (invoice_amount-paid_amount)>0) overdue_terms
     `).bind(date,date).first<Record<string,number>>();
     const renewal=await db.prepare(`
       SELECT COUNT(*) count FROM enrollment_terms et JOIN enrollments e ON e.id=et.enrollment_id AND e.status='active'
