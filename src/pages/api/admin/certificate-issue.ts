@@ -2,26 +2,19 @@ export const prerender=false;
 import type {APIRoute} from "astro";
 import {env} from "cloudflare:workers";
 import {requireRole,ROLES,json,type AdminEnv} from "../../../server/admin-auth";
-
-const TYPES=["course_completion","concert_participation","student_performance","workshop_participation"] as const;
-type CertificateType=typeof TYPES[number];
-
-export const POST:APIRoute=async({request})=>{
- const denied=await requireRole(request,env as AdminEnv,[ROLES.ADMIN]);
- if(denied)return denied;
- try{
-  const b=await request.json() as {registration_id:number;national_id:string;certificate_type?:CertificateType;completion_date_jalali:string;level?:string|null;book_id?:number|null;curriculum_note?:string|null;event_title?:string|null;event_date_jalali?:string|null;event_role?:string|null;event_details?:string|null;event_instructor?:string|null;workshop_hours?:string|null};
-  const type=b.certificate_type&&TYPES.includes(b.certificate_type)?b.certificate_type:"course_completion";
-  if(!b.registration_id||!b.national_id||!b.completion_date_jalali)return json({success:false,message:"شناسه ثبت‌نام، کد ملی و تاریخ الزامی هستند."},422);
-  if(type!=="course_completion"&&!b.event_title?.trim())return json({success:false,message:"عنوان برنامه یا کارگاه الزامی است."},422);
-  if(type==="workshop_participation"&&!b.event_instructor?.trim())return json({success:false,message:"نام مدرس کارگاه الزامی است."},422);
-  const db=env.DB;
-  const r=await db.prepare("SELECT id,tracking_code,student_national_code FROM registrations WHERE id=?").bind(b.registration_id).first<any>();
-  if(!r)return json({success:false,message:"ثبت‌نامی پیدا نشد."},404);
-  if(r.student_national_code&&r.student_national_code!==b.national_id)return json({success:false,message:"کد ملی با اطلاعات هنرجو مطابقت ندارد."},422);
-  if(b.book_id){const book=await db.prepare("SELECT id FROM course_books WHERE id=?").bind(b.book_id).first<any>();if(!book)return json({success:false,message:"کتاب انتخاب‌شده پیدا نشد."},404);}
-  await db.prepare("INSERT INTO issued_certificates (registration_id,national_code,cert_number,completion_date_jalali,level,book_id,curriculum_note,certificate_type,event_title,event_date_jalali,event_role,event_details,event_instructor,workshop_hours) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(cert_number) DO UPDATE SET national_code=excluded.national_code,completion_date_jalali=excluded.completion_date_jalali,level=excluded.level,book_id=excluded.book_id,curriculum_note=excluded.curriculum_note,certificate_type=excluded.certificate_type,event_title=excluded.event_title,event_date_jalali=excluded.event_date_jalali,event_role=excluded.event_role,event_details=excluded.event_details,event_instructor=excluded.event_instructor,workshop_hours=excluded.workshop_hours").bind(b.registration_id,b.national_id,r.tracking_code,b.completion_date_jalali,b.level??null,b.book_id??null,b.curriculum_note??null,type,b.event_title?.trim()||null,b.event_date_jalali?.trim()||b.completion_date_jalali,b.event_role?.trim()||null,b.event_details?.trim()||null,b.event_instructor?.trim()||null,b.workshop_hours?.trim()||null).run();
-  const issued=await db.prepare("SELECT id,cert_number,certificate_type,completion_date_jalali,event_title,event_date_jalali,event_role,event_details,event_instructor,workshop_hours,level,book_id,curriculum_note FROM issued_certificates WHERE cert_number=? LIMIT 1").bind(r.tracking_code).first<any>();
-  return json({success:true,certificate:issued});
- }catch(e){return json({success:false,message:`صدور گواهی شکست خورد: ${e instanceof Error?e.message:String(e)}`},500)}
-};
+const TYPES=["course_completion","concert_participation","student_performance","workshop_participation"] as const;type CertificateType=typeof TYPES[number];
+const TYPE_CODES:Record<CertificateType,string>={course_completion:"COURSE",concert_participation:"CONCERT",student_performance:"PERFORM",workshop_participation:"WORKSHOP"};
+export const POST:APIRoute=async({request})=>{const denied=await requireRole(request,env as AdminEnv,[ROLES.ADMIN]);if(denied)return denied;try{
+ const b=await request.json() as {registration_id:number;national_id:string;certificate_type?:CertificateType;completion_date_jalali:string;level?:string|null;book_id?:number|null;curriculum_note?:string|null;event_title?:string|null;event_date_jalali?:string|null;event_role?:string|null;event_details?:string|null;event_instructor?:string|null;workshop_hours?:string|null};
+ const type=b.certificate_type&&TYPES.includes(b.certificate_type)?b.certificate_type:"course_completion";
+ if(!b.registration_id||!b.national_id||!b.completion_date_jalali)return json({success:false,message:"شناسه ثبت‌نام، کد ملی و تاریخ الزامی هستند."},422);
+ if(type!=="course_completion"&&!b.event_title?.trim())return json({success:false,message:"عنوان برنامه یا کارگاه الزامی است."},422);
+ if(type==="workshop_participation"&&!b.event_instructor?.trim())return json({success:false,message:"نام مدرس کارگاه الزامی است."},422);
+ const db=env.DB;const r=await db.prepare("SELECT id,tracking_code,student_national_code FROM registrations WHERE id=?").bind(b.registration_id).first<any>();
+ if(!r)return json({success:false,message:"ثبت‌نامی پیدا نشد."},404);if(r.student_national_code&&r.student_national_code!==b.national_id)return json({success:false,message:"کد ملی با اطلاعات هنرجو مطابقت ندارد."},422);
+ if(b.book_id){const book=await db.prepare("SELECT id FROM course_books WHERE id=?").bind(b.book_id).first<any>();if(!book)return json({success:false,message:"کتاب انتخاب‌شده پیدا نشد."},404);}
+ const existing=await db.prepare("SELECT cert_number FROM issued_certificates WHERE registration_id=? AND certificate_type=? LIMIT 1").bind(b.registration_id,type).first<any>();
+ const certNumber=existing?.cert_number||(type==="course_completion"?r.tracking_code:`${r.tracking_code}-${TYPE_CODES[type]}-${Date.now().toString(36).toUpperCase()}`);
+ await db.prepare("INSERT INTO issued_certificates (registration_id,national_code,cert_number,completion_date_jalali,level,book_id,curriculum_note,certificate_type,event_title,event_date_jalali,event_role,event_details,event_instructor,workshop_hours) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(cert_number) DO UPDATE SET national_code=excluded.national_code,completion_date_jalali=excluded.completion_date_jalali,level=excluded.level,book_id=excluded.book_id,curriculum_note=excluded.curriculum_note,certificate_type=excluded.certificate_type,event_title=excluded.event_title,event_date_jalali=excluded.event_date_jalali,event_role=excluded.event_role,event_details=excluded.event_details,event_instructor=excluded.event_instructor,workshop_hours=excluded.workshop_hours").bind(b.registration_id,b.national_id,certNumber,b.completion_date_jalali,b.level??null,b.book_id??null,b.curriculum_note??null,type,b.event_title?.trim()||null,b.event_date_jalali?.trim()||b.completion_date_jalali,b.event_role?.trim()||null,b.event_details?.trim()||null,b.event_instructor?.trim()||null,b.workshop_hours?.trim()||null).run();
+ const issued=await db.prepare("SELECT id,cert_number,certificate_type,completion_date_jalali,event_title,event_date_jalali,event_role,event_details,event_instructor,workshop_hours,level,book_id,curriculum_note FROM issued_certificates WHERE cert_number=? LIMIT 1").bind(certNumber).first<any>();return json({success:true,certificate:issued});
+}catch(e){return json({success:false,message:`صدور گواهی شکست خورد: ${e instanceof Error?e.message:String(e)}`},500)}};
