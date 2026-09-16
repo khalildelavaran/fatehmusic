@@ -3,11 +3,13 @@
  * (SCHOOL-MANAGEMENT-IMPLEMENTATION.md section 38). Builds on top of
  * the existing makeup infrastructure: class_sessions(type='makeup',
  * original_session_id) and enrollment_sessions.makeup_for_id, both
- * validated by triggers in migration 0032. This module only manages
- * the *request* lifecycle; actually creating the makeup class_session
+ * validated by triggers in migration 0032. This module only manages the
+ * *request* lifecycle; actually creating the makeup class_session
  * and enrollment_sessions row still goes through the existing
  * class-session/attendance services once a request is approved.
  */
+
+import { rejectIfDailyClosed } from "./daily-closure-guard";
 
 export const MAKEUP_REQUEST_STATUSES = ["pending", "approved", "rejected", "scheduled", "completed"] as const;
 export type MakeupRequestStatus = (typeof MAKEUP_REQUEST_STATUSES)[number];
@@ -49,13 +51,6 @@ export function validateMakeupRequestInput(input: MakeupRequestInput): Validatio
   return { valid: errors.length === 0, errors };
 }
 
-/**
- * Only admin/registrar can move a request forward from pending. A
- * student or instructor can only ever create a request (pending); they
- * cannot self-approve. "completed" is set by the system once the
- * linked makeup class_session itself is marked completed, not
- * directly by a reviewer -- see markMakeupRequestCompleted below.
- */
 export function canReviewerTransition(from: MakeupRequestStatus, to: MakeupRequestStatus): boolean {
   const allowed: Record<MakeupRequestStatus, MakeupRequestStatus[]> = {
     pending: ["approved", "rejected"],
@@ -102,12 +97,6 @@ function mapRow(row: any): MakeupRequestEntry {
 const SELECT_COLUMNS = `id, original_enrollment_session_id, enrollment_id, requested_by_type, requested_by_id,
   reason, status, reviewed_by_id, review_note, makeup_session_id, created_at, updated_at`;
 
-/**
- * Creates a request only for an absence that is (a) actually excused
- * and (b) belongs to the given enrollment. Returns an error code
- * string on failure (never throws for expected validation failures),
- * or the created row's id on success.
- */
 export async function createMakeupRequest(
   db: D1Database,
   input: MakeupRequestInput,
@@ -116,22 +105,40 @@ export async function createMakeupRequest(
   if (!validation.valid) return { error: validation.errors.join(" ") };
 
   const absence = await db
-    .prepare(`SELECT id, enrollment_id, status FROM enrollment_sessions WHERE id = ?`)
+    .prepare(`
+      SELECT es.id, es.enrollment_id, es.status, cs.session_date
+      FROM enrollment_sessions es
+      JOIN class_sessions cs ON cs.id = es.session_id
+      WHERE es.id = ?
+      LIMIT 1
+    `)
     .bind(input.originalEnrollmentSessionId)
-    .first<{ id: number; enrollment_id: number; status: string }>();
+    .first<{ id: number; enrollment_id: number; status: string; session_date: string }>();
 
   if (!absence) return { error: "جلسه موردنظر یافت نشد." };
   if (absence.enrollment_id !== input.enrollmentId) return { error: "این جلسه متعلق به این ثبت‌نام نیست." };
   if (absence.status !== "excused") return { error: "فقط برای غیبت موجه می‌توان درخواست جلسه جبرانی ثبت کرد." };
 
+  const closed = await rejectIfDailyClosed(db, absence.session_date);
+  if (closed) return { error: "این روز بسته شده است و ثبت درخواست جلسه جبرانی جدید مجاز نیست." };
+
   try {
     const result = await db
       .prepare(
         `INSERT INTO makeup_requests (original_enrollment_session_id, enrollment_id, requested_by_type, requested_by_id, reason)
-         VALUES (?, ?, ?, ?, ?)`,
+         SELECT ?, ?, ?, ?, ?
+         WHERE NOT EXISTS (
+           SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?
+         )`,
       )
-      .bind(input.originalEnrollmentSessionId, input.enrollmentId, input.requestedByType, input.requestedById ?? null, input.reason ?? "")
+      .bind(input.originalEnrollmentSessionId, input.enrollmentId, input.requestedByType, input.requestedById ?? null, input.reason ?? "", absence.session_date)
       .run();
+
+    if (!result.meta?.changes) {
+      const racedClosed = await rejectIfDailyClosed(db, absence.session_date);
+      if (racedClosed) return { error: "این روز بسته شده است و ثبت درخواست جلسه جبرانی جدید مجاز نیست." };
+      return { error: "ثبت درخواست انجام نشد؛ وضعیت جلسه تغییر کرده است." };
+    }
 
     const id = result.meta?.last_row_id;
     if (typeof id !== "number") return { error: "ثبت درخواست انجام نشد." };
@@ -167,11 +174,6 @@ export async function listMakeupRequests(
   return (rows.results ?? []).map(mapRow);
 }
 
-/**
- * Reviews (approves/rejects) a pending or approved request. Enforces
- * the state machine server-side via canReviewerTransition -- the
- * caller (an admin API route) must not skip this check.
- */
 export async function reviewMakeupRequest(
   db: D1Database,
   id: number,
@@ -190,7 +192,6 @@ export async function reviewMakeupRequest(
   return { ok: true };
 }
 
-/** Links an approved request to the class_session created for it, moving status to 'scheduled'. */
 export async function attachMakeupSession(db: D1Database, id: number, makeupSessionId: number): Promise<{ ok: true } | { error: string }> {
   const current = await db.prepare(`SELECT status FROM makeup_requests WHERE id = ?`).bind(id).first<{ status: MakeupRequestStatus }>();
   if (!current) return { error: "درخواستی با این شناسه یافت نشد." };
@@ -203,7 +204,6 @@ export async function attachMakeupSession(db: D1Database, id: number, makeupSess
   return { ok: true };
 }
 
-/** Called once the linked makeup class_session itself is marked completed. */
 export async function markMakeupRequestCompleted(db: D1Database, makeupSessionId: number): Promise<void> {
   await db
     .prepare(`UPDATE makeup_requests SET status = 'completed', updated_at = datetime('now') WHERE makeup_session_id = ? AND status = 'scheduled'`)
