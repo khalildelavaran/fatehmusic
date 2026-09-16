@@ -32,37 +32,85 @@
   if (!root) return;
   const esc = v => { const e=document.createElement('div'); e.textContent=String(v??''); return e.innerHTML; };
   const today = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const dateKey = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; };
   let currentDate = today();
   let busy = false;
-  const labels = { pending:'ثبت نشده', present:'حاضر', absent:'غایب', excused:'مرخصی', withdrawn:'انصراف' };
+  const labels = { present:'حاضر', absent:'غایب', excused:'مرخصی', withdrawn:'انصراف' };
   const style = document.createElement('style');
   style.textContent = `
     #dailyStudentRoster{margin:18px 0;display:grid;gap:12px}
     .dsr-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 18px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
     .dsr-head strong{font-size:17px}.dsr-head span{display:block;color:var(--text-secondary);font-size:12px;margin-top:4px}
     .dsr-list{display:grid;gap:8px}.dsr-row{display:grid;grid-template-columns:minmax(180px,1.4fr) minmax(120px,.7fr) minmax(210px,1fr) minmax(150px,.8fr);gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-    .dsr-name{font-weight:800}.dsr-class{font-size:12px;color:var(--text-secondary)}.dsr-time{font-weight:800;direction:ltr;text-align:center}.dsr-time button,.dsr-time input{font:inherit}.dsr-edit{display:inline-flex;gap:6px;align-items:center}.dsr-edit input{width:105px;padding:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
+    .dsr-name{font-weight:800}.dsr-class{font-size:12px;color:var(--text-secondary)}.dsr-time{font-weight:800;direction:ltr;text-align:center}.dsr-time-actions button,.dsr-edit button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}.dsr-edit{display:inline-flex;gap:6px;align-items:center}.dsr-edit input{width:105px;padding:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
     .dsr-attendance{display:flex;gap:5px;flex-wrap:wrap}.dsr-attendance button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer}.dsr-attendance button.active{font-weight:800;border-color:currentColor}.dsr-attendance button.present{color:#2f8f46}.dsr-attendance button.absent{color:#d66666}.dsr-attendance button.excused{color:#3b82f6}.dsr-attendance button.withdrawn{color:var(--text-secondary)}
     .dsr-status{font-size:12px;color:var(--text-secondary)}
     @media (max-width:900px){.dsr-row{grid-template-columns:1fr 1fr}.dsr-attendance{grid-column:1/-1}.dsr-time{justify-self:start}}
     @media (max-width:560px){.dsr-row{grid-template-columns:1fr}.dsr-attendance{grid-column:auto}.dsr-edit{flex-wrap:wrap}}
   `;
   document.head.appendChild(style);
-  const panel = document.createElement('section'); panel.id='dailyStudentRoster'; panel.setAttribute('aria-label','فهرست مستقل هنرجویان');
+  const panel = document.createElement('section');
+  panel.id='dailyStudentRoster';
+  panel.setAttribute('aria-label','فهرست مستقل هنرجویان');
   const sessionsPanel=document.querySelector('#sessionsPanel');
   sessionsPanel?.parentNode?.insertBefore(panel,sessionsPanel);
-  function time(v){return String(v||'').slice(0,5)}
+  const time=v=>String(v||'').slice(0,5);
   async function normalize(date){const r=await fetch(`/api/admin/daily-student-sessions?date=${encodeURIComponent(date)}`,{credentials:'same-origin',headers:{Accept:'application/json'}});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'تفکیک جلسات هنرجویان ناموفق بود.');return d;}
   async function dashboard(date){const r=await fetch(`/api/admin/daily-dashboard?date=${encodeURIComponent(date)}&force=1`,{credentials:'same-origin',headers:{Accept:'application/json'}});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'دریافت جلسات ناموفق بود.');return d;}
-  function rows(data){const out=[];for(const s of data.sessions||[]){for(const st of s.students||[]){out.push({session:s,student:st});}}return out.sort((a,b)=>String(a.session.startTime).localeCompare(String(b.session.startTime))||String(a.student.studentName).localeCompare(String(b.student.studentName),'fa'));}
-  function render(data,message=''){const all=rows(data);panel.innerHTML=`<div class="dsr-head"><div><strong>هنرجویان امروز</strong><span>هر هنرجو به‌صورت مستقل دیده می‌شود؛ زمان و وضعیت حضور از همین‌جا قابل تغییر است.</span></div><div class="dsr-status">${esc(message||`${all.length} هنرجو`)}</div></div><div class="dsr-list">${all.length?all.map(({session:s,student:st})=>{const individual=!['group','workshop'].includes(s.class_type);return `<article class="dsr-row" data-es-id="${esc(st.enrollmentSessionId)}" data-session-id="${esc(s.id)}"><div><div class="dsr-name">${esc(st.studentName||'هنرجوی بدون نام')}</div><div class="dsr-class">${esc(s.className||s.class_title||'کلاس')} · ${esc(s.instructorName||'')}</div></div><div class="dsr-time" data-time>${time(s.startTime)}–${time(s.endTime)}</div><div class="dsr-attendance">${['present','absent','excused','withdrawn'].map(v=>`<button type="button" class="${v} ${st.attendanceStatus===v?'active':''}" data-attendance="${v}" data-es-id="${esc(st.enrollmentSessionId)}" data-enrollment-id="${esc(st.enrollmentId)}">${labels[v]}</button>`).join('')}</div><div class="dsr-time-actions">${individual?`<button type="button" data-edit-time>تغییر ساعت</button>`:''}</div></article>`;}).join(''):'<div class="dd-empty-note">برای این روز هنرجویی ثبت نشده است.</div>'}</div>`;}
+  function rows(data){const out=[];for(const s of data.sessions||[]){for(const st of s.students||[]){out.push({session:s,student:st});}}return out.sort((a,b)=>String(a.session.startTime||'').localeCompare(String(b.session.startTime||''))||String(a.student.studentName||'').localeCompare(String(b.student.studentName||''),'fa'));}
+  function render(data,message=''){const all=rows(data);panel.innerHTML=`<div class="dsr-head"><div><strong>هنرجویان امروز</strong><span>هر هنرجو به‌صورت مستقل دیده می‌شود؛ زمان و وضعیت حضور از همین‌جا قابل تغییر است.</span></div><div class="dsr-status">${esc(message||`${all.length} هنرجو`)}</div></div><div class="dsr-list">${all.length?all.map(({session:s,student:st})=>{const individual=!['group','workshop'].includes(s.class_type);return `<article class="dsr-row" data-es-id="${esc(st.enrollmentSessionId)}" data-session-id="${esc(s.id)}"><div><div class="dsr-name">${esc(st.studentName||'هنرجوی بدون نام')}</div><div class="dsr-class">${esc(s.className||s.class_title||'کلاس')} · ${esc(s.instructorName||'')}</div></div><div class="dsr-time" data-time>${time(s.startTime||s.start_time)}–${time(s.endTime||s.end_time)}</div><div class="dsr-attendance">${['present','absent','excused','withdrawn'].map(v=>`<button type="button" class="${v} ${st.attendanceStatus===v?'active':''}" data-attendance="${v}" data-es-id="${esc(st.enrollmentSessionId)}">${labels[v]}</button>`).join('')}</div><div class="dsr-time-actions">${individual?`<button type="button" data-edit-time>تغییر ساعت</button>`:''}</div></article>`;}).join(''):'<div class="dd-empty-note">برای این روز هنرجویی ثبت نشده است.</div>'}</div>`;}
   async function load(date=currentDate){if(busy)return;busy=true;try{currentDate=date;const n=await normalize(date);const d=await dashboard(date);render(d,n.moved?`${num(n.moved)} جلسه هنرجو تفکیک شد.`:'همه جلسات هنرجویی مستقل هستند.');}catch(e){panel.innerHTML=`<div class="dsr-head"><div><strong>هنرجویان امروز</strong><span>${esc(e.message||e)}</span></div></div>`;}finally{busy=false;}}
   function num(v){return Number(v||0).toLocaleString('fa-IR');}
-  panel.addEventListener('click',async e=>{const a=e.target.closest('[data-attendance]');if(a){a.disabled=true;try{const r=await fetch('/api/admin/daily-planner',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',Accept:'application/json'},body:JSON.stringify({enrollmentSessionId:Number(a.dataset.esId),enrollmentId:Number(a.dataset.enrollmentId),status:a.dataset.attendance})});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'ثبت وضعیت حضور ناموفق بود.');await load(currentDate);document.querySelector('#refresh')?.click();}catch(err){a.disabled=false;alert(err.message||err);}}
-    const edit=e.target.closest('[data-edit-time]');if(edit){const row=edit.closest('.dsr-row');const id=row.dataset.esId;const existing=row.querySelector('[data-time-edit]');if(existing)return;const current=row.querySelector('[data-time]').textContent.split('–');const box=document.createElement('div');box.className='dsr-edit';box.dataset.timeEdit='1';box.innerHTML=`<input type="time" value="${current[0]}" data-start step="300"><input type="time" value="${current[1]}" data-end step="300"><button type="button" data-save-time>保存</button><button type="button" data-cancel-time>انصراف</button>`;row.querySelector('[data-time]').replaceWith(box);}}
-    const save=e.target.closest('[data-save-time]');if(save){const row=save.closest('.dsr-row'),box=row.querySelector('[data-time-edit]'),start=box.querySelector('[data-start]').value,end=box.querySelector('[data-end]').value;save.disabled=true;try{const r=await fetch('/api/admin/daily-student-sessions',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json',Accept:'application/json'},body:JSON.stringify({enrollmentSessionId:Number(row.dataset.esId),sessionDate:currentDate,startTime:start,endTime:end})});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'ذخیره زمان هنرجو ناموفق بود.');await load(currentDate);document.querySelector('#refresh')?.click();}catch(err){save.disabled=false;alert(err.message||err);}}
+  panel.addEventListener('click',async e=>{
+    const a=e.target.closest('[data-attendance]');
+    if(a){
+      a.disabled=true;
+      try{
+        const esId=String(a.dataset.esId||'');
+        const original=document.querySelector(`#sessionsPanel [data-enrollment-session-id="${CSS.escape(esId)}"] [data-action="attendance"][data-status="${CSS.escape(a.dataset.attendance||'')}"]`);
+        if(!original)throw Error('کنترل حضور این هنرجو در جلسه پیدا نشد.');
+        original.click();
+        setTimeout(()=>load(currentDate),700);
+      }catch(err){a.disabled=false;alert(err.message||err);}
+      return;
+    }
+    const edit=e.target.closest('[data-edit-time]');
+    if(edit){
+      const row=edit.closest('.dsr-row');
+      if(!row||row.querySelector('[data-time-edit]'))return;
+      const current=row.querySelector('[data-time]').textContent.split('–');
+      const box=document.createElement('div');
+      box.className='dsr-edit';
+      box.dataset.timeEdit='1';
+      box.innerHTML=`<input type="time" value="${esc(current[0])}" data-start step="300"><input type="time" value="${esc(current[1])}" data-end step="300"><button type="button" data-save-time>ذخیره</button><button type="button" data-cancel-time>انصراف</button>`;
+      row.querySelector('[data-time]').replaceWith(box);
+      return;
+    }
+    const save=e.target.closest('[data-save-time]');
+    if(save){
+      const row=save.closest('.dsr-row');
+      const box=row?.querySelector('[data-time-edit]');
+      const start=box?.querySelector('[data-start]')?.value||'';
+      const end=box?.querySelector('[data-end]')?.value||'';
+      if(!row||!box)return;
+      save.disabled=true;
+      try{
+        const r=await fetch('/api/admin/daily-student-sessions',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json',Accept:'application/json'},body:JSON.stringify({enrollmentSessionId:Number(row.dataset.esId),sessionDate:currentDate,startTime:start,endTime:end})});
+        const d=await r.json();
+        if(!r.ok||!d.success)throw Error(d.message||'ذخیره زمان هنرجو ناموفق بود.');
+        await load(currentDate);
+        document.querySelector('#refresh')?.click();
+      }catch(err){save.disabled=false;alert(err.message||err);}
+      return;
+    }
     if(e.target.closest('[data-cancel-time]'))load(currentDate);
   });
-  document.querySelectorAll('#prev,#next,#today,#refresh').forEach(b=>b.addEventListener('click',()=>{setTimeout(()=>{const text=document.querySelector('#dateLabel')?.textContent||'';if(b.id==='today')currentDate=today();else{const d=new Date(currentDate);if(b.id==='prev')d.setDate(d.getDate()-1);if(b.id==='next')d.setDate(d.getDate()+1);currentDate=dateKey(d);}load(currentDate);},850);}));
+  document.querySelectorAll('#prev,#next,#today,#refresh').forEach(b=>b.addEventListener('click',()=>{
+    setTimeout(()=>{
+      if(b.id==='today')currentDate=today();
+      else if(b.id==='prev'||b.id==='next'){const d=new Date(currentDate);d.setDate(d.getDate()+(b.id==='prev'?-1:1));currentDate=dateKey(d);}
+      load(currentDate);
+    },850);
+  }));
   load(currentDate);
 })();
