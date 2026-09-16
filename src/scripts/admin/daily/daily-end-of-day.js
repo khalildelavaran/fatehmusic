@@ -4,7 +4,14 @@
   const summary = document.querySelector('#summary');
   if (!root || !summary || document.querySelector('#dailyEndOfDay')) return;
 
-  const state = { date: new Date().toLocaleDateString('en-CA'), data: null };
+  const todayKey = () => new Date().toLocaleDateString('en-CA');
+  const shiftDate = (value, days) => {
+    const [y, m, d] = String(value).split('-').map(Number);
+    const next = new Date(y, m - 1, d, 12);
+    next.setDate(next.getDate() + days);
+    return next.toLocaleDateString('en-CA');
+  };
+  const state = { date: todayKey(), data: null };
   const esc = (v) => { const e = document.createElement('div'); e.textContent = String(v ?? ''); return e.innerHTML; };
   const num = (v) => Number(v ?? 0).toLocaleString('fa-IR');
   const money = (v) => `${num(v)} ریال`;
@@ -66,8 +73,9 @@
   ['prev', 'next', 'today', 'refresh'].forEach((id) => {
     document.querySelector(`#${id}`)?.addEventListener('click', () => {
       setTimeout(() => {
-        const parsed = root.dataset.date || new Date().toLocaleDateString('en-CA');
-        state.date = /^\d{4}-\d{2}-\d{2}$/.test(parsed) ? parsed : state.date;
+        if (id === 'prev') state.date = shiftDate(state.date, -1);
+        else if (id === 'next') state.date = shiftDate(state.date, 1);
+        else if (id === 'today') state.date = todayKey();
         load();
       }, 450);
     });
