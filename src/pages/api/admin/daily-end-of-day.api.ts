@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
   const [sessions, attendance, finance] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelled, SUM(CASE WHEN status != 'cancelled' AND (teacher_attendance_status IS NULL OR teacher_attendance_status = 'pending') THEN 1 ELSE 0 END) AS teacher_pending FROM class_sessions WHERE session_date = ?`).bind(date).first(),
-    db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN attendance_status = 'pending' THEN 1 ELSE 0 END) AS pending FROM enrollment_sessions es JOIN class_sessions cs ON cs.id = es.class_session_id WHERE cs.session_date = ? AND cs.status != 'cancelled'`).bind(date).first(),
+    db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN es.attendance_status = 'pending' THEN 1 ELSE 0 END) AS pending FROM enrollment_sessions es JOIN class_sessions cs ON cs.id = es.class_session_id WHERE cs.session_date = ? AND cs.status != 'cancelled'`).bind(date).first(),
     db.prepare(`SELECT COALESCE(SUM(CASE WHEN i.status IN ('pending','partial','overdue') THEN i.balance ELSE 0 END),0) AS balance_due, SUM(CASE WHEN i.status = 'overdue' AND i.balance > 0 THEN 1 ELSE 0 END) AS overdue_count FROM invoices i WHERE i.due_date <= ?`).bind(date).first(),
   ]);
 
