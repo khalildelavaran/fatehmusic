@@ -66,13 +66,17 @@
   ['prev', 'next', 'today', 'refresh'].forEach((id) => {
     document.querySelector(`#${id}`)?.addEventListener('click', () => {
       setTimeout(() => {
-        const label = document.querySelector('#dateLabel')?.textContent || '';
         const parsed = root.dataset.date || new Date().toLocaleDateString('en-CA');
         state.date = /^\d{4}-\d{2}-\d{2}$/.test(parsed) ? parsed : state.date;
-        if (id === 'refresh' || label) load();
+        load();
       }, 450);
     });
   });
+
+  const overrideScript = document.createElement('script');
+  overrideScript.src = '/scripts/admin/daily/daily-authoritative-overrides.js';
+  overrideScript.async = true;
+  document.head.appendChild(overrideScript);
 
   load();
 })();
