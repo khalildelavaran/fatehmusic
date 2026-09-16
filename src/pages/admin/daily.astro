@@ -96,3 +96,36 @@ Astro.response.headers.set("Cache-Control", "no-store");
   setInterval(decorate,1500);
 })();
 </script>
+<script>
+(() => {
+  const root=document.querySelector('#dailyDashboardRoot');
+  if(!root)return;
+  let currentDate=new Date().toLocaleDateString('en-CA');
+  const ids=v=>new Set((Array.isArray(v)?v:String(v??'').split(',')).map(x=>String(x).trim()).filter(Boolean));
+  async function decorateConflicts(){
+    try{
+      const r=await fetch(`/api/admin/daily-command-center?date=${encodeURIComponent(currentDate)}`,{credentials:'same-origin',headers:{Accept:'application/json'}});
+      const d=await r.json();if(!r.ok||!d.success)return;
+      const instructor=ids(d.instructor_conflict_session_ids),room=ids(d.room_conflict_session_ids);
+      document.querySelectorAll('#timeline [data-session-id],#sessionsPanel [data-session-id]').forEach(node=>{
+        const id=String(node.dataset.sessionId||'');
+        node.querySelectorAll('.dd-session-tag.conflict').forEach(tag=>tag.remove());
+        node.querySelectorAll('[data-daily-conflict-badges]').forEach(tag=>tag.remove());
+        const badges=[];
+        if(instructor.has(id))badges.push('<span class="dd-session-tag conflict-instructor">تداخل مدرس</span>');
+        if(room.has(id))badges.push('<span class="dd-session-tag conflict-room">تداخل اتاق</span>');
+        if(!badges.length)return;
+        const wrap=document.createElement('div');wrap.dataset.dailyConflictBadges='1';wrap.className='dcc-conflict-badges';wrap.innerHTML=badges.join('');
+        node.querySelector('.dd-session-head-main')?.append(wrap);
+      });
+    }catch(e){console.warn('[daily-conflicts]',e);}
+  }
+  document.querySelectorAll('#prev,#next,#today,#refresh').forEach(b=>b.addEventListener('click',()=>{
+    const delta=b.id==='prev'?-1:b.id==='next'?1:0;
+    if(delta){const d=new Date(currentDate);d.setDate(d.getDate()+delta);currentDate=d.toLocaleDateString('en-CA');}
+    else if(b.id==='today')currentDate=new Date().toLocaleDateString('en-CA');
+    setTimeout(decorateConflicts,900);
+  }));
+  setTimeout(decorateConflicts,1100);setInterval(decorateConflicts,3000);
+})();
+</script>
