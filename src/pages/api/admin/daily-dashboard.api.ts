@@ -79,7 +79,8 @@ export const GET: APIRoute = async ({ request }) => {
     if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
     stage = "date";
     const url = new URL(request.url);
-    const date = url.searchParams.get("date") ?? new Date().toISOString().slice(0, 10);
+    const dateParam = url.searchParams.get("date");
+    const date = dateParam ?? new Date().toISOString().slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ success: false, message: "تاریخ معتبر نیست." }, 422);
 
     stage = "materialize-cache-check";
