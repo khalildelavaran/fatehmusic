@@ -132,6 +132,20 @@ describe("calculateFinance", () => {
     expect(finance.financialStatus).toBe("overdue");
   });
 
+  it("does not mark a fully paid invoice overdue after its due date", () => {
+    const finance = calculateFinance({
+      invoiceAmount: 1_000_000,
+      paidAmount: 1_000_000,
+      dueDate: "2026-09-05",
+      today: "2026-09-06",
+    });
+
+    expect(finance.balance).toBe(0);
+    expect(finance.overdue).toBe(false);
+    expect(finance.nearDue).toBe(false);
+    expect(finance.financialStatus).toBe("paid");
+  });
+
   it("marks an unpaid invoice due within seven days as near due", () => {
     const finance = calculateFinance({
       invoiceAmount: 1_000_000,
