@@ -7,6 +7,7 @@ import { recordAuditEvent } from "../../../../server/audit-log";
 import { getDailyDashboard } from "../../../../server/daily-dashboard";
 import { listActiveRooms } from "../../../../server/rooms";
 import { buildDailyAutoPlan } from "../../../../server/daily-auto-planner";
+import { rejectIfDailyClosed } from "../../../../server/daily-closure-guard";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
@@ -62,6 +63,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     const date = typeof body?.date === "string" ? body.date : "";
     if (!DATE_RE.test(date)) return json({ success: false, message: "تاریخ معتبر نیست." }, 422);
+
+    const initiallyClosed = await rejectIfDailyClosed(env.DB, date);
+    if (initiallyClosed) return initiallyClosed;
 
     const removeSessionIds = Array.isArray(body?.removeSessionIds)
       ? body.removeSessionIds.map(Number).filter((id) => validId(id))
@@ -142,6 +146,11 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    // Re-check immediately before the mutation. The SQL predicates below also
+    // make each individual write refuse a newly closed date.
+    const justBeforeWrite = await rejectIfDailyClosed(env.DB, date);
+    if (justBeforeWrite) return justBeforeWrite;
+
     const actor = await getAdminSession(request, env as any);
     const statements: D1PreparedStatement[] = [];
 
@@ -150,7 +159,8 @@ export const POST: APIRoute = async ({ request }) => {
         UPDATE class_sessions
         SET start_time = ?, end_time = ?, room_id = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND session_date = ? AND status <> 'cancelled'
-      `).bind(change.to.startTime, change.to.endTime, change.to.roomId, change.sessionId, date));
+          AND NOT EXISTS (SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?)
+      `).bind(change.to.startTime, change.to.endTime, change.to.roomId, change.sessionId, date, date));
     }
 
     for (const sessionId of freshPlan.removedSessionIds.filter((id) => removeSessionIds.includes(id))) {
@@ -158,10 +168,19 @@ export const POST: APIRoute = async ({ request }) => {
         UPDATE class_sessions
         SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND session_date = ? AND status <> 'cancelled'
-      `).bind(sessionId, date));
+          AND NOT EXISTS (SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?)
+      `).bind(sessionId, date, date));
     }
 
-    if (statements.length) await env.DB.batch(statements);
+    if (statements.length) {
+      const results = await env.DB.batch(statements);
+      const failed = results.some((result) => !result.meta?.changes);
+      if (failed) {
+        const racedClosed = await rejectIfDailyClosed(env.DB, date);
+        if (racedClosed) return racedClosed;
+        return json({ success: false, code: "PLAN_STALE", message: "وضعیت برنامه هنگام اعمال تغییر کرد؛ چینش را دوباره دریافت کنید." }, 409);
+      }
+    }
 
     for (const change of freshPlan.changes) {
       const current = currentById.get(change.sessionId);

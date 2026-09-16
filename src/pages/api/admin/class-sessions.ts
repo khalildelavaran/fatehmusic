@@ -5,6 +5,7 @@ import { env } from 'cloudflare:workers';
 import { json, requireRole, ROLES } from '../../../server/admin-auth';
 import { createClassSession, getSession, listSessionsForDate, cancelClassSession, completeClassSession, type ClassSessionInput } from '../../../server/class-sessions';
 import { provisionEnrollmentSessionsForClassSession } from '../../../server/session-provisioning';
+import { rejectIfAnyDailyClosed } from '../../../server/daily-closure-guard';
 
 async function access(request: Request) { return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]); }
 
@@ -25,6 +26,8 @@ export const POST: APIRoute = async ({ request }) => {
   const denied = await access(request); if (denied) return denied;
   const db = env.DB; if (!db) return json({ success:false, message:'دیتابیس در دسترس نیست.' },503);
   let body: ClassSessionInput; try { body = await request.json(); } catch { return json({success:false,message:'بدنه درخواست معتبر نیست.'},400); }
+  const closed = await rejectIfAnyDailyClosed(db, [String(body.sessionDate ?? '')]);
+  if (closed) return closed;
   try {
     const id = await createClassSession(db, body);
     await provisionEnrollmentSessionsForClassSession(db, id);
@@ -40,6 +43,12 @@ export const PATCH: APIRoute = async ({ request }) => {
   try { body = await request.json(); } catch { return json({success:false,message:'بدنه درخواست معتبر نیست.'},400); }
   const id=Number(body.id); if(!Number.isInteger(id)||id<=0) return json({success:false,message:'شناسه جلسه معتبر نیست.'},422);
   const current=await getSession(db,id); if(!current) return json({success:false,message:'جلسه یافت نشد.'},404);
+
+  // A session move has two affected operational days. Never trust only the
+  // requested target date: the source date comes from the database.
+  const closed = await rejectIfAnyDailyClosed(db, [current.sessionDate, body.sessionDate ?? current.sessionDate]);
+  if (closed) return closed;
+
   try {
     if (body.status === 'cancelled') {
       const ok=await cancelClassSession(db,id,body.cancellationReason?.trim()||'لغو جلسه');
@@ -49,7 +58,12 @@ export const PATCH: APIRoute = async ({ request }) => {
     } else {
       const next={classId:current.classId,sessionDate:body.sessionDate??current.sessionDate,startTime:body.startTime??current.startTime,endTime:body.endTime??current.endTime,instructorId:body.instructorId??current.instructorId,roomId:body.roomId===undefined?current.roomId:body.roomId,locationType:body.locationType??current.locationType,onlinePlatform:body.onlinePlatform===undefined?current.onlinePlatform:body.onlinePlatform,meetingUrl:body.meetingUrl===undefined?current.meetingUrl:body.meetingUrl,type:current.type,originalSessionId:current.originalSessionId,notes:body.notes??current.notes};
       const errors = (await import('../../../server/class-sessions')).validateClassSession(next); if(errors.length) throw new Error(errors.join(' '));
-      await db.prepare(`UPDATE class_sessions SET session_date=?,start_time=?,end_time=?,instructor_id=?,room_id=?,location_type=?,online_platform=?,meeting_url=?,notes=?,updated_at=datetime('now') WHERE id=? AND status='scheduled'`).bind(next.sessionDate,next.startTime,next.endTime,next.instructorId,next.roomId,next.locationType,next.onlinePlatform,next.meetingUrl,next.notes,id).run();
+      const result = await db.prepare(`UPDATE class_sessions SET session_date=?,start_time=?,end_time=?,instructor_id=?,room_id=?,location_type=?,online_platform=?,meeting_url=?,notes=?,updated_at=datetime('now') WHERE id=? AND status='scheduled' AND NOT EXISTS (SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?)`).bind(next.sessionDate,next.startTime,next.endTime,next.instructorId,next.roomId,next.locationType,next.onlinePlatform,next.meetingUrl,next.notes,id,next.sessionDate).run();
+      if (!result.meta.changes) {
+        const racedClosed = await rejectIfAnyDailyClosed(db, [current.sessionDate, next.sessionDate]);
+        if (racedClosed) return racedClosed;
+        throw new Error('جلسه دیگر قابل ویرایش نیست.');
+      }
       await provisionEnrollmentSessionsForClassSession(db,id);
     }
     return json({success:true,session:await getSession(db,id)});

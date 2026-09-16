@@ -9,6 +9,11 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+async function isDayClosed(db: D1Database, date: string): Promise<boolean> {
+  const row = await db.prepare(`SELECT id FROM daily_closures WHERE close_date = ? LIMIT 1`).bind(date).first<{ id: number }>();
+  return Boolean(row);
+}
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -16,6 +21,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     const db = env.DB;
     if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
+
+    const operationDate = todayIso();
+    if (await isDayClosed(db, operationDate)) {
+      return json({ success: false, code: "DAILY_CLOSED", message: "روز جاری بسته شده است و ثبت پرداخت جدید مجاز نیست." }, 409);
+    }
 
     const body = await request.json().catch(() => null) as {
       invoiceId?: unknown;
@@ -50,15 +60,11 @@ export const POST: APIRoute = async ({ request }) => {
       alreadyPaid: Number(alreadyPaid),
       paymentAmount: amount,
       dueDate: invoice.due_date,
-      today: todayIso(),
+      today: operationDate,
     });
 
-    if (!payment.accepted && payment.error === "already_paid") {
-      return json({ success: false, message: "این صورتحساب قبلاً به‌طور کامل پرداخت شده است." }, 409);
-    }
-    if (!payment.accepted && payment.error === "overpayment") {
-      return json({ success: false, message: `مبلغ پرداخت نمی‌تواند بیشتر از مانده ${payment.balance.toLocaleString("fa-IR")} باشد.` }, 422);
-    }
+    if (!payment.accepted && payment.error === "already_paid") return json({ success: false, message: "این صورتحساب قبلاً به‌طور کامل پرداخت شده است." }, 409);
+    if (!payment.accepted && payment.error === "overpayment") return json({ success: false, message: `مبلغ پرداخت نمی‌تواند بیشتر از مانده ${payment.balance.toLocaleString("fa-IR")} باشد.` }, 422);
 
     const inserted = await db.prepare(`
       INSERT INTO payments (invoice_id, amount, paid_at, method, reference, note)
@@ -70,16 +76,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     await db.prepare(`UPDATE invoices SET status = ?, updated_at = datetime('now') WHERE id = ?`).bind(payment.newStatus, invoiceId).run();
 
-    return json({
-      success: true,
-      paymentId: inserted.id,
-      invoiceId,
-      invoiceAmount: invoice.amount,
-      paidAmount: payment.newPaid,
-      balance: payment.balance,
-      invoiceStatus: payment.newStatus,
-      method,
-    });
+    return json({ success: true, paymentId: inserted.id, invoiceId, invoiceAmount: invoice.amount, paidAmount: payment.newPaid, balance: payment.balance, invoiceStatus: payment.newStatus, method });
   } catch (error) {
     console.error("[admin/payments] request failed:", error);
     return json({ success: false, message: "ثبت پرداخت با خطا مواجه شد." }, 500);

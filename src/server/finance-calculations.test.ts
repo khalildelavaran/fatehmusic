@@ -132,6 +132,20 @@ describe("calculateFinance", () => {
     expect(finance.financialStatus).toBe("overdue");
   });
 
+  it("does not mark a fully paid invoice overdue after its due date", () => {
+    const finance = calculateFinance({
+      invoiceAmount: 1_000_000,
+      paidAmount: 1_000_000,
+      dueDate: "2026-09-05",
+      today: "2026-09-06",
+    });
+
+    expect(finance.balance).toBe(0);
+    expect(finance.overdue).toBe(false);
+    expect(finance.nearDue).toBe(false);
+    expect(finance.financialStatus).toBe("paid");
+  });
+
   it("marks an unpaid invoice due within seven days as near due", () => {
     const finance = calculateFinance({
       invoiceAmount: 1_000_000,
@@ -142,6 +156,47 @@ describe("calculateFinance", () => {
 
     expect(finance.dueDays).toBe(4);
     expect(finance.nearDue).toBe(true);
+    expect(finance.financialStatus).toBe("pending");
+  });
+
+  it("treats an invoice due today as near due but not overdue", () => {
+    const finance = calculateFinance({
+      invoiceAmount: 1_000_000,
+      paidAmount: 0,
+      dueDate: "2026-09-06",
+      today: "2026-09-06",
+    });
+
+    expect(finance.dueDays).toBe(0);
+    expect(finance.overdue).toBe(false);
+    expect(finance.nearDue).toBe(true);
+    expect(finance.financialStatus).toBe("pending");
+  });
+
+  it("does not mark a fully paid invoice as overdue or near due", () => {
+    const finance = calculateFinance({
+      invoiceAmount: 1_000_000,
+      paidAmount: 1_000_000,
+      dueDate: "2026-09-01",
+      today: "2026-09-06",
+    });
+
+    expect(finance.balance).toBe(0);
+    expect(finance.overdue).toBe(false);
+    expect(finance.nearDue).toBe(false);
+    expect(finance.financialStatus).toBe("paid");
+  });
+
+  it("keeps due-date warning flags clear when no due date is supplied", () => {
+    const finance = calculateFinance({
+      invoiceAmount: 1_000_000,
+      paidAmount: 0,
+      today: "2026-09-06",
+    });
+
+    expect(finance.dueDays).toBeNull();
+    expect(finance.overdue).toBe(false);
+    expect(finance.nearDue).toBe(false);
     expect(finance.financialStatus).toBe("pending");
   });
 });

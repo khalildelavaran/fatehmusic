@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { validateAttendance, type AttendanceStatus } from "../../../server/attendance-service";
+import { rejectIfDailyClosed } from "../../../server/daily-closure-guard";
 
 const VALID_STATUSES = new Set<AttendanceStatus>(["pending", "present", "absent", "excused"]);
 
@@ -26,14 +27,17 @@ export const PUT: APIRoute = async ({ request }) => {
   if (!body.status || !VALID_STATUSES.has(body.status)) return json({ success: false, message: "وضعیت حضور معتبر نیست." }, 422);
 
   const row = await db.prepare(`
-    SELECT es.id, e.status AS enrollment_status, cs.status AS session_status
+    SELECT es.id, e.status AS enrollment_status, cs.status AS session_status, cs.session_date
     FROM enrollment_sessions es
     JOIN enrollments e ON e.id = es.enrollment_id
     JOIN class_sessions cs ON cs.id = es.session_id
     WHERE es.id = ?
-  `).bind(id).first<{ id: number; enrollment_status: string; session_status: string }>();
+  `).bind(id).first<{ id: number; enrollment_status: string; session_status: string; session_date: string }>();
 
   if (!row) return json({ success: false, message: "جلسه هنرجو یافت نشد." }, 404);
+
+  const closed = await rejectIfDailyClosed(db, row.session_date);
+  if (closed) return closed;
 
   try {
     validateAttendance({

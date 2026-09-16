@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { getAdminSession, json, requireRole, ROLES } from "../../../../server/admin-auth";
 import { recordAuditEvent } from "../../../../server/audit-log";
 import { getDailyPlannerSuggestions, parsePlannerSessionId } from "../../../../server/daily-planner-suggestions";
+import { rejectIfAnyDailyClosed } from "../../../../server/daily-closure-guard";
 
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -79,6 +80,9 @@ export const POST: APIRoute = async ({ request }) => {
       return json({ success: false, message: "جلسه تغییرپذیر نیست یا تاریخ آن تغییر کرده است." }, 409);
     }
 
+    const closed = await rejectIfAnyDailyClosed(env.DB, [current.session_date, sessionDate]);
+    if (closed) return closed;
+
     // Re-plan immediately before commit. The selected candidate must still be
     // present in the freshly calculated conflict-free set; this prevents stale
     // browser/AI suggestions from overwriting a newly occupied slot.
@@ -95,11 +99,17 @@ export const POST: APIRoute = async ({ request }) => {
       if (!room) return json({ success: false, message: "اتاق انتخاب‌شده فعال نیست." }, 409);
     }
 
-    await env.DB.prepare(`
+    const result = await env.DB.prepare(`
       UPDATE class_sessions
       SET start_time = ?, end_time = ?, room_id = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND status <> 'cancelled'
-    `).bind(startTime, endTime, roomId, sessionId).run();
+        AND NOT EXISTS (SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?)
+    `).bind(startTime, endTime, roomId, sessionId, sessionDate).run();
+    if (!result.meta.changes) {
+      const racedClosed = await rejectIfAnyDailyClosed(env.DB, [current.session_date, sessionDate]);
+      if (racedClosed) return racedClosed;
+      return json({ success: false, message: "جلسه دیگر قابل ویرایش نیست؛ پیشنهادها را دوباره دریافت کنید." }, 409);
+    }
 
     const actor = await getAdminSession(request, env);
     await recordAuditEvent(env.DB, {
