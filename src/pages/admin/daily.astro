@@ -8,6 +8,7 @@ import "../../styles/admin/dashboard.css";
 import "../../styles/admin/daily-dashboard.css";
 import "../../styles/admin/daily-dashboard-mobile.css";
 import "../../styles/admin/daily-assistant.css";
+import "../../styles/admin/daily-command-center.css";
 import { env } from "cloudflare:workers";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 const session = await getAdminSession(Astro.request, env as AdminEnv);
@@ -41,6 +42,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
   </div>
 </MainLayout>
 <script src="../../scripts/admin/daily/daily-dashboard.js"></script>
+<script src="../../scripts/admin/daily/daily-command-center.js"></script>
 <script>
 (() => {
   const root=document.querySelector('#dailyDashboardRoot');
