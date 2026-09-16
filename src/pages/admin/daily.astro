@@ -60,3 +60,29 @@ Astro.response.headers.set("Cache-Control", "no-store");
   ar?.addEventListener('click',()=>autoPlan());pf?.addEventListener('click',suggest);pr?.addEventListener('click',e=>{const b=e.target.closest('[data-apply]');if(b)apply(b)});ars?.addEventListener('click',e=>{const b=e.target.closest('[data-auto-apply-all]');if(b)applyAutoPlan();});document.querySelectorAll('#prev,#next,#today,#refresh').forEach(b=>b.addEventListener('click',()=>setTimeout(refresh,400)));setTimeout(refresh,500);
 })();
 </script>
+<script>
+(() => {
+  const root=document.querySelector('#dailyDashboardRoot');
+  if(!root)return;
+  let currentDate=new Date().toLocaleDateString('en-CA');
+  const esc=v=>{const e=document.createElement('div');e.textContent=String(v??'');return e.innerHTML};
+  const dateLabel=v=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(v||'')))return String(v||'');const [y,m,d]=String(v).split('-').map(Number);return new Intl.DateTimeFormat('fa-IR',{year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(y,m-1,d,12));};
+  const studentById=new Map();
+  function remember(data){studentById.clear();for(const session of data?.sessions||[]){for(const student of session.students||[]){studentById.set(String(student.enrollmentSessionId),student);}}}
+  function decorate(){
+    document.querySelectorAll('#sessionsPanel [data-enrollment-session-id]').forEach(card=>{
+      const id=String(card.dataset.enrollmentSessionId||'');const student=studentById.get(id);if(!student||!student.invoiceId||!student.tuitionDueDate)return;
+      const finance=card.querySelector('.finance-box');if(!finance)return;
+      let row=finance.querySelector(`[data-finance-due-id="${CSS.escape(id)}"]`);
+      if(!row){row=document.createElement('div');row.className='finance-due';row.dataset.financeDueId=id;finance.insertBefore(row,finance.firstElementChild?.nextElementSibling||finance.firstChild);}
+      row.classList.toggle('is-near-due',Boolean(student.nearDue&&!student.overdue));row.classList.toggle('is-overdue',Boolean(student.overdue));
+      row.innerHTML=`<span>سررسید شهریه</span><strong>${esc(dateLabel(student.tuitionDueDate))}</strong>`;
+    });
+  }
+  async function load(date){try{const r=await fetch(`/api/admin/daily-dashboard?date=${encodeURIComponent(date)}`,{credentials:'same-origin',headers:{Accept:'application/json'}});const d=await r.json();if(!r.ok||!d.success)return;remember(d);decorate();}catch(e){console.warn('[daily-finance-due]',e);}}
+  function syncDate(){const text=document.querySelector('#dateLabel')?.textContent||'';if(text.includes('امروز'))currentDate=new Date().toLocaleDateString('en-CA');}
+  document.querySelectorAll('#prev,#next,#today,#refresh').forEach(b=>b.addEventListener('click',()=>{const delta=b.id==='prev'?-1:b.id==='next'?1:0;if(delta){const d=new Date(currentDate);d.setDate(d.getDate()+delta);currentDate=d.toLocaleDateString('en-CA');}else if(b.id==='today')currentDate=new Date().toLocaleDateString('en-CA');setTimeout(()=>load(currentDate),850);}));
+  setTimeout(()=>load(currentDate),900);
+  setInterval(decorate,1500);
+})();
+</script>
