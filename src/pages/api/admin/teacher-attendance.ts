@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { json, requireRole, ROLES } from '../../../server/admin-auth';
+import { rejectIfDailyClosed } from '../../../server/daily-closure-guard';
 
 async function requireAttendanceAccess(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -35,12 +36,16 @@ export const PUT: APIRoute = async ({ request }) => {
   }
 
   const session = await db.prepare(`
-    SELECT id, instructor_id, status
+    SELECT id, instructor_id, status, session_date
     FROM class_sessions
     WHERE id = ?
-  `).bind(sessionId).first<{ id: number; instructor_id: number; status: string }>();
+  `).bind(sessionId).first<{ id: number; instructor_id: number; status: string; session_date: string }>();
 
   if (!session) return json({ success: false, message: 'جلسه یافت نشد.' }, 404);
+
+  const closed = await rejectIfDailyClosed(db, session.session_date);
+  if (closed) return closed;
+
   if (session.status === 'cancelled') {
     return json({ success: false, code: 'SESSION_CANCELLED', message: 'برای جلسه لغوشده حضور مدرس ثبت نمی‌شود.' }, 422);
   }
