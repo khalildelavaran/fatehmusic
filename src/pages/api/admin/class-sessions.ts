@@ -8,6 +8,17 @@ import { provisionEnrollmentSessionsForClassSession } from '../../../server/sess
 
 async function access(request: Request) { return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]); }
 
+async function isDayClosed(db: D1Database, date: string): Promise<boolean> {
+  const row = await db.prepare(`SELECT id FROM daily_closures WHERE close_date = ? LIMIT 1`).bind(date).first<{ id: number }>();
+  return Boolean(row);
+}
+
+async function rejectClosedDay(db: D1Database, date: string): Promise<Response | null> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  if (!(await isDayClosed(db, date))) return null;
+  return json({ success: false, code: 'DAILY_CLOSED', message: `روز ${date} بسته شده و تغییر جلسه برای آن مجاز نیست.` }, 409);
+}
+
 export const GET: APIRoute = async ({ request }) => {
   const denied = await access(request); if (denied) return denied;
   const db = env.DB; if (!db) return json({ success:false, message:'دیتابیس در دسترس نیست.' },503);
@@ -25,6 +36,8 @@ export const POST: APIRoute = async ({ request }) => {
   const denied = await access(request); if (denied) return denied;
   const db = env.DB; if (!db) return json({ success:false, message:'دیتابیس در دسترس نیست.' },503);
   let body: ClassSessionInput; try { body = await request.json(); } catch { return json({success:false,message:'بدنه درخواست معتبر نیست.'},400); }
+  const closed = await rejectClosedDay(db, String(body.sessionDate ?? ''));
+  if (closed) return closed;
   try {
     const id = await createClassSession(db, body);
     await provisionEnrollmentSessionsForClassSession(db, id);
@@ -40,6 +53,12 @@ export const PATCH: APIRoute = async ({ request }) => {
   try { body = await request.json(); } catch { return json({success:false,message:'بدنه درخواست معتبر نیست.'},400); }
   const id=Number(body.id); if(!Number.isInteger(id)||id<=0) return json({success:false,message:'شناسه جلسه معتبر نیست.'},422);
   const current=await getSession(db,id); if(!current) return json({success:false,message:'جلسه یافت نشد.'},404);
+  const closedCurrent = await rejectClosedDay(db, current.sessionDate);
+  if (closedCurrent) return closedCurrent;
+  if (body.sessionDate && body.sessionDate !== current.sessionDate) {
+    const closedTarget = await rejectClosedDay(db, body.sessionDate);
+    if (closedTarget) return closedTarget;
+  }
   try {
     if (body.status === 'cancelled') {
       const ok=await cancelClassSession(db,id,body.cancellationReason?.trim()||'لغو جلسه');
