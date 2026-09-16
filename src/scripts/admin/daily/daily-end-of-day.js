@@ -7,7 +7,7 @@
   const state = { date: new Date().toLocaleDateString('en-CA'), data: null };
   const esc = (v) => { const e = document.createElement('div'); e.textContent = String(v ?? ''); return e.innerHTML; };
   const num = (v) => Number(v ?? 0).toLocaleString('fa-IR');
-  const money = (v) => `${num(v)} تومان`;
+  const money = (v) => `${num(v)} ریال`;
 
   summary.insertAdjacentHTML('afterend', `
     <section id="dailyEndOfDay" class="dcc-end-of-day" aria-label="گزارش پایان روز">
