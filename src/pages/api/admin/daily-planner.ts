@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { listActiveRooms } from "../../../server/rooms";
 import { setStudentSessionStatus } from "../../../server/student-session-operations";
+import { rejectIfDailyClosed } from "../../../server/daily-closure-guard";
 
 const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -29,10 +30,6 @@ export const GET: APIRoute = async ({ request }) => {
       return json({ success: false, message: "منبع درخواستی معتبر نیست." }, 400);
     }
 
-    // Deprecated in favor of GET /api/admin/rooms (which also serves the
-    // settings page). Kept for backward compatibility; no longer capped at 3
-    // rooms — the daily dashboard timeline is driven by however many active
-    // rooms exist (spec section 46.4).
     const rooms = await listActiveRooms(env.DB);
     return json({ success: true, rooms });
   } catch (error) {
@@ -84,10 +81,9 @@ export const PATCH: APIRoute = async ({ request }) => {
       return json({ success: false, message: "جلسه موردنظر پیدا نشد یا قابل ویرایش نیست." }, 404);
     }
 
-    // Every class at this school is one-on-one except the group children's
-    // class (class_type = 'group' | 'workshop') -- see AGENTS.md. A solo
-    // session's duration is always exactly 30 minutes; there is no separate
-    // "instructor time" to configure, the student's slot IS the session.
+    const closed = await rejectIfDailyClosed(db, session.session_date);
+    if (closed) return closed;
+
     const isIndividual = session.class_type !== "group" && session.class_type !== "workshop";
     if (isIndividual && minutes(endTime) - minutes(startTime) !== 30) {
       return json({ success: false, message: "مدت جلسه تکی باید دقیقاً ۳۰ دقیقه باشد." }, 422);
@@ -139,9 +135,12 @@ export const POST: APIRoute = async ({ request }) => {
         return json({ success: false, message: "وضعیت حضور مدرس معتبر نیست." }, 422);
       }
       const session = await env.DB.prepare(
-        `SELECT id, instructor_id FROM class_sessions WHERE id = ? LIMIT 1`
-      ).bind(sessionId).first<{ id: number; instructor_id: number }>();
+        `SELECT id, instructor_id, session_date FROM class_sessions WHERE id = ? LIMIT 1`
+      ).bind(sessionId).first<{ id: number; instructor_id: number; session_date: string }>();
       if (!session) return json({ success: false, message: "جلسه موردنظر پیدا نشد." }, 404);
+
+      const closed = await rejectIfDailyClosed(env.DB, session.session_date);
+      if (closed) return closed;
 
       await env.DB.prepare(`
         INSERT INTO teacher_session_attendance (session_id, instructor_id, status, check_in_at, updated_at)
@@ -168,6 +167,16 @@ export const POST: APIRoute = async ({ request }) => {
       if (!Number.isInteger(enrollmentId) || enrollmentId < 1) {
         return json({ success: false, message: "ثبت انصراف بدون شناسه ثبت‌نام ممکن نیست." }, 422);
       }
+      const session = await env.DB.prepare(`
+        SELECT cs.session_date
+        FROM enrollment_sessions es
+        JOIN class_sessions cs ON cs.id = es.session_id
+        WHERE es.id = ? LIMIT 1
+      `).bind(enrollmentSessionId).first<{ session_date: string }>();
+      if (!session) return json({ success: false, message: "رکورد جلسه هنرجو پیدا نشد." }, 404);
+      const closed = await rejectIfDailyClosed(env.DB, session.session_date);
+      if (closed) return closed;
+
       const result = await env.DB.prepare(`
         UPDATE enrollments SET status = 'withdrawn', updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND status = 'active'
@@ -179,6 +188,16 @@ export const POST: APIRoute = async ({ request }) => {
     if (!allowedAttendance.has(status)) {
       return json({ success: false, message: "وضعیت حضور معتبر نیست." }, 422);
     }
+
+    const session = await env.DB.prepare(`
+      SELECT cs.session_date
+      FROM enrollment_sessions es
+      JOIN class_sessions cs ON cs.id = es.session_id
+      WHERE es.id = ? LIMIT 1
+    `).bind(enrollmentSessionId).first<{ session_date: string }>();
+    if (!session) return json({ success: false, message: "رکورد جلسه هنرجو پیدا نشد." }, 404);
+    const closed = await rejectIfDailyClosed(env.DB, session.session_date);
+    if (closed) return closed;
 
     if (status === "pending") {
       const result = await env.DB.prepare(`
