@@ -17,7 +17,7 @@ export const GET: APIRoute = async ({ request }) => {
   const q = clean(url.searchParams.get("q"));
   try {
     if (q) {
-      const like = `%${q.replace(/[\\%_]/g, "\\$&`)}%`;
+      const like = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
       const result = await db.prepare(`
         SELECT * FROM (
           SELECT 'student' AS result_type,s.id,TRIM(COALESCE(s.first_name,'')||' '||COALESCE(s.last_name,'')) AS name,e.id AS enrollment_id,e.class_id,c.title AS class_title,NULL AS instructor_name,NULL AS session_date,NULL AS start_time,NULL AS end_time,
