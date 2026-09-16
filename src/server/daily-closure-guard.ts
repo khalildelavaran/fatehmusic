@@ -24,3 +24,19 @@ export async function rejectIfDailyClosed(
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
+
+/**
+ * A mutation can affect both a source day and a destination day. Check every
+ * affected day instead of trusting only the date supplied by the browser.
+ */
+export async function rejectIfAnyDailyClosed(
+  db: D1Database,
+  dates: Array<string | null | undefined>,
+): Promise<Response | null> {
+  const uniqueDates = [...new Set(dates.filter((date): date is string => Boolean(date)))];
+  for (const date of uniqueDates) {
+    const closed = await rejectIfDailyClosed(db, date);
+    if (closed) return closed;
+  }
+  return null;
+}
