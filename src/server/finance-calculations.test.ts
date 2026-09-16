@@ -172,6 +172,19 @@ describe("calculateFinance", () => {
     expect(finance.nearDue).toBe(false);
     expect(finance.financialStatus).toBe("paid");
   });
+
+  it("keeps due-date warning flags clear when no due date is supplied", () => {
+    const finance = calculateFinance({
+      invoiceAmount: 1_000_000,
+      paidAmount: 0,
+      today: "2026-09-06",
+    });
+
+    expect(finance.dueDays).toBeNull();
+    expect(finance.overdue).toBe(false);
+    expect(finance.nearDue).toBe(false);
+    expect(finance.financialStatus).toBe("pending");
+  });
 });
 
 describe("calculateInstructorShare", () => {
