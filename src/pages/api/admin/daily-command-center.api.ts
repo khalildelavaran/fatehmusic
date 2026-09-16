@@ -133,8 +133,22 @@ export const GET: APIRoute = async ({ request }) => {
       WHERE cs.session_date = ?
     `).bind(date).all<{ id: string }>();
 
+    const financialTargets = await db.prepare(`
+      SELECT
+        COALESCE(GROUP_CONCAT(DISTINCT CASE WHEN i.id IS NOT NULL AND (i.amount - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)) > 0 THEN cs.id END), '') AS outstanding_session_ids,
+        COALESCE(GROUP_CONCAT(DISTINCT CASE WHEN i.id IS NOT NULL AND i.due_date IS NOT NULL AND i.due_date < ? AND (i.amount - COALESCE((SELECT SUM(p.amount) FROM payments p WHERE p.invoice_id=i.id),0)) > 0 THEN cs.id END), '') AS overdue_session_ids,
+        COALESCE(GROUP_CONCAT(DISTINCT CASE WHEN et.billing_type = 'monthly' OR (et.planned_sessions IS NOT NULL AND et.planned_sessions - (SELECT COUNT(*) FROM enrollment_sessions consumed WHERE consumed.enrollment_term_id=et.id AND consumed.status IN ('present','absent')) <= 1) THEN cs.id END), '') AS renewal_session_ids
+      FROM class_sessions cs
+      JOIN enrollment_sessions es ON es.session_id = cs.id
+      JOIN enrollment_terms et ON et.id = es.enrollment_term_id AND et.status = 'active'
+      LEFT JOIN invoices i ON i.enrollment_term_id = et.id AND i.status <> 'cancelled'
+        AND i.id = (SELECT MAX(i2.id) FROM invoices i2 WHERE i2.enrollment_term_id=et.id AND i2.status <> 'cancelled')
+      WHERE cs.session_date = ? AND cs.status <> 'cancelled'
+    `).bind(date, date).first<{ outstanding_session_ids: string; overdue_session_ids: string; renewal_session_ids: string }>();
+
     const instructorConflictIds = instructorConflicts.results.map((row) => String(row.id));
     const roomConflictIds = roomConflicts.results.map((row) => String(row.id));
+    const csv = (value: string | null | undefined) => String(value ?? '').split(',').map(v => v.trim()).filter(Boolean);
 
     return json({
       success: true, date,
@@ -148,6 +162,9 @@ export const GET: APIRoute = async ({ request }) => {
       },
       instructor_conflict_session_ids: instructorConflictIds,
       room_conflict_session_ids: roomConflictIds,
+      outstanding_session_ids: csv(financialTargets?.outstanding_session_ids),
+      overdue_session_ids: csv(financialTargets?.overdue_session_ids),
+      renewal_session_ids: csv(financialTargets?.renewal_session_ids),
       instructors: instructors.results,
     });
   } catch (error) {
