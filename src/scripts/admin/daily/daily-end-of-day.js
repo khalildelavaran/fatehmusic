@@ -102,6 +102,11 @@
     if (/^\d{4}-\d{2}-\d{2}$/.test(String(date))) load(String(date));
   });
 
+  const closedFeedbackScript = document.createElement('script');
+  closedFeedbackScript.src = '/scripts/admin/daily/daily-closed-feedback.js';
+  closedFeedbackScript.async = true;
+  document.head.appendChild(closedFeedbackScript);
+
   const overrideScript = document.createElement('script');
   overrideScript.src = '/scripts/admin/daily/daily-authoritative-overrides.js';
   overrideScript.async = true;
