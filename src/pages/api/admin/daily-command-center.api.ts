@@ -9,7 +9,6 @@ const clean = (value: unknown) => String(value ?? "").trim();
 export const GET: APIRoute = async ({ request }) => {
   const denied = await requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
   if (denied) return denied;
-
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
 
@@ -20,7 +19,7 @@ export const GET: APIRoute = async ({ request }) => {
 
   try {
     if (q) {
-      const like = `%${q.replace(/[%_]/g, "\\$&`".slice(0, -1))}%`;
+      const like = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
       const result = await db.prepare(`
         SELECT * FROM (
           SELECT 'student' AS result_type, s.id, TRIM(COALESCE(s.first_name,'') || ' ' || COALESCE(s.last_name,'')) AS name,
@@ -68,17 +67,13 @@ export const GET: APIRoute = async ({ request }) => {
     const renewal = await db.prepare(`
       SELECT COUNT(*) AS count FROM enrollment_terms et
       JOIN enrollments e ON e.id = et.enrollment_id AND e.status = 'active'
-      WHERE et.status = 'active'
-        AND (
-          et.billing_type = 'monthly'
-          OR (
-            et.planned_sessions IS NOT NULL
-            AND et.planned_sessions - (
-              SELECT COUNT(*) FROM enrollment_sessions es
-              WHERE es.enrollment_term_id = et.id AND es.status IN ('present','absent')
-            ) <= 1
-          )
-        )
+      WHERE et.status = 'active' AND (
+        et.billing_type = 'monthly'
+        OR (et.planned_sessions IS NOT NULL AND et.planned_sessions - (
+          SELECT COUNT(*) FROM enrollment_sessions es
+          WHERE es.enrollment_term_id = et.id AND es.status IN ('present','absent')
+        ) <= 1)
+      )
     `).first<{ count: number }>();
 
     const payments = await db.prepare(`
