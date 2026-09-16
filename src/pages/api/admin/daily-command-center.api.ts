@@ -96,9 +96,48 @@ export const GET: APIRoute = async ({ request }) => {
       GROUP BY cs.instructor_id, instructor_name ORDER BY first_session
     `).bind(date).all();
 
+    const instructorConflicts = await db.prepare(`
+      SELECT DISTINCT cs.id
+      FROM class_sessions cs
+      JOIN class_sessions other ON other.session_date = cs.session_date
+        AND other.id <> cs.id
+        AND other.status <> 'cancelled'
+        AND cs.status <> 'cancelled'
+        AND other.instructor_id = cs.instructor_id
+        AND other.start_time < cs.end_time
+        AND other.end_time > cs.start_time
+      WHERE cs.session_date = ?
+    `).bind(date).all<{ id: string }>();
+
+    const roomConflicts = await db.prepare(`
+      SELECT DISTINCT cs.id
+      FROM class_sessions cs
+      JOIN class_sessions other ON other.session_date = cs.session_date
+        AND other.id <> cs.id
+        AND other.status <> 'cancelled'
+        AND cs.status <> 'cancelled'
+        AND cs.room_id IS NOT NULL
+        AND other.room_id = cs.room_id
+        AND other.start_time < cs.end_time
+        AND other.end_time > cs.start_time
+      WHERE cs.session_date = ?
+    `).bind(date).all<{ id: string }>();
+
+    const instructorConflictIds = instructorConflicts.results.map((row) => String(row.id));
+    const roomConflictIds = roomConflicts.results.map((row) => String(row.id));
+
     return json({
       success: true, date,
-      metrics: { ...(metrics ?? {}), renewalCandidates: Number(renewal?.count ?? 0), paymentsToday: Number(payments?.amount ?? 0), paymentCountToday: Number(payments?.count ?? 0) },
+      metrics: {
+        ...(metrics ?? {}),
+        renewalCandidates: Number(renewal?.count ?? 0),
+        paymentsToday: Number(payments?.amount ?? 0),
+        paymentCountToday: Number(payments?.count ?? 0),
+        instructor_conflicts: instructorConflictIds.length,
+        room_conflicts: roomConflictIds.length,
+      },
+      instructor_conflict_session_ids: instructorConflictIds,
+      room_conflict_session_ids: roomConflictIds,
       instructors: instructors.results,
     });
   } catch (error) {
