@@ -33,9 +33,7 @@ export const GET: APIRoute = async ({ request }) => {
           JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
           JOIN classes c ON c.id = e.class_id
           WHERE (s.first_name || ' ' || s.last_name) LIKE ? ESCAPE '\\'
-
           UNION ALL
-
           SELECT 'instructor', i.id,
             TRIM(COALESCE(i.first_name,'') || ' ' || COALESCE(i.last_name,'')),
             NULL, NULL, NULL,
@@ -45,9 +43,7 @@ export const GET: APIRoute = async ({ request }) => {
               WHERE cs.instructor_id = i.id AND cs.session_date = ? AND cs.status <> 'cancelled'), '')
           FROM instructors i
           WHERE (i.first_name || ' ' || i.last_name) LIKE ? ESCAPE '\\'
-
           UNION ALL
-
           SELECT 'class', c.id, c.title, NULL, c.id, c.title, NULL,
             cs.session_date, cs.start_time, cs.end_time,
             COALESCE((SELECT GROUP_CONCAT(cs2.id) FROM class_sessions cs2
@@ -66,6 +62,7 @@ export const GET: APIRoute = async ({ request }) => {
         SELECT id, status, room_id FROM class_sessions WHERE session_date = ?
       ), attendance AS (
         SELECT es.status FROM enrollment_sessions es JOIN daily d ON d.id = es.session_id
+        WHERE d.status <> 'cancelled'
       ), financial AS (
         SELECT et.id AS term_id, et.billing_type, et.planned_sessions, et.tuition_due_date,
           i.id AS invoice_id, i.amount AS invoice_amount,
@@ -120,12 +117,9 @@ export const GET: APIRoute = async ({ request }) => {
       SELECT DISTINCT cs.id
       FROM class_sessions cs
       JOIN class_sessions other ON other.session_date = cs.session_date
-        AND other.id <> cs.id
-        AND other.status <> 'cancelled'
-        AND cs.status <> 'cancelled'
+        AND other.id <> cs.id AND other.status <> 'cancelled' AND cs.status <> 'cancelled'
         AND other.instructor_id = cs.instructor_id
-        AND other.start_time < cs.end_time
-        AND other.end_time > cs.start_time
+        AND other.start_time < cs.end_time AND other.end_time > cs.start_time
       WHERE cs.session_date = ?
     `).bind(date).all<{ id: string }>();
 
@@ -133,13 +127,9 @@ export const GET: APIRoute = async ({ request }) => {
       SELECT DISTINCT cs.id
       FROM class_sessions cs
       JOIN class_sessions other ON other.session_date = cs.session_date
-        AND other.id <> cs.id
-        AND other.status <> 'cancelled'
-        AND cs.status <> 'cancelled'
-        AND cs.room_id IS NOT NULL
-        AND other.room_id = cs.room_id
-        AND other.start_time < cs.end_time
-        AND other.end_time > cs.start_time
+        AND other.id <> cs.id AND other.status <> 'cancelled' AND cs.status <> 'cancelled'
+        AND cs.room_id IS NOT NULL AND other.room_id = cs.room_id
+        AND other.start_time < cs.end_time AND other.end_time > cs.start_time
       WHERE cs.session_date = ?
     `).bind(date).all<{ id: string }>();
 
