@@ -214,7 +214,6 @@ export const GET: APIRoute = async ({ request }) => {
             overdue: finance.overdue,
             nearDue: finance.nearDue,
             financialStatus,
-            // Compatibility aliases consumed by the existing session-card UI.
             invoiceTotal: finance.invoiceAmount,
             amountPaid: finance.paidAmount,
             balanceDue: finance.balance,
@@ -225,8 +224,24 @@ export const GET: APIRoute = async ({ request }) => {
 
     stage = "rooms";
     const rooms = await listActiveRooms(db);
+    stage = "metrics";
+    const activeSessions = result.filter((session) => session.status !== "cancelled");
+    const studentRows = activeSessions.flatMap((session) => session.students || []);
+    const uniqueStudentIds = new Set(studentRows.map((student) => String(student.studentId)).filter(Boolean));
+    const uniquePresentStudentIds = new Set(studentRows.filter((student) => student.attendanceStatus === "present").map((student) => String(student.studentId)).filter(Boolean));
+    const uniquePendingStudentIds = new Set(studentRows.filter((student) => student.attendanceStatus === "pending").map((student) => String(student.studentId)).filter(Boolean));
     stage = "response";
-    return json({ success: true, date, sessions: result, rooms });
+    return json({
+      success: true,
+      date,
+      sessions: result,
+      rooms,
+      metrics: {
+        unique_students: uniqueStudentIds.size,
+        unique_present_students: uniquePresentStudentIds.size,
+        unique_pending_students: uniquePendingStudentIds.size,
+      },
+    });
   } catch (error) {
     console.error("[admin/daily-dashboard] request failed:", { stage, error });
     const detail = error instanceof Error ? error.message : String(error);
