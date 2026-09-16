@@ -2,18 +2,12 @@ export const prerender=false;
 import type {APIRoute} from "astro";
 import {env} from "cloudflare:workers";
 import {requireRole,ROLES,json,type AdminEnv} from "../../../server/admin-auth";
-import {generateCertificatePdf} from "../../../server/certificates/generate";
-
+import {generateCertificatePdf,type CertificateType} from "../../../server/certificates/generate";
 export const GET:APIRoute=async({request})=>{
- const denied=await requireRole(request,env as AdminEnv,[ROLES.ADMIN]);
- if(denied)return denied;
- const id=Number(new URL(request.url).searchParams.get("id"));
- if(!id)return json({success:false,message:"شناسه گواهینامه الزامی است."},422);
- const r=await env.DB.prepare("SELECT registration_id,national_code,completion_date_jalali,level,book_id,curriculum_note FROM issued_certificates WHERE id=? LIMIT 1").bind(id).first<any>();
- if(!r)return json({success:false,message:"گواهینامه صادرشده پیدا نشد. ابتدا گواهینامه را صادر کنید."},404);
- const browser=(env as any).BROWSER,assets=(env as any).ASSETS;
- if(!browser)return json({success:false,message:"BROWSER binding تنظیم نشده است."},503);
- if(!assets?.fetch)return json({success:false,message:"ASSETS binding در Worker تنظیم نشده است."},503);
- try{return await generateCertificatePdf(request,env.DB,browser,assets,{registration_id:r.registration_id,national_id:r.national_code,completion_date_jalali:r.completion_date_jalali,level:r.level??null,book_id:r.book_id??null,curriculum_note:r.curriculum_note??null});}
- catch(e){const status=Number((e as any)?.status)||500;return json({success:false,message:`تولید PDF شکست خورد: ${e instanceof Error?e.message:String(e)}`},status)}
+ const denied=await requireRole(request,env as AdminEnv,[ROLES.ADMIN]);if(denied)return denied;
+ const id=Number(new URL(request.url).searchParams.get("id"));if(!id)return json({success:false,message:"شناسه گواهی الزامی است."},422);
+ const r=await env.DB.prepare("SELECT registration_id,national_code,certificate_type,completion_date_jalali,level,book_id,curriculum_note,event_title,event_date_jalali,event_role,event_details,event_instructor,workshop_hours FROM issued_certificates WHERE id=? LIMIT 1").bind(id).first<any>();
+ if(!r)return json({success:false,message:"گواهی صادرشده پیدا نشد. ابتدا گواهی را صادر کنید."},404);
+ const browser=(env as any).BROWSER,assets=(env as any).ASSETS;if(!browser)return json({success:false,message:"BROWSER binding تنظیم نشده است."},503);if(!assets?.fetch)return json({success:false,message:"ASSETS binding در Worker تنظیم نشده است."},503);
+ try{return await generateCertificatePdf(request,env.DB,browser,assets,{registration_id:r.registration_id,national_id:r.national_code,certificate_type:r.certificate_type as CertificateType,completion_date_jalali:r.completion_date_jalali,level:r.level??null,book_id:r.book_id??null,curriculum_note:r.curriculum_note??null,event_title:r.event_title??null,event_date_jalali:r.event_date_jalali??null,event_role:r.event_role??null,event_details:r.event_details??null,event_instructor:r.event_instructor??null,workshop_hours:r.workshop_hours??null});}catch(e){const status=Number((e as any)?.status)||500;return json({success:false,message:`تولید PDF شکست خورد: ${e instanceof Error?e.message:String(e)}`},status)}
 };
