@@ -98,11 +98,18 @@ export const PATCH: APIRoute = async ({ request }) => {
       if (!room) return json({ success: false, message: "اتاق انتخاب‌شده فعال نیست." }, 404);
     }
 
-    await db.prepare(`
+    const result = await db.prepare(`
       UPDATE class_sessions
       SET start_time = ?, end_time = ?, room_id = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(startTime, endTime, nextRoomId, sessionId).run();
+      WHERE id = ? AND status <> 'cancelled'
+        AND NOT EXISTS (SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?)
+    `).bind(startTime, endTime, nextRoomId, sessionId, session.session_date).run();
+
+    if (!result.meta.changes) {
+      const racedClosed = await rejectIfDailyClosed(db, session.session_date);
+      if (racedClosed) return racedClosed;
+      return json({ success: false, message: "جلسه دیگر قابل ویرایش نیست؛ اطلاعات روز را دوباره دریافت کنید." }, 409);
+    }
 
     return json({ success: true, sessionId, sessionDate, startTime, endTime, roomId: nextRoomId });
   } catch (error) {
