@@ -22,22 +22,42 @@ export const GET: APIRoute = async ({ request }) => {
       const like = `%${q.replace(/[\\%_]/g, "\\$&")}%`;
       const result = await db.prepare(`
         SELECT * FROM (
-          SELECT 'student' AS result_type, s.id, TRIM(COALESCE(s.first_name,'') || ' ' || COALESCE(s.last_name,'')) AS name,
+          SELECT 'student' AS result_type, s.id,
+            TRIM(COALESCE(s.first_name,'') || ' ' || COALESCE(s.last_name,'')) AS name,
             e.id AS enrollment_id, e.class_id, c.title AS class_title, NULL AS instructor_name,
-            NULL AS session_date, NULL AS start_time, NULL AS end_time
-          FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+            NULL AS session_date, NULL AS start_time, NULL AS end_time,
+            COALESCE((SELECT GROUP_CONCAT(DISTINCT cs.id) FROM class_sessions cs
+              JOIN enrollment_sessions es ON es.session_id = cs.id
+              WHERE es.enrollment_id = e.id AND cs.session_date = ? AND cs.status <> 'cancelled'), '') AS session_ids
+          FROM students s
+          JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+          JOIN classes c ON c.id = e.class_id
           WHERE (s.first_name || ' ' || s.last_name) LIKE ? ESCAPE '\\'
+
           UNION ALL
-          SELECT 'instructor', i.id, TRIM(COALESCE(i.first_name,'') || ' ' || COALESCE(i.last_name,'')),
-            NULL, NULL, NULL, TRIM(COALESCE(i.first_name,'') || ' ' || COALESCE(i.last_name,'')), NULL, NULL, NULL
-          FROM instructors i WHERE (i.first_name || ' ' || i.last_name) LIKE ? ESCAPE '\\'
+
+          SELECT 'instructor', i.id,
+            TRIM(COALESCE(i.first_name,'') || ' ' || COALESCE(i.last_name,'')),
+            NULL, NULL, NULL,
+            TRIM(COALESCE(i.first_name,'') || ' ' || COALESCE(i.last_name,'')),
+            NULL, NULL, NULL,
+            COALESCE((SELECT GROUP_CONCAT(cs.id) FROM class_sessions cs
+              WHERE cs.instructor_id = i.id AND cs.session_date = ? AND cs.status <> 'cancelled'), '')
+          FROM instructors i
+          WHERE (i.first_name || ' ' || i.last_name) LIKE ? ESCAPE '\\'
+
           UNION ALL
-          SELECT 'class', c.id, c.title, NULL, c.id, c.title, NULL, cs.session_date, cs.start_time, cs.end_time
-          FROM classes c LEFT JOIN class_sessions cs ON cs.class_id = c.id AND cs.session_date = ?
+
+          SELECT 'class', c.id, c.title, NULL, c.id, c.title, NULL,
+            cs.session_date, cs.start_time, cs.end_time,
+            COALESCE((SELECT GROUP_CONCAT(cs2.id) FROM class_sessions cs2
+              WHERE cs2.class_id = c.id AND cs2.session_date = ? AND cs2.status <> 'cancelled'), '')
+          FROM classes c
+          LEFT JOIN class_sessions cs ON cs.class_id = c.id AND cs.session_date = ?
           WHERE c.title LIKE ? ESCAPE '\\'
         )
         ORDER BY CASE result_type WHEN 'student' THEN 1 WHEN 'instructor' THEN 2 ELSE 3 END, name LIMIT 20
-      `).bind(like, like, date, like).all();
+      `).bind(date, like, date, like, date, date, like).all();
       return json({ success: true, date, query: q, results: result.results });
     }
 
