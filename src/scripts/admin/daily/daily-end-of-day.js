@@ -5,13 +5,7 @@
   if (!root || !summary || document.querySelector('#dailyEndOfDay')) return;
 
   const todayKey = () => new Date().toLocaleDateString('en-CA');
-  const shiftDate = (value, days) => {
-    const [y, m, d] = String(value).split('-').map(Number);
-    const next = new Date(y, m - 1, d, 12);
-    next.setDate(next.getDate() + days);
-    return next.toLocaleDateString('en-CA');
-  };
-  const state = { date: todayKey(), data: null };
+  const state = { date: root.dataset.date || todayKey(), data: null, busy: false };
   const esc = (v) => { const e = document.createElement('div'); e.textContent = String(v ?? ''); return e.innerHTML; };
   const num = (v) => Number(v ?? 0).toLocaleString('fa-IR');
   const money = (v) => `${num(v)} ریال`;
@@ -24,6 +18,7 @@
       </div>
       <div id="dccEodSummary" class="dcc-eod-grid"></div>
       <div id="dccEodChecklist" class="dcc-eod-checklist"></div>
+      <div id="dccEodActions" class="dcc-eod-actions"></div>
     </section>`);
 
   function render() {
@@ -33,6 +28,7 @@
     const statusEl = document.querySelector('#dccEodStatus');
     const summaryEl = document.querySelector('#dccEodSummary');
     const checklistEl = document.querySelector('#dccEodChecklist');
+    const actionsEl = document.querySelector('#dccEodActions');
     const statusText = { open: 'باز', ready: 'آماده بستن', needs_attention: 'نیازمند اقدام', closed: 'بسته شده' };
     const statusClass = d.status === 'ready' ? 'ok' : d.status === 'needs_attention' ? 'warning' : d.status === 'closed' ? 'closed' : 'neutral';
     statusEl.className = `dcc-eod-status ${statusClass}`;
@@ -54,9 +50,16 @@
       const ok = Boolean(checks[key]);
       return `<div class="dcc-eod-check ${ok ? 'ok' : 'warning'}"><span>${ok ? '✓' : '!'}</span><strong>${esc(label)}</strong><small>${ok ? 'تکمیل شده' : 'نیازمند پیگیری'}</small></div>`;
     }).join('');
+    actionsEl.innerHTML = d.status === 'ready'
+      ? `<button type="button" class="dcc-eod-close" id="dccEodClose" ${state.busy ? 'disabled' : ''}>${state.busy ? 'در حال بستن…' : 'بستن روز'}</button>`
+      : d.status === 'closed'
+        ? `<span class="dcc-eod-closed-note">این روز در سیستم بسته شده است.</span>`
+        : `<span class="dcc-eod-action-note">پس از تکمیل موارد بالا، امکان بستن روز فعال می‌شود.</span>`;
+    document.querySelector('#dccEodClose')?.addEventListener('click', closeDay);
   }
 
-  async function load() {
+  async function load(date = state.date) {
+    state.date = date;
     try {
       const r = await fetch(`/api/admin/daily-end-of-day?date=${encodeURIComponent(state.date)}`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
       const d = await r.json();
@@ -70,15 +73,33 @@
     }
   }
 
-  ['prev', 'next', 'today', 'refresh'].forEach((id) => {
-    document.querySelector(`#${id}`)?.addEventListener('click', () => {
-      setTimeout(() => {
-        if (id === 'prev') state.date = shiftDate(state.date, -1);
-        else if (id === 'next') state.date = shiftDate(state.date, 1);
-        else if (id === 'today') state.date = todayKey();
-        load();
-      }, 450);
-    });
+  async function closeDay() {
+    if (state.busy || state.data?.status !== 'ready') return;
+    if (!window.confirm(`آیا روز ${state.date} بسته شود؟ پس از ثبت، این روز به‌عنوان روز بسته‌شده ثبت خواهد شد.`)) return;
+    state.busy = true;
+    render();
+    try {
+      const r = await fetch('/api/admin/daily-close', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'content-type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ date: state.date }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.success) throw Error(d.message || 'بستن روز انجام نشد');
+      await load(state.date);
+    } catch (error) {
+      state.busy = false;
+      render();
+      window.alert(error.message || 'بستن روز انجام نشد');
+      console.error('[daily-end-of-day-close]', error);
+    }
+    state.busy = false;
+    render();
+  }
+
+  window.addEventListener('daily:date-change', (event) => {
+    const date = event.detail?.date;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(date))) load(String(date));
   });
 
   const overrideScript = document.createElement('script');
@@ -86,5 +107,5 @@
   overrideScript.async = true;
   document.head.appendChild(overrideScript);
 
-  load();
+  load(state.date);
 })();
