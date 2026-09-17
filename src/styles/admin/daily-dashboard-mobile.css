@@ -23,25 +23,24 @@
 
 @media (max-width:380px){.daily-shell{padding-inline:7px}.daily-topbar{margin-inline:-7px;padding-inline:7px}.date-nav button{font-size:10px}.daily-summary .dd-stat{padding:8px 9px}.daily-summary .dd-stat strong{font-size:17px}.dd-session{padding:9px}.dd-attendance-button{height:32px;font-size:10px}}
 
-/* Student card layout: keep attendance controls in their own row; place remaining sessions on the right. */
-.dd-student-card{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:8px;position:relative}
-.dd-student-head{display:contents}
-.dd-student-name-row{display:contents}
-.dd-student-name{grid-column:1;grid-row:1;min-width:0;align-self:center}
-.dd-student-time-row{grid-column:2;grid-row:1;display:flex;align-items:center;justify-self:end;margin:0}
-.dd-attendance-buttons{grid-column:1/-1;grid-row:2}
-.dd-student-meta{grid-column:1/-1;grid-row:3}
-.dd-student-card>.finance-box{grid-column:2;grid-row:4;min-width:0}
-.dd-student-card>.finance-box .finance-title{padding:0;margin-bottom:8px}
-.dd-student-card .dd-badge{position:static;grid-column:1;grid-row:4;justify-self:start;align-self:start;margin:20px 0 0;z-index:3}
+/* Student card: remaining-session badge is an overlay, never a grid column. */
+.dd-student-card{position:relative;display:block}
+.dd-student-head{display:block}
+.dd-student-name-row{position:relative;display:flex;align-items:center;gap:7px;width:100%;min-width:0}
+.dd-student-name{min-width:0;flex:1}
+.dd-student-card .dd-badge{position:absolute;right:10px;top:10px;z-index:4;width:28px;height:28px;flex:0 0 28px;margin:0}
+.dd-student-name-row .dd-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%)}
+.dd-student-name-row .dd-student-name{padding-right:36px}
 
 @media (max-width:700px){
-  .dd-student-card{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:7px}
-  .dd-student-name{font-size:13px;grid-column:1;grid-row:1}
-  .dd-student-time-row{grid-column:2;grid-row:1}
-  .dd-attendance-buttons{grid-column:1/-1;grid-row:2}
-  .dd-student-meta{grid-column:1/-1;grid-row:3}
-  .dd-student-card>.finance-box{grid-column:2;grid-row:4}
-  .dd-student-card>.finance-box .finance-title{padding:0}
-  .dd-student-card .dd-badge{grid-column:1;grid-row:4;margin:15px 0 0;justify-self:start;position:static}
+  .dd-student-card{display:block}
+  .dd-student-head{display:block}
+  .dd-student-name-row{display:flex;position:relative;width:100%;min-width:0}
+  .dd-student-name{font-size:13px;line-height:1.5;padding-right:36px}
+  .dd-student-time-row{display:flex;width:100%;margin-top:7px}
+  .dd-attendance-buttons{display:grid;width:100%;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
+  .dd-student-meta{display:block;width:100%;margin-top:7px}
+  .dd-student-card>.finance-box{display:block;width:100%;margin-top:7px}
+  .dd-student-card .dd-badge{right:10px;top:10px;position:absolute;margin:0;transform:none}
+  .dd-student-name-row .dd-badge{right:10px;top:50%;transform:translateY(-50%)}
 }
