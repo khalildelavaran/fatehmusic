@@ -11,10 +11,6 @@ function persianWeekdayIndex(date: string): number {
   return (value + 1) % 7;
 }
 
-/**
- * Materialize the day's recurring sessions with one set-based INSERT.
- * The old implementation performed one SELECT + INSERT per schedule.
- */
 async function materializeScheduledSessions(db: D1Database, date: string): Promise<void> {
   const dayOfWeek = persianWeekdayIndex(date);
   await db.prepare(`
@@ -44,8 +40,7 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
       AND (c.start_date IS NULL OR c.start_date <= ?)
       AND (c.end_date IS NULL OR c.end_date >= ?)
       AND NOT EXISTS (
-        SELECT 1
-        FROM class_sessions existing
+        SELECT 1 FROM class_sessions existing
         WHERE existing.source_schedule_id = cs.id
           AND existing.session_date = ?
           AND existing.status <> 'cancelled'
@@ -53,82 +48,6 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
   `).bind(dayOfWeek, dayOfWeek, date, date, date, date, date).run();
 }
 
-/**
- * Individual classes are one-to-one with a student. If legacy/materialized
- * data attached multiple individual enrollments to one class session, split
- * those enrollments into independent concrete sessions before the dashboard
- * reads them. Group/workshop sessions remain shared by design.
- */
-async function splitIndividualSessions(db: D1Database, date: string): Promise<void> {
-  const sessions = await db.prepare(`
-    SELECT cs.id, cs.class_id, cs.session_date, cs.start_time, cs.end_time,
-           cs.instructor_id, cs.room_id, cs.location_type, cs.online_platform,
-           cs.meeting_url, cs.type, cs.status, cs.cancellation_reason,
-           cs.original_session_id, cs.notes
-    FROM class_sessions cs
-    JOIN classes c ON c.id = cs.class_id
-    WHERE cs.session_date = ?
-      AND cs.status <> 'cancelled'
-      AND cs.type = 'regular'
-      AND c.class_type NOT IN ('group', 'workshop')
-    ORDER BY cs.id
-  `).bind(date).all<{
-    id: number; class_id: number; session_date: string; start_time: string; end_time: string;
-    instructor_id: number; room_id: number | null; location_type: string; online_platform: string | null;
-    meeting_url: string | null; type: string; status: string; cancellation_reason: string | null;
-    original_session_id: number | null; notes: string;
-  }>();
-
-  for (const session of sessions.results) {
-    const rows = await db.prepare(`
-      SELECT id, enrollment_id
-      FROM enrollment_sessions
-      WHERE session_id = ?
-      ORDER BY id
-    `).bind(session.id).all<{ id: number; enrollment_id: number }>();
-    if (rows.results.length <= 1) continue;
-
-    for (const enrollmentSession of rows.results.slice(1)) {
-      const marker = `جلسه انفرادی هنرجو #${enrollmentSession.id}`;
-      let target = await db.prepare(`
-        SELECT id FROM class_sessions
-        WHERE session_date = ? AND class_id = ? AND notes = ? AND status <> 'cancelled'
-        LIMIT 1
-      `).bind(date, session.class_id, marker).first<{ id: number }>();
-
-      if (!target) {
-        const insert = await db.prepare(`
-          INSERT INTO class_sessions (
-            class_id, session_date, start_time, end_time, instructor_id, room_id,
-            location_type, online_platform, meeting_url, type, status,
-            cancellation_reason, original_session_id, notes
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'regular', ?, ?, ?, ?)
-        `).bind(
-          session.class_id, session.session_date, session.start_time, session.end_time,
-          session.instructor_id, session.room_id, session.location_type, session.online_platform,
-          session.meeting_url, session.status, session.cancellation_reason,
-          session.id, marker,
-        ).run();
-        if (typeof insert.meta.last_row_id !== "number" || insert.meta.last_row_id < 1) {
-          throw new Error("INDIVIDUAL_SESSION_SPLIT_FAILED");
-        }
-        target = { id: insert.meta.last_row_id };
-      }
-
-      await db.prepare(`
-        UPDATE enrollment_sessions
-        SET session_id = ?, updated_at = datetime('now')
-        WHERE id = ? AND session_id = ?
-      `).bind(target.id, enrollmentSession.id, session.id).run();
-    }
-  }
-}
-
-/**
- * Ensure attendance rows exist for all active enrollments of the selected
- * day's sessions in one set-based statement. A missing term never blocks
- * attendance; the term link is nullable by design.
- */
 async function provisionDailyEnrollmentSessions(db: D1Database, date: string): Promise<void> {
   await db.prepare(`
     INSERT INTO enrollment_sessions (
@@ -138,27 +57,20 @@ async function provisionDailyEnrollmentSessions(db: D1Database, date: string): P
       e.id,
       cs.id,
       (
-        SELECT et.id
-        FROM enrollment_terms et
-        WHERE et.enrollment_id = e.id
-          AND et.status = 'active'
-        ORDER BY et.term_number DESC, et.id DESC
-        LIMIT 1
+        SELECT et.id FROM enrollment_terms et
+        WHERE et.enrollment_id = e.id AND et.status = 'active'
+        ORDER BY et.term_number DESC, et.id DESC LIMIT 1
       ),
       'pending',
       CASE WHEN cs.location_type = 'online' THEN 'online' ELSE 'in_person' END,
       'ایجاد خودکار برای داشبورد روزانه'
     FROM class_sessions cs
-    JOIN enrollments e
-      ON e.class_id = cs.class_id
-     AND e.status = 'active'
+    JOIN enrollments e ON e.class_id = cs.class_id AND e.status = 'active'
     WHERE cs.session_date = ?
       AND cs.status <> 'cancelled'
       AND NOT EXISTS (
-        SELECT 1
-        FROM enrollment_sessions existing
-        WHERE existing.enrollment_id = e.id
-          AND existing.session_id = cs.id
+        SELECT 1 FROM enrollment_sessions existing
+        WHERE existing.enrollment_id = e.id AND existing.session_id = cs.id
       )
   `).bind(date).run();
 }
@@ -181,18 +93,14 @@ export const GET: APIRoute = async ({ request }) => {
 
     stage = "materialize";
     await materializeScheduledSessions(db, date);
-
     stage = "provision";
     await provisionDailyEnrollmentSessions(db, date);
-
-    stage = "split-individual";
-    await splitIndividualSessions(db, date);
 
     stage = "session-query";
     const sessionRows = await db.prepare(`
       SELECT cs.id, cs.class_id, cs.session_date, cs.start_time, cs.end_time,
         cs.instructor_id, cs.room_id, cs.location_type, cs.type, cs.status, cs.original_session_id, cs.notes,
-        c.title AS class_title, c.class_type, r.name AS room_name,
+        c.title AS class_title, r.name AS room_name,
         TRIM(COALESCE(i.first_name, '') || ' ' || COALESCE(i.last_name, '')) AS instructor_name,
         COALESCE(tsa.status, 'pending') AS teacher_attendance_status,
         tsa.check_in_at AS teacher_check_in_at,
@@ -209,7 +117,7 @@ export const GET: APIRoute = async ({ request }) => {
       id: number; class_id: number; session_date: string; start_time: string; end_time: string;
       instructor_id: number; room_id: number | null; location_type: string; type: string;
       status: string; original_session_id: number | null; notes: string; class_title: string;
-      class_type: string; room_name: string | null; instructor_name: string; teacher_attendance_status: string;
+      room_name: string | null; instructor_name: string; teacher_attendance_status: string;
       teacher_check_in_at: string | null; calendar_exception_type: string | null; calendar_exception_title: string | null;
     }>();
 
@@ -223,34 +131,15 @@ export const GET: APIRoute = async ({ request }) => {
           es.status AS attendance_status, es.attendance_mode, es.note,
           et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
           et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
-          (
-            SELECT COUNT(*) FROM enrollment_sessions consumed
+          (SELECT COUNT(*) FROM enrollment_sessions consumed
             WHERE consumed.enrollment_id = e.id AND consumed.enrollment_term_id = et.id
-              AND consumed.status IN ('present', 'absent')
-          ) AS consumed_sessions,
-          (
-            SELECT i.id FROM invoices i
-            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
-            ORDER BY i.id DESC LIMIT 1
-          ) AS invoice_id,
-          (
-            SELECT i.amount FROM invoices i
-            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
-            ORDER BY i.id DESC LIMIT 1
-          ) AS invoice_amount,
-          (
-            SELECT i.due_date FROM invoices i
-            WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
-            ORDER BY i.id DESC LIMIT 1
-          ) AS invoice_due_date,
-          (
-            SELECT COALESCE(SUM(p.amount), 0) FROM payments p
-            WHERE p.invoice_id = (
-              SELECT i.id FROM invoices i
-              WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled'
-              ORDER BY i.id DESC LIMIT 1
-            )
-          ) AS paid_amount
+              AND consumed.status IN ('present', 'absent')) AS consumed_sessions,
+          (SELECT i.id FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1) AS invoice_id,
+          (SELECT i.amount FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1) AS invoice_amount,
+          (SELECT i.due_date FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1) AS invoice_due_date,
+          (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.invoice_id = (
+            SELECT i.id FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1
+          )) AS paid_amount
         FROM enrollment_sessions es
         JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
         JOIN students s ON s.id = e.student_id
@@ -275,11 +164,8 @@ export const GET: APIRoute = async ({ request }) => {
         course_names: session.class_title,
         students: students.results.map((student) => {
           const consumedSessions = student.consumed_sessions ?? 0;
-          const remainingSessions = student.billing_type === "monthly" || student.planned_sessions == null
-            ? null : student.planned_sessions - consumedSessions;
-          const renewalReady = student.billing_type === "monthly"
-            ? true
-            : student.planned_sessions != null && remainingSessions != null && remainingSessions <= 1;
+          const remainingSessions = student.billing_type === "monthly" || student.planned_sessions == null ? null : student.planned_sessions - consumedSessions;
+          const renewalReady = student.billing_type === "monthly" ? true : student.planned_sessions != null && remainingSessions != null && remainingSessions <= 1;
           const tuitionDueDate = student.invoice_due_date ?? student.term_tuition_due_date;
           const finance = calculateFinance({
             invoiceAmount: Number(student.invoice_amount ?? student.term_tuition_amount ?? 0),
@@ -324,15 +210,11 @@ export const GET: APIRoute = async ({ request }) => {
 
     stage = "rooms";
     const rooms = await listActiveRooms(db);
-
     stage = "response";
     return json({ success: true, date, sessions: result, rooms });
   } catch (error) {
     console.error("[admin/daily-dashboard] request failed:", { stage, error });
     const detail = error instanceof Error ? error.message : String(error);
-    return json({
-      success: false,
-      message: `دریافت اطلاعات داشبورد روزانه با خطا مواجه شد. [${stage}] ${detail}`,
-    }, 500);
+    return json({ success: false, message: `دریافت اطلاعات داشبورد روزانه با خطا مواجه شد. [${stage}] ${detail}` }, 500);
   }
 };
