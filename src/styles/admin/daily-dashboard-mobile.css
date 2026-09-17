@@ -210,3 +210,18 @@
   .dd-session{padding:9px}
   .dd-attendance-button{height:32px;font-size:10px}
 }
+
+/* ---------- Student-card remaining sessions placement ----------
+   Keep the existing quick-payment badge/control, but visually place the
+   remaining-session count beside the financial status instead of the name.
+   The dashboard controller keeps the badge action/DOM intact. */
+.dd-student-card{display:grid;grid-template-columns:minmax(0,1fr)}
+.dd-student-head{display:contents}
+.dd-student-name-row{display:contents}
+.dd-student-name{order:1;grid-column:1;min-width:0}
+.dd-student-time-row{order:2;grid-column:1}
+.dd-attendance-buttons{order:3;grid-column:1}
+.dd-student-meta{order:4;grid-column:1}
+.dd-student-card>.finance-box{order:5;grid-column:1;grid-row:5}
+.dd-student-card>.dd-badge{order:5;grid-column:1;grid-row:5;justify-self:end;align-self:start;margin-top:9px;margin-inline-end:2px;z-index:3}
+.dd-student-card>.finance-box .finance-title{padding-inline-end:0;padding-inline-start:42px}
