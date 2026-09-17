@@ -7,221 +7,42 @@
   html,body{overflow-x:hidden}
   .admin-main{padding:0}
   .daily-shell{width:100%;box-sizing:border-box;padding:10px 10px 72px;margin:0}
-
-  /* Compact app header */
-  .daily-topbar{
-    position:sticky;
-    top:0;
-    z-index:80;
-    margin:0 -10px 10px;
-    padding:10px;
-    grid-template-columns:1fr auto;
-    gap:8px;
-    background:color-mix(in srgb,var(--background) 94%,transparent);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border-bottom:1px solid var(--border);
-  }
-  .daily-topbar-title{justify-self:stretch;justify-content:flex-start;gap:8px}
-  .daily-topbar-title .admin-hero-label{display:none}
-  .daily-topbar-title h1{font-size:16px}
-  .daily-clock{grid-column:2;grid-row:1;justify-self:end;text-align:right}
-  .daily-date{justify-content:flex-end;font-size:13px;gap:4px;line-height:1.15}
-  .daily-date-day{width:30px;height:30px;flex-basis:30px;font-size:15px;border-width:1px}
-  .daily-time{margin-top:2px;font-size:16px;letter-spacing:.02em}
-
-  .date-nav{
-    grid-column:1/-1;
-    grid-row:2;
-    justify-self:stretch;
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:6px;
-  }
-  .date-nav button{
-    min-height:38px;
-    padding:7px 4px;
-    border-radius:10px;
-    font-size:11px;
-    font-weight:700;
-  }
-  .date-nav button#today{order:2}
-  .date-nav #prev{order:1}
-  .date-nav #next{order:3}
-  .date-nav #refresh{order:4}
-
-  .daily-sync{font-size:10px;margin:0 2px 8px;min-height:12px}
-  .daily-error{margin-bottom:10px;padding:9px 10px;font-size:12px}
-
-  /* 2x2 compact overview cards */
-  .daily-summary{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:7px;
-    margin-bottom:10px;
-  }
-  .daily-summary .dd-stat{
-    min-width:0;
-    border-radius:12px;
-    padding:10px 11px;
-    gap:3px;
-  }
-  .daily-summary .dd-stat strong{font-size:19px}
-  .daily-summary .dd-stat span{font-size:10px;line-height:1.35}
-  .daily-summary .dd-stat .attention-chips{max-height:34px;overflow:hidden}
-  .daily-summary .dd-stat .attention-chips span{font-size:9px;padding:2px 5px}
-
-  /* AI/planner blocks become compact app cards */
-  .daily-ai-panel{margin:0 0 10px!important;border-radius:14px!important}
-  .daily-ai-form{grid-template-columns:1fr!important;gap:7px!important}
-  .daily-ai-form textarea{min-height:72px!important}
-  .daily-ai-suggestions{display:flex!important;overflow-x:auto!important;flex-wrap:nowrap!important;gap:6px!important;padding-bottom:2px}
-  .daily-ai-suggestions button{flex:0 0 auto;white-space:nowrap}
-  .daily-planner-head{gap:8px!important;align-items:flex-start!important}
-  .daily-planner-head button{white-space:nowrap}
-  .daily-planner-results{gap:7px!important}
-  .daily-planner-candidate{padding:9px!important;border-radius:11px!important;gap:7px!important}
-  .daily-planner-candidate button{min-height:34px}
-
-  /* Timeline remains available, but behaves like an app's horizontal viewport. */
-  .dd-timeline{
-    margin:0 0 10px;
-    padding:9px;
-    border-radius:14px;
-    max-width:100%;
-    overflow-x:auto;
-    -webkit-overflow-scrolling:touch;
-  }
-  .dd-timeline-head{margin-bottom:8px}
-  .dd-timeline-head h2{font-size:13px}
-  .dd-timeline-legend{gap:7px;font-size:9px}
-  .dd-grid{min-width:680px}
-
-  /* Session cards become full-width mobile cards. */
-  .dd-sessions{gap:9px}
-  .dd-session{
-    border-radius:14px;
-    padding:11px;
-  }
-  .dd-session-head{
-    align-items:stretch;
-    flex-direction:column;
-    gap:8px;
-    margin-bottom:9px;
-  }
-  .dd-session-head-main{
-    width:100%;
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:5px 8px;
-    align-items:center;
-  }
-  .dd-session-head-main strong{font-size:13px;min-width:0}
-  .dd-session-head-main>span:not(.dd-time-value):not(.dd-session-tag){font-size:11px;opacity:.72;grid-column:1/-1}
-  .dd-session-head-main .dd-time-value{justify-self:end;grid-column:2;grid-row:1}
-  .dd-session-tag{font-size:9px;padding:3px 7px}
-  .dd-teacher-attendance{
-    width:100%;
-    justify-content:space-between;
-    padding-top:7px;
-    border-top:1px solid rgba(255,255,255,.06);
-    font-size:10px;
-  }
-  .dd-teacher-status{padding:5px 9px;font-size:10px}
-
-  /* Student cards: name gets a dedicated row; controls never squeeze it. */
-  .dd-students{
-    grid-template-columns:1fr;
-    gap:7px;
-  }
-  .dd-student-card{
-    padding:10px;
-    border-radius:12px;
-    gap:7px;
-  }
-  .dd-student-head{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    grid-template-rows:auto auto;
-    align-items:center;
-    gap:7px;
-  }
-  .dd-student-name-row{
-    grid-column:1/-1;
-    grid-row:1;
-    width:100%;
-    min-width:0;
-    gap:7px;
-  }
-  .dd-student-name{
-    font-size:13px;
-    line-height:1.5;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .dd-badge{width:28px;height:28px;flex-basis:28px;font-size:10px}
-  .dd-attendance-buttons{
-    grid-column:1/-1;
-    grid-row:2;
-    width:100%;
-    display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
-    gap:5px;
-  }
-  .dd-attendance-button{
-    width:100%;
-    min-width:0;
-    height:34px;
-    border-radius:9px;
-    font-size:11px;
-  }
-  .dd-student-time-row{margin-top:1px}
-  .dd-time-value{min-height:28px;box-sizing:border-box;padding:5px 8px;font-size:10px}
-  .dd-student-meta{font-size:9.5px}
-
-  /* Finance/renewal controls are thumb-friendly. */
-  .finance-box{margin-top:7px;padding-top:8px}
-  .finance-title strong{font-size:11px}
-  .finance-status{font-size:10px;padding:3px 6px}
-  .finance-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
-  .finance-item{padding:7px 5px!important;font-size:9px!important}
-  .finance-item b{font-size:10px!important}
-  .payment-toggle,.renewal-button{min-height:34px}
-  .payment-form,.renewal-form{grid-template-columns:1fr!important}
-  .payment-form input,.payment-form select,.payment-form button,.renewal-form input,.renewal-form button{min-height:38px}
-
-  /* Modal fills the phone like a native sheet. */
-  .dd-modal-box{
-    width:calc(100vw - 20px)!important;
-    max-width:none!important;
-    max-height:88vh;
-    margin:0 10px;
-    border-radius:18px!important;
-  }
-  .dd-modal-body{padding:12px!important}
+  .daily-topbar{position:sticky;top:0;z-index:80;margin:0 -10px 10px;padding:10px;grid-template-columns:1fr auto;gap:8px;background:color-mix(in srgb,var(--background) 94%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .daily-topbar-title{justify-self:stretch;justify-content:flex-start;gap:8px}.daily-topbar-title .admin-hero-label{display:none}.daily-topbar-title h1{font-size:16px}
+  .daily-clock{grid-column:2;grid-row:1;justify-self:end;text-align:right}.daily-date{justify-content:flex-end;font-size:13px;gap:4px;line-height:1.15}.daily-date-day{width:30px;height:30px;flex-basis:30px;font-size:15px;border-width:1px}.daily-time{margin-top:2px;font-size:16px;letter-spacing:.02em}
+  .date-nav{grid-column:1/-1;grid-row:2;justify-self:stretch;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.date-nav button{min-height:38px;padding:7px 4px;border-radius:10px;font-size:11px;font-weight:700}.date-nav button#today{order:2}.date-nav #prev{order:1}.date-nav #next{order:3}.date-nav #refresh{order:4}
+  .daily-sync{font-size:10px;margin:0 2px 8px;min-height:12px}.daily-error{margin-bottom:10px;padding:9px 10px;font-size:12px}
+  .daily-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:10px}.daily-summary .dd-stat{min-width:0;border-radius:12px;padding:10px 11px;gap:3px}.daily-summary .dd-stat strong{font-size:19px}.daily-summary .dd-stat span{font-size:10px;line-height:1.35}.daily-summary .dd-stat .attention-chips{max-height:34px;overflow:hidden}.daily-summary .dd-stat .attention-chips span{font-size:9px;padding:2px 5px}
+  .daily-ai-panel{margin:0 0 10px!important;border-radius:14px!important}.daily-ai-form{grid-template-columns:1fr!important;gap:7px!important}.daily-ai-form textarea{min-height:72px!important}.daily-ai-suggestions{display:flex!important;overflow-x:auto!important;flex-wrap:nowrap!important;gap:6px!important;padding-bottom:2px}.daily-ai-suggestions button{flex:0 0 auto;white-space:nowrap}.daily-planner-head{gap:8px!important;align-items:flex-start!important}.daily-planner-head button{white-space:nowrap}.daily-planner-results{gap:7px!important}.daily-planner-candidate{padding:9px!important;border-radius:11px!important;gap:7px!important}.daily-planner-candidate button{min-height:34px}
+  .dd-timeline{margin:0 0 10px;padding:9px;border-radius:14px;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.dd-timeline-head{margin-bottom:8px}.dd-timeline-head h2{font-size:13px}.dd-timeline-legend{gap:7px;font-size:9px}.dd-grid{min-width:680px}
+  .dd-sessions{gap:9px}.dd-session{border-radius:14px;padding:11px}.dd-session-head{align-items:stretch;flex-direction:column;gap:8px;margin-bottom:9px}.dd-session-head-main{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;align-items:center}.dd-session-head-main strong{font-size:13px;min-width:0}.dd-session-head-main>span:not(.dd-time-value):not(.dd-session-tag){font-size:11px;opacity:.72;grid-column:1/-1}.dd-session-head-main .dd-time-value{justify-self:end;grid-column:2;grid-row:1}.dd-session-tag{font-size:9px;padding:3px 7px}.dd-teacher-attendance{width:100%;justify-content:space-between;padding-top:7px;border-top:1px solid rgba(255,255,255,.06);font-size:10px}.dd-teacher-status{padding:5px 9px;font-size:10px}
+  .dd-students{grid-template-columns:1fr;gap:7px}.dd-student-card{padding:10px;border-radius:12px;gap:7px}.dd-student-head{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;gap:7px}.dd-student-name-row{grid-column:1/-1;grid-row:1;width:100%;min-width:0;gap:7px}.dd-student-name{font-size:13px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dd-badge{width:28px;height:28px;flex-basis:28px;font-size:10px}.dd-attendance-buttons{grid-column:1/-1;grid-row:2;width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.dd-attendance-button{width:100%;min-width:0;height:34px;border-radius:9px;font-size:11px}.dd-student-time-row{margin-top:1px}.dd-time-value{min-height:28px;box-sizing:border-box;padding:5px 8px;font-size:10px}.dd-student-meta{font-size:9.5px}
+  .finance-box{margin-top:7px;padding-top:8px}.finance-title strong{font-size:11px}.finance-status{font-size:10px;padding:3px 6px}.finance-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.finance-item{padding:7px 5px!important;font-size:9px!important}.finance-item b{font-size:10px!important}.payment-toggle,.renewal-button{min-height:34px}.payment-form,.renewal-form{grid-template-columns:1fr!important}.payment-form input,.payment-form select,.payment-form button,.renewal-form input,.renewal-form button{min-height:38px}
+  .dd-modal-box{width:calc(100vw - 20px)!important;max-width:none!important;max-height:88vh;margin:0 10px;border-radius:18px!important}.dd-modal-body{padding:12px!important}
 }
 
-@media (max-width:380px){
-  .daily-shell{padding-inline:7px}
-  .daily-topbar{margin-inline:-7px;padding-inline:7px}
-  .date-nav button{font-size:10px}
-  .daily-summary .dd-stat{padding:8px 9px}
-  .daily-summary .dd-stat strong{font-size:17px}
-  .dd-session{padding:9px}
-  .dd-attendance-button{height:32px;font-size:10px}
-}
+@media (max-width:380px){.daily-shell{padding-inline:7px}.daily-topbar{margin-inline:-7px;padding-inline:7px}.date-nav button{font-size:10px}.daily-summary .dd-stat{padding:8px 9px}.daily-summary .dd-stat strong{font-size:17px}.dd-session{padding:9px}.dd-attendance-button{height:32px;font-size:10px}}
 
-/* ---------- Student-card remaining sessions placement ----------
-   Keep the existing quick-payment badge/control, but visually place the
-   remaining-session count beside the financial status instead of the name.
-   The dashboard controller keeps the badge action/DOM intact. */
-.dd-student-card{display:grid;grid-template-columns:minmax(0,1fr)}
+/* Student card layout: name + time on one row; remaining sessions beside finance status. */
+.dd-student-card{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:8px;position:relative}
 .dd-student-head{display:contents}
 .dd-student-name-row{display:contents}
-.dd-student-name{order:1;grid-column:1;min-width:0}
-.dd-student-time-row{order:2;grid-column:1}
-.dd-attendance-buttons{order:3;grid-column:1}
-.dd-student-meta{order:4;grid-column:1}
-.dd-student-card>.finance-box{order:5;grid-column:1;grid-row:5}
-.dd-student-card>.dd-badge{order:5;grid-column:1;grid-row:5;justify-self:end;align-self:start;margin-top:9px;margin-inline-end:2px;z-index:3}
-.dd-student-card>.finance-box .finance-title{padding-inline-end:0;padding-inline-start:42px}
+.dd-student-name{grid-column:1;grid-row:1;min-width:0;align-self:center}
+.dd-student-time-row{grid-column:2;grid-row:1;display:flex;align-items:center;justify-self:end;margin:0}
+.dd-attendance-buttons{grid-column:1/-1;grid-row:2}
+.dd-student-meta{grid-column:1/-1;grid-row:3}
+.dd-student-card>.finance-box{grid-column:1/-1;grid-row:4;min-width:0}
+.dd-student-card .dd-badge{grid-column:1;grid-row:4;justify-self:start;align-self:start;margin:9px 0 0 0;z-index:3}
+.dd-student-card>.finance-box .finance-title{padding:0;margin-bottom:8px}
+.dd-student-card>.finance-box .finance-title-status{display:flex;align-items:center;gap:6px;min-width:0}
+
+@media (max-width:700px){
+  .dd-student-card{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:7px}
+  .dd-student-name{font-size:13px;grid-column:1;grid-row:1}
+  .dd-student-time-row{grid-column:2;grid-row:1}
+  .dd-attendance-buttons{grid-column:1/-1;grid-row:2}
+  .dd-student-meta{grid-column:1/-1;grid-row:3}
+  .dd-student-card>.finance-box{grid-column:1/-1;grid-row:4}
+  .dd-student-card .dd-badge{grid-column:1;grid-row:4;margin-top:7px}
+  .dd-student-card>.finance-box .finance-title{padding:0}
+}
