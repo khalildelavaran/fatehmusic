@@ -229,3 +229,14 @@
 .settings-message.success{color:#7acb8c}
 
 @media(max-width:700px){.room-form{grid-template-columns:1fr}.room-row{flex-direction:column;align-items:stretch}.room-row-actions{justify-content:flex-end}}
+
+/* ---------- Student card fixes ---------- */
+.dd-student-card{display:grid;grid-template-columns:minmax(0,1fr);}
+.dd-student-head{display:contents;}
+.dd-student-name-row{order:1;}
+.dd-student-time-row{order:2;}
+.dd-attendance-buttons{order:3;}
+.dd-student-meta{order:4;}
+.dd-student-card>.finance-box{order:5;}
+.dd-student-meta>span:first-child{display:none;}
+.dd-attendance-buttons{margin-top:1px;}
