@@ -23,7 +23,7 @@
 
 @media (max-width:380px){.daily-shell{padding-inline:7px}.daily-topbar{margin-inline:-7px;padding-inline:7px}.date-nav button{font-size:10px}.daily-summary .dd-stat{padding:8px 9px}.daily-summary .dd-stat strong{font-size:17px}.dd-session{padding:9px}.dd-attendance-button{height:32px;font-size:10px}}
 
-/* Student card layout: name + time on one row; remaining sessions aligned with finance status. */
+/* Student card layout: keep attendance controls in their own row; place remaining sessions on the right. */
 .dd-student-card{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:8px;position:relative}
 .dd-student-head{display:contents}
 .dd-student-name-row{display:contents}
@@ -31,9 +31,9 @@
 .dd-student-time-row{grid-column:2;grid-row:1;display:flex;align-items:center;justify-self:end;margin:0}
 .dd-attendance-buttons{grid-column:1/-1;grid-row:2}
 .dd-student-meta{grid-column:1/-1;grid-row:3}
-.dd-student-card>.finance-box{grid-column:1;grid-row:4;min-width:0}
+.dd-student-card>.finance-box{grid-column:2;grid-row:4;min-width:0}
 .dd-student-card>.finance-box .finance-title{padding:0;margin-bottom:8px}
-.dd-student-card .dd-badge{position:static;grid-column:2;grid-row:4;justify-self:start;align-self:start;margin:20px 0 0;z-index:3}
+.dd-student-card .dd-badge{position:static;grid-column:1;grid-row:4;justify-self:start;align-self:start;margin:20px 0 0;z-index:3}
 
 @media (max-width:700px){
   .dd-student-card{grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:7px}
@@ -41,7 +41,7 @@
   .dd-student-time-row{grid-column:2;grid-row:1}
   .dd-attendance-buttons{grid-column:1/-1;grid-row:2}
   .dd-student-meta{grid-column:1/-1;grid-row:3}
-  .dd-student-card>.finance-box{grid-column:1;grid-row:4}
+  .dd-student-card>.finance-box{grid-column:2;grid-row:4}
   .dd-student-card>.finance-box .finance-title{padding:0}
-  .dd-student-card .dd-badge{grid-column:2;grid-row:4;margin:15px 0 0;justify-self:start;position:static}
+  .dd-student-card .dd-badge{grid-column:1;grid-row:4;margin:15px 0 0;justify-self:start;position:static}
 }
