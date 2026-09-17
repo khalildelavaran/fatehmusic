@@ -121,48 +121,78 @@ export const GET: APIRoute = async ({ request }) => {
       teacher_check_in_at: string | null; calendar_exception_type: string | null; calendar_exception_title: string | null;
     }>();
 
+    stage = "student-query";
+    const studentRows = await db.prepare(`
+      WITH daily_sessions AS (
+        SELECT id FROM class_sessions WHERE session_date = ? AND status <> 'cancelled'
+      ),
+      consumed AS (
+        SELECT enrollment_id, enrollment_term_id, COUNT(*) AS consumed_sessions
+        FROM enrollment_sessions
+        WHERE status IN ('present', 'absent')
+          AND enrollment_term_id IS NOT NULL
+        GROUP BY enrollment_id, enrollment_term_id
+      ),
+      latest_invoices AS (
+        SELECT i.enrollment_term_id, i.id AS invoice_id, i.amount AS invoice_amount, i.due_date AS invoice_due_date
+        FROM invoices i
+        WHERE i.status <> 'cancelled'
+          AND i.id = (
+            SELECT MAX(i2.id) FROM invoices i2
+            WHERE i2.enrollment_term_id = i.enrollment_term_id AND i2.status <> 'cancelled'
+          )
+      ),
+      paid AS (
+        SELECT p.invoice_id, COALESCE(SUM(p.amount), 0) AS paid_amount
+        FROM payments p
+        JOIN latest_invoices li ON li.invoice_id = p.invoice_id
+        GROUP BY p.invoice_id
+      )
+      SELECT
+        es.id AS enrollment_session_id, es.session_id, e.id AS enrollment_id, e.student_id,
+        TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
+        es.status AS attendance_status, es.attendance_mode, es.note,
+        et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
+        et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
+        COALESCE(consumed.consumed_sessions, 0) AS consumed_sessions,
+        li.invoice_id, li.invoice_amount, li.invoice_due_date,
+        COALESCE(paid.paid_amount, 0) AS paid_amount
+      FROM enrollment_sessions es
+      JOIN daily_sessions ds ON ds.id = es.session_id
+      JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
+      JOIN students s ON s.id = e.student_id
+      LEFT JOIN enrollment_terms et ON et.id = es.enrollment_term_id
+      LEFT JOIN consumed ON consumed.enrollment_id = e.id AND consumed.enrollment_term_id = et.id
+      LEFT JOIN latest_invoices li ON li.enrollment_term_id = et.id
+      LEFT JOIN paid ON paid.invoice_id = li.invoice_id
+      ORDER BY es.session_id, s.last_name, s.first_name, es.id
+    `).bind(date).all<{
+      enrollment_session_id: number; session_id: number; enrollment_id: number; student_id: number; student_name: string;
+      attendance_status: string; attendance_mode: string | null; note: string;
+      term_id: number | null; term_number: number | null; planned_sessions: number | null;
+      billing_type: string | null; term_tuition_amount: number | null; term_tuition_due_date: string | null;
+      consumed_sessions: number; invoice_id: number | null; invoice_amount: number | null;
+      invoice_due_date: string | null; paid_amount: number | null;
+    }>();
+
+    const studentsBySession = new Map<number, typeof studentRows.results>();
+    for (const student of studentRows.results) {
+      const list = studentsBySession.get(student.session_id);
+      if (list) list.push(student);
+      else studentsBySession.set(student.session_id, [student]);
+    }
+
     const result = [];
     for (const session of sessionRows.results) {
-      stage = `student-query:${session.id}`;
-      const students = await db.prepare(`
-        SELECT
-          es.id AS enrollment_session_id, e.id AS enrollment_id, e.student_id,
-          TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
-          es.status AS attendance_status, es.attendance_mode, es.note,
-          et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
-          et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
-          (SELECT COUNT(*) FROM enrollment_sessions consumed
-            WHERE consumed.enrollment_id = e.id AND consumed.enrollment_term_id = et.id
-              AND consumed.status IN ('present', 'absent')) AS consumed_sessions,
-          (SELECT i.id FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1) AS invoice_id,
-          (SELECT i.amount FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1) AS invoice_amount,
-          (SELECT i.due_date FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1) AS invoice_due_date,
-          (SELECT COALESCE(SUM(p.amount), 0) FROM payments p WHERE p.invoice_id = (
-            SELECT i.id FROM invoices i WHERE i.enrollment_term_id = et.id AND i.status <> 'cancelled' ORDER BY i.id DESC LIMIT 1
-          )) AS paid_amount
-        FROM enrollment_sessions es
-        JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
-        JOIN students s ON s.id = e.student_id
-        LEFT JOIN enrollment_terms et ON et.id = es.enrollment_term_id
-        WHERE es.session_id = ?
-        ORDER BY s.last_name, s.first_name, es.id
-      `).bind(session.id).all<{
-        enrollment_session_id: number; enrollment_id: number; student_id: number; student_name: string;
-        attendance_status: string; attendance_mode: string | null; note: string;
-        term_id: number | null; term_number: number | null; planned_sessions: number | null;
-        billing_type: string | null; consumed_sessions: number;
-        term_tuition_amount: number | null; term_tuition_due_date: string | null;
-        invoice_id: number | null; invoice_amount: number | null; invoice_due_date: string | null; paid_amount: number | null;
-      }>();
-
       stage = `student-map:${session.id}`;
+      const students = studentsBySession.get(session.id) ?? [];
       result.push({
         ...session,
         startTime: session.start_time,
         endTime: session.end_time,
-        student_names: students.results.map((student) => student.student_name).join("، "),
+        student_names: students.map((student) => student.student_name).join("، "),
         course_names: session.class_title,
-        students: students.results.map((student) => {
+        students: students.map((student) => {
           const consumedSessions = student.consumed_sessions ?? 0;
           const remainingSessions = student.billing_type === "monthly" || student.planned_sessions == null ? null : student.planned_sessions - consumedSessions;
           const renewalReady = student.billing_type === "monthly" ? true : student.planned_sessions != null && remainingSessions != null && remainingSessions <= 1;
