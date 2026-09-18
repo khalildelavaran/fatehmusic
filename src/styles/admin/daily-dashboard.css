@@ -119,10 +119,10 @@
 .dd-student-card.is-absent{border-color:rgba(214,102,102,.5)}
 .dd-student-card.is-excused{border-color:rgba(59,130,246,.5)}
 .dd-student-card.is-withdrawn{opacity:.55}
-.dd-student-head{position:relative;display:flex;align-items:center;gap:8px;padding-inline-start:72px;min-height:26px}
-.dd-student-name-row{display:flex;align-items:center;min-width:0;flex:1 1 auto}
+.dd-student-head{position:relative;display:flex;align-items:center;gap:8px;min-height:26px}
+.dd-student-name-row{display:flex;align-items:center;min-width:0;flex:1 1 auto;padding-inline-end:0}
 .dd-student-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dd-student-time-row{display:flex}.dd-student-time-inline{position:absolute;left:0;top:50%;display:flex;align-items:center;transform:translateY(-50%);z-index:1}
+.dd-student-time-row{display:flex}.dd-student-time-inline{display:flex;align-items:center;flex:0 0 auto;margin-inline-end:auto}
 .dd-student-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
 .dd-student-finance-meta{display:flex;align-items:center;gap:9px;min-width:0}
 .dd-student-finance-meta .dd-badge{width:26px;height:26px}
