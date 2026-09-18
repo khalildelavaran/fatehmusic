@@ -115,6 +115,11 @@ export const GET: APIRoute = async ({ request }) => {
     await provisionDailyEnrollmentSessions(db, date);
 
     stage = "session-query";
+    const enrollmentSessionColumns = await db.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
+    const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
+      && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
+    const studentStartTimeSql = hasStudentSchedule ? "COALESCE(es.start_time, ds.start_time)" : "ds.start_time";
+    const studentEndTimeSql = hasStudentSchedule ? "COALESCE(es.end_time, ds.end_time)" : "ds.end_time";
     const sessionRows = await db.prepare(`
       SELECT cs.id, cs.class_id, cs.session_date, cs.start_time, cs.end_time,
         cs.instructor_id, cs.room_id, cs.location_type, cs.type, cs.status, cs.original_session_id, cs.notes,
@@ -147,8 +152,8 @@ export const GET: APIRoute = async ({ request }) => {
           es.id AS enrollment_session_id, e.id AS enrollment_id, e.student_id,
           TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
           es.status AS attendance_status, es.attendance_mode, es.note,
-          COALESCE(es.start_time, ds.start_time) AS student_start_time,
-          COALESCE(es.end_time, ds.end_time) AS student_end_time,
+          ${studentStartTimeSql} AS student_start_time,
+          ${studentEndTimeSql} AS student_end_time,
           et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
           et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
           (
