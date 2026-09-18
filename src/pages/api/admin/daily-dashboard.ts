@@ -64,6 +64,60 @@ async function provisionDailyEnrollmentSessions(db: D1Database, date: string): P
     && columns.results.some((column) => column.name === "end_time");
 
   if (hasStudentSchedule) {
+    // Repair legacy rows that still mirror the parent class-session time.
+    // This keeps existing students on independent 30-minute slots even if
+    // the database was upgraded before the normalization migration ran.
+    await db.prepare(`
+      UPDATE enrollment_sessions
+      SET
+        start_time = (
+          SELECT strftime(
+            '%H:%M',
+            datetime(
+              '2000-01-01 ' || cs.start_time,
+              '+' || (
+                (
+                  SELECT COUNT(*)
+                  FROM enrollment_sessions prior
+                  WHERE prior.session_id = enrollment_sessions.session_id
+                    AND prior.id < enrollment_sessions.id
+                ) * 30
+              ) || ' minutes'
+            )
+          )
+          FROM class_sessions cs
+          WHERE cs.id = enrollment_sessions.session_id
+        ),
+        end_time = (
+          SELECT strftime(
+            '%H:%M',
+            datetime(
+              '2000-01-01 ' || cs.start_time,
+              '+' || (
+                (
+                  SELECT COUNT(*)
+                  FROM enrollment_sessions prior
+                  WHERE prior.session_id = enrollment_sessions.session_id
+                    AND prior.id < enrollment_sessions.id
+                ) * 30 + 30
+              ) || ' minutes'
+            )
+          )
+          FROM class_sessions cs
+          WHERE cs.id = enrollment_sessions.session_id
+        )
+      WHERE start_time = (
+          SELECT cs.start_time
+          FROM class_sessions cs
+          WHERE cs.id = enrollment_sessions.session_id
+        )
+        AND end_time = (
+          SELECT cs.end_time
+          FROM class_sessions cs
+          WHERE cs.id = enrollment_sessions.session_id
+        )
+    `).run();
+
     await db.prepare(`
       INSERT INTO enrollment_sessions (
         enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note, start_time, end_time
