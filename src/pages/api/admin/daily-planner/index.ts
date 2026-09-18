@@ -94,14 +94,7 @@ export const PATCH: APIRoute = async ({ request }) => {
       return json({ success:true, enrollmentSessionId:studentScheduleId, sessionDate, startTime, endTime });
     }
 
-    const body = await request.json().catch(() => null) as {
-      sessionId?: number;
-      sessionDate?: string;
-      startTime?: string;
-      endTime?: string;
-      roomId?: number | null;
-    } | null;
-    const sessionId = Number(body?.sessionId);
+const sessionId = Number(body?.sessionId);
     const sessionDate = body?.sessionDate;
     const startTime = body?.startTime;
     const endTime = body?.endTime;
