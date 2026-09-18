@@ -112,10 +112,5 @@
   overrideScript.async = true;
   document.head.appendChild(overrideScript);
 
-  const studentControlsFixScript = document.createElement('script');
-  studentControlsFixScript.src = '/scripts/admin/daily/daily-student-controls-fix.js';
-  studentControlsFixScript.async = false;
-  document.head.appendChild(studentControlsFixScript);
-
   load(state.date);
 })();
