@@ -147,6 +147,8 @@ export const GET: APIRoute = async ({ request }) => {
           es.id AS enrollment_session_id, e.id AS enrollment_id, e.student_id,
           TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
           es.status AS attendance_status, es.attendance_mode, es.note,
+        COALESCE(es.start_time, ds.start_time) AS student_start_time,
+        COALESCE(es.end_time, ds.end_time) AS student_end_time,
           et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
           et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
           (
@@ -222,6 +224,8 @@ export const GET: APIRoute = async ({ request }) => {
             enrollmentId: student.enrollment_id,
             studentId: student.student_id,
             studentName: student.student_name,
+            startTime: student.student_start_time,
+            endTime: student.student_end_time,
             attendanceStatus: student.attendance_status,
             attendanceMode: student.attendance_mode,
             note: student.note,
