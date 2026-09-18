@@ -59,6 +59,47 @@ async function materializeScheduledSessions(db: D1Database, date: string): Promi
  * attendance; the term link is nullable by design.
  */
 async function provisionDailyEnrollmentSessions(db: D1Database, date: string): Promise<void> {
+  const columns = await db.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
+  const hasStudentSchedule = columns.results.some((column) => column.name === "start_time")
+    && columns.results.some((column) => column.name === "end_time");
+
+  if (hasStudentSchedule) {
+    await db.prepare(`
+      INSERT INTO enrollment_sessions (
+        enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note, start_time, end_time
+      )
+      SELECT
+        e.id,
+        cs.id,
+        (
+          SELECT et.id
+          FROM enrollment_terms et
+          WHERE et.enrollment_id = e.id
+            AND et.status = 'active'
+          ORDER BY et.term_number DESC, et.id DESC
+          LIMIT 1
+        ),
+        'pending',
+        CASE WHEN cs.location_type = 'online' THEN 'online' ELSE 'in_person' END,
+        'ایجاد خودکار برای داشبورد روزانه',
+        strftime('%H:%M', datetime('2000-01-01 ' || cs.start_time, '+' || ((ROW_NUMBER() OVER (PARTITION BY cs.id ORDER BY e.id) - 1) * 30) || ' minutes')),
+        strftime('%H:%M', datetime('2000-01-01 ' || cs.start_time, '+' || (ROW_NUMBER() OVER (PARTITION BY cs.id ORDER BY e.id) * 30) || ' minutes'))
+      FROM class_sessions cs
+      JOIN enrollments e
+        ON e.class_id = cs.class_id
+       AND e.status = 'active'
+      WHERE cs.session_date = ?
+        AND cs.status <> 'cancelled'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM enrollment_sessions existing
+          WHERE existing.enrollment_id = e.id
+            AND existing.session_id = cs.id
+        )
+    `).bind(date).run();
+    return;
+  }
+
   await db.prepare(`
     INSERT INTO enrollment_sessions (
       enrollment_id, session_id, enrollment_term_id, status, attendance_mode, note
