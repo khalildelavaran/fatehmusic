@@ -32,13 +32,14 @@ export async function provisionEnrollmentSessionsForClassSession(
   sessionId: number,
 ): Promise<ProvisionSessionResult> {
   const session = await db.prepare(`
-    SELECT id, class_id, session_date, status
+    SELECT id, class_id, session_date, start_time, status
     FROM class_sessions
     WHERE id = ?
   `).bind(sessionId).first<{
     id: number;
     class_id: number;
     session_date: string;
+    start_time: string;
     status: 'scheduled' | 'completed' | 'cancelled';
   }>();
 
@@ -86,7 +87,7 @@ export async function provisionEnrollmentSessionsForClassSession(
   const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
     && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
 
-  for (const enrollment of enrollments.results) {
+  for (const [enrollmentIndex, enrollment] of enrollments.results.entries()) {
     try {
       let termId: number | null = null;
 
@@ -114,15 +115,21 @@ export async function provisionEnrollmentSessionsForClassSession(
         await db.prepare(`
           INSERT INTO enrollment_sessions
             (enrollment_id, session_id, enrollment_term_id, status, start_time, end_time)
-          SELECT ?, ?, ?, 'pending', cs.start_time, cs.end_time
-          FROM class_sessions cs
-          WHERE cs.id = ?
+          VALUES (
+            ?, ?, ?, 'pending',
+            strftime('%H:%M', datetime('2000-01-01 ' || ?, '+' || ? || ' minutes')),
+            strftime('%H:%M', datetime('2000-01-01 ' || ?, '+' || ? || ' minutes'))
+          )
           ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
             enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
             start_time = COALESCE(enrollment_sessions.start_time, excluded.start_time),
             end_time = COALESCE(enrollment_sessions.end_time, excluded.end_time),
             updated_at = datetime('now')
-        `).bind(enrollment.id, sessionId, termId, sessionId).run();
+        `).bind(
+          enrollment.id, sessionId, termId,
+          session.start_time, enrollmentIndex * 30,
+          session.start_time, (enrollmentIndex + 1) * 30
+        ).run();
       } else {
         await db.prepare(`
           INSERT INTO enrollment_sessions
