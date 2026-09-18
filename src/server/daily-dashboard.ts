@@ -7,6 +7,8 @@ export type DailyStudent = {
   enrollmentSessionId: number | null;
   attendanceStatus: 'pending' | 'present' | 'absent' | 'excused' | null;
   progress: EnrollmentProgress | null;
+  startTime: string;
+  endTime: string;
 };
 
 export type DailySession = {
@@ -46,6 +48,8 @@ type StudentRow = {
   student_name: string;
   enrollment_session_id: number | null;
   attendance_status: 'pending' | 'present' | 'absent' | 'excused' | null;
+  start_time: string | null;
+  end_time: string | null;
 };
 
 export async function getDailyDashboard(db: D1Database, date: string): Promise<DailySession[]> {
@@ -80,7 +84,9 @@ export async function getDailyDashboard(db: D1Database, date: string): Promise<D
         e.student_id,
         TRIM(COALESCE(st.first_name, '') || ' ' || COALESCE(st.last_name, '')) AS student_name,
         es.id AS enrollment_session_id,
-        es.status AS attendance_status
+        es.status AS attendance_status,
+        COALESCE(es.start_time, ?) AS start_time,
+        COALESCE(es.end_time, ?) AS end_time
       FROM enrollments e
       JOIN students st ON st.id = e.student_id
       LEFT JOIN enrollment_sessions es
@@ -89,7 +95,7 @@ export async function getDailyDashboard(db: D1Database, date: string): Promise<D
       WHERE e.class_id = ?
         AND e.status = 'active'
       ORDER BY st.last_name, st.first_name, e.id
-    `).bind(session.session_id, session.class_id).all<StudentRow>();
+    `).bind(session.start_time, session.end_time, session.session_id, session.class_id).all<StudentRow>();
 
     const mappedStudents: DailyStudent[] = [];
     for (const row of students.results) {
@@ -100,6 +106,8 @@ export async function getDailyDashboard(db: D1Database, date: string): Promise<D
         enrollmentSessionId: row.enrollment_session_id,
         attendanceStatus: row.attendance_status,
         progress: await getEnrollmentProgress(db, row.enrollment_id),
+        startTime: row.start_time || session.start_time,
+        endTime: row.end_time || session.end_time,
       });
     }
 
