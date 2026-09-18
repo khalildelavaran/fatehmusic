@@ -80,6 +80,39 @@ export const PATCH: APIRoute = async ({ request }) => {
       const closed = await rejectIfDailyClosed(env.DB, studentSession.session_date);
       if (closed) return closed;
 
+      // A teacher can only teach one student at a time. Student slots are
+      // independent, but an edited slot must never overlap another active
+      // student's slot for the same teacher on the same date.
+      const conflict = await env.DB.prepare(`
+        SELECT other.id
+        FROM enrollment_sessions other
+        JOIN enrollments other_enrollment ON other_enrollment.id = other.enrollment_id
+        JOIN class_sessions other_cs ON other_cs.id = other.session_id
+        JOIN class_sessions target_cs ON target_cs.id = ?
+        WHERE other.id <> ?
+          AND other_enrollment.status = 'active'
+          AND other_cs.status <> 'cancelled'
+          AND other_cs.session_date = ?
+          AND other_cs.instructor_id = target_cs.instructor_id
+          AND other.start_time IS NOT NULL
+          AND other.end_time IS NOT NULL
+          AND other.start_time < ?
+          AND other.end_time > ?
+        LIMIT 1
+      `).bind(
+        studentSession.session_id,
+        studentScheduleId,
+        sessionDate,
+        endTime,
+        startTime,
+      ).first<{ id: number }>();
+      if (conflict) {
+        return json({
+          success: false,
+          message: "این زمان با زمان یکی از هنرجویان همین مدرس تداخل دارد. یک بازه ۳۰ دقیقه‌ای دیگر انتخاب کنید.",
+        }, 409);
+      }
+
       const enrollmentSessionColumns = await env.DB.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
       const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
         && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
