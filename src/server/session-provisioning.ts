@@ -82,6 +82,9 @@ export async function provisionEnrollmentSessionsForClassSession(
   `).bind(session.class_id).all<{ id: number }>();
 
   const ids: number[] = [];
+  const enrollmentSessionColumns = await db.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
+  const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
+    && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
 
   for (const enrollment of enrollments.results) {
     try {
@@ -107,18 +110,29 @@ export async function provisionEnrollmentSessionsForClassSession(
         );
       }
 
-      await db.prepare(`
-        INSERT INTO enrollment_sessions
-          (enrollment_id, session_id, enrollment_term_id, status, start_time, end_time)
-        SELECT ?, ?, ?, 'pending', cs.start_time, cs.end_time
-        FROM class_sessions cs
-        WHERE cs.id = ?
-        ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
-          enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
-          start_time = COALESCE(enrollment_sessions.start_time, excluded.start_time),
-          end_time = COALESCE(enrollment_sessions.end_time, excluded.end_time),
-          updated_at = datetime('now')
-      `).bind(enrollment.id, sessionId, termId, sessionId).run();
+      if (hasStudentSchedule) {
+        await db.prepare(`
+          INSERT INTO enrollment_sessions
+            (enrollment_id, session_id, enrollment_term_id, status, start_time, end_time)
+          SELECT ?, ?, ?, 'pending', cs.start_time, cs.end_time
+          FROM class_sessions cs
+          WHERE cs.id = ?
+          ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
+            enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
+            start_time = COALESCE(enrollment_sessions.start_time, excluded.start_time),
+            end_time = COALESCE(enrollment_sessions.end_time, excluded.end_time),
+            updated_at = datetime('now')
+        `).bind(enrollment.id, sessionId, termId, sessionId).run();
+      } else {
+        await db.prepare(`
+          INSERT INTO enrollment_sessions
+            (enrollment_id, session_id, enrollment_term_id, status)
+          VALUES (?, ?, ?, 'pending')
+          ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
+            enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
+            updated_at = datetime('now')
+        `).bind(enrollment.id, sessionId, termId).run();
+      }
 
       const row = await db.prepare(`
         SELECT id
