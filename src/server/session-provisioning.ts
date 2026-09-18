@@ -109,12 +109,16 @@ export async function provisionEnrollmentSessionsForClassSession(
 
       await db.prepare(`
         INSERT INTO enrollment_sessions
-          (enrollment_id, session_id, enrollment_term_id, status)
-        VALUES (?, ?, ?, 'pending')
+          (enrollment_id, session_id, enrollment_term_id, status, start_time, end_time)
+        SELECT ?, ?, ?, 'pending', cs.start_time, cs.end_time
+        FROM class_sessions cs
+        WHERE cs.id = ?
         ON CONFLICT(enrollment_id, session_id) DO UPDATE SET
           enrollment_term_id = COALESCE(enrollment_sessions.enrollment_term_id, excluded.enrollment_term_id),
+          start_time = COALESCE(enrollment_sessions.start_time, excluded.start_time),
+          end_time = COALESCE(enrollment_sessions.end_time, excluded.end_time),
           updated_at = datetime('now')
-      `).bind(enrollment.id, sessionId, termId).run();
+      `).bind(enrollment.id, sessionId, termId, sessionId).run();
 
       const row = await db.prepare(`
         SELECT id
