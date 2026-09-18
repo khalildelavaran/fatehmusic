@@ -147,8 +147,8 @@ export const GET: APIRoute = async ({ request }) => {
           es.id AS enrollment_session_id, e.id AS enrollment_id, e.student_id,
           TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
           es.status AS attendance_status, es.attendance_mode, es.note,
-        COALESCE(es.start_time, ds.start_time) AS student_start_time,
-        COALESCE(es.end_time, ds.end_time) AS student_end_time,
+          COALESCE(es.start_time, ds.start_time) AS student_start_time,
+          COALESCE(es.end_time, ds.end_time) AS student_end_time,
           et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
           et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
           (
@@ -183,11 +183,13 @@ export const GET: APIRoute = async ({ request }) => {
         JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
         JOIN students s ON s.id = e.student_id
         LEFT JOIN enrollment_terms et ON et.id = es.enrollment_term_id
+        LEFT JOIN class_sessions ds ON ds.id = es.session_id
         WHERE es.session_id = ?
         ORDER BY s.last_name, s.first_name, es.id
       `).bind(session.id).all<{
         enrollment_session_id: number; enrollment_id: number; student_id: number; student_name: string;
         attendance_status: string; attendance_mode: string | null; note: string;
+        student_start_time: string | null; student_end_time: string | null;
         term_id: number | null; term_number: number | null; planned_sessions: number | null;
         billing_type: string | null; consumed_sessions: number;
         term_tuition_amount: number | null; term_tuition_due_date: string | null;
