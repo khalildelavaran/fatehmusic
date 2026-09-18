@@ -143,6 +143,25 @@ export const PATCH: APIRoute = async ({ request }) => {
       return json({ success: false, message: "مدت جلسه انفرادی باید دقیقاً ۳۰ دقیقه باشد." }, 422);
     }
 
+    // An instructor can only teach one student at a time: reject if this
+    // new time window overlaps any other (non-cancelled) session for the
+    // same instructor on the same day, excluding this student's own
+    // current session (which this save is about to move/replace anyway).
+    const conflict = await env.DB.prepare(`
+      SELECT cs.id
+      FROM class_sessions cs
+      WHERE cs.session_date = ?
+        AND cs.instructor_id = ?
+        AND cs.status <> 'cancelled'
+        AND cs.id <> ?
+        AND cs.start_time < ?
+        AND cs.end_time > ?
+      LIMIT 1
+    `).bind(sessionDate, row.instructor_id, row.session_id, endTime, startTime).first<{ id: number }>();
+    if (conflict) {
+      return json({ success: false, message: "این استاد در این بازه زمانی، جلسه دیگری دارد." }, 409);
+    }
+
     let targetSessionId = row.session_id;
     const siblings = await env.DB.prepare(`
       SELECT id FROM enrollment_sessions WHERE session_id = ? ORDER BY id

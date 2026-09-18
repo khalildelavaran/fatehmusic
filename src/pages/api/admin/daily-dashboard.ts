@@ -100,7 +100,7 @@ export const GET: APIRoute = async ({ request }) => {
     const sessionRows = await db.prepare(`
       SELECT cs.id, cs.class_id, cs.session_date, cs.start_time, cs.end_time,
         cs.instructor_id, cs.room_id, cs.location_type, cs.type, cs.status, cs.original_session_id, cs.notes,
-        c.title AS class_title, r.name AS room_name,
+        c.title AS class_title, c.class_type, r.name AS room_name,
         TRIM(COALESCE(i.first_name, '') || ' ' || COALESCE(i.last_name, '')) AS instructor_name,
         COALESCE(tsa.status, 'pending') AS teacher_attendance_status,
         tsa.check_in_at AS teacher_check_in_at,
@@ -117,7 +117,7 @@ export const GET: APIRoute = async ({ request }) => {
       id: number; class_id: number; session_date: string; start_time: string; end_time: string;
       instructor_id: number; room_id: number | null; location_type: string; type: string;
       status: string; original_session_id: number | null; notes: string; class_title: string;
-      room_name: string | null; instructor_name: string; teacher_attendance_status: string;
+      class_type: string; room_name: string | null; instructor_name: string; teacher_attendance_status: string;
       teacher_check_in_at: string | null; calendar_exception_type: string | null; calendar_exception_title: string | null;
     }>();
 
@@ -152,6 +152,7 @@ export const GET: APIRoute = async ({ request }) => {
         es.id AS enrollment_session_id, es.session_id, e.id AS enrollment_id, e.student_id,
         TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS student_name,
         es.status AS attendance_status, es.attendance_mode, es.note,
+        cs.start_time AS student_start_time, cs.end_time AS student_end_time,
         et.id AS term_id, et.term_number, et.planned_sessions, et.billing_type,
         et.tuition_amount AS term_tuition_amount, et.tuition_due_date AS term_tuition_due_date,
         COALESCE(consumed.consumed_sessions, 0) AS consumed_sessions,
@@ -159,6 +160,7 @@ export const GET: APIRoute = async ({ request }) => {
         COALESCE(paid.paid_amount, 0) AS paid_amount
       FROM enrollment_sessions es
       JOIN daily_sessions ds ON ds.id = es.session_id
+      JOIN class_sessions cs ON cs.id = es.session_id
       JOIN enrollments e ON e.id = es.enrollment_id AND e.status = 'active'
       JOIN students s ON s.id = e.student_id
       LEFT JOIN enrollment_terms et ON et.id = es.enrollment_term_id
@@ -168,6 +170,7 @@ export const GET: APIRoute = async ({ request }) => {
       ORDER BY es.session_id, s.last_name, s.first_name, es.id
     `).bind(date).all<{
       enrollment_session_id: number; session_id: number; enrollment_id: number; student_id: number; student_name: string;
+      student_start_time: string; student_end_time: string;
       attendance_status: string; attendance_mode: string | null; note: string;
       term_id: number | null; term_number: number | null; planned_sessions: number | null;
       billing_type: string | null; term_tuition_amount: number | null; term_tuition_due_date: string | null;
@@ -211,6 +214,8 @@ export const GET: APIRoute = async ({ request }) => {
             enrollmentSessionId: student.enrollment_session_id,
             enrollmentId: student.enrollment_id,
             studentId: student.student_id,
+            startTime: student.student_start_time,
+            endTime: student.student_end_time,
             studentName: student.student_name,
             attendanceStatus: student.attendance_status,
             attendanceMode: student.attendance_mode,
