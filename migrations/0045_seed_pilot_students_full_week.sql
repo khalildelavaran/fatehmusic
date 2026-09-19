@@ -40,7 +40,6 @@
 -- makeup request.
 -- ====================================================================
 
-PRAGMA defer_foreign_keys = on;
 
 -- 1. Students
 INSERT INTO students (id, first_name, last_name, national_code, phone, status, notes) VALUES (1, 'زهرا', 'سیفی', 'PILOT00001', '9120000001', 'active', 'PILOT DATA — سناریوی تست دستی داشبورد روزانه');
@@ -1217,4 +1216,3 @@ INSERT INTO makeup_requests (id, enrollment_id, original_enrollment_session_id, 
 INSERT INTO makeup_requests (id, enrollment_id, original_enrollment_session_id, status, requested_by_type, reason) VALUES (3, 84, 84, 'pending', 'registrar', 'درخواست جلسه جبرانی — نمونه تستی');
 INSERT INTO makeup_requests (id, enrollment_id, original_enrollment_session_id, status, requested_by_type, reason) VALUES (4, 91, 91, 'pending', 'registrar', 'درخواست جلسه جبرانی — نمونه تستی');
 
-PRAGMA defer_foreign_keys = off;
