@@ -97,6 +97,11 @@
 /* ---------- Sessions / student panel ---------- */
 .dd-sessions{display:flex;flex-direction:column;gap:14px}
 .dd-session{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px}
+.dd-instructor-group{margin-bottom:20px;padding-bottom:4px;border-bottom:1px dashed var(--border)}
+.dd-instructor-group:last-child{border-bottom:none}
+.dd-instructor-group-title{margin:0 0 10px;padding:0 2px;font-size:13px;font-weight:700;color:var(--text-secondary)}
+.dd-instructor-group .dd-session{margin-bottom:12px}
+.dd-instructor-group .dd-session:last-child{margin-bottom:0}
 .dd-session.is-cancelled{opacity:.7}
 .dd-session-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .dd-session-head-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
