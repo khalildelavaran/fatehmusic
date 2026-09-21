@@ -50,7 +50,7 @@
 .dd-dot.gold{background:var(--gold)}.dd-dot.red{background:#d66}.dd-dot.gray{background:rgba(255,255,255,.35)}
 
 .dd-grid{position:relative;min-width:820px}
-.dd-hours{position:relative;height:22px;margin-inline-start:112px;margin-bottom:4px}
+.dd-hours{position:relative;height:22px;margin-inline-start:112px;margin-bottom:4px;direction:ltr}
 .dd-hour{position:absolute;transform:translateX(50%);font-size:11px;color:var(--text-secondary);white-space:nowrap;direction:ltr}
 .dd-hour.dd-hour-major{opacity:.9;font-weight:800}
 .dd-hour.dd-hour-minor{opacity:.35;font-size:9px}
@@ -68,7 +68,7 @@
 .dd-card[data-dragging="1"]{cursor:grabbing;z-index:60;box-shadow:0 16px 34px rgba(0,0,0,.32);transition:none}
 .dd-card strong{font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .dd-card .dd-card-meta{font-size:10.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dd-card .dd-card-time{font-size:11px;font-weight:700;direction:ltr;color:var(--gold-light);align-self:flex-start}
+.dd-card .dd-card-time{font-size:9.5px;font-weight:700;direction:ltr;color:var(--gold-light);align-self:flex-start;white-space:nowrap;line-height:1.2}
 .dd-card.is-cancelled{opacity:.55;border-color:rgba(255,255,255,.15);background:rgba(255,255,255,.03)}
 .dd-card.is-cancelled .dd-card-time{text-decoration:line-through}
 .dd-card.is-conflict{border-color:#d66;box-shadow:0 0 0 1px rgba(214,102,102,.5)}
@@ -91,6 +91,9 @@
 .dd-time-form button.save{background:var(--gold);border-color:var(--gold-dark);color:#111}
 .dd-time-form button:disabled{opacity:.55;cursor:wait}
 .dd-time-error{font-size:10px;color:#e58;margin-inline-start:4px;flex-basis:100%}
+.dd-time-edit-wrap{display:inline-flex;position:relative}
+.dd-time-input{width:78px;height:24px;box-sizing:border-box;border:1px solid rgba(212,175,55,.65);border-radius:6px;background:#111;color:var(--text);padding:2px 6px;font:700 11px Vazirmatn,sans-serif;direction:ltr}
+.dd-time-error-inline{position:absolute;top:calc(100% + 3px);inset-inline-start:0;z-index:5;white-space:nowrap;font-size:10px;color:#e58;background:var(--surface);border:1px solid rgba(214,102,102,.4);border-radius:6px;padding:2px 6px}
 
 @media(max-width:700px){.dd-timeline{padding:10px}}
 
@@ -124,7 +127,7 @@
 .dd-student-name-row{display:flex;align-items:center;gap:8px;min-width:0}
 .dd-student-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dd-student-time-row{display:flex}
-.dd-student-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
+.dd-student-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;opacity:.7}
 
 /* ---------- Remaining-sessions round badge + quick payment (spec 45) ---------- */
 .dd-badge{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;border:2px solid transparent;cursor:pointer;font-variant-numeric:tabular-nums;color:#111}
@@ -232,12 +235,4 @@
 @media(max-width:700px){.room-form{grid-template-columns:1fr}.room-row{flex-direction:column;align-items:stretch}.room-row-actions{justify-content:flex-end}}
 
 /* ---------- Student card fixes ---------- */
-.dd-student-card{display:grid;grid-template-columns:minmax(0,1fr);}
-.dd-student-head{display:contents;}
-.dd-student-name-row{order:1;}
-.dd-student-time-row{order:2;}
-.dd-attendance-buttons{order:3;}
-.dd-student-meta{order:4;}
-.dd-student-card>.finance-box{order:5;}
-.dd-student-meta>span:first-child{display:none;}
-.dd-attendance-buttons{margin-top:1px;}
+.dd-student-meta-finance{display:inline-flex;align-items:center;gap:6px}
