@@ -80,11 +80,28 @@ export const PATCH: APIRoute = async ({ request }) => {
       const closed = await rejectIfDailyClosed(env.DB, studentSession.session_date);
       if (closed) return closed;
 
-      const enrollmentSessionColumns = await env.DB.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
-      const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
+      let enrollmentSessionColumns = await env.DB.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
+      let hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
         && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
       if (!hasStudentSchedule) {
-        return json({ success: false, message: "ساختار زمان‌بندی هنرجو هنوز روی دیتابیس اعمال نشده است. ابتدا migration دیتابیس را اجرا کنید." }, 503);
+        // Self-heal an environment where the migration history is present in the
+        // repository but the remote D1 schema has not received the columns yet.
+        try {
+          if (!enrollmentSessionColumns.results.some((column) => column.name === "start_time")) {
+            await env.DB.prepare("ALTER TABLE enrollment_sessions ADD COLUMN start_time TEXT").run();
+          }
+          if (!enrollmentSessionColumns.results.some((column) => column.name === "end_time")) {
+            await env.DB.prepare("ALTER TABLE enrollment_sessions ADD COLUMN end_time TEXT").run();
+          }
+          enrollmentSessionColumns = await env.DB.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
+          hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
+            && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
+        } catch (schemaError) {
+          console.error("[admin/daily-planner] student schedule schema repair failed:", schemaError);
+        }
+      }
+      if (!hasStudentSchedule) {
+        return json({ success: false, message: "ساختار زمان‌بندی هنرجو روی دیتابیس موجود نیست." }, 503);
       }
 
       // A teacher can only teach one student at a time. Student slots are
