@@ -76,6 +76,8 @@
     return {
       ...session,
       className: session.class_title ?? session.className ?? "",
+      classId: session.class_id ?? session.classId ?? null,
+      instructorId: session.instructor_id ?? session.instructorId ?? null,
       instructorName: session.instructor_name ?? session.instructorName ?? "",
       teacherAttendanceStatus: session.teacher_attendance_status ?? session.teacherAttendanceStatus ?? "pending",
       cancelReason: session.status === "cancelled" ? (session.notes ?? session.cancelReason ?? "") : (session.cancelReason ?? ""),
@@ -111,11 +113,11 @@
       return;
     }
 
-    // Keep students of the same teacher/class inside one shared card.
-    // Student schedule times remain independent; only the visual container is grouped.
+    // Visual-only grouping: all students belonging to the same teacher share one card.
+    // Scheduling, attendance, finance, and student time records remain independent.
     const groups = new Map();
     for (const session of sessions) {
-      const key = `${session.instructor_id ?? session.instructorId}::${session.class_id ?? session.classId}`;
+      const key = String(session.instructorId ?? session.instructor_id ?? session.instructorName ?? "unknown");
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(session);
     }
@@ -162,8 +164,8 @@
     return `<article class="dd-session ${cancelled ? "is-cancelled" : ""}" data-session-id="${session.id}">
       <div class="dd-session-head">
         <div class="dd-session-head-main">
-          <strong>${esc(session.className)}</strong>
-          <span>${esc(session.instructorName)}</span>
+          <strong>${esc(session.instructorName)}</strong>
+          <span>${esc([...new Set(group.map((item) => item.className).filter(Boolean))].join("، "))}</span>
           ${editing ? renderTimeForm(session, "panel") : `<span class="dd-time-value">${timeLabel}</span>`}
           ${tags.join("")}
         </div>
