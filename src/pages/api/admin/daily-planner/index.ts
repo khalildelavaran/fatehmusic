@@ -80,6 +80,13 @@ export const PATCH: APIRoute = async ({ request }) => {
       const closed = await rejectIfDailyClosed(env.DB, studentSession.session_date);
       if (closed) return closed;
 
+      const enrollmentSessionColumns = await env.DB.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
+      const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
+        && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
+      if (!hasStudentSchedule) {
+        return json({ success: false, message: "ساختار زمان‌بندی هنرجو هنوز روی دیتابیس اعمال نشده است. ابتدا migration دیتابیس را اجرا کنید." }, 503);
+      }
+
       // A teacher can only teach one student at a time. Student slots are
       // independent, but an edited slot must never overlap another active
       // student's slot for the same teacher on the same date.
@@ -111,13 +118,6 @@ export const PATCH: APIRoute = async ({ request }) => {
           success: false,
           message: "این زمان با زمان یکی از هنرجویان همین مدرس تداخل دارد. یک بازه ۳۰ دقیقه‌ای دیگر انتخاب کنید.",
         }, 409);
-      }
-
-      const enrollmentSessionColumns = await env.DB.prepare("PRAGMA table_info(enrollment_sessions)").all<{ name: string }>();
-      const hasStudentSchedule = enrollmentSessionColumns.results.some((column) => column.name === "start_time")
-        && enrollmentSessionColumns.results.some((column) => column.name === "end_time");
-      if (!hasStudentSchedule) {
-        return json({ success: false, message: "ساختار زمان‌بندی هنرجو هنوز روی دیتابیس اعمال نشده است. ابتدا migration دیتابیس را اجرا کنید." }, 503);
       }
 
       const result = await env.DB.prepare(`
