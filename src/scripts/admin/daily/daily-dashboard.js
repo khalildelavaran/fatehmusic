@@ -104,8 +104,78 @@
     return `<button type="button" class="dd-time-value dd-student-time-button" data-action="edit-student-time" data-enrollment-session-id="${student.enrollmentSessionId}" aria-label="ویرایش زمان هنرجو ${esc(student.studentName)}">${student.startTime}–${student.endTime}</button>`;
   }
   function renderStudentTimeForm(session, student) { const err = student.__timeError ? `<div class="dd-time-error">${esc(student.__timeError)}</div>` : ""; return `<form class="dd-time-form" data-action="save-student-time" data-enrollment-session-id="${student.enrollmentSessionId}" onsubmit="return false"><label class="dd-time-form-label">ساعت شروع هنرجو</label><input type="time" name="startTime" value="${student.startTime}" step="300" aria-label="زمان شروع هنرجو" /><span class="dd-time-form-hint">مدت جلسه ۳۰ دقیقه — پایان خودکار محاسبه می‌شود</span><button type="submit" class="save" data-action="submit-student-time" data-enrollment-session-id="${student.enrollmentSessionId}" ${state.saving ? "disabled" : ""}>ذخیره</button><button type="button" data-action="cancel-student-time">انصراف</button>${err}</form>`; }
-  function renderSessionsPanel() { const sessions = visibleSessions(); if (!sessions.length) { els.sessionsPanel.innerHTML = `<div class="dd-empty"><div class="dd-empty-title">جلسه‌ای برای نمایش نیست</div><div class="dd-empty-note">فیلتر مدرس یا روز انتخاب‌شده را بررسی کنید.</div></div>`; return; } const sorted = [...sessions].sort((a, b) => minutesOf(a.startTime) - minutesOf(b.startTime)); els.sessionsPanel.innerHTML = sorted.map(renderSessionCard).join(""); }
-  function renderSessionCard(session) { const conflict = hasConflict(session, state.sessions); const editing = state.editingSessionId === session.id; const cancelled = session.status === "cancelled"; const tags = []; if (cancelled) tags.push(`<span class="dd-session-tag cancelled">لغو شده${session.cancelReason ? `: ${esc(session.cancelReason)}` : ""}</span>`); if (conflict && !cancelled) tags.push(`<span class="dd-session-tag conflict">تداخل مدرس/اتاق</span>`); if (session.room_name) tags.push(`<span class="dd-session-tag gold">${esc(session.room_name)}</span>`); const exceptionBanner = session.calendar_exception_type ? `<div class="dd-exception-banner">امروز «${esc(session.calendar_exception_title || session.calendar_exception_type)}» است — این جلسه ممکن است تحت تأثیر قرار گیرد.</div>` : ""; const students = (session.students || []).map((st) => renderStudentCard(session, st)).join(""); return `<article class="dd-session ${cancelled ? "is-cancelled" : ""}" data-session-id="${session.id}"><div class="dd-session-head"><div class="dd-session-head-main"><strong>${esc(session.className)}</strong><span>${esc(session.instructorName)}</span>${editing ? renderTimeForm(session, "panel") : `<span class="dd-time-value" data-action="edit-time" data-session-id="${session.id}" data-source="panel">${session.startTime}–${session.endTime}</span>`}${tags.join("")}</div><div class="dd-teacher-attendance"><span>حضور مدرس:</span>${renderTeacherAttendance(session)}</div></div>${exceptionBanner}<div class="dd-students">${students || `<div class="dd-empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}</div></article>`; }
+  function renderSessionsPanel() {
+    const sessions = visibleSessions();
+    if (!sessions.length) {
+      els.sessionsPanel.innerHTML = `<div class="dd-empty"><div class="dd-empty-title">جلسه‌ای برای نمایش نیست</div><div class="dd-empty-note">فیلتر مدرس یا روز انتخاب‌شده را بررسی کنید.</div></div>`;
+      return;
+    }
+
+    // Keep students of the same teacher/class inside one shared card.
+    // Student schedule times remain independent; only the visual container is grouped.
+    const groups = new Map();
+    for (const session of sessions) {
+      const key = `${session.instructor_id ?? session.instructorId}::${session.class_id ?? session.classId}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(session);
+    }
+
+    const sortedGroups = [...groups.values()].sort((a, b) => {
+      const aStart = Math.min(...a.map((s) => minutesOf(s.startTime)));
+      const bStart = Math.min(...b.map((s) => minutesOf(s.startTime)));
+      return aStart - bStart;
+    });
+
+    els.sessionsPanel.innerHTML = sortedGroups.map(renderSessionGroupCard).join("");
+  }
+
+  function renderSessionGroupCard(group) {
+    const session = [...group].sort((a, b) => minutesOf(a.startTime) - minutesOf(b.startTime))[0];
+    const allStudents = [];
+    const seen = new Set();
+    for (const memberSession of group) {
+      for (const student of memberSession.students || []) {
+        const key = String(student.enrollmentSessionId ?? `${memberSession.id}:${student.enrollmentId}`);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        allStudents.push({ session: memberSession, student });
+      }
+    }
+
+    const cancelled = group.every((item) => item.status === "cancelled");
+    const conflict = group.some((item) => hasConflict(item, state.sessions));
+    const editing = group.some((item) => state.editingSessionId === item.id);
+    const tags = [];
+    if (cancelled) tags.push(`<span class="dd-session-tag cancelled">لغو شده</span>`);
+    if (conflict && !cancelled) tags.push(`<span class="dd-session-tag conflict">تداخل مدرس/اتاق</span>`);
+    if (session.room_name) tags.push(`<span class="dd-session-tag gold">${esc(session.room_name)}</span>`);
+
+    const exception = group.find((item) => item.calendar_exception_type);
+    const exceptionBanner = exception
+      ? `<div class="dd-exception-banner">امروز «${esc(exception.calendar_exception_title || exception.calendar_exception_type)}» است — این جلسه ممکن است تحت تأثیر قرار گیرد.</div>`
+      : "";
+
+    const startTime = Math.min(...group.map((item) => minutesOf(item.startTime)));
+    const endTime = Math.max(...group.map((item) => minutesOf(item.endTime)));
+    const timeLabel = `${timeOf(startTime)}–${timeOf(endTime)}`;
+
+    return `<article class="dd-session ${cancelled ? "is-cancelled" : ""}" data-session-id="${session.id}">
+      <div class="dd-session-head">
+        <div class="dd-session-head-main">
+          <strong>${esc(session.className)}</strong>
+          <span>${esc(session.instructorName)}</span>
+          ${editing ? renderTimeForm(session, "panel") : `<span class="dd-time-value">${timeLabel}</span>`}
+          ${tags.join("")}
+        </div>
+        <div class="dd-teacher-attendance"><span>حضور مدرس:</span>${renderTeacherAttendance(session)}</div>
+      </div>
+      ${exceptionBanner}
+      <div class="dd-students">${allStudents.length
+        ? allStudents.map(({ session: studentSession, student }) => renderStudentCard(studentSession, student)).join("")
+        : `<div class="dd-empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}
+      </div>
+    </article>`;
+  }
   function renderTeacherAttendance(session) { const status = session.teacherAttendanceStatus || "pending"; return ["present", "absent"].map((value) => `<button type="button" class="dd-teacher-status ${value} ${status === value ? "is-active" : ""}" data-action="teacher-attendance" data-session-id="${session.id}" data-status="${value}" aria-pressed="${status === value}">${teacherAttendanceLabels[value]}</button>`).join("") || teacherAttendanceLabels.pending; }
   function badgeClassFor(remaining) { if (remaining == null) return "badge-neutral"; if (remaining <= 0) return "badge-red badge-alarm"; if (remaining === 1) return "badge-orange"; return "badge-green"; }
   function badgeLabelFor(remaining) { if (remaining == null) return "ماه"; return formatNumber(remaining); }
