@@ -121,8 +121,9 @@ export async function buildDailyAutoPlan(
   const active = working.filter((session) => !session.removed);
   const roomOptions = rooms.length ? rooms : [null];
 
-  // Compact each teacher active sessions into one continuous chain.
-  // Forward packs from the first active slot; backward packs from the last.
+  // Compact each teacher's active sessions continuously, while treating each
+  // individual student slot as the unit of packing. This removes holes caused by
+  // absent/leave students instead of merely moving whole class sessions.
   const placed: WorkingSession[] = [];
   const teacherGroups = new Map<number, WorkingSession[]>();
   for (const session of active) {
@@ -130,72 +131,137 @@ export async function buildDailyAutoPlan(
     if (!teacherGroups.has(key)) teacherGroups.set(key, []);
     teacherGroups.get(key)!.push(session);
   }
+
   const groups = [...teacherGroups.values()].sort((a, b) =>
     Math.min(...a.map((x) => minutes(x.startTime))) - Math.min(...b.map((x) => minutes(x.startTime)))
   );
 
   for (const group of groups) {
-    const ordered = [...group].sort((a, b) => direction === "backward"
-      ? minutes(b.endTime) - minutes(a.endTime) || b.sessionId - a.sessionId
-      : minutes(a.startTime) - minutes(b.startTime) || a.sessionId - b.sessionId
+    const slots = group.flatMap((session) =>
+      session.students.length
+        ? session.students.map((student, index) => ({
+            session,
+            student,
+            index,
+            start: minutes(student.startTime || session.startTime),
+            end: minutes(student.endTime || session.endTime),
+          }))
+        : [{
+            session,
+            student: null,
+            index: 0,
+            start: minutes(session.startTime),
+            end: minutes(session.endTime),
+          }]
     );
-    let cursor = direction === "backward"
-      ? Math.max(...ordered.map((x) => minutes(x.endTime)))
-      : Math.min(...ordered.map((x) => minutes(x.startTime)));
 
-    for (const session of ordered) {
-      const originalStart = minutes(session.startTime);
-      const originalEnd = minutes(session.endTime);
-      const duration = originalEnd - originalStart;
-      if (duration <= 0) {
-        questions.push({ type: "unresolved_conflict", sessionId: session.sessionId, message: "مدت کلاس «" + session.className + "» معتبر نیست." });
-        continue;
-      }
+    const ordered = slots.sort((a, b) =>
+      direction === "backward"
+        ? b.end - a.end || b.session.sessionId - a.session.sessionId || b.index - a.index
+        : a.start - b.start || a.session.sessionId - b.session.sessionId || a.index - b.index
+    );
+
+    const minStart = Math.min(...ordered.map((x) => x.start));
+    const maxEnd = Math.max(...ordered.map((x) => x.end));
+    let cursor = direction === "backward" ? maxEnd : minStart;
+
+    const sessionPlans = new Map<number, { session: WorkingSession; start: number; end: number }>();
+    for (const slot of ordered) {
+      const duration = Math.max(15, slot.end - slot.start);
+      const originalStart = slot.start;
       const targetStart = direction === "backward" ? cursor - duration : cursor;
-      const candidates: number[] = [];
-      if (direction === "forward") {
-        for (let start = targetStart; start <= originalStart; start += 15) candidates.push(start);
-        candidates.reverse();
-      } else {
-        for (let start = targetStart; start >= originalStart; start -= 15) candidates.push(start);
-      }
-      let best: { start: number; room: Room | null; score: number; reasons: string[] } | null = null;
-      for (const start of candidates) {
-        for (const room of roomOptions) {
-          if (!canPlace(session, start, room, placed, active)) continue;
-          const distancePenalty = Math.abs(start - originalStart);
-          const historyBonus = historicalTimeScore(session, start, history);
-          const roomBonus = room?.id === session.roomId ? 70 : 0;
-          const compactBonus = Math.max(0, 120 - Math.abs(start - targetStart));
-          const score = compactBonus + historyBonus + roomBonus - distancePenalty;
-          const reasons: string[] = [];
-          if (start !== originalStart) reasons.push(direction === "forward" ? "چینش از اول به آخر" : "چینش از آخر به اول");
-          if (start < originalStart && direction === "forward") reasons.push("زمان خالی حذف می‌شود");
-          if (start > originalStart && direction === "backward") reasons.push("زمان خالی حذف می‌شود");
-          if (room?.id === session.roomId) reasons.push("اتاق قبلی حفظ می‌شود");
-          if (historyBonus > 0) reasons.push("با ساعت‌های قبلی هنرجویان سازگارتر است");
-          if (!reasons.length) reasons.push("بدون تداخل با استاد، اتاق و هنرجویان");
-          if (!best || score > best.score) best = { start, room, score, reasons };
+      let bestStart: number | null = null;
+      let bestScore = -Infinity;
+
+      const lower = direction === "forward" ? 8 * 60 : originalStart;
+      const upper = direction === "forward" ? originalStart : 22 * 60 - duration;
+      for (let start = direction === "forward" ? lower : originalStart; direction === "forward" ? start <= upper : start <= upper; start += 15) {
+        if (direction === "forward" && start > originalStart) break;
+        if (direction === "backward" && start < originalStart) continue;
+        const end = start + duration;
+        if (end > 22 * 60 || start < 8 * 60) continue;
+
+        const sameStudentConflict = ordered.some((other) =>
+          other !== slot &&
+          other.student?.studentId &&
+          slot.student?.studentId === other.student.studentId &&
+          other.session.sessionId !== slot.session.sessionId &&
+          overlaps(start, end, other.start, other.end)
+        );
+        if (sameStudentConflict) continue;
+
+        const teacherConflict = [...sessionPlans.values()].some((plan) =>
+          plan.session.instructorId === slot.session.instructorId &&
+          overlaps(start, end, plan.start, plan.end)
+        );
+        if (teacherConflict) continue;
+
+        const room = rooms.find((r) => r.id === slot.session.roomId) ?? null;
+        const roomConflict = [...sessionPlans.values()].some((plan) =>
+          room && plan.session.roomId === room.id && overlaps(start, end, plan.start, plan.end)
+        );
+        if (roomConflict) continue;
+
+        const distancePenalty = Math.abs(start - originalStart);
+        const compactBonus = Math.max(0, 300 - Math.abs(start - targetStart) * 3);
+        const historyBonus = slot.student ? historicalTimeScore(slot.session, start, history) : 0;
+        const score = compactBonus + historyBonus - distancePenalty;
+        if (score > bestScore) {
+          bestScore = score;
+          bestStart = start;
         }
       }
-      if (!best) {
-        questions.push({ type: "unresolved_conflict", sessionId: session.sessionId, message: "برای «" + session.className + "» در جهت انتخاب‌شده زمان آزاد و معتبر پیدا نشد؛ تصمیم منشی لازم است." });
-        placed.push({ ...session });
-        cursor = direction === "backward" ? originalStart : originalEnd;
+
+      if (bestStart === null) {
+        questions.push({
+          type: "unresolved_conflict",
+          sessionId: slot.session.sessionId,
+          message: "برای «" + slot.session.className + "» برای این هنرجو زمان پیوسته و بدون تداخل پیدا نشد؛ تصمیم منشی لازم است.",
+        });
         continue;
       }
-      const nextEnd = best.start + duration;
-      changes.push({
-        sessionId: session.sessionId, className: session.className, instructorName: session.instructorName,
-        studentNames: session.students.map((student) => student.studentName),
-        from: { startTime: session.startTime, endTime: session.endTime, roomId: session.roomId, roomName: session.roomName },
-        to: { startTime: time(best.start), endTime: time(nextEnd), roomId: best.room?.id ?? null, roomName: best.room?.name ?? null },
-        score: best.score, reasons: best.reasons,
-      });
-      placed.push({ ...session, startTime: time(best.start), endTime: time(nextEnd), roomId: best.room?.id ?? null, roomName: best.room?.name ?? null });
-      cursor = direction === "backward" ? best.start : nextEnd;
+
+      const end = bestStart + duration;
+      const existing = sessionPlans.get(slot.session.sessionId);
+      if (!existing) {
+        sessionPlans.set(slot.session.sessionId, { session: slot.session, start: bestStart, end });
+      } else {
+        existing.start = Math.min(existing.start, bestStart);
+        existing.end = Math.max(existing.end, end);
+      }
+      cursor = direction === "backward" ? bestStart : end;
+    }
+
+    for (const plan of sessionPlans.values()) {
+      const original = plan.session;
+      const nextStart = time(plan.start);
+      const nextEnd = time(plan.end);
+      if (nextStart !== original.startTime || nextEnd !== original.endTime) {
+        changes.push({
+          sessionId: original.sessionId,
+          className: original.className,
+          instructorName: original.instructorName,
+          studentNames: original.students.map((student) => student.studentName),
+          from: { startTime: original.startTime, endTime: original.endTime, roomId: original.roomId, roomName: original.roomName },
+          to: { startTime: nextStart, endTime: nextEnd, roomId: original.roomId, roomName: original.roomName },
+          score: 0,
+          reasons: [
+            direction === "backward" ? "چینش از آخر به اول" : "چینش از اول به آخر",
+            "حذف فاصله‌های خالی بین هنرجویان",
+            "حفظ تداخل‌نداشتن زمان استاد و اتاق",
+          ],
+        });
+        placed.push({
+          ...original,
+          startTime: nextStart,
+          endTime: nextEnd,
+        });
+      } else {
+        placed.push({ ...original });
+      }
     }
   }
+
   const movedMinutes = changes.reduce((sum, change) => sum + Math.max(0, minutes(change.from.startTime) - minutes(change.to.startTime)), 0);
   const removedNames = working.filter((session) => session.removed).map((session) => session.className);
   const summary = [
