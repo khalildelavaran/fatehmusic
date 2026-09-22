@@ -147,6 +147,18 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    for (const change of freshPlan.studentChanges) {
+      if (
+        !validId(change.enrollmentSessionId) ||
+        !validId(change.sessionId) ||
+        !validTime(change.to.startTime) ||
+        !validTime(change.to.endTime) ||
+        change.to.startTime === change.to.endTime
+      ) {
+        return json({ success: false, message: "یکی از زمان‌های هنرجویان معتبر نیست." }, 422);
+      }
+    }
+
     const studentRows = await env.DB.prepare(`
       SELECT es.id, es.enrollment_id, es.session_id, es.start_time, es.end_time
       FROM enrollment_sessions es
@@ -173,6 +185,26 @@ export const POST: APIRoute = async ({ request }) => {
     }>();
 
     const currentById = new Map((currentRows.results || []).map((row) => [row.id, row]));
+    for (const change of freshPlan.changes) {
+      const current = currentById.get(change.sessionId);
+      if (!current || current.status === "cancelled") {
+        return json({ success: false, code: "PLAN_STALE", message: "یکی از جلسات دیگر قابل تغییر نیست؛ چینش را دوباره دریافت کنید." }, 409);
+      }
+    }
+
+    if (freshPlan.changes.some((change) => change.to.roomId !== null) && rooms.length) {
+      const activeRoomIds = new Set(rooms.map((room) => room.id));
+      if (freshPlan.changes.some((change) => change.to.roomId !== null && !activeRoomIds.has(change.to.roomId))) {
+        return json({ success: false, code: "PLAN_STALE", message: "یکی از اتاق‌ها دیگر فعال نیست؛ چینش را دوباره دریافت کنید." }, 409);
+      }
+    }
+
+    // Re-check immediately before the mutation. The SQL predicates below also
+    // make each individual write refuse a newly closed date.
+    const justBeforeWrite = await rejectIfDailyClosed(env.DB, date);
+    if (justBeforeWrite) return justBeforeWrite;
+
+    const actor = await getAdminSession(request, env as any);
     for (const change of freshPlan.studentChanges) {
       const current = studentById.get(change.enrollmentSessionId);
       await recordAuditEvent(env.DB, {
@@ -195,26 +227,6 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    for (const change of freshPlan.changes) {
-      const current = currentById.get(change.sessionId);
-      if (!current || current.status === "cancelled") {
-        return json({ success: false, code: "PLAN_STALE", message: "یکی از جلسات دیگر قابل تغییر نیست؛ چینش را دوباره دریافت کنید." }, 409);
-      }
-    }
-
-    if (freshPlan.changes.some((change) => change.to.roomId !== null) && rooms.length) {
-      const activeRoomIds = new Set(rooms.map((room) => room.id));
-      if (freshPlan.changes.some((change) => change.to.roomId !== null && !activeRoomIds.has(change.to.roomId))) {
-        return json({ success: false, code: "PLAN_STALE", message: "یکی از اتاق‌ها دیگر فعال نیست؛ چینش را دوباره دریافت کنید." }, 409);
-      }
-    }
-
-    // Re-check immediately before the mutation. The SQL predicates below also
-    // make each individual write refuse a newly closed date.
-    const justBeforeWrite = await rejectIfDailyClosed(env.DB, date);
-    if (justBeforeWrite) return justBeforeWrite;
-
-    const actor = await getAdminSession(request, env as any);
     const statements: D1PreparedStatement[] = [];
 
     for (const change of freshPlan.studentChanges) {
