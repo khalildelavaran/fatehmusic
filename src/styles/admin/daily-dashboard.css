@@ -98,6 +98,8 @@
 .dd-sessions{display:flex;flex-direction:column;gap:14px}
 .dd-session{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px}
 .dd-session.is-cancelled{opacity:.7}
+.dd-session.is-teacher-present{background:rgba(47,143,70,.09);border-color:rgba(47,143,70,.42)}
+.dd-session.is-teacher-absent{background:rgba(163,51,51,.09);border-color:rgba(163,51,51,.42)}
 .dd-session-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .dd-session-head-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
 .dd-session-head strong{font-size:14px}
