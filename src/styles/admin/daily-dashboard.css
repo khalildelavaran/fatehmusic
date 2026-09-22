@@ -116,7 +116,7 @@
 .dd-exception-banner{margin:8px 0;padding:8px 12px;border-radius:10px;border:1px solid rgba(230,161,60,.4);background:rgba(230,161,60,.08);font-size:12px;color:#e6c34a}
 
 .dd-students{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
-.dd-student-card{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:8px}
+.dd-student-card{border:2px solid var(--border);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:8px}
 .dd-student-card.is-present{border-color:rgba(47,143,70,.5);background:rgba(47,143,70,.045)}
 .dd-student-card.is-absent{border-color:rgba(214,102,102,.5);background:rgba(214,102,102,.045)}
 .dd-student-card.is-excused{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.045)}
