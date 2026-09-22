@@ -147,6 +147,7 @@
     const cancelled = group.every((item) => item.status === "cancelled");
     const conflict = group.some((item) => hasConflict(item, state.sessions));
     const editing = group.some((item) => state.editingSessionId === item.id);
+    const teacherAttendance = group.some((item) => item.teacherAttendanceStatus === "absent") ? "absent" : group.some((item) => item.teacherAttendanceStatus === "present") ? "present" : "pending";
     const tags = [];
     if (cancelled) tags.push(`<span class="dd-session-tag cancelled">لغو شده</span>`);
     if (conflict && !cancelled) tags.push(`<span class="dd-session-tag conflict">تداخل مدرس/اتاق</span>`);
@@ -161,7 +162,7 @@
     const endTime = Math.max(...group.map((item) => minutesOf(item.endTime)));
     const timeLabel = `${timeOf(startTime)}–${timeOf(endTime)}`;
 
-    return `<article class="dd-session ${cancelled ? "is-cancelled" : ""}" data-session-id="${session.id}">
+    return `<article class="dd-session ${cancelled ? "is-cancelled" : ""} ${teacherAttendance === "present" ? "is-teacher-present" : teacherAttendance === "absent" ? "is-teacher-absent" : ""}" data-session-id="${session.id}">
       <div class="dd-session-head">
         <div class="dd-session-head-main">
           <strong>${esc(session.instructorName)}</strong>
