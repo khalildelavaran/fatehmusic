@@ -19,6 +19,7 @@ export type AutoPlannerQuestion = {
 
 export type DailyAutoPlan = {
   date: string;
+  direction: "forward" | "backward";
   removedSessionIds: number[];
   changes: AutoPlannerChange[];
   questions: AutoPlannerQuestion[];
@@ -204,5 +205,5 @@ export async function buildDailyAutoPlan(
     questions.length ? `${questions.length} مورد نیازمند تصمیم منشی است.` : "تعارض حل‌نشده‌ای باقی نماند.",
   ].join(" ");
 
-  return { date, removedSessionIds, changes, questions, summary };
+  return { date, direction, removedSessionIds, changes, questions, summary };
 }
