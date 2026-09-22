@@ -16,6 +16,10 @@ function validTime(value: unknown): value is string {
   return typeof value === "string" && TIME_RE.test(value);
 }
 
+function validDirection(value: unknown): value is "forward" | "backward" {
+  return value === "forward" || value === "backward";
+}
+
 function validId(value: unknown): value is number {
   return Number.isInteger(value) && Number(value) > 0;
 }
@@ -30,6 +34,9 @@ export const GET: APIRoute = async ({ request }) => {
     const date = url.searchParams.get("date") || "";
     if (!DATE_RE.test(date)) return json({ success: false, message: "تاریخ معتبر نیست." }, 422);
 
+    const directionRaw = url.searchParams.get("direction") || "forward";
+    const direction = validDirection(directionRaw) ? directionRaw : "forward";
+
     const removeRaw = url.searchParams.get("removeSessionIds") || "";
     const removeSessionIds = removeRaw
       .split(",")
@@ -41,7 +48,7 @@ export const GET: APIRoute = async ({ request }) => {
       listActiveRooms(env.DB),
     ]);
 
-    const plan = await buildDailyAutoPlan(env.DB, date, sessions, rooms, { removeSessionIds });
+    const plan = await buildDailyAutoPlan(env.DB, date, sessions, rooms, { removeSessionIds, direction });
     return json({ success: true, plan });
   } catch (error) {
     console.error("[admin/daily-planner/auto] failed:", error);
@@ -59,9 +66,11 @@ export const POST: APIRoute = async ({ request }) => {
       date?: unknown;
       removeSessionIds?: unknown;
       changes?: unknown;
+      direction?: unknown;
     } | null;
 
     const date = typeof body?.date === "string" ? body.date : "";
+    const direction = validDirection(body?.direction) ? body.direction : "forward";
     if (!DATE_RE.test(date)) return json({ success: false, message: "تاریخ معتبر نیست." }, 422);
 
     const initiallyClosed = await rejectIfDailyClosed(env.DB, date);
@@ -80,7 +89,7 @@ export const POST: APIRoute = async ({ request }) => {
       getDailyDashboard(env.DB, date),
       listActiveRooms(env.DB),
     ]);
-    const freshPlan = await buildDailyAutoPlan(env.DB, date, sessions, rooms, { removeSessionIds });
+    const freshPlan = await buildDailyAutoPlan(env.DB, date, sessions, rooms, { removeSessionIds, direction });
 
     // The browser only submits a proposal. The database state is authoritative:
     // rebuild the complete plan immediately before writing anything, then require
