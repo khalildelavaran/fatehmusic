@@ -117,10 +117,10 @@
 
 .dd-students{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .dd-student-card{border:1px solid var(--border);border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:8px}
-.dd-student-card.is-present{border-color:rgba(47,143,70,.5)}
-.dd-student-card.is-absent{border-color:rgba(214,102,102,.5)}
-.dd-student-card.is-excused{border-color:rgba(59,130,246,.5)}
-.dd-student-card.is-withdrawn{opacity:.55}
+.dd-student-card.is-present{border-color:rgba(47,143,70,.5);background:rgba(47,143,70,.045)}
+.dd-student-card.is-absent{border-color:rgba(214,102,102,.5);background:rgba(214,102,102,.045)}
+.dd-student-card.is-excused{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.045)}
+.dd-student-card.is-withdrawn{opacity:.55;background:rgba(255,255,255,.018)}
 .dd-student-head{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"time name" "attendance attendance";align-items:center;column-gap:8px;row-gap:6px;min-height:26px;direction:ltr}
 .dd-student-name-row{grid-area:name;display:flex;align-items:center;min-width:0;direction:rtl}
 .dd-student-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
