@@ -93,9 +93,10 @@ export async function buildDailyAutoPlan(
   date: string,
   sessions: DailySession[],
   rooms: Room[],
-  options: { removeSessionIds?: number[] } = {},
+  options: { removeSessionIds?: number[]; direction?: "forward" | "backward" } = {},
 ): Promise<DailyAutoPlan> {
   const removeIds = new Set((options.removeSessionIds ?? []).map(Number).filter(Number.isInteger));
+  const direction = options.direction === "backward" ? "backward" : "forward";
   const working: WorkingSession[] = sessions.map((session) => ({ ...session, removed: removeIds.has(session.sessionId) || attendanceBlocks(session) }));
   const removedSessionIds = working.filter((session) => session.removed).map((session) => session.sessionId);
 
@@ -119,81 +120,87 @@ export async function buildDailyAutoPlan(
   const active = working.filter((session) => !session.removed);
   const roomOptions = rooms.length ? rooms : [null];
 
-  // First pass: preserve the existing slot whenever it is valid. Sessions are
-  // then compacted only when a vacancy exists (typically after a leave/absence).
+  // Compact each teacher active sessions into one continuous chain.
+  // Forward packs from the first active slot; backward packs from the last.
   const placed: WorkingSession[] = [];
-  const ordered = [...active].sort((a, b) => minutes(a.startTime) - minutes(b.startTime) || a.sessionId - b.sessionId);
-
-  for (const session of ordered) {
-    const originalStart = minutes(session.startTime);
-    const originalEnd = minutes(session.endTime);
-    const duration = originalEnd - originalStart;
-    if (duration <= 0) {
-      questions.push({ type: "unresolved_conflict", sessionId: session.sessionId, message: `مدت کلاس «${session.className}» معتبر نیست.` });
-      continue;
-    }
-
-    const sameRoom = rooms.find((room) => room.id === session.roomId) ?? null;
-    if (canPlace(session, originalStart, sameRoom, placed, active)) {
-      placed.push({ ...session });
-      continue;
-    }
-
-    let best: { start: number; room: Room | null; score: number; reasons: string[] } | null = null;
-    for (let start = 8 * 60; start + duration <= 22 * 60; start += 15) {
-      // Automatic compaction should never move a class later than its original
-      // start; later times remain available for an explicit receptionist decision.
-      if (start > originalStart) continue;
-      for (const room of roomOptions) {
-        if (!canPlace(session, start, room, placed, active)) continue;
-        const distancePenalty = Math.abs(start - originalStart);
-        const historyBonus = historicalTimeScore(session, start, history);
-        const roomBonus = room?.id === session.roomId ? 70 : 0;
-        const score = historyBonus + roomBonus - distancePenalty;
-        const reasons: string[] = [];
-        if (start < originalStart) reasons.push("زمان خالی قبل از کلاس استفاده می‌شود");
-        if (room?.id === session.roomId) reasons.push("اتاق قبلی حفظ می‌شود");
-        if (historyBonus > 0) reasons.push("با ساعت‌های قبلی هنرجویان سازگارتر است");
-        if (!reasons.length) reasons.push("بدون تداخل با استاد، اتاق و هنرجویان");
-        if (!best || score > best.score) best = { start, room, score, reasons };
-      }
-    }
-
-    if (!best) {
-      questions.push({
-        type: "unresolved_conflict",
-        sessionId: session.sessionId,
-        message: `برای «${session.className}» پس از بازچینی، زمان آزاد و معتبر پیدا نشد؛ تصمیم منشی لازم است.`,
-      });
-      placed.push({ ...session });
-      continue;
-    }
-
-    const nextEnd = best.start + duration;
-    changes.push({
-      sessionId: session.sessionId,
-      className: session.className,
-      instructorName: session.instructorName,
-      studentNames: session.students.map((student) => student.studentName),
-      from: { startTime: session.startTime, endTime: session.endTime, roomId: session.roomId, roomName: session.roomName },
-      to: { startTime: time(best.start), endTime: time(nextEnd), roomId: best.room?.id ?? null, roomName: best.room?.name ?? null },
-      score: best.score,
-      reasons: best.reasons,
-    });
-    placed.push({
-      ...session,
-      startTime: time(best.start),
-      endTime: time(nextEnd),
-      roomId: best.room?.id ?? null,
-      roomName: best.room?.name ?? null,
-    });
+  const teacherGroups = new Map<number, WorkingSession[]>();
+  for (const session of active) {
+    const key = Number(session.instructorId);
+    if (!teacherGroups.has(key)) teacherGroups.set(key, []);
+    teacherGroups.get(key)!.push(session);
   }
+  const groups = [...teacherGroups.values()].sort((a, b) =>
+    Math.min(...a.map((x) => minutes(x.startTime))) - Math.min(...b.map((x) => minutes(x.startTime)))
+  );
 
+  for (const group of groups) {
+    const ordered = [...group].sort((a, b) => direction === "backward"
+      ? minutes(b.endTime) - minutes(a.endTime) || b.sessionId - a.sessionId
+      : minutes(a.startTime) - minutes(b.startTime) || a.sessionId - b.sessionId
+    );
+    let cursor = direction === "backward"
+      ? Math.max(...ordered.map((x) => minutes(x.endTime)))
+      : Math.min(...ordered.map((x) => minutes(x.startTime)));
+
+    for (const session of ordered) {
+      const originalStart = minutes(session.startTime);
+      const originalEnd = minutes(session.endTime);
+      const duration = originalEnd - originalStart;
+      if (duration <= 0) {
+        questions.push({ type: "unresolved_conflict", sessionId: session.sessionId, message: "مدت کلاس «" + session.className + "» معتبر نیست." });
+        continue;
+      }
+      const targetStart = direction === "backward" ? cursor - duration : cursor;
+      const candidates: number[] = [];
+      if (direction === "forward") {
+        for (let start = targetStart; start <= originalStart; start += 15) candidates.push(start);
+        candidates.reverse();
+      } else {
+        for (let start = targetStart; start >= originalStart; start -= 15) candidates.push(start);
+      }
+      let best: { start: number; room: Room | null; score: number; reasons: string[] } | null = null;
+      for (const start of candidates) {
+        for (const room of roomOptions) {
+          if (!canPlace(session, start, room, placed, active)) continue;
+          const distancePenalty = Math.abs(start - originalStart);
+          const historyBonus = historicalTimeScore(session, start, history);
+          const roomBonus = room?.id === session.roomId ? 70 : 0;
+          const compactBonus = Math.max(0, 120 - Math.abs(start - targetStart));
+          const score = compactBonus + historyBonus + roomBonus - distancePenalty;
+          const reasons: string[] = [];
+          if (start !== originalStart) reasons.push(direction === "forward" ? "چینش از اول به آخر" : "چینش از آخر به اول");
+          if (start < originalStart && direction === "forward") reasons.push("زمان خالی حذف می‌شود");
+          if (start > originalStart && direction === "backward") reasons.push("زمان خالی حذف می‌شود");
+          if (room?.id === session.roomId) reasons.push("اتاق قبلی حفظ می‌شود");
+          if (historyBonus > 0) reasons.push("با ساعت‌های قبلی هنرجویان سازگارتر است");
+          if (!reasons.length) reasons.push("بدون تداخل با استاد، اتاق و هنرجویان");
+          if (!best || score > best.score) best = { start, room, score, reasons };
+        }
+      }
+      if (!best) {
+        questions.push({ type: "unresolved_conflict", sessionId: session.sessionId, message: "برای «" + session.className + "» در جهت انتخاب‌شده زمان آزاد و معتبر پیدا نشد؛ تصمیم منشی لازم است." });
+        placed.push({ ...session });
+        cursor = direction === "backward" ? originalStart : originalEnd;
+        continue;
+      }
+      const nextEnd = best.start + duration;
+      changes.push({
+        sessionId: session.sessionId, className: session.className, instructorName: session.instructorName,
+        studentNames: session.students.map((student) => student.studentName),
+        from: { startTime: session.startTime, endTime: session.endTime, roomId: session.roomId, roomName: session.roomName },
+        to: { startTime: time(best.start), endTime: time(nextEnd), roomId: best.room?.id ?? null, roomName: best.room?.name ?? null },
+        score: best.score, reasons: best.reasons,
+      });
+      placed.push({ ...session, startTime: time(best.start), endTime: time(nextEnd), roomId: best.room?.id ?? null, roomName: best.room?.name ?? null });
+      cursor = direction === "backward" ? best.start : nextEnd;
+    }
+  }
   const movedMinutes = changes.reduce((sum, change) => sum + Math.max(0, minutes(change.from.startTime) - minutes(change.to.startTime)), 0);
   const removedNames = working.filter((session) => session.removed).map((session) => session.className);
   const summary = [
     removedNames.length ? `${removedNames.length} جلسه به دلیل غیبت/مرخصی از برنامه روز حذف شد.` : "جلسه‌ای برای حذف خودکار وجود ندارد.",
     changes.length ? `${changes.length} جابه‌جایی برای فشرده‌سازی برنامه پیشنهاد شد (${movedMinutes} دقیقه زمان آزادشده).` : "نیازی به جابه‌جایی خودکار تشخیص داده نشد.",
+    `جهت چینش: ${direction === "backward" ? "از آخر به اول" : "از اول به آخر"}.`,
     questions.length ? `${questions.length} مورد نیازمند تصمیم منشی است.` : "تعارض حل‌نشده‌ای باقی نماند.",
   ].join(" ");
 
