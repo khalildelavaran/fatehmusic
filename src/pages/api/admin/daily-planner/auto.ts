@@ -66,6 +66,7 @@ export const POST: APIRoute = async ({ request }) => {
       date?: unknown;
       removeSessionIds?: unknown;
       changes?: unknown;
+      studentChanges?: unknown;
       direction?: unknown;
     } | null;
 
@@ -81,7 +82,8 @@ export const POST: APIRoute = async ({ request }) => {
       : [];
 
     const requestedChanges = Array.isArray(body?.changes) ? body.changes : [];
-    if (requestedChanges.length > 100 || removeSessionIds.length > 100) {
+    const requestedStudentChanges = Array.isArray(body?.studentChanges) ? body.studentChanges : [];
+    if (requestedChanges.length > 100 || requestedStudentChanges.length > 300 || removeSessionIds.length > 100) {
       return json({ success: false, message: "تعداد تغییرات بیش از حد مجاز است." }, 422);
     }
 
@@ -109,11 +111,25 @@ export const POST: APIRoute = async ({ request }) => {
       roomId: change.to.roomId,
     }));
 
+    const proposedStudentChanges = requestedStudentChanges.map((raw: any) => ({
+      enrollmentSessionId: Number(raw?.enrollmentSessionId),
+      startTime: raw?.to?.startTime,
+      endTime: raw?.to?.endTime,
+    }));
+
+    const freshStudentChanges = freshPlan.studentChanges.map((change) => ({
+      enrollmentSessionId: change.enrollmentSessionId,
+      startTime: change.to.startTime,
+      endTime: change.to.endTime,
+    }));
+
     const sortChanges = (items: typeof fresh) => [...items].sort((a, b) => a.sessionId - b.sessionId);
+    const sortStudentChanges = (items: typeof freshStudentChanges) => [...items].sort((a, b) => a.enrollmentSessionId - b.enrollmentSessionId);
     const sameChanges = JSON.stringify(sortChanges(proposed)) === JSON.stringify(sortChanges(fresh));
+    const sameStudentChanges = JSON.stringify(sortStudentChanges(proposedStudentChanges)) === JSON.stringify(sortStudentChanges(freshStudentChanges));
     const sameRemovals = JSON.stringify([...removeSessionIds].sort((a, b) => a - b)) === JSON.stringify([...freshPlan.removedSessionIds].filter((id) => removeSessionIds.includes(id)).sort((a, b) => a - b));
 
-    if (!sameChanges || !sameRemovals) {
+    if (!sameChanges || !sameStudentChanges || !sameRemovals) {
       return json({
         success: false,
         code: "PLAN_STALE",
@@ -131,6 +147,22 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    const studentRows = await env.DB.prepare(`
+      SELECT es.id, es.enrollment_id, es.session_id, es.start_time, es.end_time
+      FROM enrollment_sessions es
+      WHERE es.id IN (${freshPlan.studentChanges.length ? freshPlan.studentChanges.map(() => "?").join(",") : "0"})
+    `).bind(...freshPlan.studentChanges.map((change) => change.enrollmentSessionId)).all<{
+      id: number; enrollment_id: number; session_id: number; start_time: string | null; end_time: string | null;
+    }>();
+
+    const studentById = new Map((studentRows.results || []).map((row) => [row.id, row]));
+    for (const change of freshPlan.studentChanges) {
+      const current = studentById.get(change.enrollmentSessionId);
+      if (!current || current.session_id !== change.sessionId) {
+        return json({ success: false, code: "PLAN_STALE", message: "زمان یکی از هنرجویان دیگر قابل تغییر نیست؛ چینش را دوباره دریافت کنید." }, 409);
+      }
+    }
+
     const currentRows = await env.DB.prepare(`
       SELECT id, class_id, session_date, start_time, end_time, room_id, status
       FROM class_sessions
@@ -141,6 +173,28 @@ export const POST: APIRoute = async ({ request }) => {
     }>();
 
     const currentById = new Map((currentRows.results || []).map((row) => [row.id, row]));
+    for (const change of freshPlan.studentChanges) {
+      const current = studentById.get(change.enrollmentSessionId);
+      await recordAuditEvent(env.DB, {
+        actor: {
+          type: actor?.role === ROLES.ADMIN ? "admin" : "registrar",
+          id: actor?.userId ?? null,
+          label: actor?.username ?? null,
+        },
+        action: "reschedule_enrollment_session_auto_plan",
+        entityType: "enrollment_session",
+        entityId: change.enrollmentSessionId,
+        metadata: {
+          sessionId: change.sessionId,
+          sessionDate: date,
+          previous: { startTime: current?.start_time ?? null, endTime: current?.end_time ?? null },
+          next: change.to,
+          studentId: change.studentId,
+          studentName: change.studentName,
+        },
+      });
+    }
+
     for (const change of freshPlan.changes) {
       const current = currentById.get(change.sessionId);
       if (!current || current.status === "cancelled") {
@@ -162,6 +216,22 @@ export const POST: APIRoute = async ({ request }) => {
 
     const actor = await getAdminSession(request, env as any);
     const statements: D1PreparedStatement[] = [];
+
+    for (const change of freshPlan.studentChanges) {
+      statements.push(env.DB.prepare(`
+        UPDATE enrollment_sessions
+        SET start_time = ?, end_time = ?
+        WHERE id = ?
+          AND session_id = ?
+          AND NOT EXISTS (SELECT 1 FROM daily_closures dc WHERE dc.close_date = ?)
+      `).bind(
+        change.to.startTime,
+        change.to.endTime,
+        change.enrollmentSessionId,
+        change.sessionId,
+        date,
+      ));
+    }
 
     for (const change of freshPlan.changes) {
       statements.push(env.DB.prepare(`
@@ -231,6 +301,7 @@ export const POST: APIRoute = async ({ request }) => {
       success: true,
       message: "کل چینش پیشنهادی با موفقیت اعمال شد.",
       appliedChanges: freshPlan.changes.length,
+      appliedStudentChanges: freshPlan.studentChanges.length,
       removedSessionIds: freshPlan.removedSessionIds.filter((id) => removeSessionIds.includes(id)),
     });
   } catch (error) {
