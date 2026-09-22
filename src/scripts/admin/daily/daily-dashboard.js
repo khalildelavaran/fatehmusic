@@ -1,3 +1,87 @@
+/*
+ * Daily Dashboard — single controller (spec: fateh-daily-dashboard-spec.md)
+ *
+ * Replaces the previous six independent scripts (daily-planner.js,
+ * daily-planner-status.js, daily-planner-drag-fix.js,
+ * daily-attendance-controls.js, daily-student-time-edit.js,
+ * daily-operations-panels.js) which all read/wrote a shared DOM tree
+ * concurrently and used MutationObserver as their primary sync mechanism.
+ *
+ * Architecture:
+ *   - Single source of truth: `state` (section 27 of the spec).
+ *   - All rendering is a pure function of `state` (section 28).
+ *   - One set of delegated event listeners on the dashboard root
+ *     (section 14) — no per-card listeners, no capture-phase hijacking.
+ *   - Interactive controls (button/input/select/time editor/attendance)
+ *     are always excluded from drag start (section 13).
+ *   - The timeline session card and the student card read the exact same
+ *     `state.sessions` record (section 11.1) — editing time from either
+ *     place calls the same action and re-renders both via one function.
+ *   - Room columns are built from `state.rooms`, fetched from the API —
+ *     never hard-coded (section 9 / 46.4).
+ *   - No MutationObserver anywhere in this file.
+ */
+(() => {
+  if (location.pathname !== "/admin/daily") return;
+  const root = document.querySelector("#dailyDashboardRoot");
+  if (!root) return;
+
+  const state = {
+    date: localDateString(), sessions: [], rooms: [], instructorFilter: "all", loading: false, saving: 0,
+    editingSessionId: null, editingEnrollmentSessionId: null, draggingSessionId: null, lastUpdatedAt: null, error: null, quickPayment: null,
+  };
+
+  function localDateString(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  function todayKey() { return localDateString(); }
+  function esc(value) { const el = document.createElement("div"); el.textContent = String(value ?? ""); return el.innerHTML; }
+  function formatNumber(value) { return Number(value ?? 0).toLocaleString("fa-IR"); }
+  function minutesOf(value) { const [h, m] = String(value || "00:00").split(":").map(Number); return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 0; }
+  function timeOf(value) { const v = Math.max(0, Math.round(value)); return `${String(Math.floor(v / 60)).padStart(2, "0")}:${String(v % 60).padStart(2, "0")}`; }
+  function snap15(value) { return Math.round(value / 15) * 15; }
+  const TIME_RE = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+  function isValidTime(value) { return typeof value === "string" && TIME_RE.test(value); }
+  function formatShamsiDate(value) { const [year, month, day] = String(value).split("-").map(Number); const date = new Date(year, month - 1, day, 12, 0, 0); const parts = new Intl.DateTimeFormat("fa-IR", { weekday: "long", year: "numeric", month: "long", day: "numeric" }).formatToParts(date); const get = (type) => parts.find((p) => p.type === type)?.value ?? ""; return `<span class="daily-date-part">${esc(get("weekday"))}</span><span class="daily-date-day">${esc(get("day"))}</span><span class="daily-date-part">${esc(get("month"))}</span><span class="daily-date-part">${esc(get("year"))}</span>`; }
+  const attendanceLabels = { pending: "ثبت نشده", present: "حاضر", absent: "غایب", excused: "مرخصی", withdrawn: "انصراف" };
+  const teacherAttendanceLabels = { pending: "ثبت نشده", present: "حاضر", absent: "غایب" };
+  const financeLabels = { paid: "تسویه شده", partial: "پرداخت ناقص", overdue: "معوق", pending: "پرداخت نشده", none: "صورتحساب ندارد" };
+  const paymentMethodLabels = { cash: "نقدی", card: "کارتخوان", transfer: "کارت‌به‌کارت / انتقال", other: "سایر" };
+  const instructorPalette = ["#a78bfa", "#7dd3fc", "#f9a8d4", "#86efac", "#fcd34d", "#fb923c", "#c4b5fd", "#67e8f9"];
+  const instructorColorMap = new Map();
+  function instructorColor(name) { const key = String(name || "مدرس").trim(); if (!instructorColorMap.has(key)) instructorColorMap.set(key, instructorPalette[instructorColorMap.size % instructorPalette.length]); return instructorColorMap.get(key); }
+
+  async function responseJson(response) { const text = await response.text(); if (!text.trim()) throw new Error(`پاسخ خالی از سرور دریافت شد (${response.status})`); try { return JSON.parse(text); } catch { throw new Error(`پاسخ JSON نامعتبر از سرور دریافت شد (${response.status})`); } }
+  async function apiGetDashboard(date, force) { const q = new URLSearchParams({ date }); if (force) q.set("force", "1"); const response = await fetch(`/api/admin/daily-dashboard?${q}`, { credentials: "same-origin", headers: { Accept: "application/json" } }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || `خطا در دریافت داشبورد (${response.status})`); return data; }
+  async function apiPatchStudentTime(enrollmentSessionId, sessionDate, startTime, endTime) { const response = await fetch("/api/admin/daily-planner", { method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json", Accept: "application/json" }, body: JSON.stringify({ enrollmentSessionId, sessionDate, startTime, endTime }) }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || "ذخیره زمان هنرجو ناموفق بود."); return data; }
+  async function apiPatchSessionTime(sessionId, sessionDate, startTime, endTime, roomId) { const body = { sessionId, sessionDate, startTime, endTime }; if (roomId !== undefined) body.roomId = roomId; const response = await fetch("/api/admin/daily-planner", { method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || "ذخیره زمان‌بندی ناموفق بود."); return data; }
+  async function apiPostAttendance(enrollmentSessionId, enrollmentId, status) { const response = await fetch("/api/admin/daily-planner", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", Accept: "application/json" }, body: JSON.stringify({ enrollmentSessionId, enrollmentId, status }) }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || "ذخیره وضعیت حضور ناموفق بود."); return data; }
+  async function apiPostPayment(invoiceId, amount, method, reference) { const response = await fetch("/api/admin/payments", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", Accept: "application/json" }, body: JSON.stringify({ invoiceId, amount, method, reference }) }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || "ثبت پرداخت ناموفق بود."); return data; }
+  async function apiPostRenewal(enrollmentId, startDate) { const response = await fetch("/api/admin/enrollment-term-renew", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", Accept: "application/json" }, body: JSON.stringify({ enrollmentId, startDate }) }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || "تمدید ترم ناموفق بود."); return data; }
+
+  function visibleSessions() { if (state.instructorFilter === "all") return state.sessions; return state.sessions.filter((s) => String(s.instructor_id) === String(state.instructorFilter)); }
+  function timelineRange() { const starts = state.sessions.map((s) => minutesOf(s.startTime)); const ends = state.sessions.map((s) => minutesOf(s.endTime)); const start = Math.floor(Math.min(16 * 60, ...(starts.length ? [Math.min(...starts) - 30] : [])) / 60) * 60; const end = Math.ceil(Math.max(22 * 60, ...(ends.length ? [Math.max(...ends) + 30] : [])) / 60) * 60; return { start: Math.max(0, start), end: Math.min(24 * 60, end) }; }
+  function hasConflict(session, all) { return all.some((other) => other.id !== session.id && other.status !== "cancelled" && session.status !== "cancelled" && String(other.instructor_id) === String(session.instructor_id) && String(other.room_id ?? "") === String(session.room_id ?? "") && session.room_id != null && minutesOf(other.startTime) < minutesOf(session.endTime) && minutesOf(other.endTime) > minutesOf(session.startTime)); }
+  function sessionVisualStatus(session) { if (session.status === "cancelled") return "cancelled"; if (session.calendar_exception_type) return "exception"; const now = new Date(); const isToday = state.date === todayKey(); if (!isToday) return session.status === "completed" ? "done" : "normal"; const nowMinutes = now.getHours() * 60 + now.getMinutes(); const start = minutesOf(session.startTime); const end = minutesOf(session.endTime); if (nowMinutes < start) return "upcoming"; if (nowMinutes >= end) return "done"; return "ongoing"; }
+  function assignLanes(items) { const sorted = [...items].sort((a, b) => minutesOf(a.startTime) - minutesOf(b.startTime) || minutesOf(a.endTime) - minutesOf(b.endTime)); const lanes = []; for (const item of sorted) { const start = minutesOf(item.startTime); let lane = 0; while (lane < lanes.length && lanes[lane] > start) lane += 1; if (lane === lanes.length) lanes.push(minutesOf(item.endTime)); else lanes[lane] = minutesOf(item.endTime); item.__lane = lane; } return Math.max(1, lanes.length); }
+  function timelineColumns() { const columns = state.rooms.map((room) => ({ id: room.id, name: room.name, items: [] })); const byId = new Map(columns.map((c) => [String(c.id), c])); let unassigned = null; for (const item of visibleSessions()) { if (item.room_id != null && byId.has(String(item.room_id))) byId.get(String(item.room_id)).items.push(item); else { if (!unassigned) unassigned = { id: null, name: item.room_name || "بدون اتاق", items: [] }; unassigned.items.push(item); } } if (unassigned) columns.push(unassigned); return columns; }
+  function findSession(sessionId) { return state.sessions.find((s) => String(s.id) === String(sessionId)) || null; }
+  function findStudent(session, enrollmentSessionId) { return (session?.students || []).find((st) => String(st.enrollmentSessionId) === String(enrollmentSessionId)) || null; }
+  const GROUP_CLASS_TYPES = new Set(["group", "workshop"]);
+  function isIndividualSession(session) { return !GROUP_CLASS_TYPES.has(session.class_type || session.classType || "individual"); }
+  function normalizeSession(session) {
+    return {
+      ...session,
+      className: session.class_title ?? session.className ?? "",
+      classId: session.class_id ?? session.classId ?? null,
+      instructorId: session.instructor_id ?? session.instructorId ?? null,
+      instructorName: session.instructor_name ?? session.instructorName ?? "",
+      teacherAttendanceStatus: session.teacher_attendance_status ?? session.teacherAttendanceStatus ?? "pending",
+      cancelReason: session.status === "cancelled" ? (session.notes ?? session.cancelReason ?? "") : (session.cancelReason ?? ""),
+      students: Array.isArray(session.students) ? session.students : [],
     };
   }
 
@@ -22,3 +106,115 @@
     return `<button type="button" class="dd-time-value dd-student-time-button" data-action="edit-student-time" data-enrollment-session-id="${student.enrollmentSessionId}" aria-label="ویرایش زمان هنرجو ${esc(student.studentName)}">${student.startTime}–${student.endTime}</button>`;
   }
   function renderStudentTimeForm(session, student) { const err = student.__timeError ? `<div class="dd-time-error">${esc(student.__timeError)}</div>` : ""; return `<form class="dd-time-form" data-action="save-student-time" data-enrollment-session-id="${student.enrollmentSessionId}" onsubmit="return false"><label class="dd-time-form-label">ساعت شروع هنرجو</label><input type="time" name="startTime" value="${student.startTime}" step="300" aria-label="زمان شروع هنرجو" /><span class="dd-time-form-hint">مدت جلسه ۳۰ دقیقه — پایان خودکار محاسبه می‌شود</span><button type="submit" class="save" data-action="submit-student-time" data-enrollment-session-id="${student.enrollmentSessionId}" ${state.saving ? "disabled" : ""}>ذخیره</button><button type="button" data-action="cancel-student-time">انصراف</button>${err}</form>`; }
+  function renderSessionsPanel() {
+    const sessions = visibleSessions();
+    if (!sessions.length) {
+      els.sessionsPanel.innerHTML = `<div class="dd-empty"><div class="dd-empty-title">جلسه‌ای برای نمایش نیست</div><div class="dd-empty-note">فیلتر مدرس یا روز انتخاب‌شده را بررسی کنید.</div></div>`;
+      return;
+    }
+
+    // Visual-only grouping: all students belonging to the same teacher share one card.
+    // Scheduling, attendance, finance, and student time records remain independent.
+    const groups = new Map();
+    for (const session of sessions) {
+      const key = String(session.instructorId ?? session.instructor_id ?? session.instructorName ?? "unknown");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(session);
+    }
+
+    const sortedGroups = [...groups.values()].sort((a, b) => {
+      const aStart = Math.min(...a.map((s) => minutesOf(s.startTime)));
+      const bStart = Math.min(...b.map((s) => minutesOf(s.startTime)));
+      return aStart - bStart;
+    });
+
+    els.sessionsPanel.innerHTML = sortedGroups.map(renderSessionGroupCard).join("");
+  }
+
+  function renderSessionGroupCard(group) {
+    const session = [...group].sort((a, b) => minutesOf(a.startTime) - minutesOf(b.startTime))[0];
+    const allStudents = [];
+    const seen = new Set();
+    for (const memberSession of group) {
+      for (const student of memberSession.students || []) {
+        const key = String(student.enrollmentSessionId ?? `${memberSession.id}:${student.enrollmentId}`);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        allStudents.push({ session: memberSession, student });
+      }
+    }
+
+    const cancelled = group.every((item) => item.status === "cancelled");
+    const conflict = group.some((item) => hasConflict(item, state.sessions));
+    const editing = group.some((item) => state.editingSessionId === item.id);
+    const teacherAttendance = group.some((item) => item.teacherAttendanceStatus === "absent") ? "absent" : group.some((item) => item.teacherAttendanceStatus === "present") ? "present" : "pending";
+    const tags = [];
+    if (cancelled) tags.push(`<span class="dd-session-tag cancelled">لغو شده</span>`);
+    if (conflict && !cancelled) tags.push(`<span class="dd-session-tag conflict">تداخل مدرس/اتاق</span>`);
+    if (session.room_name) tags.push(`<span class="dd-session-tag gold">${esc(session.room_name)}</span>`);
+
+    const exception = group.find((item) => item.calendar_exception_type);
+    const exceptionBanner = exception
+      ? `<div class="dd-exception-banner">امروز «${esc(exception.calendar_exception_title || exception.calendar_exception_type)}» است — این جلسه ممکن است تحت تأثیر قرار گیرد.</div>`
+      : "";
+
+    const startTime = Math.min(...group.map((item) => minutesOf(item.startTime)));
+    const endTime = Math.max(...group.map((item) => minutesOf(item.endTime)));
+    const timeLabel = `${timeOf(startTime)}–${timeOf(endTime)}`;
+
+    return `<article class="dd-session ${cancelled ? "is-cancelled" : ""} ${teacherAttendance === "present" ? "is-teacher-present" : teacherAttendance === "absent" ? "is-teacher-absent" : ""}" data-session-id="${session.id}">
+      <div class="dd-session-head">
+        <div class="dd-session-head-main">
+          <strong>${esc(session.instructorName)}</strong>
+          <span>${esc([...new Set(group.map((item) => item.className).filter(Boolean))].join("، "))}</span>
+          ${editing ? renderTimeForm(session, "panel") : `<span class="dd-time-value">${timeLabel}</span>`}
+          ${tags.join("")}
+        </div>
+        <div class="dd-teacher-attendance"><span>حضور مدرس:</span>${renderTeacherAttendance(session)}</div>
+      </div>
+      ${exceptionBanner}
+      <div class="dd-students">${allStudents.length
+        ? allStudents.map(({ session: studentSession, student }) => renderStudentCard(studentSession, student)).join("")
+        : `<div class="dd-empty-note">هنرجویی برای این جلسه ثبت نشده است.</div>`}
+      </div>
+    </article>`;
+  }
+  function renderTeacherAttendance(session) { const status = session.teacherAttendanceStatus || "pending"; return ["present", "absent"].map((value) => `<button type="button" class="dd-teacher-status ${value} ${status === value ? "is-active" : ""}" data-action="teacher-attendance" data-session-id="${session.id}" data-status="${value}" aria-pressed="${status === value}">${teacherAttendanceLabels[value]}</button>`).join("") || teacherAttendanceLabels.pending; }
+  function badgeClassFor(remaining) { if (remaining == null) return "badge-neutral"; if (remaining <= 0) return "badge-red badge-alarm"; if (remaining === 1) return "badge-orange"; return "badge-green"; }
+  function badgeLabelFor(remaining) { if (remaining == null) return "ماه"; return formatNumber(remaining); }
+  function renderStudentCard(session, student) { const status = student.attendanceStatus || "pending"; const remaining = student.remainingSessions; const financeStatus = student.financialStatus || "none"; const badgeTitle = remaining == null ? "شهریه ماهانه" : remaining <= 0 ? "جلسه باقیمانده‌ای ندارد — نیاز به تمدید/پرداخت" : `${formatNumber(remaining)} جلسه باقیمانده`; const editing = state.editingEnrollmentSessionId === student.enrollmentSessionId; return `<div class="dd-student-card is-${status}" data-enrollment-session-id="${student.enrollmentSessionId}"><div class="dd-student-head"><div class="dd-student-name-row"><span class="dd-student-name">${esc(student.studentName)}</span></div><div class="dd-attendance-buttons" role="group" aria-label="وضعیت حضور ${esc(student.studentName)}">${["present", "absent", "excused", "withdrawn"].map((value) => `<button type="button" class="dd-attendance-button ${value} ${status === value ? "active" : ""}" data-action="attendance" data-enrollment-session-id="${student.enrollmentSessionId}" data-enrollment-id="${student.enrollmentId}" data-status="${value}" aria-pressed="${status === value}" title="${attendanceLabels[value]}">${attendanceLabels[value][0]}</button>`).join("")}</div><div class="dd-student-time-inline">${renderStudentTimeBadge(session, student, editing)}</div></div><div class="dd-student-meta"><span>${student.instrument ? esc(student.instrument) : ""}</span></div>${renderFinanceBox(session, student, remaining, badgeTitle)}</div>`; }
+  function renderFinanceBox(session, student, remaining = student.remainingSessions, badgeTitle = "شهریه ماهانه") { const status = student.financialStatus || "none"; const balance = Number(student.balanceDue ?? 0); const paid = Number(student.amountPaid ?? 0); const total = Number(student.invoiceTotal ?? 0); const showPaymentForm = state.quickPayment?.enrollmentSessionId === student.enrollmentSessionId && !state.quickPayment?.isModal; return `<div class="finance-box"><div class="finance-title"><strong>وضعیت مالی</strong><div class="finance-title-status"><button type="button" class="dd-badge ${badgeClassFor(remaining)}" data-action="open-quick-payment" data-enrollment-session-id="${student.enrollmentSessionId}" title="${esc(badgeTitle)}" aria-label="${esc(student.studentName)} — ${esc(badgeTitle)}">${badgeLabelFor(remaining)}</button><span class="finance-status ${status}">${financeLabels[status] || financeLabels.none}</span></div></div>${student.invoiceId ? `<div class="finance-grid"><div class="finance-item"><span>مبلغ کل</span><b>${formatNumber(total)} تومان</b></div><div class="finance-item"><span>پرداخت‌شده</span><b>${formatNumber(paid)} تومان</b></div><div class="finance-item finance-balance"><span>مانده</span><b>${formatNumber(balance)} تومان</b></div></div>${balance > 0 ? `<button type="button" class="payment-toggle" data-action="toggle-payment-form" data-enrollment-session-id="${student.enrollmentSessionId}">${showPaymentForm ? "بستن فرم پرداخت" : "ثبت پرداخت سریع"}</button>` : ""}${showPaymentForm ? renderPaymentForm(student) : ""}` : `<div class="finance-item"><span>صورتحسابی برای این ترم ثبت نشده است.</span></div>`}${renderRenewalBox(session, student)}</div>`; }
+  function renderPaymentForm(student) { const message = state.quickPayment?.message; return `<form class="payment-form" data-action="submit-payment" data-invoice-id="${student.invoiceId}" data-enrollment-session-id="${student.enrollmentSessionId}" onsubmit="return false"><input type="number" name="amount" min="1000" step="1000" placeholder="مبلغ (تومان)" value="${Math.max(0, Number(student.balanceDue ?? 0))}" required /><select name="method">${Object.entries(paymentMethodLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select><input type="text" name="reference" placeholder="شماره پیگیری (اختیاری)" /><button type="submit" ${state.saving ? "disabled" : ""}>ثبت پرداخت</button>${message ? `<div class="payment-message ${state.quickPayment.messageType}">${esc(message)}</div>` : ""}</form>`; }
+  function renderRenewalBox(session, student) { if (!student.renewalReady) return ""; const showForm = state.quickPayment?.enrollmentSessionId === student.enrollmentSessionId && state.quickPayment?.renewalOpen; return `<div class="renewal-box"><div class="renewal-head"><strong>${student.remainingSessions != null && student.remainingSessions <= 0 ? "جلسات این ترم به پایان رسیده" : "به پایان ترم نزدیک است"}</strong><button type="button" class="renewal-button" data-action="toggle-renewal-form" data-enrollment-session-id="${student.enrollmentSessionId}" data-enrollment-id="${student.enrollmentId}">${showForm ? "بستن" : "تمدید ترم"}</button></div>${showForm ? `<form class="renewal-form" data-action="submit-renewal" data-enrollment-id="${student.enrollmentId}" onsubmit="return false"><label>تاریخ شروع ترم جدید<input type="date" name="startDate" value="${state.date}" required /></label><button type="submit" ${state.saving ? "disabled" : ""}>ثبت تمدید</button></form><div class="renewal-note">تمدید، یک ترم و صورتحساب جدید بر اساس شهریه فعلی هنرجو ایجاد می‌کند.</div>` : ""}</div>`; }
+  function renderModal() { if (!state.quickPayment?.isModal) { els.modal.hidden = true; els.modal.setAttribute("aria-hidden", "true"); return; } const session = state.sessions.find((s) => (s.students || []).some((st) => st.enrollmentSessionId === state.quickPayment.enrollmentSessionId)); const student = session ? findStudent(session, state.quickPayment.enrollmentSessionId) : null; if (!student) { state.quickPayment = null; els.modal.hidden = true; return; } els.modal.hidden = false; els.modal.setAttribute("aria-hidden", "false"); els.modalBody.innerHTML = `<div style="margin-bottom:10px;font-size:13px"><strong>${esc(student.studentName)}</strong> — ${esc(session.className)}</div>${renderFinanceBoxForModal(student)}`; }
+  function renderFinanceBoxForModal(student) { const status = student.financialStatus || "none"; const balance = Number(student.balanceDue ?? 0); const message = state.quickPayment?.message; if (!student.invoiceId) return `<div class="finance-item"><span>صورتحسابی برای این ترم ثبت نشده است.</span></div>`; return `<div class="finance-grid"><div class="finance-item"><span>مبلغ کل</span><b>${formatNumber(student.invoiceTotal)} تومان</b></div><div class="finance-item"><span>پرداخت‌شده</span><b>${formatNumber(student.amountPaid)} تومان</b></div><div class="finance-item finance-balance"><span>مانده</span><b>${formatNumber(balance)} تومان</b></div></div><div class="finance-status ${status}" style="display:inline-block;margin-bottom:10px">${financeLabels[status]}</div>${balance > 0 ? renderPaymentForm(student) : `<div class="payment-message success">این ترم تسویه شده است.</div>`}${message && !balance ? `<div class="payment-message ${state.quickPayment.messageType}">${esc(message)}</div>` : ""}${renderRenewalBox(null, student)}`; }
+
+  async function loadDashboard(date, force) { state.loading = true; state.error = null; render(); try { const data = await apiGetDashboard(date, force); state.date = date; state.sessions = (data.sessions || []).map(normalizeSession); state.rooms = data.rooms || []; state.lastUpdatedAt = new Date().toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }); } catch (err) { state.error = err.message || "دریافت اطلاعات با خطا مواجه شد."; } finally { state.loading = false; render(); } }
+  function changeDate(nextDate) { state.editingSessionId = null; state.editingEnrollmentSessionId = null; state.quickPayment = null; loadDashboard(nextDate); }
+  async function saveStudentTime(enrollmentSessionId, startTime) { const session = state.sessions.find((s) => (s.students || []).some((st) => String(st.enrollmentSessionId) === String(enrollmentSessionId))); const student = session && findStudent(session, enrollmentSessionId); if (!session || !student) return; if (!isValidTime(startTime)) { student.__timeError = "قالب زمان نامعتبر است."; render(); return; } const endTime = timeOf(minutesOf(startTime) + INDIVIDUAL_SESSION_MINUTES); const prevStart = student.startTime, prevEnd = student.endTime; student.startTime = startTime; student.endTime = endTime; student.__timeError = null; state.saving += 1; render(); try { await apiPatchStudentTime(enrollmentSessionId, state.date, startTime, endTime); state.editingEnrollmentSessionId = null; } catch (err) { student.startTime = prevStart; student.endTime = prevEnd; student.__timeError = err.message || "ذخیره زمان هنرجو ناموفق بود."; } finally { state.saving -= 1; render(); } }
+  async function saveSessionTime(sessionId, startTime, endTime) { const session = findSession(sessionId); if (!session) return; if (!isValidTime(startTime) || !isValidTime(endTime)) { session.__timeError = "قالب زمان نامعتبر است."; render(); return; } if (minutesOf(endTime) <= minutesOf(startTime)) { session.__timeError = "زمان پایان باید بعد از زمان شروع باشد."; render(); return; } const prevStart = session.startTime, prevEnd = session.endTime; session.startTime = startTime; session.endTime = endTime; session.__timeError = null; state.saving += 1; render(); try { await apiPatchSessionTime(sessionId, state.date, startTime, endTime, session.room_id ?? undefined); state.editingSessionId = null; } catch (err) { session.startTime = prevStart; session.endTime = prevEnd; session.__timeError = err.message || "ذخیره زمان ناموفق بود."; } finally { state.saving -= 1; render(); } }
+  async function moveSessionToRoom(sessionId, roomId, startTime, endTime) { const session = findSession(sessionId); if (!session) return; const prev = { room_id: session.room_id, startTime: session.startTime, endTime: session.endTime }; session.room_id = roomId; session.startTime = startTime; session.endTime = endTime; state.saving += 1; render(); try { await apiPatchSessionTime(sessionId, state.date, startTime, endTime, roomId); } catch (err) { Object.assign(session, prev); state.error = err.message || "جابجایی جلسه ناموفق بود."; } finally { state.saving -= 1; render(); } }
+  async function setAttendance(enrollmentSessionId, enrollmentId, status) { const session = state.sessions.find((s) => (s.students || []).some((st) => String(st.enrollmentSessionId) === String(enrollmentSessionId))); const student = session && findStudent(session, enrollmentSessionId); if (!student) return; const prevStatus = student.attendanceStatus; const nextStatus = prevStatus === status ? "pending" : status; student.attendanceStatus = nextStatus; render(); try { await apiPostAttendance(enrollmentSessionId, enrollmentId, nextStatus); await loadDashboard(state.date); } catch (err) { student.attendanceStatus = prevStatus; state.error = err.message || "ثبت حضور ناموفق بود."; render(); } }
+  async function setTeacherAttendance(sessionId, status) { const session = findSession(sessionId); if (!session) return; const prevStatus = session.teacherAttendanceStatus; session.teacherAttendanceStatus = prevStatus === status ? "pending" : status; render(); try { const response = await fetch("/api/admin/daily-planner", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json", Accept: "application/json" }, body: JSON.stringify({ classSessionId: sessionId, teacherAttendanceStatus: session.teacherAttendanceStatus }) }); const data = await responseJson(response); if (!response.ok || !data.success) throw new Error(data.message || "ثبت حضور مدرس ناموفق بود."); } catch (err) { session.teacherAttendanceStatus = prevStatus; state.error = err.message || "ثبت حضور مدرس ناموفق بود."; render(); } }
+  async function submitPayment(form) { const invoiceId = Number(form.dataset.invoiceId); const enrollmentSessionId = form.dataset.enrollmentSessionId; const amount = Number(form.elements.amount.value); const method = form.elements.method.value; const reference = form.elements.reference.value.trim(); if (!Number.isFinite(amount) || amount <= 0) { state.quickPayment = { ...state.quickPayment, message: "مبلغ پرداختی معتبر نیست.", messageType: "error" }; render(); return; } state.saving += 1; render(); try { await apiPostPayment(invoiceId, amount, method, reference); state.quickPayment = null; await loadDashboard(state.date); } catch (err) { state.quickPayment = { ...state.quickPayment, enrollmentSessionId, message: err.message || "ثبت پرداخت ناموفق بود.", messageType: "error" }; } finally { state.saving -= 1; render(); } }
+  async function submitRenewal(form) { const enrollmentId = Number(form.dataset.enrollmentId); const startDate = form.elements.startDate.value; if (!startDate) return; state.saving += 1; render(); try { await apiPostRenewal(enrollmentId, startDate); state.quickPayment = null; await loadDashboard(state.date); } catch (err) { state.error = err.message || "تمدید ترم ناموفق بود."; } finally { state.saving -= 1; render(); } }
+
+  const INTERACTIVE_SELECTOR = "button, input, select, textarea, a, form, .dd-time-form, .dd-resize";
+  root.addEventListener("click", (event) => { const actionEl = event.target.closest("[data-action]"); if (!actionEl) return; const action = actionEl.dataset.action; switch (action) { case "retry": state.error = null; loadDashboard(state.date); break; case "edit-time": state.editingEnrollmentSessionId = null; state.editingSessionId = Number(actionEl.dataset.sessionId); { const s = findSession(state.editingSessionId); if (s) s.__timeError = null; } render(); break;
+    case "edit-student-time": state.editingSessionId = null; state.editingEnrollmentSessionId = Number(actionEl.dataset.enrollmentSessionId); { const s = state.sessions.find((x) => (x.students || []).some((st) => String(st.enrollmentSessionId) === String(state.editingEnrollmentSessionId))); const st = s && findStudent(s, state.editingEnrollmentSessionId); if (st) st.__timeError = null; } render(); break;
+    case "cancel-student-time": state.editingEnrollmentSessionId = null; render(); break; case "cancel-time": state.editingSessionId = null; render(); break; case "attendance": setAttendance(actionEl.dataset.enrollmentSessionId, Number(actionEl.dataset.enrollmentId), actionEl.dataset.status); break; case "teacher-attendance": setTeacherAttendance(Number(actionEl.dataset.sessionId), actionEl.dataset.status); break; case "open-quick-payment": state.quickPayment = { enrollmentSessionId: actionEl.dataset.enrollmentSessionId, isModal: true }; render(); break; case "close-modal": state.quickPayment = null; render(); break; case "toggle-payment-form": { const id = actionEl.dataset.enrollmentSessionId; state.quickPayment = state.quickPayment?.enrollmentSessionId === id && !state.quickPayment.isModal ? null : { enrollmentSessionId: id }; render(); break; } case "toggle-renewal-form": { const id = actionEl.dataset.enrollmentSessionId; const isOpen = state.quickPayment?.enrollmentSessionId === id && state.quickPayment.renewalOpen; state.quickPayment = isOpen ? null : { enrollmentSessionId: id, renewalOpen: true }; render(); break; } default: break; } });
+  root.addEventListener("submit", (event) => { const form = event.target.closest("[data-action]"); if (!form) return; event.preventDefault(); switch (form.dataset.action) { case "save-time": { const start = form.elements.startTime.value; const end = form.dataset.individual === "1" ? timeOf(minutesOf(start) + INDIVIDUAL_SESSION_MINUTES) : form.elements.endTime.value; saveSessionTime(Number(form.dataset.sessionId), start, end); break; }
+    case "save-student-time": saveStudentTime(String(form.dataset.enrollmentSessionId), form.elements.startTime.value); break; case "submit-payment": submitPayment(form); break; case "submit-renewal": submitRenewal(form); break; default: break; } });
+  let drag = null;
+  root.addEventListener("pointerdown", (event) => { const card = event.target.closest(".dd-card"); if (!card) return; if (event.target.closest(INTERACTIVE_SELECTOR)) return; const sessionId = Number(card.dataset.sessionId); const session = findSession(sessionId); if (!session || session.status === "cancelled") return; const track = card.closest(".dd-track"); const requestedKind = event.target.closest('[data-action="resize-start"]') ? "resize-start" : event.target.closest('[data-action="resize-end"]') ? "resize-end" : "move"; const kind = isIndividualSession(session) && requestedKind !== "move" ? "move" : requestedKind; drag = { sessionId, kind, pointerId: event.pointerId, track, startX: event.clientX, startTime: session.startTime, endTime: session.endTime, trackRect: track.getBoundingClientRect(), roomId: Number(track.dataset.trackRoomId) || null }; card.setPointerCapture(event.pointerId); card.dataset.dragging = "1"; event.preventDefault(); });
+  root.addEventListener("pointermove", (event) => { if (!drag || event.pointerId !== drag.pointerId) return; const { start, end } = timelineRange(); const totalMinutes = Math.max(60, end - start); const deltaX = event.clientX - drag.startX; const deltaMinutes = snap15((deltaX / drag.trackRect.width) * totalMinutes); const session = findSession(drag.sessionId); if (!session) return; if (drag.kind === "move") { const duration = minutesOf(drag.endTime) - minutesOf(drag.startTime); let newStart = minutesOf(drag.startTime) + deltaMinutes; newStart = Math.max(start, Math.min(end - duration, newStart)); session.startTime = timeOf(newStart); session.endTime = timeOf(newStart + duration); } else if (drag.kind === "resize-start") { let newStart = Math.max(start, Math.min(minutesOf(drag.endTime) - 15, minutesOf(drag.startTime) + deltaMinutes)); session.startTime = timeOf(newStart); } else if (drag.kind === "resize-end") { let newEnd = Math.min(end, Math.max(minutesOf(drag.startTime) + 15, minutesOf(drag.endTime) + deltaMinutes)); session.endTime = timeOf(newEnd); } renderTimeline(); });
+  function endDrag(event) { if (!drag || (event && event.pointerId !== drag.pointerId)) return; const session = findSession(drag.sessionId); const cardEl = root.querySelector(`.dd-card[data-session-id="${drag.sessionId}"]`); if (cardEl) delete cardEl.dataset.dragging; if (session) { const changed = session.startTime !== drag.startTime || session.endTime !== drag.endTime; if (changed) moveSessionToRoom(drag.sessionId, session.room_id ?? drag.roomId, session.startTime, session.endTime); } drag = null; }
+  root.addEventListener("pointerup", endDrag); root.addEventListener("pointercancel", endDrag);
+  root.querySelector("#prev").addEventListener("click", () => { const d = new Date(state.date); d.setDate(d.getDate() - 1); changeDate(localDateString(d)); });
+  root.querySelector("#next").addEventListener("click", () => { const d = new Date(state.date); d.setDate(d.getDate() + 1); changeDate(localDateString(d)); });
+  root.querySelector("#today").addEventListener("click", () => changeDate(todayKey()));
+  root.querySelector("#refresh").addEventListener("click", () => loadDashboard(state.date, true));
+  setInterval(() => { renderClock(); }, 30_000);
+  setInterval(() => { if (state.editingSessionId == null && state.editingEnrollmentSessionId == null && !state.quickPayment && !drag) loadDashboard(state.date); }, 120_000);
+  loadDashboard(state.date);
+})();
