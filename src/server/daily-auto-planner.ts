@@ -204,8 +204,13 @@ export async function buildDailyAutoPlan(
     for (const other of externalSessions) {
       if (other.sessionId === slot.session.sessionId || other.instructorId === slot.session.instructorId) continue;
 
-      // Parent session is the authoritative reservation for another teacher.
-      if (overlaps(start, end, minutes(other.startTime), minutes(other.endTime))) return true;
+      // Different teachers may teach simultaneously. Only the same room or
+      // the same student creates an external conflict.
+      if (
+        slot.session.roomId !== null &&
+        other.roomId === slot.session.roomId &&
+        overlaps(start, end, minutes(other.startTime), minutes(other.endTime))
+      ) return true;
 
       // A student can also have another lesson outside this teacher's chain.
       if (slot.student && other.students.some((student) => student.studentId === slot.student!.studentId)) {
@@ -220,11 +225,6 @@ export async function buildDailyAutoPlan(
       }
 
       // Keep rooms collision-free between different teachers.
-      if (
-        slot.session.roomId !== null &&
-        other.roomId === slot.session.roomId &&
-        overlaps(start, end, minutes(other.startTime), minutes(other.endTime))
-      ) return true;
     }
     return false;
   };
