@@ -177,7 +177,7 @@ export async function buildDailyAutoPlan(
       const upper = direction === "forward" ? originalStart : 22 * 60 - duration;
       for (let start = direction === "forward" ? lower : originalStart; direction === "forward" ? start <= upper : start <= upper; start += 15) {
         if (direction === "forward" && start > originalStart) break;
-        if (direction === "backward" && start < originalStart) continue;
+        if (direction === "backward" && start > originalStart) continue;
         const end = start + duration;
         if (end > 22 * 60 || start < 8 * 60) continue;
 
