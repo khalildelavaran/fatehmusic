@@ -186,9 +186,8 @@ export async function buildDailyAutoPlan(
   const studentChanges: AutoPlannerStudentChange[] = [];
   const questions: AutoPlannerQuestion[] = [];
 
-  // The important unit is an active student slot, not the parent class session.
-  // Absent/excused students are deliberately excluded from the chain, so their
-  // old 30-minute slot becomes available to the next active student.
+  // Build one continuous chain per teacher. The chain contains ACTIVE students
+  // only; absent/excused students are intentionally removed from the chain.
   const teacherGroups = new Map<number, WorkingSession[]>();
   for (const session of active) {
     const key = Number(session.instructorId);
@@ -196,60 +195,105 @@ export async function buildDailyAutoPlan(
     teacherGroups.get(key)!.push(session);
   }
 
-  const groups = [...teacherGroups.values()].sort((a, b) =>
-    Math.min(...a.map((session) => minutes(session.startTime))) -
-    Math.min(...b.map((session) => minutes(session.startTime)))
-  );
+  const externalSessions = active;
+  const isExternallyBlocked = (
+    slot: StudentSlot,
+    start: number,
+    end: number,
+  ): boolean => {
+    for (const other of externalSessions) {
+      if (other.sessionId === slot.session.sessionId || other.instructorId === slot.session.instructorId) continue;
 
-  for (const group of groups) {
-    const slots = group.flatMap(sessionSlots);
+      // Parent session is the authoritative reservation for another teacher.
+      if (overlaps(start, end, minutes(other.startTime), minutes(other.endTime))) return true;
+
+      // A student can also have another lesson outside this teacher's chain.
+      if (slot.student && other.students.some((student) => student.studentId === slot.student!.studentId)) {
+        for (const otherStudent of activeStudents(other)) {
+          if (overlaps(
+            start,
+            end,
+            minutes(otherStudent.startTime || other.startTime),
+            minutes(otherStudent.endTime || other.endTime),
+          )) return true;
+        }
+      }
+
+      // Keep rooms collision-free between different teachers.
+      if (
+        slot.session.roomId !== null &&
+        other.roomId === slot.session.roomId &&
+        overlaps(start, end, minutes(other.startTime), minutes(other.endTime))
+      ) return true;
+    }
+    return false;
+  };
+
+  for (const group of teacherGroups.values()) {
+    const slots = group
+      .flatMap(sessionSlots)
+      .sort((a, b) =>
+        direction === "backward"
+          ? b.end - a.end || b.session.sessionId - a.session.sessionId
+          : a.start - b.start || a.session.sessionId - b.session.sessionId
+      );
 
     if (!slots.length) continue;
-
-    slots.sort((a, b) =>
-      direction === "backward"
-        ? b.end - a.end || b.session.sessionId - a.session.sessionId
-        : a.start - b.start || a.session.sessionId - b.session.sessionId
-    );
 
     const anchor = direction === "backward"
       ? Math.max(...slots.map((slot) => slot.end))
       : Math.min(...slots.map((slot) => slot.start));
 
     let cursor = anchor;
-
-    // Sessions belonging to this teacher are packed continuously. We only block
-    // against sessions owned by other teachers and against other active lessons
-    // of the same student.
     const packed = new Map<number, { session: WorkingSession; start: number; end: number }>();
 
     for (const slot of slots) {
-      const targetStart = direction === "backward" ? cursor - slot.duration : cursor;
-      const targetEnd = targetStart + slot.duration;
+      const desired = direction === "backward"
+        ? cursor - slot.duration
+        : cursor;
 
-      if (!canUseSlot(slot, targetStart, targetEnd, working)) {
+      let chosenStart: number | null = null;
+
+      // Prefer the exact continuous position. If an external reservation blocks
+      // it, move only as far as necessary while retaining the requested direction.
+      for (let distance = 0; distance <= 14 * 60; distance += 15) {
+        const candidate = direction === "forward"
+          ? desired + distance
+          : desired - distance;
+        const end = candidate + slot.duration;
+
+        if (candidate < 8 * 60 || end > 22 * 60) continue;
+        if (isExternallyBlocked(slot, candidate, end)) continue;
+
+        chosenStart = candidate;
+        break;
+      }
+
+      if (chosenStart === null) {
         questions.push({
           type: "unresolved_conflict",
           sessionId: slot.session.sessionId,
-          message: `برای «${slot.session.className}» زمان پیوسته ${time(targetStart)}–${time(targetEnd)} به دلیل تداخل استاد، اتاق یا برنامه هنرجو قابل استفاده نیست؛ تصمیم منشی لازم است.`,
+          message: `برای «${slot.session.className}» زمان مناسب برای چینش ${direction === "backward" ? "از آخر به اول" : "از اول به آخر"} پیدا نشد؛ تصمیم منشی لازم است.`,
         });
         continue;
       }
 
-      if (slot.student?.enrollmentSessionId) {
-        const nextStart = time(targetStart);
-        const nextEnd = time(targetEnd);
-        const originalStart = slot.start;
-        const originalEnd = slot.end;
+      const chosenEnd = chosenStart + slot.duration;
 
-        if (nextStart !== time(originalStart) || nextEnd !== time(originalEnd)) {
+      if (slot.student?.enrollmentSessionId) {
+        const fromStart = time(slot.start);
+        const fromEnd = time(slot.end);
+        const toStart = time(chosenStart);
+        const toEnd = time(chosenEnd);
+
+        if (fromStart !== toStart || fromEnd !== toEnd) {
           studentChanges.push({
             enrollmentSessionId: slot.student.enrollmentSessionId,
             studentId: slot.student.studentId,
             studentName: slot.student.studentName,
             sessionId: slot.session.sessionId,
-            from: { startTime: time(originalStart), endTime: time(originalEnd) },
-            to: { startTime: nextStart, endTime: nextEnd },
+            from: { startTime: fromStart, endTime: fromEnd },
+            to: { startTime: toStart, endTime: toEnd },
           });
         }
       }
@@ -258,15 +302,15 @@ export async function buildDailyAutoPlan(
       if (!existing) {
         packed.set(slot.session.sessionId, {
           session: slot.session,
-          start: targetStart,
-          end: targetEnd,
+          start: chosenStart,
+          end: chosenEnd,
         });
       } else {
-        existing.start = Math.min(existing.start, targetStart);
-        existing.end = Math.max(existing.end, targetEnd);
+        existing.start = Math.min(existing.start, chosenStart);
+        existing.end = Math.max(existing.end, chosenEnd);
       }
 
-      cursor = direction === "backward" ? targetStart : targetEnd;
+      cursor = direction === "backward" ? chosenStart : chosenEnd;
     }
 
     for (const plan of packed.values()) {
@@ -295,29 +339,28 @@ export async function buildDailyAutoPlan(
           score: 100,
           reasons: [
             direction === "backward" ? "چینش از آخر به اول" : "چینش از اول به آخر",
-            "حذف فاصله‌های خالی بین هنرجویان فعال",
-            "نادیده‌گرفتن هنرجوی غایب/مرخصی در زنجیره چینش",
-            "حفظ تداخل‌نداشتن زمان استاد، اتاق و برنامه هنرجو",
+            "حذف فاصله بین هنرجویان فعال",
+            "حذف هنرجوی غایب/مرخصی از زنجیره",
+            "حفظ تداخل‌نداشتن استاد، اتاق و برنامه هنرجو",
           ],
         });
       }
     }
   }
 
-  const movedMinutes = studentChanges.reduce((sum, change) =>
-    sum + Math.abs(minutes(change.from.startTime) - minutes(change.to.startTime)), 0
+  const movedMinutes = studentChanges.reduce(
+    (sum, change) => sum + Math.abs(minutes(change.from.startTime) - minutes(change.to.startTime)),
+    0,
   );
 
-  const removedNames = working
-    .filter((session) => session.removed)
-    .map((session) => session.className);
+  const removedNames = working.filter((session) => session.removed).map((session) => session.className);
 
   const summary = [
     removedNames.length
       ? `${removedNames.length} جلسه به دلیل غیبت/مرخصی از برنامه حذف شد.`
       : "جلسه‌ای برای حذف خودکار وجود ندارد.",
-    changes.length || studentChanges.length
-      ? `${studentChanges.length} زمان هنرجو و ${changes.length} بازه جلسه برای فشرده‌سازی پیشنهاد شد (${movedMinutes} دقیقه جابه‌جایی).`
+    studentChanges.length || changes.length
+      ? `${studentChanges.length} زمان هنرجو و ${changes.length} بازه جلسه برای فشرده‌سازی جابه‌جا می‌شود (${movedMinutes} دقیقه).`
       : "نیازی به جابه‌جایی خودکار تشخیص داده نشد.",
     `جهت چینش: ${direction === "backward" ? "از آخر به اول" : "از اول به آخر"}.`,
     questions.length
