@@ -11,7 +11,7 @@ const headers=()=>({"Content-Type":"application/json"});
 const POLL_INTERVAL_MS=30000;
 let pollTimer=null;
 let registrations=[];
-let editOptions={courses:[],weekdays:[]};
+let editOptions={courses:[],weekdays:[],schedules:[]};
 
 function esc(value){
   return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
@@ -45,10 +45,20 @@ function openEditModal(item){
   document.querySelector("#editAddress").value=item.student_address||"";
   populateSelect(document.querySelector("#editCourse"),editOptions.courses,"id","title",item.instrument_id);
   populateSelect(document.querySelector("#editWeekday"),editOptions.weekdays.map(x=>({value:x,label:x})),"value","label",item.schedule_weekday);
-  setEditStatus("مدرس فعلی: "+(item.instructor_name||"—")+" · با تغییر روز، برنامه همان مدرس در آن روز انتخاب می‌شود.");
+  setEditStatus("مدرس فعلی: "+(item.instructor_name||"—")+" · با تغییر دوره، مدرس و برنامه متناسب با دوره تنظیم می‌شود.");
   modal.hidden=false;
   document.body.classList.add("admin-modal-open");
   document.querySelector("#editFirstName").focus();
+}
+
+function updateWeekdayOptions(courseId,currentInstructorId,currentWeekday){
+  const select=document.querySelector("#editWeekday");
+  const course=editOptions.courses.find(x=>Number(x.id)===Number(courseId));
+  const instructorIds=(course?.instructors||[]).map(Number);
+  const schedules=(editOptions.schedules||[]).filter(x=>instructorIds.includes(Number(x.instructorId)));
+  const days=[...new Set(schedules.map(x=>x.weekday).filter(Boolean))];
+  const value=days.includes(currentWeekday)?currentWeekday:(days[0]||"");
+  populateSelect(select,days.map(x=>({value:x,label:x})),"value","label",value);
 }
 
 function closeEditModal(){
@@ -167,7 +177,7 @@ editForm?.addEventListener("submit",async event=>{
   try{
     const r=await fetch("/api/admin/registrations",{method:"PATCH",headers:headers(),credentials:"same-origin",body:JSON.stringify(payload)});
     if(r.status===401){location.assign("/admin/login");return}
-    const d=await r.json();
+    const d=await r.json().catch(()=>({success:false,message:"پاسخ نامعتبر از سرور دریافت شد."}));
     if(!d.success){setEditStatus(d.message||"ذخیره تغییرات انجام نشد.");return}
     closeEditModal();
     await loadRegistrations({silent:true});
@@ -176,6 +186,12 @@ editForm?.addEventListener("submit",async event=>{
   finally{save.disabled=false}
 });
 
+document.querySelector("#editCourse")?.addEventListener("change",event=>{
+  const courseId=event.target.value;
+  const currentWeekday=document.querySelector("#editWeekday").value;
+  const item=registrations.find(x=>Number(x.id)===Number(document.querySelector("#editRegistrationId").value));
+  updateWeekdayOptions(courseId,item?.instructor_id,currentWeekday);
+});
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&modal&&!modal.hidden)closeEditModal()});
 
 body.addEventListener("change",async event=>{
