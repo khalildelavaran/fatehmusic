@@ -14,9 +14,43 @@ if (!allowedRoles.includes(session.role)) return Astro.redirect("/admin");
 ---
 <MainLayout title="مدیریت ثبت‌نام‌ها | آموزشگاه موسیقی فاتح" noindex={true}>
   <div class="admin-layout"><AdminNav session={session} active="registration" /><main class="admin-main"><div class="admin-shell" data-admin-registrations>
-    <section class="admin-hero no-print"><p>ثبت‌نام‌ها</p><h1>ثبت‌نام‌های سایت</h1><p>مشاهده، پیگیری و پرینت ثبت‌نام‌ها.</p></section>
+    <section class="admin-hero no-print"><p>ثبت‌نام‌ها</p><h1>ثبت‌نام‌های سایت</h1><p>مشاهده، پیگیری، ویرایش و پرینت ثبت‌نام‌ها.</p></section>
     <section class="admin-login no-print"><p>وارد شده به‌عنوان: <strong>{session.username}</strong></p><p class="admin-live-status" id="liveStatus">در حال بارگذاری...</p><button id="printRegistrations" type="button" data-print-target="#registrationsPrintArea" data-print-title="فهرست ثبت‌نام‌ها">پرینت</button></section>
     <section id="registrationsPrintArea" class="admin-table-wrap"><table class="admin-table"><thead><tr><th>کد</th><th>هنرجو</th><th>کد ملی</th><th>موبایل</th><th>دوره</th><th>استاد</th><th>زمان</th><th>وضعیت</th><th class="no-print">عملیات</th></tr></thead><tbody id="registrationsBody"><tr><td colspan="9" class="admin-table-empty">در حال بارگذاری ثبت‌نام‌ها...</td></tr></tbody></table></section>
+
+    <div id="registrationEditModal" class="admin-modal" hidden>
+      <div class="admin-modal-backdrop" data-close-registration-modal></div>
+      <section class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="registrationEditTitle">
+        <div class="admin-modal-header">
+          <div><span class="admin-modal-eyebrow">ثبت‌نام</span><h2 id="registrationEditTitle">ویرایش ثبت‌نام</h2></div>
+          <button type="button" class="admin-modal-close" data-close-registration-modal aria-label="بستن">×</button>
+        </div>
+        <form id="registrationEditForm" class="admin-form">
+          <input type="hidden" id="editRegistrationId">
+          <div class="admin-form-grid">
+            <label>دوره<select id="editCourse" required></select></label>
+            <label>روز<select id="editWeekday" required></select></label>
+            <label>نام<input id="editFirstName" required></label>
+            <label>نام خانوادگی<input id="editLastName" required></label>
+            <label>کد ملی<input id="editNationalCode" dir="ltr" readonly></label>
+            <label>موبایل<input id="editMobile" dir="ltr" required></label>
+            <label>سن<input id="editAge" type="number" min="0" max="120"></label>
+            <label>جنسیت<select id="editGender"><option value="male">مرد</option><option value="female">زن</option><option value="">نامشخص</option></select></label>
+            <label>ساز شخصی<select id="editHasInstrument"><option value="yes">دارد</option><option value="no">ندارد</option></select></label>
+            <label>نام پدر<input id="editFatherName"></label>
+            <label>محل صدور<input id="editIdIssuePlace"></label>
+            <label>سال تولد<input id="editBirthYear" type="number" min="1200" max="1600"></label>
+            <label>شغل<input id="editOccupation"></label>
+            <label class="admin-form-full">آدرس<textarea id="editAddress" rows="2"></textarea></label>
+          </div>
+          <p id="editRegistrationStatus" class="admin-live-status"></p>
+          <div class="admin-modal-actions">
+            <button type="button" class="admin-document-btn" data-close-registration-modal>انصراف</button>
+            <button type="submit" class="admin-document-btn admin-primary-action" id="saveRegistrationEdit">ذخیره تغییرات</button>
+          </div>
+        </form>
+      </section>
+    </div>
   </div></main></div>
   <script>import "../../scripts/admin/registrations.js";</script>
 </MainLayout>
