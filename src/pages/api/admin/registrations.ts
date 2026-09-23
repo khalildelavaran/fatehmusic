@@ -35,7 +35,8 @@ export const GET: APIRoute = async ({ request }) => {
     .map((course: any) => ({
       id: Number(course.id),
       title: String(course.title ?? ""),
-      slug: String(course.slug ?? "")
+      slug: String(course.slug ?? ""),
+      instructors: Array.isArray(course.instructors) ? course.instructors.map((value: any) => Number(value)).filter(Boolean) : []
     }));
 
   const weekdayOptions = [...new Set(
@@ -92,16 +93,27 @@ export const PATCH: APIRoute = async ({ request }) => {
       if (!course) return json({ success: false, message: "دوره انتخاب‌شده معتبر نیست." }, 422);
 
       const weekday = cleanText(body.weekday, 40);
+      const courseInstructorIds = Array.isArray((course as any).instructors)
+        ? (course as any).instructors.map((value: any) => Number(value)).filter(Boolean)
+        : [];
+      if (!courseInstructorIds.length) {
+        return json({ success: false, message: "برای این دوره مدرس تعریف نشده است." }, 422);
+      }
+
+      const instructorId = courseInstructorIds.includes(Number(existing.instructor_id))
+        ? Number(existing.instructor_id)
+        : courseInstructorIds[0];
+
       const matchingSchedules = schedules.filter(
         (schedule: any) =>
           schedule.active !== false &&
           String(schedule.weekday ?? "").trim() === weekday &&
-          Number(schedule.instructorId) === Number(existing.instructor_id)
+          Number(schedule.instructorId) === instructorId
       );
       if (!matchingSchedules.length) {
         return json({
           success: false,
-          message: "برای مدرس فعلی در این روز برنامه‌ای ثبت نشده است. ابتدا برنامه مدرس را اصلاح کنید."
+          message: "برای مدرس این دوره در روز انتخاب‌شده برنامه‌ای ثبت نشده است. روز دیگری را انتخاب کنید."
         }, 422);
       }
 
@@ -129,6 +141,8 @@ export const PATCH: APIRoute = async ({ request }) => {
           instrument_id = ?,
           instrument_title = ?,
           instrument_slug = ?,
+          instructor_id = ?,
+          instructor_name = ?,
           schedule_id = ?,
           schedule_weekday = ?,
           schedule_classroom = ?,
@@ -149,6 +163,8 @@ export const PATCH: APIRoute = async ({ request }) => {
         course.id,
         course.title,
         course.slug,
+        instructorId,
+        selectedInstructor?.name ?? null,
         selectedSchedule.id,
         selectedSchedule.weekday,
         selectedSchedule.classroom ?? null,
