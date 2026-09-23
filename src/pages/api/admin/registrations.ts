@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { courses } from "../../../data/courses";
 import { schedules } from "../../../data/schedule";
+import { instructors } from "../../../data/instructors";
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN, ROLES.REGISTRAR]);
@@ -47,7 +48,7 @@ export const GET: APIRoute = async ({ request }) => {
   return json({
     success: true,
     registrations: result.results,
-    editOptions: { courses: courseOptions, weekdays: weekdayOptions }
+    editOptions: { courses: courseOptions, weekdays: weekdayOptions, schedules: schedules.filter((schedule: any) => schedule.active !== false).map((schedule: any) => ({ id: Number(schedule.id), instructorId: Number(schedule.instructorId), weekday: String(schedule.weekday ?? ""), classroom: schedule.classroom ?? null, sessionDuration: schedule.sessionDuration ?? null })) }
   });
 };
 
@@ -105,6 +106,7 @@ export const PATCH: APIRoute = async ({ request }) => {
       }
 
       const selectedSchedule = matchingSchedules[0];
+      const selectedInstructor = instructors.find((item: any) => Number(item.id) === instructorId);
       const firstName = cleanText(body.firstName, 100);
       const lastName = cleanText(body.lastName, 100);
       const mobile = cleanText(body.mobile, 40);
