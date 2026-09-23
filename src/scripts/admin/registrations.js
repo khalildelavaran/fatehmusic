@@ -44,14 +44,14 @@ function openEditModal(item){
   document.querySelector("#editOccupation").value=item.student_occupation||"";
   document.querySelector("#editAddress").value=item.student_address||"";
   populateSelect(document.querySelector("#editCourse"),editOptions.courses,"id","title",item.instrument_id);
-  populateSelect(document.querySelector("#editWeekday"),editOptions.weekdays.map(x=>({value:x,label:x})),"value","label",item.schedule_weekday);
+  updateWeekdayOptions(item.instrument_id,item.schedule_weekday);
   setEditStatus("مدرس فعلی: "+(item.instructor_name||"—")+" · با تغییر دوره، مدرس و برنامه متناسب با دوره تنظیم می‌شود.");
   modal.hidden=false;
   document.body.classList.add("admin-modal-open");
   document.querySelector("#editFirstName").focus();
 }
 
-function updateWeekdayOptions(courseId,currentInstructorId,currentWeekday){
+function updateWeekdayOptions(courseId,currentWeekday){
   const select=document.querySelector("#editWeekday");
   const course=editOptions.courses.find(x=>Number(x.id)===Number(courseId));
   const instructorIds=(course?.instructors||[]).map(Number);
@@ -155,6 +155,7 @@ body.addEventListener("click",async event=>{
 editForm?.addEventListener("submit",async event=>{
   event.preventDefault();
   const save=document.querySelector("#saveRegistrationEdit");
+  if(!(save instanceof HTMLButtonElement)){setEditStatus("دکمه ذخیره پیدا نشد.");return}
   save.disabled=true;
   setEditStatus("در حال ذخیره تغییرات...");
   const payload={
@@ -190,7 +191,7 @@ document.querySelector("#editCourse")?.addEventListener("change",event=>{
   const courseId=event.target.value;
   const currentWeekday=document.querySelector("#editWeekday").value;
   const item=registrations.find(x=>Number(x.id)===Number(document.querySelector("#editRegistrationId").value));
-  updateWeekdayOptions(courseId,item?.instructor_id,currentWeekday);
+  updateWeekdayOptions(courseId,currentWeekday);
 });
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&modal&&!modal.hidden)closeEditModal()});
 
