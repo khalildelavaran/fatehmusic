@@ -1,61 +1,57 @@
-/* Registrations-page-specific tweaks. Shared table styles live in base.css
-   so the posts page (which uses the same table pattern) doesn't need to
-   duplicate them. */
+/* Registrations-page-specific tweaks. Shared table styles live in base.css. */
 
-.admin-live-status{
-    color:var(--text-secondary);
-    font-size:13px;
-}
-
-.admin-registration-actions{
-    min-width:170px;
-}
-
-.admin-registration-actions select{
-    width:100%;
-    margin-bottom:7px;
-}
-
+.admin-live-status{color:var(--text-secondary);font-size:13px}
+.admin-registration-actions{min-width:180px}
+.admin-registration-actions select{width:100%;margin-bottom:7px}
 .admin-document-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-height:32px;
-    margin:2px 0;
-    padding:6px 10px;
-    border:1px solid rgba(212,175,55,.35);
-    border-radius:8px;
-    background:rgba(212,175,55,.08);
-    color:var(--gold-light);
-    font:inherit;
-    font-size:12px;
-    font-weight:600;
-    text-decoration:none;
-    cursor:pointer;
-    transition:var(--transition);
+  display:inline-flex;align-items:center;justify-content:center;min-height:32px;margin:2px 0;
+  padding:6px 10px;border:1px solid rgba(212,175,55,.35);border-radius:8px;
+  background:rgba(212,175,55,.08);color:var(--gold-light);font:inherit;font-size:12px;
+  font-weight:600;text-decoration:none;cursor:pointer;transition:var(--transition)
 }
-
-.admin-document-btn:hover:not(:disabled),
-.admin-document-btn:focus-visible{
-    border-color:var(--gold);
-    background:rgba(212,175,55,.16);
-    transform:translateY(-1px);
+.admin-document-btn:hover:not(:disabled),.admin-document-btn:focus-visible{
+  border-color:var(--gold);background:rgba(212,175,55,.16);transform:translateY(-1px)
 }
+.admin-document-btn:disabled{opacity:.65;cursor:wait}
+.admin-primary-action{background:var(--gold);color:#111;border-color:var(--gold)}
+.admin-primary-action:hover:not(:disabled),.admin-primary-action:focus-visible{background:var(--gold-light);color:#111}
 
-.admin-document-btn:disabled{
-    opacity:.65;
-    cursor:wait;
+.admin-modal[hidden]{display:none}
+.admin-modal{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px}
+.admin-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(3px)}
+.admin-modal-card{
+  position:relative;width:min(900px,100%);max-height:min(90vh,900px);overflow:auto;
+  padding:24px;border:1px solid rgba(212,175,55,.28);border-radius:16px;
+  background:var(--surface,#111);box-shadow:0 24px 80px rgba(0,0,0,.5);direction:rtl
 }
-
-@media (max-width: 900px){
-    .admin-registration-actions{
-        min-width:145px;
-    }
+.admin-modal-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.admin-modal-eyebrow{display:block;color:var(--gold-light);font-size:12px;margin-bottom:4px}
+.admin-modal-header h2{margin:0;font-size:21px}
+.admin-modal-close{
+  width:36px;height:36px;border:1px solid rgba(255,255,255,.12);border-radius:9px;
+  background:transparent;color:var(--text-primary,#fff);font-size:24px;line-height:1;cursor:pointer
 }
+.admin-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.admin-form-grid label{display:flex;flex-direction:column;gap:6px;color:var(--text-secondary);font-size:13px}
+.admin-form-grid input,.admin-form-grid select,.admin-form-grid textarea{
+  width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;background:rgba(255,255,255,.04);color:var(--text-primary,#fff);font:inherit
+}
+.admin-form-grid input:focus,.admin-form-grid select:focus,.admin-form-grid textarea:focus{
+  outline:none;border-color:var(--gold)
+}
+.admin-form-grid input[readonly]{opacity:.65;cursor:not-allowed}
+.admin-form-full{grid-column:1/-1}
+.admin-modal-actions{display:flex;justify-content:flex-start;gap:8px;margin-top:16px}
+.admin-modal-open{overflow:hidden}
 
+@media (max-width:900px){
+  .admin-registration-actions{min-width:145px}
+  .admin-modal{padding:10px}
+  .admin-modal-card{padding:18px}
+  .admin-form-grid{grid-template-columns:1fr}
+  .admin-form-full{grid-column:auto}
+}
 @media print{
-    .admin-live-status,
-    .admin-registration-actions{
-        display:none;
-    }
+  .admin-live-status,.admin-registration-actions,.admin-modal{display:none!important}
 }
