@@ -4,7 +4,23 @@ import Header from "./Header.astro";
 import Footer from "./Footer.astro";
 import FAQSection from "./FAQSection.astro";
 
-const { style, site } = Astro.props;
+interface GuitarStyle {
+  slug: string;
+  title: string;
+  shortTitle: string;
+  description: string;
+  overview: string;
+  focus: string;
+  image: string;
+  keywords: string[];
+  audience: string[];
+  prerequisites: string;
+  curriculum: [string, string][];
+  faqs: [string, string][];
+  schema: object[];
+}
+interface Props { style: GuitarStyle; site: { url: string } }
+const { style, site } = Astro.props as Props;
 const parentUrl = `${site.url}/courses/guitar-course`;
 const canonicalUrl = `${site.url}/courses/${style.slug}`;
 const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
@@ -18,7 +34,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
   entityType="Course"
   canonical={canonicalUrl}
   schema={style.schema}
-  answerBlocks={style.faqs.map(([question, answer]) => ({
+  answerBlocks={style.faqs.map(([question, answer]: [string, string]) => ({
     question,
     answer,
     sourceUrl: canonicalUrl,
@@ -46,7 +62,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
   auditContext={{
     h1Count: 1,
     missingImageAlt: 0,
-    wordCount: `${style.overview} ${style.curriculum.map((item) => item[0] + " " + item[1]).join(" ")} ${style.faqs.flat().join(" ")}`.trim().split(/\s+/).length,
+    wordCount: `${style.overview} ${style.curriculum.map((item: [string, string]) => item[0] + " " + item[1]).join(" ")} ${style.faqs.flat().join(" ")}`.trim().split(/\s+/).length,
     internalLinkCount: 3
   }}
 >
@@ -90,7 +106,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
     <div class="container">
       <h2>مخاطبان این مسیر</h2>
       <ul class="course-page__features">
-        {style.audience.map((item) => <li>{item}</li>)}
+        {style.audience.map((item: string) => <li>{item}</li>)}
       </ul>
       <p><strong>پیش‌نیاز:</strong> {style.prerequisites}</p>
     </div>
@@ -100,8 +116,8 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
     <div class="container">
       <h2>سرفصل‌های آموزش {style.shortTitle}</h2>
       <div class="course-page__related-grid">
-        {style.curriculum.map(([title, description], index) => (
-          <article class="course-card" key={title}>
+        {style.curriculum.map(([title, description]: [string, string], index: number) => (
+          <article class="course-card">
             <div class="course-content">
               <span>مرحله {index + 1}</span>
               <h3>{title}</h3>
