@@ -19,7 +19,7 @@
 </section>
 
 <script>
-  const successStep = document.querySelector('[data-step="success"]');
+  const successStep = document.querySelector<HTMLElement>('[data-step="success"]');
   let submitScrollY = 0;
 
   document.addEventListener('click', (event) => {
