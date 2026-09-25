@@ -17,6 +17,7 @@ import {
   resolveSite,
   resolveInstructor,
   buildPersonSchema,
+  buildProfilePageSchema,
   buildBreadcrumbSchema,
   answersFromFaq
 } from "../../seo/index.js";
@@ -48,12 +49,13 @@ type InstructorSeoContent = {
 
 const seoContent = resolvedInstructor.seoContent as InstructorSeoContent | null;
 const personSchema = buildPersonSchema(resolvedInstructor, { site });
+const profilePageSchema = buildProfilePageSchema(resolvedInstructor, { site });
 const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "خانه", path: "/" },
   { name: "اساتید", path: "/instructors" },
   { name: teacher.name, path: `/instructors/${teacher.slug}` }
 ], site);
-const schema: object[] = [personSchema, breadcrumbSchema].filter(
+const schema: object[] = [profilePageSchema, personSchema, breadcrumbSchema].filter(
   (item): item is object => item !== null
 );
 
