@@ -22,7 +22,9 @@ const courseListSchema = buildItemListSchema({
     items: activeCourses.map((course) => ({
         name: course.title,
         url: `${site.url}/courses/${course.slug}`,
-        id: `${site.url}/courses/${course.slug}/#course`
+        id: `${site.url}/courses/${course.slug}/#course`,
+        description: course.description,
+        provider: { "@id": `${site.url}/#organization` }
     }))
 });
 ---
