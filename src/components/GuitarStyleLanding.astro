@@ -15,8 +15,8 @@ interface GuitarStyle {
   keywords: string[];
   audience: string[];
   prerequisites: string;
-  curriculum: [string, string][];
-  faqs: [string, string][];
+  curriculum: string[][];
+  faqs: string[][];
   schema: object[];
 }
 interface Props { style: GuitarStyle; site: { url: string } }
@@ -34,7 +34,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
   entityType="Course"
   canonical={canonicalUrl}
   schema={style.schema}
-  answerBlocks={style.faqs.map(([question, answer]: [string, string]) => ({
+  answerBlocks={style.faqs.map(([question, answer]) => ({
     question,
     answer,
     sourceUrl: canonicalUrl,
@@ -62,7 +62,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
   auditContext={{
     h1Count: 1,
     missingImageAlt: 0,
-    wordCount: `${style.overview} ${style.curriculum.map((item: [string, string]) => item[0] + " " + item[1]).join(" ")} ${style.faqs.flat().join(" ")}`.trim().split(/\s+/).length,
+    wordCount: `${style.overview} ${style.curriculum.map((item) => item[0] + " " + item[1]).join(" ")} ${style.faqs.flat().join(" ")}`.trim().split(/\s+/).length,
     internalLinkCount: 3
   }}
 >
@@ -116,7 +116,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
     <div class="container">
       <h2>سرفصل‌های آموزش {style.shortTitle}</h2>
       <div class="course-page__related-grid">
-        {style.curriculum.map(([title, description]: [string, string], index: number) => (
+        {style.curriculum.map(([title, description], index: number) => (
           <article class="course-card">
             <div class="course-content">
               <span>مرحله {index + 1}</span>
