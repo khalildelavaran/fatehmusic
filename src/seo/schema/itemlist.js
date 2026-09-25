@@ -8,9 +8,9 @@
  * @param {Object} params
  * @param {string} params.name
  * @param {string} params.url
- * @param {Array<{name:string,url:string,id?:string}>} params.items
+ * @param {Array<{name:string,url:string,id?:string,description?:string,provider?:Object}>} params.items
  * @param {string} [params.itemType]
- * @returns {Object}
+ * @returns {Object|null}
  */
 export function buildItemListSchema({
     name,
@@ -28,7 +28,9 @@ export function buildItemListSchema({
                 "@id": item.id || item.url,
                 url: item.url,
                 name: item.name,
-                ...(itemType ? { "@type": itemType } : {})
+                ...(itemType ? { "@type": itemType } : {}),
+                ...(item.description ? { description: item.description } : {}),
+                ...(item.provider ? { provider: item.provider } : {})
             }
         }));
 
