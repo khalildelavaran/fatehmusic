@@ -40,7 +40,7 @@ const keywords = [
   "آموزش پیانو در شوشتر",
   "آموزش ویولن در شوشتر",
   "آموزش سازهای ایرانی در شوشتر",
-  ...(relatedCourse?.seo?.metadata?.keywords || [])
+  ...(((relatedCourse as { seo?: { metadata?: { keywords?: string[] } } } | null)?.seo?.metadata?.keywords) || [])
 ].filter(Boolean);
 const topics = resolveTopics({ title: post.title, keywords, path: "/blog" });
 const articleSchema = buildArticleSchema(post, { site, url: canonicalUrl, keywords, topics });
@@ -53,9 +53,9 @@ const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) 
 const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
 const internalLinkCount = 6 + relatedPosts.length;
-const schema = [articleSchema, breadcrumbSchema, courseSchema].filter(Boolean);
+const schema: object[] = [articleSchema, breadcrumbSchema, courseSchema].filter((item): item is object => item !== null);
 
-function escapeHtml(value) {
+function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -64,26 +64,26 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-function inlineMarkdown(value) {
+function inlineMarkdown(value: string) {
   let html = escapeHtml(value);
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   html = html.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>');
   return html;
 }
 
-function normalizeArticleText(value) {
+function normalizeArticleText(value: unknown) {
   return String(value ?? "")
     .replace(/\\r\\n/g, "\n")
     .replace(/\\n/g, "\n")
     .replace(/\\r/g, "\r");
 }
 
-function renderArticleContent(markdown) {
+function renderArticleContent(markdown: string) {
   const lines = normalizeArticleText(markdown).replace(/\r/g, "").split("\n");
   const blocks = [];
-  let paragraph = [];
-  let list = [];
-  let listType = null;
+  let paragraph: string[] = [];
+  let list: string[] = [];
+  let listType: "ol" | "ul" | null = null;
 
   const flushParagraph = () => {
     if (paragraph.length) {
@@ -134,7 +134,8 @@ function renderArticleContent(markdown) {
       const nextType = numbered ? "ol" : "ul";
       if (listType && listType !== nextType) flushList();
       listType = nextType;
-      list.push((bullet || numbered)[1]);
+      const listItem = (bullet || numbered)?.[1];
+      if (listItem) list.push(listItem);
       continue;
     }
 
@@ -162,7 +163,7 @@ const articleHtml = renderArticleContent(post.content);
   description={description}
   canonical={canonicalUrl}
   keywords={keywords}
-  topics={topics.map((topic) => topic.slug)}
+  topics={topics.map((topic: { slug: string }) => topic.slug)}
   entityType="Article"
   lastModified={post.updated_at ?? post.published_at ?? post.created_at}
   answerBlocks={answerBlocks}
