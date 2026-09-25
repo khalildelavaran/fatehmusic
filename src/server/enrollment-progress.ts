@@ -61,5 +61,5 @@ export async function getEnrollmentProgress(
 
 export function shouldWarnForRenewal(progress: EnrollmentProgress): boolean {
   if (progress.billingType === 'monthly' || progress.plannedSessions == null) return false;
-  return progress.remainingSessions <= 1;
+  return (progress.remainingSessions ?? 0) <= 1;
 }
