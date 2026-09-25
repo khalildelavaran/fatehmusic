@@ -59,11 +59,11 @@ const newContentCount = opportunities.filter((item) => item.action === "NEW_CONT
 const approvedTopicCount = storedTopics.filter((item) => item.status === "approved").length;
 const candidateTopicCount = storedTopics.filter((item) => item.status === "candidate").length;
 
-const topicCounts = new Map();
+const topicCounts = new Map<string, number>();
 for (const item of opportunities) topicCounts.set(item.topicName, (topicCounts.get(item.topicName) ?? 0) + 1);
-const actionLabel = { NEW_CONTENT: "تولید مقاله جدید", OPTIMIZE_EXISTING: "بهینه‌سازی محتوای موجود", MERGE_CONTENT: "ادغام محتوا" };
-const actionClass = { NEW_CONTENT: "new", OPTIMIZE_EXISTING: "optimize", MERGE_CONTENT: "merge" };
-const sourceLabel = { "topic-engine": "موتور موضوعات", gap: "شکاف SEO/GEO", "topic-engine+gap": "هر دو موتور" };
+const actionLabel: Record<string, string> = { NEW_CONTENT: "تولید مقاله جدید", OPTIMIZE_EXISTING: "بهینه‌سازی محتوای موجود", MERGE_CONTENT: "ادغام محتوا" };
+const actionClass: Record<string, string> = { NEW_CONTENT: "new", OPTIMIZE_EXISTING: "optimize", MERGE_CONTENT: "merge" };
+const sourceLabel: Record<string, string> = { "topic-engine": "موتور موضوعات", gap: "شکاف SEO/GEO", "topic-engine+gap": "هر دو موتور" };
 ---
 
 <MainLayout title="استراتژی محتوا | پنل مدیریت آموزشگاه موسیقی فاتح" noindex={true}>
@@ -113,9 +113,9 @@ const sourceLabel = { "topic-engine": "موتور موضوعات", gap: "شکا�
                       <div><strong>Slug:</strong> <code>{item.suggestedSlug}</code></div>
                       {item.gapDetected && <div><strong>Gap Score:</strong> {item.gapPriority}</div>}
                     </div>
-                    {item.existingArticleSlugs?.length > 0 && <div class="strategy-existing"><strong>محتوای موجود برای بهینه‌سازی</strong><div>{item.existingArticleSlugs.map((slug) => <code>{slug}</code>)}</div></div>}
-                    <div class="strategy-queries"><strong>Query angles</strong><div>{item.queryAngles.map((query) => <span>{query}</span>)}</div></div>
-                    <div class="strategy-links"><strong>Internal links</strong><div>{item.recommendedLinks.map((url) => <a href={url}>{url.replace(site.url, "") || "/"}</a>)}</div></div>
+                    {item.existingArticleSlugs?.length > 0 && <div class="strategy-existing"><strong>محتوای موجود برای بهینه‌سازی</strong><div>{item.existingArticleSlugs.map((slug: string) => <code>{slug}</code>)}</div></div>}
+                    <div class="strategy-queries"><strong>Query angles</strong><div>{item.queryAngles.map((query: string) => <span>{query}</span>)}</div></div>
+                    <div class="strategy-links"><strong>Internal links</strong><div>{item.recommendedLinks.map((url: string) => <a href={url}>{url.replace(site.url, "") || "/"}</a>)}</div></div>
                   </div>
                 </article>
               ))}
