@@ -167,7 +167,6 @@ const articleHtml = renderArticleContent(post.content);
   entityType="Article"
   lastModified={post.updated_at ?? post.published_at ?? post.created_at}
   answerBlocks={answerBlocks}
-  articlePosts={allPosts}
   auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount }}
   schema={schema}
 >
