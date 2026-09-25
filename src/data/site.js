@@ -102,9 +102,6 @@ export const site = {
   ],
 
 
-  priceRange:
-    "1,600,000",
-
 
   // Social profiles
   socials: {
