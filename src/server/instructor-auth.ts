@@ -10,7 +10,7 @@ export function json(body: unknown, status = 200, headers: HeadersInit = {}): Re
 }
 function hex(b: Uint8Array) { return Array.from(b, x => x.toString(16).padStart(2, "0")).join(""); }
 function bytes(s: string) { if (!/^[0-9a-f]+$/i.test(s) || s.length % 2) throw Error("invalid"); const b = new Uint8Array(s.length / 2); for (let i = 0; i < b.length; i++) b[i] = parseInt(s.slice(i * 2, i * 2 + 2), 16); return b; }
-async function derive(p: string, s: Uint8Array, n = ITERATIONS) { const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(p), "PBKDF2", false, ["deriveBits"]); return crypto.subtle.deriveBits({ name: "PBKDF2", salt: s, iterations: n, hash: "SHA-256" }, k, 256); }
+async function derive(p: string, s: Uint8Array, n = ITERATIONS) { const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(p), "PBKDF2", false, ["deriveBits"]); return crypto.subtle.deriveBits({ name: "PBKDF2", salt: s.slice().buffer as ArrayBuffer, iterations: n, hash: "SHA-256" }, k, 256); }
 export async function hashInstructorPassword(p: string) { const s = crypto.getRandomValues(new Uint8Array(16)); return `pbkdf2-sha256$${ITERATIONS}$${hex(s)}$${hex(new Uint8Array(await derive(p, s)))}`; }
 async function verify(p: string, e: string) { const x = e.split("$"); if (x.length !== 4 || x[0] !== "pbkdf2-sha256") return false; const n = Number(x[1]); if (!Number.isInteger(n) || n < 10000 || n > ITERATIONS) return false; try { const a = new Uint8Array(await derive(p, bytes(x[2]), n)), b = bytes(x[3]); if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i]; return d === 0; } catch { return false; } }
 export function normalizeUsername(v: string) { return v.trim().toLowerCase(); }
