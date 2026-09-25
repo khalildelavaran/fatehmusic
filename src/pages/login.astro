@@ -27,6 +27,7 @@ import "../styles/student.css";
     const password = document.querySelector<HTMLInputElement>('#password');
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!status) return;
       status.textContent = 'در حال ورود...';
       const r = await fetch('/api/login', {
         method: 'POST',
