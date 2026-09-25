@@ -36,7 +36,9 @@ export function buildWebPageSchema({
         about: { "@id": `${site.url}/#organization` },
         publisher: { "@id": `${site.url}/#organization` },
         mentions: topicRefs.length ? topicRefs : undefined,
-        mainEntity: mainEntity ? { "@id": mainEntity } : { "@id": `${site.url}/#organization` },
+        mainEntity: mainEntity
+            ? { "@id": mainEntity }
+            : { "@id": `${site.url}/#organization` },
         dateModified: toIsoDate(lastModified),
         primaryImageOfPage: image
             ? {
@@ -48,7 +50,14 @@ export function buildWebPageSchema({
     });
 }
 
-function toIsoDate(value) {\n    if (!value) return undefined;\n    const date = new Date(value);\n    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();\n}\n\nfunction resolveMainEntity(extraSchema) {
+function toIsoDate(value) {
+    if (!value) return undefined;
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+function resolveMainEntity(extraSchema) {
     const preferredTypes = new Set([
         SCHEMA_TYPES.ARTICLE,
         SCHEMA_TYPES.COURSE,
