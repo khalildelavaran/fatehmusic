@@ -41,6 +41,25 @@ import { scoreOpportunity, scoreOpportunities, classifyOpportunityAction } from 
 import { auditPage } from "./v2/audit.js";
 import { buildSEOIntelligence } from "./v2/orchestrator.js";
 
+/**
+ * @param {{
+ *  path?: string;
+ *  title?: string;
+ *  description?: string;
+ *  image?: string;
+ *  canonical?: string;
+ *  noindex?: boolean;
+ *  keywords?: string[];
+ *  topics?: string[];
+ *  entityType?: string;
+ *  lastModified?: string|Date;
+ *  answerBlocks?: {question:string;answer:string;sourceUrl?:string;entityId?:string;priority?:number}[];
+ *  linkCandidates?: object[];
+ *  auditContext?: object;
+ *  extraSchema?: object[];
+ *  articlePosts?: object[];
+ * }} options
+ */
 export function buildSEO({ path, title, description, image, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [] } = {}) {
     const site = resolveSite();
     const effectiveNoindex = Boolean(noindex || isPrivateRoute(path));
