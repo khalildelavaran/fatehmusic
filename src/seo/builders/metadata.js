@@ -1,1 +1,50 @@
-/**\n * --------------------------------------------------------\n * Fateh Music Academy — SEO Engine\n * Module: Metadata Builder\n * --------------------------------------------------------\n */\n\nimport { MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_KEYWORDS } from "../config/constants.js";\nimport { DEFAULT_ROBOTS, NOINDEX_ROBOTS, DEFAULT_THEME_COLOR } from "../config/defaults.js";\nimport { truncate, clean, dedupe } from "../helpers/text.js";\n\n/**\n * Build page metadata without manufacturing keyword-stuffed copy.\n *\n * Google may rewrite titles and snippets, so length limits here are\n * guardrails for clean output rather than ranking rules.\n */\nexport function buildMetadata({ site, title, description, keywords = [], noindex = false }) {\n    const resolvedTitle = clean(title) || site.name;\n    const resolvedDescription = buildDescription({ description, title: resolvedTitle, site });\n\n    return Object.freeze({\n        title: truncate(resolvedTitle, MAX_TITLE_LENGTH),\n        description: truncate(resolvedDescription, MAX_DESCRIPTION_LENGTH),\n        // Keywords remain internal engine signals for topic/entity resolution.\n        // They are intentionally not rendered as a meta[name="keywords"] tag.\n        keywords: dedupe([...(keywords || []), ...site.keywords]).slice(0, MAX_KEYWORDS),\n        robots: noindex ? NOINDEX_ROBOTS : DEFAULT_ROBOTS,\n        author: site.name,\n        themeColor: DEFAULT_THEME_COLOR\n    });\n}\n\n/**\n * Prefer editorially supplied descriptions exactly as written.\n * Only generate a fallback when no usable description was supplied.\n */\nfunction buildDescription({ description, title, site }) {\n    const base = clean(description);\n\n    if (base) {\n        return base;\n    }\n\n    return clean(title + "؛ " + site.description);\n}\n
+/**
+ * --------------------------------------------------------
+ * Fateh Music Academy — SEO Engine
+ * Module: Metadata Builder
+ * --------------------------------------------------------
+ */
+
+import { MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_KEYWORDS } from "../config/constants.js";
+import { DEFAULT_ROBOTS, NOINDEX_ROBOTS, DEFAULT_THEME_COLOR } from "../config/defaults.js";
+import { truncate, clean, dedupe } from "../helpers/text.js";
+
+/**
+ * Build page metadata without manufacturing keyword-stuffed copy.
+ *
+ * Google may rewrite titles and snippets, so length limits here are
+ * guardrails for clean output rather than ranking rules.
+ */
+export function buildMetadata({ site, title, description, keywords = [], noindex = false }) {
+    const resolvedTitle = clean(title) || site.name;
+    const resolvedDescription = buildDescription({
+        description,
+        title: resolvedTitle,
+        site
+    });
+
+    return Object.freeze({
+        title: truncate(resolvedTitle, MAX_TITLE_LENGTH),
+        description: truncate(resolvedDescription, MAX_DESCRIPTION_LENGTH),
+        // Keywords remain internal engine signals for topic/entity resolution.
+        // They are intentionally not rendered as a meta[name="keywords"] tag.
+        keywords: dedupe([...(keywords || []), ...site.keywords]).slice(0, MAX_KEYWORDS),
+        robots: noindex ? NOINDEX_ROBOTS : DEFAULT_ROBOTS,
+        author: site.name,
+        themeColor: DEFAULT_THEME_COLOR
+    });
+}
+
+/**
+ * Prefer editorially supplied descriptions exactly as written.
+ * Only generate a fallback when no usable description was supplied.
+ */
+function buildDescription({ description, title, site }) {
+    const base = clean(description);
+
+    if (base) {
+        return base;
+    }
+
+    return clean(title + "؛ " + site.description);
+}
