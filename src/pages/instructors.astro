@@ -31,7 +31,7 @@ const instructorListSchema = buildItemListSchema({
     title="اساتید آموزشگاه موسیقی فاتح | مدرسین موسیقی در شوشتر"
     description="آشنایی با اساتید آموزشگاه موسیقی فاتح؛ مدرسین مجرب گیتار، پیانو، ویولون، آواز و سازهای ایرانی."
     canonical={canonical}
-    schema={[instructorListSchema].filter(Boolean)}
+    schema={instructorListSchema ? [instructorListSchema] : []}
 >
 
     <Header />
