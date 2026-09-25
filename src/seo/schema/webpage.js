@@ -16,7 +16,8 @@ export function buildWebPageSchema({
     keywords = [],
     topics = [],
     extraSchema = [],
-    site
+    site,
+    lastModified
 }) {
     const mainEntity = resolveMainEntity(extraSchema);
     const topicRefs = topics.map((topic) => ({
@@ -36,6 +37,7 @@ export function buildWebPageSchema({
         publisher: { "@id": `${site.url}/#organization` },
         mentions: topicRefs.length ? topicRefs : undefined,
         mainEntity: mainEntity ? { "@id": mainEntity } : { "@id": `${site.url}/#organization` },
+        dateModified: toIsoDate(lastModified),
         primaryImageOfPage: image
             ? {
                   "@type": "ImageObject",
@@ -46,7 +48,7 @@ export function buildWebPageSchema({
     });
 }
 
-function resolveMainEntity(extraSchema) {
+function toIsoDate(value) {\n    if (!value) return undefined;\n    const date = new Date(value);\n    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();\n}\n\nfunction resolveMainEntity(extraSchema) {
     const preferredTypes = new Set([
         SCHEMA_TYPES.ARTICLE,
         SCHEMA_TYPES.COURSE,
