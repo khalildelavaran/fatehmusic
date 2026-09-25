@@ -52,6 +52,9 @@ const seo = buildSEO({
   extraSchema: schema
 });
 
+const openGraph = seo.openGraph as Record<string, string>;
+const twitter = seo.twitter as Record<string, string>;
+
 const pathname = Astro.url.pathname;
 const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard))(?:\/|$)/.test(pathname);
 ---
@@ -83,19 +86,19 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard))(?:\/|$)
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" />
     </noscript>
 
-    <meta property="og:type" content={seo.openGraph["og:type"]} />
-    <meta property="og:locale" content={seo.openGraph["og:locale"]} />
-    <meta property="og:site_name" content={seo.openGraph["og:site_name"]} />
-    <meta property="og:title" content={seo.openGraph["og:title"]} />
-    <meta property="og:description" content={seo.openGraph["og:description"]} />
-    <meta property="og:url" content={seo.openGraph["og:url"]} />
-    <meta property="og:image" content={seo.openGraph["og:image"]} />
-    <meta property="og:image:alt" content={seo.openGraph["og:title"]} />
-    <meta name="twitter:card" content={seo.twitter["twitter:card"]} />
-    <meta name="twitter:title" content={seo.twitter["twitter:title"]} />
-    <meta name="twitter:description" content={seo.twitter["twitter:description"]} />
-    <meta name="twitter:image" content={seo.twitter["twitter:image"]} />
-    <meta name="twitter:image:alt" content={seo.twitter["twitter:title"]} />
+    <meta property="og:type" content={openGraph["og:type"]} />
+    <meta property="og:locale" content={openGraph["og:locale"]} />
+    <meta property="og:site_name" content={openGraph["og:site_name"]} />
+    <meta property="og:title" content={openGraph["og:title"]} />
+    <meta property="og:description" content={openGraph["og:description"]} />
+    <meta property="og:url" content={openGraph["og:url"]} />
+    <meta property="og:image" content={openGraph["og:image"]} />
+    <meta property="og:image:alt" content={openGraph["og:title"]} />
+    <meta name="twitter:card" content={twitter["twitter:card"]} />
+    <meta name="twitter:title" content={twitter["twitter:title"]} />
+    <meta name="twitter:description" content={twitter["twitter:description"]} />
+    <meta name="twitter:image" content={twitter["twitter:image"]} />
+    <meta name="twitter:image:alt" content={twitter["twitter:title"]} />
 
     <script is:inline type="application/ld+json" set:html={JSON.stringify(seo.schemaGraph)} />
 
