@@ -89,7 +89,7 @@ function normalizeGender(value: string | null): RegistrationState["student"]["ge
 /** Loads a registration by numeric id (admin panel / student portal) or by tracking code (the wizard's own Success step, which never has the numeric id -- see api/register.ts's response). */
 export async function loadRegistrationForContract(db: Db, lookup: ContractLookup): Promise<RegistrationRow> {
   const row = lookup.registrationId
-    ? await db.prepare(`SELECT ${ROW_COLUMNS} FROM registrations WHERE id=?`).bind(lookup.registrationId).first<RegistrationRow>()
+    ? await db.prepare(`SELECT ${ROW_COLUMNS} FROM registrations WHERE id=?`).bind(lookup.registrationId).first() as RegistrationRow | null
     : lookup.trackingCode
       ? await db.prepare(`SELECT ${ROW_COLUMNS} FROM registrations WHERE tracking_code=?`).bind(lookup.trackingCode).first<RegistrationRow>()
       : null;
@@ -104,7 +104,7 @@ async function computeTerm(db: Db, row: RegistrationRow): Promise<number> {
     ? await db
         .prepare("SELECT COUNT(*) AS count FROM registrations WHERE student_national_code=? AND id<=?")
         .bind(row.student_national_code, row.id)
-        .first<{ count: number }>()
+        .first() as { count: number } | null
     : null;
   return Math.max(1, Number(prior?.count ?? 1));
 }
