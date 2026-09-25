@@ -91,7 +91,7 @@ export async function loadRegistrationForContract(db: Db, lookup: ContractLookup
   const row = lookup.registrationId
     ? await db.prepare(`SELECT ${ROW_COLUMNS} FROM registrations WHERE id=?`).bind(lookup.registrationId).first() as RegistrationRow | null
     : lookup.trackingCode
-      ? await db.prepare(`SELECT ${ROW_COLUMNS} FROM registrations WHERE tracking_code=?`).bind(lookup.trackingCode).first<RegistrationRow>()
+      ? await db.prepare(`SELECT ${ROW_COLUMNS} FROM registrations WHERE tracking_code=?`).bind(lookup.trackingCode).first() as RegistrationRow | null
       : null;
 
   if (!row) throw Object.assign(new Error("ثبت‌نامی با این مشخصات پیدا نشد."), { status: 404 });
