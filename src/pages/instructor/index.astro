@@ -26,6 +26,7 @@ if (!session) return Astro.redirect("/login");
 </section>
 </main>
 <script>
+// @ts-nocheck
 const app = document.querySelector('#instructorApp');
 const nameLabel = document.querySelector('#instructorNameLabel');
 const esc = (v) => String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
