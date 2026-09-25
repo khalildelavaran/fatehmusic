@@ -48,7 +48,7 @@ function bytesToHex(bytes: Uint8Array): string {
 
 async function derive(password: string, salt: Uint8Array, iterations = PBKDF2_ITERATIONS): Promise<ArrayBuffer> {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  return crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256);
+  return crypto.subtle.deriveBits({ name: "PBKDF2", salt: salt.slice().buffer as ArrayBuffer, iterations, hash: "SHA-256" }, key, 256);
 }
 
 export async function hashPassword(password: string): Promise<string> {
