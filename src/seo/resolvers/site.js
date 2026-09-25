@@ -93,7 +93,7 @@ export function resolveSite() {
 
         areaServed: buildAreaServed(site.areaServed),
 
-        priceRange: site.priceRange || "1,000,000 - 1,600,000 تومان",
+        priceRange: site.priceRange || undefined,
 
         openingHoursSpecification:
             buildOpeningHoursSpecification(contact.workingHours),
