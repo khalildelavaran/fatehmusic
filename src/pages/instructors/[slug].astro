@@ -64,7 +64,7 @@ const linkCandidates = teacherCourses.map((course) => ({
   url: `${site.url}/courses/${course.slug}`,
   title: course.title,
   type: "Course",
-  topics: [course.instrument, course.category, ...course.seo.keywords],
+  topics: [course.instrument, course.category],
   priority: 30,
   local: true
 }));
@@ -84,7 +84,8 @@ const auditText = [
 ].filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
 const internalLinkCount = teacherCourses.length + 1;
-const courseDisplay = (instructorCourseDisplay[teacher.slug] || {}) as Record<string, string>;
+const courseDisplayMap = instructorCourseDisplay as Record<string, Record<string, string>>;
+const courseDisplay = courseDisplayMap[teacher.slug] || {};
 
 ---
 
