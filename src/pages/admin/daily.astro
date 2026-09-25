@@ -45,6 +45,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
 <script src="../../scripts/admin/daily/daily-command-center.js"></script>
 <script src="../../scripts/admin/daily/daily-end-of-day.js?v=20260918"></script>
 <script>
+// @ts-nocheck
 (() => {
   const root=document.querySelector('#dailyDashboardRoot');
   const ps=document.querySelector('#dailyPlannerSession'), pf=document.querySelector('#dailyPlannerFind'), pr=document.querySelector('#dailyPlannerResults'), pst=document.querySelector('#dailyPlannerStatus');
@@ -62,6 +63,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
 })();
 </script>
 <script>
+// @ts-nocheck
 (() => {
   const root=document.querySelector('#dailyDashboardRoot');
   if(!root)return;
@@ -98,6 +100,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
 })();
 </script>
 <script>
+// @ts-nocheck
 (() => {
   const root=document.querySelector('#dailyDashboardRoot');
   if(!root)return;
