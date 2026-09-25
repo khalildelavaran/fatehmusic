@@ -69,7 +69,10 @@ function articleSemantics(posts = [], siteUrl = "") {
   }));
 }
 
-/** Compose all existing SEO/GEO intelligence into one dashboard-ready model. */
+/**
+ * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
+ * @param {{posts?: object[], courses?: object[], topicCandidates?: object[], gscRows?: object[], siteUrl?: string}} options
+ */
 export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
