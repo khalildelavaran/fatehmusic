@@ -1,6 +1,12 @@
 /// <reference types="astro/client" />
 
 declare global {
+  namespace App {
+    interface Locals {
+      user?: { id?: number; role?: string; name?: string; email?: string };
+      runtime?: { env?: Env };
+    }
+  }
   interface Window {
     fbq?: (...args: unknown[]) => void;
     _fbq?: Window["fbq"];
