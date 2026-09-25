@@ -9,12 +9,14 @@ function fakeDb(overrides: Partial<Record<string, any>> = {}) {
 }
 
 describe("NOTIFICATION_TYPES / NOTIFICATION_RECIPIENT_TYPES", () => {
-  it("includes all five types from the spec (assignment and evaluation were removed from the product)", () => {
+  it("includes all supported notification types", () => {
     expect(NOTIFICATION_TYPES).toEqual([
       "class_reminder",
       "payment_due",
       "attendance",
       "certificate",
+      "assignment",
+      "evaluation",
       "system",
     ]);
   });
