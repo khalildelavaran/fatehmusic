@@ -33,7 +33,7 @@ const {
   answerBlocks = [],
   linkCandidates = [],
   auditContext = {}
-} = Astro.props;
+} = Astro.props as Props;
 
 const seo = buildSEO({
   path: Astro.url.pathname,
