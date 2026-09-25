@@ -21,6 +21,14 @@ import "../../styles/student.css";
     const status=document.querySelector<HTMLElement>('#loginStatus');
     const nationalCode=document.querySelector<HTMLInputElement>('#nationalCode');
     const password=document.querySelector<HTMLInputElement>('#password');
-    form?.addEventListener('submit',async(e)=>{e.preventDefault();status.textContent='در حال ورود...';const r=await fetch('/api/student/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({national_code:national_code:nationalCode?.value ?? '',password:password?.value ?? ''})});const d=await r.json().catch(()=>({message:'خطای سرور'})) as {message?:string};if(!r.ok){status.textContent=d.message||'ورود ناموفق بود.';return}location.href='/student';});
+    form?.addEventListener('submit',async(e)=>{
+      e.preventDefault();
+      if(!status)return;
+      status.textContent='در حال ورود...';
+      const r=await fetch('/api/student/login',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({national_code:nationalCode?.value ?? '',password:password?.value ?? ''})});
+      const d=await r.json().catch(()=>({message:'خطای سرور'})) as {message?:string};
+      if(!r.ok){status.textContent=d.message||'ورود ناموفق بود.';return}
+      location.href='/student';
+    });
   </script>
 </MainLayout>
