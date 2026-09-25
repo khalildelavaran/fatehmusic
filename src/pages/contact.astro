@@ -19,7 +19,7 @@ const schema = [
         { name: "خانه", path: "/" },
         { name: "تماس با ما", path: "/contact" }
     ], site)
-].filter(Boolean);
+].filter((item): item is object => item !== null);
 ---
 
 <MainLayout
