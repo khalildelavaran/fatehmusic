@@ -11,7 +11,7 @@ import { instructors } from "../../data/instructors.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/login");
-if (![ROLES.ADMIN, ROLES.REGISTRAR].includes(session.role)) return Astro.redirect("/admin");
+if (session.role !== ROLES.ADMIN && session.role !== ROLES.REGISTRAR) return Astro.redirect("/admin");
 
 const id = Number(Astro.url.searchParams.get("id"));
 const course = Number.isInteger(id) && id > 0 ? await getCourse(env.DB, id) : null;
