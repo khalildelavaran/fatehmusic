@@ -15,7 +15,7 @@ const style = {
       { name: "آموزش گیتار", path: "/courses/guitar-course" },
       { name: baseStyle.title, path: `/courses/${baseStyle.slug}` }
     ], site)
-  ]
+  ].filter((item): item is object => item !== null) as object[]
 };
 ---
 
