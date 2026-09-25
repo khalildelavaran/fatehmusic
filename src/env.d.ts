@@ -1,6 +1,14 @@
 /// <reference types="astro/client" />
 
 declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+    _fbq?: Window["fbq"];
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
+    __fatehGA?: boolean;
+  }
+
   interface Env {
     // ===== Bindings =====
     DB: D1Database;
