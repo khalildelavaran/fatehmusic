@@ -15,8 +15,8 @@ export interface AssignmentInput {
 
 export function validateAssignmentInput(input: Partial<AssignmentInput>): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  if (!Number.isInteger(input.enrollmentId) || input.enrollmentId <= 0) errors.push("enrollmentId");
-  if (!Number.isInteger(input.instructorId) || input.instructorId <= 0) errors.push("instructorId");
+  if (!Number.isInteger(input.enrollmentId) || (input.enrollmentId ?? 0) <= 0) errors.push("enrollmentId");
+  if (!Number.isInteger(input.instructorId) || (input.instructorId ?? 0) <= 0) errors.push("instructorId");
   if (typeof input.title !== "string" || !input.title.trim()) errors.push("title");
   if (input.sessionId != null && (!Number.isInteger(input.sessionId) || input.sessionId <= 0)) errors.push("sessionId");
   if (input.dueDate != null && input.dueDate !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)) errors.push("dueDate");
