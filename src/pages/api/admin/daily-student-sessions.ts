@@ -139,7 +139,10 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (!isIndividual) return json({ success: false, message: "جلسه گروهی زمان مشترک دارد و زمان آن از کارت جلسه تغییر می‌کند." }, 422);
     const [sh, sm] = startTime.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
-    if (sm % 5 !== 0 || em % 5 !== 0) {\n      return json({ success: false, message: "ساعت شروع و پایان باید در بازه‌های ۵ دقیقه‌ای ثبت شوند." }, 422);\n    }\n    if (eh * 60 + em - (sh * 60 + sm) !== 30) {
+    if (sm % 5 !== 0 || em % 5 !== 0) {
+      return json({ success: false, message: "ساعت شروع و پایان باید در بازه‌های ۵ دقیقه‌ای ثبت شوند." }, 422);
+    }
+    if (eh * 60 + em - (sh * 60 + sm) !== 30) {
       return json({ success: false, message: "مدت جلسه انفرادی باید دقیقاً ۳۰ دقیقه باشد." }, 422);
     }
 
