@@ -12,13 +12,12 @@ import AboutMission from "../components/AboutMission.astro";
 import AboutTeachers from "../components/AboutTeachers.astro";
 import AboutCourses from "../components/AboutCourses.astro";
 import AboutFacilities from "../components/AboutFacilities.astro";
-import AboutFAQ, { faqs } from "../components/AboutFAQ.astro";
+import AboutFAQ from "../components/AboutFAQ.astro";
 
 import {
     resolveSite,
     resolveInstructor,
     buildPersonSchema,
-    buildFaqSchema,
     buildBreadcrumbSchema,
     buildAboutPageSchema
 } from "../seo/index.js";
@@ -52,7 +51,6 @@ const schema = [
         ],
         site
     ),
-    buildFaqSchema(faqs),
     ...instructorSchemas
 ].filter((item): item is object => item !== null);
 ---
