@@ -11,7 +11,7 @@ export type SessionGenerationInput = {
 };
 
 export type GeneratedSession = SessionGenerationInput & {
-  type: 'regular';
+  type: 'regular' | 'makeup';
   status: 'scheduled';
   calendarWarning: SessionGenerationInput['calendarWarning'];
 };
@@ -31,7 +31,7 @@ export function generateClassSession(input: SessionGenerationInput): GeneratedSe
 
 export function generateMakeupSession(input: Omit<SessionGenerationInput, 'calendarWarning'> & {
   originalSessionId: string;
-}): GeneratedSession & { originalSessionId: string; type: 'makeup' } {
+}): GeneratedSession & { originalSessionId: string } {
   return {
     ...input,
     type: 'makeup',
