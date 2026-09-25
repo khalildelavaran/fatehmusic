@@ -7,7 +7,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = locals.user;
-  if (!user || !["ADMIN", "REGISTRAR"].includes(String(user.role))) {
+  if (!user || !["admin", "registrar"].includes(String(user.role))) {
     return new Response(JSON.stringify({ success: false, message: "دسترسی مجاز نیست." }), { status: 401, headers: { "content-type": "application/json; charset=utf-8" } });
   }
 
