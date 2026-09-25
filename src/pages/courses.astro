@@ -23,7 +23,7 @@ const courseListSchema = buildItemListSchema({
         name: course.title,
         url: `${site.url}/courses/${course.slug}`,
         id: `${site.url}/courses/${course.slug}/#course`,
-        description: course.description,
+        description: course.content?.description || course.content?.excerpt || undefined,
         provider: { "@id": `${site.url}/#organization` }
     }))
 });
