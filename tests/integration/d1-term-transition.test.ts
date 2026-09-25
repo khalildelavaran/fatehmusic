@@ -35,8 +35,6 @@ describe('D1 enrollment term transition', () => {
     db = env.DB;
 
     await db.exec(`
-      PRAGMA foreign_keys = ON;
-
       CREATE TABLE classes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL
