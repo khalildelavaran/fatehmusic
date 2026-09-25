@@ -62,7 +62,10 @@ export const PATCH: APIRoute = async ({ request }) => {
     if (!Number.isInteger(sessionId) || sessionId < 1 || !sessionDate || !DATE_RE.test(sessionDate) || !validTime(startTime) || !validTime(endTime)) {
       return json({ success: false, message: "اطلاعات زمان‌بندی معتبر نیست." }, 422);
     }
-    if (minutes(startTime) % 5 !== 0 || minutes(endTime) % 5 !== 0) {\n      return json({ success: false, message: "ساعت شروع و پایان باید در بازه‌های ۵ دقیقه‌ای ثبت شوند." }, 422);\n    }\n    if (minutes(endTime) <= minutes(startTime)) {
+    if (minutes(startTime) % 5 !== 0 || minutes(endTime) % 5 !== 0) {
+      return json({ success: false, message: "ساعت شروع و پایان باید در بازه‌های ۵ دقیقه‌ای ثبت شوند." }, 422);
+    }
+    if (minutes(endTime) <= minutes(startTime)) {
       return json({ success: false, message: "زمان پایان باید بعد از زمان شروع باشد." }, 422);
     }
     if (roomId !== null && roomId !== undefined && (!Number.isInteger(roomId) || roomId < 1)) {
