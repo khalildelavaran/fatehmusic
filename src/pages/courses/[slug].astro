@@ -16,7 +16,6 @@ import {
   resolveCourse,
   buildCourseSchema,
   buildCourseStyleSchemas,
-  buildFaqSchema,
   buildBreadcrumbSchema,
   answersFromFaq
 } from "../../seo/index.js";
@@ -38,14 +37,13 @@ if (!resolvedCourse) {
 
 const courseSchema = buildCourseSchema(resolvedCourse, { site });
 const courseStyleSchemas = buildCourseStyleSchemas(resolvedCourse, { site });
-const faqSchema = buildFaqSchema(resolvedCourse.faqs);
 const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "خانه", path: "/" },
   { name: "دوره‌ها", path: "/courses" },
   { name: course.title, path: `/courses/${course.slug}` }
 ], site);
 
-const schema: object[] = [courseSchema, ...courseStyleSchemas, faqSchema, breadcrumbSchema].filter(
+const schema: object[] = [courseSchema, ...courseStyleSchemas, breadcrumbSchema].filter(
   (item): item is object => item !== null
 );
 
@@ -99,8 +97,8 @@ const auditText = [
   course.content.excerpt,
   course.content.description,
   resolvedCourse.seoContent?.overview || [],
-  resolvedCourse.seoContent?.curriculum?.map((item) => `${item.title} ${item.description}`) || [],
-  resolvedCourse.seoContent?.learningPath?.map((item) => `${item.stage} ${item.description}`) || []
+  resolvedCourse.seoContent?.curriculum?.map((item: { title: string; description: string }) => `${item.title} ${item.description}`) || [],
+  resolvedCourse.seoContent?.learningPath?.map((item: { stage: string; description: string }) => `${item.stage} ${item.description}`) || []
 ].flat().filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
 const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleLinks.length + 1;
