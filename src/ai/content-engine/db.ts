@@ -22,7 +22,7 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
   // blog_posts has no normalized_key column -- derive it here so an
   // exact-title AI post also blocks re-generating the same topic.
   for (const post of posts.results) normalizedKeys.add(toDedupKey(post.title));
-  return { normalizedKeys, titles };
+  return { normalizedKeys, canonicalKeys: normalizedKeys, titles };
 }
 
 export async function getCoverageByCourse(db: D1Database): Promise<Map<string, number>> {
