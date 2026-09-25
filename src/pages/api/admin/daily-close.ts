@@ -11,8 +11,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ success: false, message: "دسترسی مجاز نیست." }), { status: 401, headers: { "content-type": "application/json; charset=utf-8" } });
   }
 
-  const body = await request.json().catch(() => ({}));
-  const date = String(body?.date || "");
+  const body = await request.json().catch(() => ({})) as { date?: unknown };
+  const date = String(body.date || "");
   if (!DATE_RE.test(date)) {
     return new Response(JSON.stringify({ success: false, message: "تاریخ نامعتبر است." }), { status: 400, headers: { "content-type": "application/json; charset=utf-8" } });
   }
