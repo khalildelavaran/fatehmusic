@@ -41,7 +41,8 @@ export const SCHEMA_TYPES = Object.freeze({
     GEO_COORDINATES: "GeoCoordinates",
     OPENING_HOURS_SPEC: "OpeningHoursSpecification",
     ABOUT_PAGE: "AboutPage",
-    CONTACT_PAGE: "ContactPage"
+    CONTACT_PAGE: "ContactPage",
+  PROFILE_PAGE: "ProfilePage"
 });
 
 export const WEEKDAY_ORDER = [
