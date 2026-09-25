@@ -7,8 +7,7 @@ import PageHero from "../components/PageHero.astro";
 import ContactOverview from "../components/ContactOverview.astro";
 import ContactQuickMessage from "../components/ContactQuickMessage.astro";
 import ContactFAQ from "../components/ContactFAQ.astro";
-import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema, buildFaqSchema } from "../seo/index.js";
-import { faqs } from "../components/ContactFAQ.astro";
+import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema } from "../seo/index.js";
 
 const site = resolveSite();
 const title = "تماس با آموزشگاه موسیقی فاتح";
@@ -19,8 +18,7 @@ const schema = [
     buildBreadcrumbSchema([
         { name: "خانه", path: "/" },
         { name: "تماس با ما", path: "/contact" }
-    ], site),
-    buildFaqSchema(faqs)
+    ], site)
 ].filter(Boolean);
 ---
 
