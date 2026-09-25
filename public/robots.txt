@@ -25,3 +25,4 @@ Disallow: /dashboard/
 Disallow: /.git/
 
 Sitemap: https://fatehmusic.ir/sitemap-index.xml
+Sitemap: https://fatehmusic.ir/sitemap-blog.xml
