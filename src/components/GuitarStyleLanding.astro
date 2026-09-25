@@ -15,8 +15,8 @@ interface GuitarStyle {
   keywords: string[];
   audience: string[];
   prerequisites: string;
-  curriculum: [string, string][];
-  faqs: [string, string][];
+  curriculum: string[][];
+  faqs: string[][];
   schema: object[];
 }
 interface Props { style: GuitarStyle; site: { url: string } }
