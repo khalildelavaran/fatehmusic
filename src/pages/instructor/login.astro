@@ -17,21 +17,21 @@ import "../../styles/student.css";
     </section>
   </main>
   <script>
-    const form = document.querySelector('#instructorLoginForm');
-    const status = document.querySelector('#loginStatus');
+    const form = document.querySelector<HTMLFormElement>('#instructorLoginForm');
+    const status = document.querySelector<HTMLElement>('#loginStatus');
+    const username = document.querySelector<HTMLInputElement>('#username');
+    const password = document.querySelector<HTMLInputElement>('#password');
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
+      if (!status) return;
       status.textContent = 'در حال ورود...';
       const r = await fetch('/api/instructor/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({
-          username: document.querySelector('#username').value,
-          password: document.querySelector('#password').value,
-        }),
+        body: JSON.stringify({ username: username?.value ?? '', password: password?.value ?? '' }),
       });
-      const d = await r.json().catch(() => ({ message: 'خطای سرور' }));
+      const d = await r.json().catch(() => ({ message: 'خطای سرور' })) as { message?: string };
       if (!r.ok) { status.textContent = d.message || 'ورود ناموفق بود.'; return; }
       location.href = '/instructor';
     });
