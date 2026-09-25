@@ -2,7 +2,7 @@ import { handle } from "@astrojs/cloudflare/handler";
 import { runDailyArticleGeneration } from "./ai/content-engine/article-generator";
 import { generateClassReminders } from "./server/in-app-notifications";
 
-interface WorkerEnv {
+interface WorkerEnv extends Env {
   DB: D1Database;
   AI: Ai;
   ANTHROPIC_API_KEY?: string;
