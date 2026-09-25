@@ -11,6 +11,8 @@ export const NOTIFICATION_TYPES = [
   "payment_due",
   "attendance",
   "certificate",
+  "assignment",
+  "evaluation",
   "system",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
