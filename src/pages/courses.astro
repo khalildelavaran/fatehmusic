@@ -33,7 +33,7 @@ const courseListSchema = buildItemListSchema({
     title="دوره‌های آموزش موسیقی | آموزشگاه موسیقی فاتح"
     description="آموزش تخصصی گیتار، پیانو، ویولون، آواز و سایر سازهای موسیقی در آموزشگاه موسیقی فاتح شوشتر."
     canonical={canonical}
-    schema={[courseListSchema].filter(Boolean)}
+    schema={courseListSchema ? [courseListSchema] : []}
 >
 
     <Header />
