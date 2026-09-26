@@ -7,15 +7,11 @@ import PageHero from "../../components/PageHero.astro";
 import CTA from "../../components/CTA.astro";
 import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
-import {
-  resolveSite,
-  buildLocalPlaceSchema,
-  buildBreadcrumbSchema
-} from "../../seo/index.js";
+import { resolveSite, buildLocalPlaceSchema, buildBreadcrumbSchema } from "../../seo/index.js";
 
 const site = resolveSite();
 const title = "آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح";
-const description = "راهنمای آموزش موسیقی در شوشتر؛ معرفی آموزشگاه موسیقی فاتح، دوره‌های ساز و آواز، مدرس‌ها، موقعیت و راه‌های ثبت‌نام و مشاوره.";
+const description = "راهنمای آموزش موسیقی در شوشتر؛ معرفی دوره‌های ساز و آواز، اساتید، آدرس، مسیر دسترسی و راه‌های ثبت‌نام آموزشگاه موسیقی فاتح.";
 const locationUrl = `${site.url}/locations/shushtar`;
 const address = site.address as Record<string, string | undefined>;
 const activeCourses = courses.filter((course) => course.active !== false);
@@ -30,18 +26,36 @@ const schema = [
 ].filter((item): item is object => item !== null);
 ---
 
-<MainLayout title={title} description={description} canonical={locationUrl} keywords={["آموزش موسیقی شوشتر", "کلاس موسیقی شوشتر", "آموزشگاه موسیقی شوشتر"]} topics={["shushtar", "music-education"]} entityType="Place" schema={schema}>
+<MainLayout
+  title={title}
+  description={description}
+  canonical={locationUrl}
+  keywords={["آموزش موسیقی شوشتر", "کلاس موسیقی شوشتر", "آموزشگاه موسیقی شوشتر", "کلاس ساز در شوشتر"]}
+  topics={["shushtar", "music-education", "local"]}
+  entityType="Place"
+  auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: activeCourses.length + activeInstructors.length + 3 }}
+  schema={schema}
+>
   <Header />
   <PageHero badge="شوشتر" title="آموزش موسیقی در شوشتر" description="معرفی آموزشگاه موسیقی فاتح، دوره‌های آموزشی، مدرس‌ها و اطلاعات دسترسی برای هنرجویان شوشتر و مناطق پیرامون." />
   <main>
-    <section class="container" style="padding: 48px 0;">
+    <section class="container" style="padding: 48px 0 24px;">
       <h2>آموزشگاه موسیقی فاتح در شوشتر</h2>
       <p>آموزشگاه موسیقی فاتح یک مجموعه آموزش موسیقی حضوری در شوشتر است. دوره‌های آموزشی شامل ساز، آواز و دروس پایه موسیقی هستند و اطلاعات هر دوره و مدرس در صفحه اختصاصی آن منتشر می‌شود.</p>
       <p><strong>آدرس:</strong> {address.streetAddress ?? ""}، {address.addressLocality ?? ""}، {address.addressRegion ?? ""}</p>
     </section>
 
+    <section class="container" style="padding: 20px 0 30px;">
+      <h2>چطور دوره مناسب موسیقی را در شوشتر انتخاب کنیم؟</h2>
+      <p>اگر بین ساز، آواز یا دروس پایه موسیقی مردد هستید، ابتدا دوره‌ها را بر اساس علاقه، سن و سطح آموزشی بررسی کنید و سپس صفحه مدرس مرتبط را ببینید. برای مشاوره و اطلاعات ثبت‌نام نیز می‌توانید با آموزشگاه تماس بگیرید.</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/courses" class="btn btn-primary">مشاهده همه دوره‌ها</a>
+        <a href="/instructors" class="btn btn-outline">مشاهده اساتید</a>
+      </div>
+    </section>
+
     <section class="container" style="padding: 20px 0 48px;">
-      <h2>دوره‌های آموزش موسیقی</h2>
+      <h2>دوره‌های آموزش موسیقی در شوشتر</h2>
       <div class="courses-grid">
         {activeCourses.map((course) => (
           <a href={`/courses/${course.slug}`} class="course-card">
@@ -56,7 +70,7 @@ const schema = [
     </section>
 
     <section class="container" style="padding: 20px 0 60px;">
-      <h2>مدرس‌های آموزشگاه</h2>
+      <h2>مدرس‌های آموزشگاه موسیقی فاتح</h2>
       <div class="courses-grid">
         {activeInstructors.map((teacher) => (
           <a href={`/instructors/${teacher.slug}`} class="course-card">
@@ -68,7 +82,7 @@ const schema = [
     </section>
 
     <section class="container" style="padding: 20px 0 60px;">
-      <h2>موقعیت و تماس</h2>
+      <h2>موقعیت، تماس و ثبت‌نام</h2>
       <p>برای مشاهده نقشه، شماره تماس، ساعات کاری و راه‌های ارتباطی به صفحه تماس مراجعه کنید.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
         <a href="/contact" class="btn btn-primary">تماس و موقعیت</a>
