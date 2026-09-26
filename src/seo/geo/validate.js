@@ -60,6 +60,20 @@ export function validateEntityGraph(graph) {
         if (!node || typeof node !== "object") continue;
         const type = Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]];
 
+        if (type.includes("WebPage")) {
+            const mainEntityId = node.mainEntity?.["@id"];
+            if (mainEntityId && !hasId(mainEntityId)) errors.push(`WebPage mainEntity reference is orphaned: ${mainEntityId}`);
+            const publisherId = node.publisher?.["@id"];
+            if (publisherId && !hasId(publisherId)) errors.push(`WebPage publisher reference is orphaned: ${publisherId}`);
+            const websiteId = node.isPartOf?.["@id"];
+            if (websiteId && !hasId(websiteId)) errors.push(`WebPage isPartOf reference is orphaned: ${websiteId}`);
+        }
+
+        if (type.includes("Course")) {
+            const providerId = node.provider?.["@id"];
+            if (providerId && !hasId(providerId)) errors.push(`Course provider reference is orphaned: ${providerId}`);
+        }
+
         if (type.includes("CourseInstance")) {
             const courseId = node.about?.["@id"];
             if (courseId && !hasId(courseId)) {
@@ -70,6 +84,13 @@ export function validateEntityGraph(graph) {
                     errors.push(`CourseInstance instructor reference is orphaned: ${instructor["@id"]}`);
                 }
             }
+        }
+
+        if (type.includes("Person")) {
+            const employerId = node.worksFor?.["@id"];
+            if (employerId && !hasId(employerId)) errors.push(`Person worksFor reference is orphaned: ${employerId}`);
+            const pageId = node.mainEntityOfPage?.["@id"];
+            if (pageId && !hasId(pageId)) errors.push(`Person mainEntityOfPage reference is orphaned: ${pageId}`);
         }
 
         if (type.includes("Article")) {
