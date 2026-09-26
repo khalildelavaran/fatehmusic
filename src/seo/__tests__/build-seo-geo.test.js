@@ -22,6 +22,17 @@ describe("buildSEO GEO integration", () => {
         expect(validation.nodeCount).toBeGreaterThan(0);
     });
 
+    it("resolves page topic mentions to graph entities", () => {
+        const result = buildSEO({ path: "/courses/guitar", topics: ["guitar", "shushtar"] });
+        const graph = result.schemaGraph["@graph"];
+        const page = graph.find((node) => node["@type"] === "WebPage");
+        expect(page.mentions).toEqual(expect.arrayContaining([
+            { "@id": "https://fatehmusic.ir/#topic-guitar" },
+            { "@id": "https://fatehmusic.ir/#topic-shushtar" }
+        ]));
+        expect(validateEntityGraph(result.schemaGraph).valid).toBe(true);
+    });
+
     it("contains only one canonical Organization and WebSite", () => {
         const result = buildSEO({ path: "/" });
         const ids = idsOf(result.schemaGraph);
