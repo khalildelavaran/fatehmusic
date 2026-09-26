@@ -23,6 +23,5 @@ export function buildLocalPlaceSchema(site) {
     hasMap: site.mapUrl,
     isPartOf: { "@id": `${site.url}/#organization` },
     mainEntityOfPage: { "@id": `${url}#webpage` },
-    containedInPlace: { "@id": `${site.url}/#organization` }
   };
 }
