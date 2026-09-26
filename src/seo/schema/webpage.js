@@ -64,7 +64,8 @@ function resolveMainEntity(extraSchema) {
         SCHEMA_TYPES.PERSON,
         SCHEMA_TYPES.ABOUT_PAGE,
         SCHEMA_TYPES.CONTACT_PAGE,
-        "ItemList"
+        "ItemList",
+        SCHEMA_TYPES.PLACE
     ]);
 
     const node = extraSchema.find(
