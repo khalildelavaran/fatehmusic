@@ -25,6 +25,11 @@ jobs:
           set -euo pipefail
           npx --yes npm@11.20.0 install --package-lock-only --ignore-scripts --no-audit --no-fund             astro@7.3.4             @astrojs/cloudflare@14.3.3             miniflare@5.20260925.0-alpha             vitest@4.1.11             wrangler@4.141.0
 
+      - name: Refresh remaining transitive security fixes
+        run: |
+          set -euo pipefail
+          npx --yes npm@11.20.0 update --package-lock-only --ignore-scripts --no-audit --no-fund             devalue fast-uri nanoid
+
       - name: Keep install-script allowlist in sync
         run: |
           node <<'NODE'
