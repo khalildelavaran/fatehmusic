@@ -184,7 +184,7 @@ function collectSitemapUrls() {
     for (const loc of allMatches(/<loc>\s*([^<]+?)\s*<\/loc>/gi, xml)) {
       const route = normalizeRoute(loc);
       if (!route) continue;
-      if (/^\\/sitemap(?:-index|-\\d+)\\.xml$/i.test(route)) continue;
+      if (/^\/sitemap(?:-index|-\d+)\.xml$/i.test(route)) continue;
       urls.add(route);
     }
   }
