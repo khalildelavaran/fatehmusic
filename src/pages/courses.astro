@@ -13,7 +13,6 @@ import { courseEntityId } from "../seo/geo/entity.js";
 
 const site = resolveSite();
 const canonical = `${site.url}/courses`;
-
 const activeCourses = courses.filter((course) => course.active !== false);
 
 const courseListSchema = buildItemListSchema({
@@ -31,24 +30,27 @@ const courseListSchema = buildItemListSchema({
 ---
 
 <MainLayout
-    title="دوره‌های آموزش موسیقی | آموزشگاه موسیقی فاتح"
-    description="آموزش تخصصی گیتار، پیانو، ویولون، آواز و سایر سازهای موسیقی در آموزشگاه موسیقی فاتح شوشتر."
+    title="دوره‌های آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح"
+    description="فهرست دوره‌های آموزش موسیقی در شوشتر؛ گیتار، پیانو، ویولن، سازهای ایرانی، آواز، موسیقی کودک، سلفژ، تئوری موسیقی و ریتم."
     canonical={canonical}
+    keywords={["دوره‌های آموزش موسیقی شوشتر", "کلاس موسیقی شوشتر", "آموزش ساز در شوشتر", "کلاس آواز شوشتر"]}
+    topics={["shushtar", "music-education", "courses"]}
+    entityType="ItemList"
+    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: activeCourses.length }}
     schema={courseListSchema ? [courseListSchema] : []}
 >
-
     <Header />
-	
     <PageHero
         badge="دوره‌های موسیقی"
-        title="دوره‌های آموزش موسیقی در آموزشگاه موسیقی فاتح شوشتر"
-        description="معرفی دوره‌های تخصصی گیتار، پیانو، ویولن، آواز، سازهای ایرانی و موسیقی کودک در آموزشگاه موسیقی فاتح شوشتر."
+        title="دوره‌های آموزش موسیقی در شوشتر"
+        description="معرفی دوره‌های تخصصی ساز، آواز، موسیقی کودک و دروس پایه موسیقی در آموزشگاه موسیقی فاتح شوشتر."
     />
-
-    <Courses />
-
+    <main>
+        <section class="container" style="padding: 36px 0 10px;">
+            <p>برای انتخاب مسیر آموزشی، دوره موردنظر را بر اساس ساز، سبک یا هدف خود بررسی کنید. هر دوره صفحه اختصاصی شامل سطح، مدرس، محتوای آموزشی و اطلاعات ثبت‌نام دارد.</p>
+        </section>
+        <Courses />
+    </main>
     <CTA />
-
     <Footer />
-
 </MainLayout>
