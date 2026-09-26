@@ -40,7 +40,10 @@ const monthlyPrice = plan?.paymentOptions?.halfTerm?.amount;
         <img
           src={image}
           alt={title}
+          width="800"
+          height="450"
           loading="lazy"
+          decoding="async"
           onerror="this.remove()"
         />
       )
