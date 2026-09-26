@@ -22,6 +22,12 @@ export function validateEntityGraph(graph) {
             continue;
         }
 
+        const type = Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]];
+
+        if (!node["@type"] || type.filter(Boolean).length === 0) {
+            errors.push(`Graph node is missing @type: ${node["@id"] || "(unknown)"}`);
+        }
+
         const id = node["@id"];
         if (!id) {
             errors.push("Graph node is missing @id");
@@ -46,6 +52,23 @@ export function validateEntityGraph(graph) {
     if (!organizationId) errors.push("Missing canonical Organization entity");
     if (!websiteId) errors.push("Missing canonical WebSite entity");
 
+    if (organizationId) {
+        const organization = nodes.find((node) => node?.["@id"] === organizationId);
+        const organizationTypes = asArray(organization?.["@type"]);
+        if (!organizationTypes.includes("Organization") &&
+            !organizationTypes.includes("LocalBusiness") &&
+            !organizationTypes.includes("EducationalOrganization")) {
+            errors.push("Canonical Organization entity has no recognized Organization type");
+        }
+    }
+
+    if (websiteId) {
+        const website = nodes.find((node) => node?.["@id"] === websiteId);
+        if (!asArray(website?.["@type"]).includes("WebSite")) {
+            errors.push("Canonical WebSite entity is not typed as WebSite");
+        }
+    }
+
     if (websiteId) {
         const website = nodes.find((node) => node?.["@id"] === websiteId);
         const publisherId = website?.publisher?.["@id"];
@@ -67,6 +90,7 @@ export function validateEntityGraph(graph) {
         validateReference(node, "mainEntity", hasId, errors);
         validateReference(node, "provider", hasId, errors);
         validateReference(node, "worksFor", hasId, errors);
+        validateReference(node, "location", hasId, errors);
         for (const mention of asArray(node.mentions)) {
             if (mention?.["@id"] && !hasId(mention["@id"])) {
                 errors.push(`${node["@type"]} mentions reference is orphaned: ${mention["@id"]}`);
