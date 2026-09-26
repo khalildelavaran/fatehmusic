@@ -34,7 +34,8 @@ function normalizeRoute(value) {
 }
 
 function routeFromHtml(file) {
-  const rel = path.relative(DIST, file).replaceAll(path.sep, "/");
+  let rel = path.relative(DIST, file).replaceAll(path.sep, "/");
+  if (rel.startsWith("client/")) rel = rel.slice("client/".length);
   let route = rel.replace(/(?:^|\/)index\.html$/, "");
   if (route === rel && rel.endsWith(".html")) route = rel.slice(0, -5);
   if (!route.startsWith("/")) route = "/" + route;
@@ -200,6 +201,7 @@ function validateHtmlFiles() {
   for (const file of htmlFiles) {
     const route = routeFromHtml(file);
     if (!route || SKIP_ROUTES.has(route)) continue;
+    if (/^\/yandex_[^/]+$/i.test(route)) continue;
     if (PRIVATE_PREFIXES.some((prefix) => route === prefix || route.startsWith(prefix + "/"))) continue;
 
     const html = fs.readFileSync(file, "utf8");
