@@ -35,6 +35,7 @@ export function buildArticleSchema(post, { site, url, keywords = [], topics = []
         inLanguage: "fa-IR",
         articleSection: post.topic,
         keywords,
+        author: buildAuthor(post, site),
         publisher: { "@id": `${site.url}/#organization` },
         mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
         isPartOf: { "@id": `${site.url}/#website` },
@@ -63,4 +64,22 @@ function countWords(value) {
 
 function pruneEmpty(node) {
     return Object.fromEntries(Object.entries(node).filter(([, value]) => value !== undefined && value !== null));
+}
+
+function buildAuthor(post, site) {
+    const authorName = typeof post.author_name === "string" && post.author_name.trim()
+        ? post.author_name.trim()
+        : site.name;
+    const authorUrl = typeof post.author_url === "string" && post.author_url.trim()
+        ? absoluteUrl(post.author_url, site.url)
+        : undefined;
+
+    return pruneEmpty({
+        "@type": authorUrl ? "Person" : "Organization",
+        name: authorName,
+        url: authorUrl,
+        "@id": authorUrl
+            ? `${authorUrl.replace(/\/$/, "")}/#person`
+            : `${site.url}/#organization`
+    });
 }
