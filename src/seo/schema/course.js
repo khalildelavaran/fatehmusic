@@ -8,7 +8,8 @@
 import { SCHEMA_TYPES } from "../config/constants.js";
 import {
     buildCourseInstructorRefs,
-    buildCourseRef
+    buildCourseRef,
+    courseEntityId
 } from "../geo/graph.js";
 
 const GUITAR_STYLE_TRACKS = [
@@ -48,7 +49,7 @@ export function buildCourseSchema(course, { site }) {
         ...(course.seo?.keywords || [])
     ].filter(Boolean);
     const guitarStyleRefs = course.slug === "guitar-course"
-        ? GUITAR_STYLE_TRACKS.map((track) => ({ "@id": `${site.url}${track.path}#course` }))
+        ? GUITAR_STYLE_TRACKS.map((track) => ({ "@id": courseEntityId(`${site.url}${track.path}`) }))
         : undefined;
 
     return pruneEmpty({
@@ -99,7 +100,7 @@ export function buildCourseStyleSchemas(course, { site }) {
 
     return GUITAR_STYLE_TRACKS.map((track) => ({
         "@type": SCHEMA_TYPES.COURSE,
-        "@id": `${site.url}${track.path}#course`,
+        "@id": courseEntityId(`${site.url}${track.path}`),
         url: `${site.url}${track.path}`,
         name: track.name,
         description: track.description,
@@ -120,7 +121,7 @@ export function buildGuitarStyleSchema(style, { site, instructorSlug = "khalil-d
 
     return {
         "@type": SCHEMA_TYPES.COURSE,
-        "@id": `${url}#course`,
+        "@id": courseEntityId(url),
         url,
         name: style.title,
         description: style.description,
