@@ -1,14 +1,5 @@
 # ------------------------------------------------------------------
 # Fateh Music Academy — Legacy course-slug redirects
-#
-# Every course page now lives at /courses/{slug}-course (see
-# src/data/courses.js). Google has indexed the old, unsuffixed
-# form of several of these URLs (e.g. /courses/guitar) from before
-# the "-course" suffix was added, so those searches land on a 404.
-#
-# These 301s send both real visitors and Googlebot to the current
-# page and teach Google's index the correct URL over time.
-# https://developers.cloudflare.com/pages/configuration/redirects/
 # ------------------------------------------------------------------
 
 /courses/guitar /courses/guitar-course 301
@@ -34,3 +25,14 @@
 /courses/rhythm-reading /courses/rhythm-reading-course 301
 /courses/music-theory /courses/music-theory-course 301
 /courses/voice-training /courses/voice-training-course 301
+
+# ------------------------------------------------------------------
+# Canonicalize duplicate trailing-slash URLs to the site's no-slash
+# policy. These exact duplicates have appeared in Search Console.
+/instructors/bahram-mousavi/ /instructors/bahram-mousavi 301
+/instructors/reza-fateh/ /instructors/reza-fateh 301
+/instructors/gholamabbas-abbasi/ /instructors/gholamabbas-abbasi 301
+/courses/voice-training-course/ /courses/voice-training-course 301
+/courses/shushtari-vocal-course/ /courses/shushtari-vocal-course 301
+/gallery/ /gallery 301
+/register/ /register 301
