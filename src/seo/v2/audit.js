@@ -94,6 +94,23 @@ export function auditPage({
         else warn("internal-links", "few internal links", 4);
     }
 
+
+    if (context.webVitals && typeof context.webVitals === "object") {
+        for (const metric of ["lcp", "inp", "cls"]) {
+            if (!(metric in context.webVitals)) continue;
+            const value = Number(context.webVitals[metric]);
+            if (!Number.isFinite(value) || value < 0) {
+                warn(`web-vitals-${metric}`, `${metric.toUpperCase()} signal is invalid`, 0);
+                continue;
+            }
+            const good = metric === "lcp" ? value <= 2500 : metric === "inp" ? value <= 200 : value <= 0.1;
+            const needsImprovement = metric === "lcp" ? value <= 4000 : metric === "inp" ? value <= 500 : value <= 0.25;
+            if (good) pass(`web-vitals-${metric}`, `${metric.toUpperCase()} is good`, 5);
+            else if (needsImprovement) warn(`web-vitals-${metric}`, `${metric.toUpperCase()} needs improvement`, 2);
+            else warn(`web-vitals-${metric}`, `${metric.toUpperCase()} is poor`, 0);
+        }
+    }
+
     if (topicSlugs.length >= 1) pass("topics", "topic signals resolved", 5);
     else warn("topics", "no topic signals resolved", 0);
 
@@ -110,7 +127,10 @@ export function auditPage({
         const max = { title: 10, description: 10, indexability: 10, canonical: 10, schema: 10, h1: 10, "image-alt": 5, "content-depth": 5,
             "image-dimensions": 5,
             "image-alt-quality": 5,
-            "hero-image-priority": 5, "internal-links": 10, topics: 5, intent: 5, freshness: 5 }[item.id] || item.points;
+            "hero-image-priority": 5,
+            "web-vitals-lcp": 5,
+            "web-vitals-inp": 5,
+            "web-vitals-cls": 5, "internal-links": 10, topics: 5, intent: 5, freshness: 5 }[item.id] || item.points;
         return sum + max;
     }, 0);
     const score = theoreticalPoints ? Math.round((applicablePoints / theoreticalPoints) * 100) : 0;
