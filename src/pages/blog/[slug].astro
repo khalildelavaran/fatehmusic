@@ -7,7 +7,9 @@ import {
   buildArticleSchema,
   buildBreadcrumbSchema,
   buildCourseSchema,
+  buildPersonSchema,
   resolveCourse,
+  resolveInstructor,
   resolveSite,
   answersFromFaq,
   resolveTopics,
@@ -50,10 +52,13 @@ const breadcrumbSchema = buildBreadcrumbSchema([
   { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
 ], site);
 const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) : null;
+const relatedCourseInstructorSchemas = relatedCourse
+  ? relatedCourse.instructors.map((teacher) => buildPersonSchema(teacher, { site }))
+  : [];
 const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
 const internalLinkCount = 6 + relatedPosts.length;
-const schema: object[] = [articleSchema, breadcrumbSchema, courseSchema].filter((item): item is object => item !== null);
+const schema: object[] = [articleSchema, courseSchema, ...relatedCourseInstructorSchemas, breadcrumbSchema].filter((item): item is object => item !== null);
 
 function escapeHtml(value: string) {
   return value
