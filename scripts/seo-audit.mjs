@@ -313,7 +313,7 @@ function validateLinks(pages, redirects) {
       if (!target || /^(?:\/images|\/icons)\//.test(target)) continue;
 
       if (routes.has(target)) {
-        if (target !== route) inbound.set(target, inbound.get(target) + 1);
+        if (target !== route && inbound.has(target)) inbound.set(target, inbound.get(target) + 1);
         continue;
       }
 
@@ -383,7 +383,9 @@ function main() {
   validateRedirects(redirects);
   const pages = validateHtmlFiles().pages;
   globalThis.__SEO_PAGE_COUNT = pages.size;
-  validateLinks(pages, redirects);
+  const sitemapRoutes = collectSitemapUrls().urls;
+  const dynamicRoutes = new Set([...sitemapRoutes].filter((route) => route.startsWith("/blog/")));
+  validateLinks(pages, redirects, dynamicRoutes);
   validateSitemaps(pages);
   report();
 }
