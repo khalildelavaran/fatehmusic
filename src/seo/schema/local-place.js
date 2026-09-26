@@ -21,6 +21,6 @@ export function buildLocalPlaceSchema(site) {
       longitude: site.geo.longitude
     },
     hasMap: site.mapUrl,
-    mainEntityOfPage: { "@id": `${url}#webpage` },
+    mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
   };
 }
