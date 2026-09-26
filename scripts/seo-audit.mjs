@@ -179,6 +179,7 @@ function collectSitemapUrls() {
   const urls = new Set();
   for (const file of xmlFiles) {
     const xml = fs.readFileSync(file, "utf8");
+    if (/<sitemapindex\b/i.test(xml)) continue;
     for (const loc of allMatches(/<loc>\s*([^<]+?)\s*<\/loc>/gi, xml)) {
       const route = normalizeRoute(loc);
       if (route) urls.add(route);
@@ -347,6 +348,15 @@ function main() {
     error("DIST_MISSING", "dist directory does not exist; run npm run build first");
     report();
     return;
+  }
+
+  const robotsFile = path.join(ROOT, "public", "robots.txt");
+  if (fs.existsSync(robotsFile)) {
+    const robots = fs.readFileSync(robotsFile, "utf8");
+    if (!/User-agent:\s*\*/i.test(robots)) error("ROBOTS_DEFAULT_AGENT", "robots.txt has no default User-agent rule");
+    if (!/Sitemap:\s*https:\/\/fatehmusic\.ir\/sitemap-index\.xml/i.test(robots)) warn("ROBOTS_SITEMAP_INDEX", "robots.txt does not advertise sitemap-index.xml");
+  } else {
+    error("ROBOTS_MISSING", "public/robots.txt is missing");
   }
 
   const redirects = readRedirects();
