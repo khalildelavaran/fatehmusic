@@ -100,7 +100,7 @@ const instructorDescription = `${teacher.name}، مدرس ${specialty} در آم
 </div>
 <a href={`/register?instructor=${teacher.slug}`} class="btn btn-primary">ثبت‌نام با {teacher.name}</a>
 </div>
-<div class="teacher-image"><img src={teacher.media.images.profile} alt={teacher.name} loading="eager" decoding="async" /></div>
+<div class="teacher-image"><img src={teacher.media.images.profile} alt={`تصویر ${teacher.name}، ${teacher.position} در آموزشگاه موسیقی فاتح شوشتر`} width="1200" height="1500" loading="eager" fetchpriority="high" decoding="async" /></div>
 </div>
 </div>
 </section>
@@ -111,7 +111,7 @@ const instructorDescription = `${teacher.name}، مدرس ${specialty} در آم
 <div class="courses-grid">
 {teacherCourses.map((course: ResolvedCourse) => (
 <a href={`/courses/${course.slug}`} class="course-card">
-<img src={course.media.image} alt={course.title} loading="lazy" decoding="async" />
+<img src={course.media.image} alt={course.title} width="800" height="450" loading="lazy" decoding="async" />
 <div class="course-content"><h3>{course.title}</h3><p>{courseDisplay[course.slug] || course.content.excerpt}</p><span class="course-link">مشاهده دوره</span></div>
 </a>
 ))}
