@@ -10,7 +10,11 @@ export default defineConfig({
 
   trailingSlash: "never",
 
-  adapter: cloudflare({\n    // CI must build without authenticating to Cloudflare remote bindings.\n    // Local development keeps remote bindings enabled for production parity.\n    remoteBindings: process.env.CI !== "true"\n  }),
+  adapter: cloudflare({
+    // CI must build without authenticating to Cloudflare remote bindings.
+    // Local development keeps remote bindings enabled for production parity.
+    remoteBindings: process.env.CI !== "true"
+  }),
 
   integrations: [
     sitemap()
