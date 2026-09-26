@@ -119,6 +119,8 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard))(?:\/|$)
     {!isPrivateAppRoute && (
       <>
         <!-- Analytics is intentionally delayed until the page is usable. -->
+        <script src="../scripts/web-vitals.js"></script>
+
         <script is:inline>
           window.addEventListener("load", () => {
             const loadGoogleAnalytics = () => {
