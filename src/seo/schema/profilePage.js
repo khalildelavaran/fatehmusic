@@ -3,6 +3,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
+import { instructorEntityId } from "../geo/entity.js";
 
 export function buildProfilePageSchema(instructor, { site, dateModified } = {}) {
     const profileUrl = String(instructor.url).replace(/\/$/, "");
@@ -11,7 +12,7 @@ export function buildProfilePageSchema(instructor, { site, dateModified } = {}) 
         "@id": profileUrl + "/#profilepage",
         url: profileUrl,
         name: instructor.name + " | آموزشگاه موسیقی فاتح",
-        mainEntity: { "@id": profileUrl + "/#person" },
+        mainEntity: { "@id": instructorEntityId(profileUrl) },
         isPartOf: { "@id": site.url + "/#website" },
         dateModified: isValidDate(dateModified) ? dateModified : undefined
     };
