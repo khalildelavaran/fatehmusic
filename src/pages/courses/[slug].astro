@@ -201,7 +201,7 @@ const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleL
 <a href={`/register?course=${course.slug}`} class="btn btn-primary">ثبت نام آنلاین</a>
 </div>
 <div class="course-page__image">
-<img src={course.media.cover || course.media.image} alt={course.title} />
+<img src={course.media.cover || course.media.image} alt={course.title} width="800" height="450" loading="eager" decoding="async" />
 </div>
 </div>
 </div>
@@ -213,7 +213,7 @@ const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleL
 <div class="course-page__teachers">
 {teachers.map((teacher: Instructor) => (
 <a href={`/instructors/${teacher.slug}`} class="course-page__teacher-card">
-<img src={teacher.media?.images?.profile} alt={teacher.name} />
+<img src={teacher.media?.images?.profile} alt={teacher.name} width="1200" height="1500" loading="lazy" decoding="async" />
 <h3>{teacher.name}</h3>
 <p>{teacher.position}</p>
 </a>
@@ -285,7 +285,7 @@ const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleL
 <div class="course-page__related-grid">
 {relatedCourses.map((item) => (
 <a href={`/courses/${item.slug}`} class="course-card">
-<div class="course-image"><img src={item.media.image} alt={item.title} /></div>
+<div class="course-image"><img src={item.media.image} alt={item.title} width="800" height="450" loading="lazy" decoding="async" /></div>
 <div class="course-content"><h3>{item.title}</h3><span>{item.category}</span></div>
 </a>
 ))}
