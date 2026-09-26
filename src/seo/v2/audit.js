@@ -9,8 +9,7 @@ const LIMITS = Object.freeze({
     titleMin: 20,
     titleMax: 65,
     descriptionMin: 80,
-    descriptionMax: 170,
-    minWords: 250
+    descriptionMax: 170
 });
 
 /**
@@ -63,9 +62,30 @@ export function auditPage({
         else warn("image-alt", `${context.missingImageAlt} images missing alt text`, 2);
     }
 
+    if (context.imageAudit && typeof context.imageAudit === "object") {
+        const imageAudit = context.imageAudit;
+        if ("missingDimensions" in imageAudit) {
+            if (imageAudit.missingDimensions === 0) pass("image-dimensions", "images have explicit dimensions", 5);
+            else warn("image-dimensions", `${imageAudit.missingDimensions} images missing dimensions`, 2);
+        }
+        if ("genericAlt" in imageAudit) {
+            if (imageAudit.genericAlt === 0) pass("image-alt-quality", "image alt text is descriptive", 5);
+            else warn("image-alt-quality", `${imageAudit.genericAlt} images have generic alt text`, 2);
+        }
+        if ("heroPriority" in imageAudit) {
+            if (imageAudit.heroPriority === true) pass("hero-image-priority", "primary image is prioritized", 5);
+            else warn("hero-image-priority", "primary image priority is not confirmed", 2);
+        }
+    }
+
     if ("wordCount" in context) {
-        if (context.wordCount >= LIMITS.minWords) pass("content-depth", "sufficient visible content", 10);
-        else warn("content-depth", "visible content is thin", 4);
+        const wordCount = Number(context.wordCount);
+        if (Number.isFinite(wordCount) && wordCount >= 0) {
+            if (wordCount > 0) pass("content-depth", "visible content is present", 5);
+            else warn("content-depth", "visible content is empty", 0);
+        } else {
+            warn("content-depth", "content depth signal is invalid", 0);
+        }
     }
 
     if ("internalLinkCount" in context) {
@@ -86,7 +106,10 @@ export function auditPage({
 
     const applicablePoints = checks.reduce((sum, item) => sum + item.points, 0);
     const theoreticalPoints = checks.reduce((sum, item) => {
-        const max = { title: 10, description: 10, indexability: 10, canonical: 10, schema: 10, h1: 10, "image-alt": 5, "content-depth": 10, "internal-links": 10, topics: 5, intent: 5, freshness: 5 }[item.id] || item.points;
+        const max = { title: 10, description: 10, indexability: 10, canonical: 10, schema: 10, h1: 10, "image-alt": 5, "content-depth": 5,
+            "image-dimensions": 5,
+            "image-alt-quality": 5,
+            "hero-image-priority": 5, "internal-links": 10, topics: 5, intent: 5, freshness: 5 }[item.id] || item.points;
         return sum + max;
     }, 0);
     const score = theoreticalPoints ? Math.round((applicablePoints / theoreticalPoints) * 100) : 0;
