@@ -20,6 +20,7 @@ export function auditPage({
     metadata = {},
     url = "",
     schemaGraph = {},
+    canonical = "",
     indexable = true,
     topicSlugs = [],
     primaryIntent = "",
@@ -45,7 +46,7 @@ export function auditPage({
     else if (!indexable) pass("indexability", "explicitly non-indexable", 10);
     else fail("indexability", "indexability mismatch");
 
-    if (url && metadata.canonical) pass("canonical", "canonical present", 10);
+    if (url && canonical) pass("canonical", "canonical present", 10);
     else fail("canonical", "canonical missing");
 
     if (graphNodes.length >= 3) pass("schema", "JSON-LD graph populated", 10);
