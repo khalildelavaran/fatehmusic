@@ -321,7 +321,8 @@ function validateLinks(pages, redirects, knownRoutes = new Set(), serverRoutePat
   }
 
   const routes = new Set([...pages.keys(), ...knownRoutes]);
-  const inbound = new Map([...routes].map((route) => [route, 0]));
+  const knownServerRoute = (route) => isKnownServerRoute(route, serverRoutePatterns);
+  const inbound = new Map([...pages.keys()].map((route) => [route, 0]));
 
   function targetRoute(href) {
     if (!href || /^(?:mailto:|tel:|javascript:)/i.test(href)) return null;
