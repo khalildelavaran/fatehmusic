@@ -127,7 +127,7 @@ export function buildGuitarStyleSchema(style, { site, instructorSlug = "khalil-d
         teaches: [style.title, style.focus],
         provider: { "@id": `${site.url}/#organization` },
         instructor: { "@id": `${site.url}/instructors/${instructorSlug}#person` },
-        isPartOf: { "@id": `${parentUrl}#course` },
+        isPartOf: { "@id": courseEntityId(parentUrl) },
         mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}#webpage` },
         educationalLevel: "مبتدی، متوسط، پیشرفته",
         audience: {
