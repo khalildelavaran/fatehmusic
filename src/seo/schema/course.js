@@ -6,11 +6,8 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
-import {
-    buildCourseInstructorRefs,
-    buildCourseRef,
-    courseEntityId
-} from "../geo/graph.js";
+import { buildCourseInstructorRefs, buildCourseRef } from "../geo/graph.js";
+import { courseEntityId } from "../geo/entity.js";
 
 const GUITAR_STYLE_TRACKS = [
     {
