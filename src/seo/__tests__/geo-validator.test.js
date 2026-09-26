@@ -30,9 +30,9 @@ describe("GEO entity graph validator", () => {
     it("detects duplicate IDs", () => {
         const result = validateEntityGraph({
             "@graph": [
-                { "@id": "https://fatehmusic.ir/#organization" },
-                { "@id": "https://fatehmusic.ir/#organization" },
-                { "@id": "https://fatehmusic.ir/#website", publisher: { "@id": "https://fatehmusic.ir/#organization" } }
+                { "@id": "https://fatehmusic.ir/#organization", "@type": "Organization" },
+                { "@id": "https://fatehmusic.ir/#organization", "@type": "Organization" },
+                { "@id": "https://fatehmusic.ir/#website", "@type": "WebSite", publisher: { "@id": "https://fatehmusic.ir/#organization" } }
             ]
         });
 
@@ -43,9 +43,10 @@ describe("GEO entity graph validator", () => {
     it("detects orphaned references", () => {
         const result = validateEntityGraph({
             "@graph": [
-                { "@id": "https://fatehmusic.ir/#organization" },
+                { "@id": "https://fatehmusic.ir/#organization", "@type": "Organization" },
                 {
                     "@id": "https://fatehmusic.ir/#website",
+                    "@type": "WebSite",
                     publisher: { "@id": "https://fatehmusic.ir/#organization" }
                 },
                 {
