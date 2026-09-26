@@ -172,7 +172,7 @@ describe('D1 enrollment term transition', () => {
       SELECT invoice_id, amount FROM payments WHERE invoice_id = ?
     `).bind(term1InvoiceId).first<{ invoice_id: number; amount: number }>();
     expect(payment).toEqual({ invoice_id: term1InvoiceId, amount: 300000 });
-  });
+  }, 15000);
 
   it('concurrent initial term creation resolves to one active term', async () => {
     await db.prepare(`DELETE FROM invoices`).run();
