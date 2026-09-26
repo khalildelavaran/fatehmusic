@@ -10,8 +10,8 @@ import ContactFAQ from "../components/ContactFAQ.astro";
 import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema } from "../seo/index.js";
 
 const site = resolveSite();
-const title = "تماس با آموزشگاه موسیقی فاتح";
-const description = "راه‌های ارتباط با آموزشگاه موسیقی فاتح در شوشتر، آدرس، موقعیت روی نقشه، شماره تماس، ساعات کاری و مسیرهای ارتباطی برای ثبت‌نام و مشاوره.";
+const title = "تماس با آموزشگاه موسیقی فاتح شوشتر | آدرس و شماره تماس";
+const description = "آدرس، شماره تماس، ساعات کاری، موقعیت روی نقشه و راه‌های ارتباط با آموزشگاه موسیقی فاتح شوشتر برای ثبت‌نام و مشاوره دوره‌های موسیقی.";
 const canonical = `${site.url}/contact`;
 const schema = [
     buildContactPageSchema({ title, description, site }),
@@ -26,10 +26,10 @@ const schema = [
     title={title}
     description={description}
     canonical={canonical}
-    keywords={["تماس آموزشگاه موسیقی فاتح", "آدرس آموزشگاه موسیقی شوشتر", "آموزش موسیقی شوشتر"]}
-    topics={["shushtar", "music-education"]}
+    keywords={["تماس آموزشگاه موسیقی فاتح", "آدرس آموزشگاه موسیقی شوشتر", "شماره تماس آموزشگاه موسیقی فاتح", "آموزش موسیقی شوشتر"]}
+    topics={["shushtar", "music-education", "contact"]}
     entityType="ContactPage"
-    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: 5 }}
+    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: 7 }}
     schema={schema}
 >
     <Header />
@@ -43,9 +43,14 @@ const schema = [
         <ContactQuickMessage />
         <ContactFAQ />
         <section class="container" style="padding: 20px 0 70px;">
-            <h2>اطلاعات محلی آموزشگاه در شوشتر</h2>
-            <p>برای مطالعه اطلاعات محلی، دوره‌ها و مدرس‌های مرتبط با آموزش موسیقی در شوشتر، صفحه اختصاصی موقعیت آموزشگاه را ببینید.</p>
-            <a href="/locations/shushtar" class="btn btn-primary">آموزش موسیقی در شوشتر</a>
+            <h2>اطلاعات محلی و شروع آموزش موسیقی در شوشتر</h2>
+            <p>اگر هنوز دوره یا ساز مناسب خود را انتخاب نکرده‌اید، می‌توانید فهرست دوره‌ها و صفحه موقعیت آموزشگاه را بررسی کنید و سپس برای مشاوره و ثبت‌نام با آموزشگاه تماس بگیرید.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="/locations/shushtar" class="btn btn-primary">آموزش موسیقی در شوشتر</a>
+                <a href="/courses" class="btn btn-outline">مشاهده دوره‌ها</a>
+                <a href="/instructors" class="btn btn-outline">مشاهده اساتید</a>
+                <a href="/register" class="btn btn-outline">ثبت‌نام و مشاوره</a>
+            </div>
         </section>
     </main>
     <Footer />
