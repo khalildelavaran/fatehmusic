@@ -37,6 +37,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {string} mobile
  * @property {string} email
  * @property {string|undefined} googlePlaceId
+ * @property {string|undefined} twitterHandle
  * @property {Object} address
  * @property {Object} geo
  * @property {Object[]} openingHoursSpecification
@@ -81,6 +82,7 @@ export function resolveSite() {
         // Kept in the normalized SEO contract so schema builders can
         // consistently expose the same local entity identifier.
         googlePlaceId: site.googlePlaceId || undefined,
+        twitterHandle: extractSocialHandle(site.socials?.x),
 
         address: {
             ...site.address,
@@ -176,4 +178,17 @@ function dedupeSameAs(socials) {
             (value, index, array) =>
                 array.indexOf(value) === index
         );
+}
+
+/** Extract an X/Twitter handle from a profile URL without hard-coding it. */
+function extractSocialHandle(url) {
+    if (typeof url !== "string" || !url.trim()) return undefined;
+    try {
+        const parsed = new URL(url);
+        if (!/(?:^|\\.)x\\.com$/i.test(parsed.hostname) && !/(?:^|\\.)twitter\\.com$/i.test(parsed.hostname)) return undefined;
+        const handle = parsed.pathname.split("/").filter(Boolean)[0];
+        return handle ? `@${handle}` : undefined;
+    } catch {
+        return undefined;
+    }
 }
