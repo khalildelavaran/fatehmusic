@@ -280,16 +280,47 @@ function validateHtmlFiles() {
   return { pages };
 }
 
-function validateLinks(pages, redirects) {
+
+function routePatternFromSource(file) {
+  const pagesRoot = path.join(ROOT, "src", "pages");
+  const rel = path.relative(pagesRoot, file).replaceAll(path.sep, "/");
+  if (!rel.endsWith(".astro") && !rel.endsWith(".ts") && !rel.endsWith(".js")) return null;
+  const content = fs.readFileSync(file, "utf8");
+  if (/export\s+const\s+prerender\s*=\s*true\b/.test(content)) return null;
+  if (rel.includes("/api/") || rel.startsWith("api/")) return null;
+
+  let route = "/" + rel.replace(/\.(?:astro|ts|js)$/i, "").replace(/\/index$/i, "");
+  route = route.replace(/\[\.\.\.[^/]+\]/g, ".*");
+  route = route.replace(/\[[^/]+\]/g, "[^/]+");
+  route = route.replace(/\/+/g, "/");
+  return route === "/" ? "^/$" : "^" + route + "$";
+}
+
+function collectServerRoutePatterns() {
+  const pagesDir = path.join(ROOT, "src", "pages");
+  const patterns = [];
+  for (const file of walk(pagesDir)) {
+    const pattern = routePatternFromSource(file);
+    if (!pattern) continue;
+    try { patterns.push(new RegExp(pattern)); } catch {}
+  }
+  return patterns;
+}
+
+function isKnownServerRoute(route, patterns) {
+  return patterns.some((pattern) => pattern.test(route));
+}
+
+function validateLinks(pages, redirects, knownRoutes = new Set(), serverRoutePatterns = []) {
   for (const [from, rule] of redirects) {
-    if (!pages.has(rule.to)) {
-      error("REDIRECT_TARGET_MISSING", "redirect target not rendered: " + from + " -> " + rule.to);
-    } else if (pages.get(rule.to).noindex) {
+    if (!pages.has(rule.to) && !isKnownServerRoute(rule.to, serverRoutePatterns)) {
+      error("REDIRECT_TARGET_MISSING", "redirect target not rendered and not matched by a server route: " + from + " -> " + rule.to);
+    } else if (pages.has(rule.to) && pages.get(rule.to).noindex) {
       error("REDIRECT_TO_NOINDEX", "redirect points to noindex page: " + from + " -> " + rule.to);
     }
   }
 
-  const routes = new Set(pages.keys());
+  const routes = new Set([...pages.keys(), ...knownRoutes]);
   const inbound = new Map([...routes].map((route) => [route, 0]));
 
   function targetRoute(href) {
