@@ -239,7 +239,8 @@ function validateHtmlFiles() {
       html,
       anchors,
       title,
-      description: descriptions[0] || ""
+      description: descriptions[0] || "",
+      noindex: robots.toLowerCase().includes("noindex")
     });
   }
 
@@ -272,6 +273,14 @@ function validateHtmlFiles() {
 }
 
 function validateLinks(pages, redirects) {
+  for (const [from, rule] of redirects) {
+    if (!pages.has(rule.to)) {
+      error("REDIRECT_TARGET_MISSING", "redirect target not rendered: " + from + " -> " + rule.to);
+    } else if (pages.get(rule.to).noindex) {
+      error("REDIRECT_TO_NOINDEX", "redirect points to noindex page: " + from + " -> " + rule.to);
+    }
+  }
+
   const routes = new Set(pages.keys());
   const inbound = new Map([...routes].map((route) => [route, 0]));
 
@@ -322,9 +331,10 @@ function validateSitemaps(pages) {
     return;
   }
 
-  for (const route of pages.keys()) {
+  for (const [route, page] of pages) {
     if (!route || route === "/" || route.startsWith("/blog/")) continue;
-    if (!sitemapData.urls.has(route)) error("PAGE_MISSING_FROM_SITEMAP", route + ": not present in sitemap");
+    if (!sitemapData.urls.has(route) && !page.noindex) error("PAGE_MISSING_FROM_SITEMAP", route + ": not present in sitemap");
+    if (sitemapData.urls.has(route) && page.noindex) error("NOINDEX_IN_SITEMAP", route + ": noindex page is present in sitemap");
   }
 
   for (const route of sitemapData.urls) {
