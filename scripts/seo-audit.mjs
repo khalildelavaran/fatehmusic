@@ -312,7 +312,7 @@ function validateLinks(pages, redirects) {
       const target = targetRoute(href);
       if (!target || /^(?:\/images|\/icons)\//.test(target)) continue;
 
-      if (routes.has(target)) {
+      if (routes.has(target) || knownServerRoute(target)) {
         if (target !== route && inbound.has(target)) inbound.set(target, inbound.get(target) + 1);
         continue;
       }
@@ -332,7 +332,7 @@ function validateLinks(pages, redirects) {
   }
 }
 
-function validateSitemaps(pages) {
+function validateSitemaps(pages, serverRoutePatterns = []) {
   const sitemapData = collectSitemapUrls();
   if (sitemapData.urls.size === 0) {
     error("SITEMAP_EMPTY", "no URLs found across generated XML sitemaps");
@@ -347,8 +347,10 @@ function validateSitemaps(pages) {
 
   for (const route of sitemapData.urls) {
     if (route.startsWith("/blog/")) continue;
-    if (!pages.has(route) && !PRIVATE_PREFIXES.some((prefix) => route === prefix || route.startsWith(prefix + "/"))) {
-      error("SITEMAP_URL_NOT_RENDERED", "sitemap references route not present in rendered build: " + route);
+    if (!pages.has(route) &&
+        !PRIVATE_PREFIXES.some((prefix) => route === prefix || route.startsWith(prefix + "/")) &&
+        !isKnownServerRoute(route, serverRoutePatterns)) {
+      error("SITEMAP_URL_NOT_RENDERED", "sitemap references route not present in rendered build and not matched by a server route: " + route);
     }
   }
 }
@@ -384,9 +386,10 @@ function main() {
   const pages = validateHtmlFiles().pages;
   globalThis.__SEO_PAGE_COUNT = pages.size;
   const sitemapRoutes = collectSitemapUrls().urls;
-  const dynamicRoutes = new Set([...sitemapRoutes].filter((route) => route.startsWith("/blog/")));
-  validateLinks(pages, redirects, dynamicRoutes);
-  validateSitemaps(pages);
+  const serverRoutePatterns = collectServerRoutePatterns();
+  const dynamicRoutes = new Set([...sitemapRoutes].filter((route) => isKnownServerRoute(route, serverRoutePatterns)));
+  validateLinks(pages, redirects, dynamicRoutes, serverRoutePatterns);
+  validateSitemaps(pages, serverRoutePatterns);
   report();
 }
 
