@@ -80,7 +80,14 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const openGraph = buildOpenGraph({ site, metadata, image: resolvedImage, url: canonicalUrl, imageWidth, imageHeight, imageType });
     const twitter = buildTwitter({ metadata, image: resolvedImage, site });
     const webPageSchema = buildWebPageSchema({ url: canonicalUrl, title: metadata.title, description: metadata.description, image: resolvedImage, keywords: metadata.keywords, topics: topicsResolved, extraSchema, site, lastModified });
-    const schemaGraph = buildSchemaGraph([buildOrganizationSchema(site), buildWebsiteSchema(site), webPageSchema, ...buildTopicSchemas(topicsResolved, { site }), ...extraSchema]);
+    const schemaGraph = buildSchemaGraph([
+        buildOrganizationSchema(site),
+        buildWebsiteSchema(site),
+        webPageSchema,
+        buildLocalPlaceSchema(site),
+        ...buildTopicSchemas(topicsResolved, { site }),
+        ...extraSchema
+    ]);
     const audit = auditPage({ metadata, url: canonicalUrl, canonical: canonicalUrl, schemaGraph, indexable: !effectiveNoindex, topicSlugs: topicsResolved.map((topic) => topic.slug), primaryIntent: intent.primary, freshness, ...auditContext });
     return Object.freeze({ metadata, canonical: canonicalUrl, openGraph, twitter, schemaGraph, geo: Object.freeze({ topics: topicsResolved, intent, freshness, internalLinks: links, answerBlocks: answers, audit, clusters: clusterReport, strategy: contentStrategy }) });
 }
