@@ -59,7 +59,7 @@ const schema = [
       <div class="courses-grid">
         {activeCourses.map((course) => (
           <a href={`/courses/${course.slug}`} class="course-card">
-            <img src={course.media.image} alt={course.title} loading="lazy" />
+            <img src={course.media.image} alt={course.title} width="800" height="450" loading="lazy" decoding="async" />
             <div class="course-content">
               <h3>{course.title}</h3>
               <p>{course.content.excerpt}</p>
