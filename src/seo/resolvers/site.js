@@ -40,7 +40,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
  * @property {Object} address
  * @property {Object} geo
  * @property {Object[]} openingHoursSpecification
- * @property {string} priceRange
+ * @property {string|undefined} priceRange
  * @property {string[]} sameAs
  * @property {string} mapUrl
  * @property {Object[]} areaServed
