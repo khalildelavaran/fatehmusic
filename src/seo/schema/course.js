@@ -68,7 +68,7 @@ export function buildCourseSchema(course, { site }) {
             ? ["گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"]
             : undefined,
         provider: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${course.url}/#webpage` },
+        mainEntityOfPage: { "@id": `${String(course.url).replace(/\/$/, "")}/#webpage` },
         educationalLevel: course.level.join("، "),
         audience: course.ageGroup.length
             ? {
@@ -107,7 +107,7 @@ export function buildCourseStyleSchemas(course, { site }) {
         teaches: track.name,
         provider: { "@id": `${site.url}/#organization` },
         isPartOf: { "@id": buildCourseRef(course)["@id"] },
-        mainEntityOfPage: { "@id": `${site.url}${track.path}#webpage` }
+        mainEntityOfPage: { "@id": `${site.url}${track.path.replace(/\/$/, "")}#webpage` }
     }));
 }
 
@@ -130,7 +130,7 @@ export function buildGuitarStyleSchema(style, { site, instructorSlug = "khalil-d
         provider: { "@id": `${site.url}/#organization` },
         instructor: { "@id": `${site.url}/instructors/${instructorSlug}#person` },
         isPartOf: { "@id": `${parentUrl}#course` },
-        mainEntityOfPage: { "@id": `${url}#webpage` },
+        mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}#webpage` },
         educationalLevel: "مبتدی، متوسط، پیشرفته",
         audience: {
             "@type": SCHEMA_TYPES.AUDIENCE,
