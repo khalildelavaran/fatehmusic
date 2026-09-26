@@ -6,6 +6,8 @@ import {
 } from "../geo/graph.js";
 import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
 import { buildSchemaGraph } from "../schema/graph.js";
+import { buildWebPageSchema } from "../schema/webpage.js";
+import { buildProfilePageSchema } from "../schema/profilePage.js";
 
 describe("GEO entity graph", () => {
     it("deduplicates nodes with the same @id", () => {
@@ -43,6 +45,21 @@ describe("GEO entity graph", () => {
         expect(articleEntityId("https://fatehmusic.ir/blog/guide")).toBe(
             "https://fatehmusic.ir/blog/guide/#article"
         );
+    });
+
+    it("canonicalizes trailing slashes in entity IDs", () => {
+        expect(articleEntityId("https://fatehmusic.ir/blog/guide/")).toBe("https://fatehmusic.ir/blog/guide/#article");
+        expect(courseEntityId("https://fatehmusic.ir/courses/guitar/")).toBe("https://fatehmusic.ir/courses/guitar/#course");
+        expect(instructorEntityId("https://fatehmusic.ir/instructors/ali/")).toBe("https://fatehmusic.ir/instructors/ali/#person");
+    });
+
+    it("keeps WebPage and ProfilePage IDs aligned with canonical page URLs", () => {
+        const site = { url: "https://fatehmusic.ir" };
+        const page = buildWebPageSchema({ url: "https://fatehmusic.ir/about/", title: "درباره", description: "درباره فاتح", site });
+        const profile = buildProfilePageSchema({ url: "https://fatehmusic.ir/instructors/ali/", name: "علی" }, { site });
+        expect(page["@id"]).toBe("https://fatehmusic.ir/about/#webpage");
+        expect(profile["@id"]).toBe("https://fatehmusic.ir/instructors/ali/#profilepage");
+        expect(profile.mainEntity["@id"]).toBe("https://fatehmusic.ir/instructors/ali/#person");
     });
 
     it("returns one graph with duplicate entities removed", () => {
