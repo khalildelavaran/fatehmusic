@@ -41,7 +41,7 @@ const courseSchema = buildCourseSchema(resolvedCourse, { site });
 const courseStyleSchemas = buildCourseStyleSchemas(resolvedCourse, { site });
 const teacherSchemas = resolvedCourse.instructors
   .map((teacher) => resolveInstructor(teacher, site))
-  .filter(Boolean)
+  .filter((teacher): teacher is NonNullable<typeof teacher> => Boolean(teacher))
   .map((teacher) => buildPersonSchema(teacher, { site }));
 
 const breadcrumbSchema = buildBreadcrumbSchema([
