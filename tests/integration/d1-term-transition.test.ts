@@ -27,7 +27,6 @@ describe('D1 enrollment term transition', () => {
       workers: [{
         config: {
           name: 'd1-term-transition-test',
-          type: 'worker',
           compatibilityDate: '2026-09-27',
           manifest: {
             mainModule: 'index.mjs',
