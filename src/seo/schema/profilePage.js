@@ -5,12 +5,13 @@
 import { SCHEMA_TYPES } from "../config/constants.js";
 
 export function buildProfilePageSchema(instructor, { site, dateModified } = {}) {
+    const profileUrl = String(instructor.url).replace(/\/$/, "");
     const node = {
         "@type": SCHEMA_TYPES.PROFILE_PAGE,
-        "@id": instructor.url + "/#profilepage",
-        url: instructor.url,
+        "@id": profileUrl + "/#profilepage",
+        url: profileUrl,
         name: instructor.name + " | آموزشگاه موسیقی فاتح",
-        mainEntity: { "@id": instructor.url + "/#person" },
+        mainEntity: { "@id": profileUrl + "/#person" },
         isPartOf: { "@id": site.url + "/#website" },
         dateModified: isValidDate(dateModified) ? dateModified : undefined
     };
