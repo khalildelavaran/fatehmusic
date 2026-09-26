@@ -41,8 +41,8 @@ const courseSchema = buildCourseSchema(resolvedCourse, { site });
 const courseStyleSchemas = buildCourseStyleSchemas(resolvedCourse, { site });
 const teacherSchemas = resolvedCourse.instructors
   .map((teacher) => resolveInstructor(teacher, site))
-  .reduce((schemas, teacher) => {
-    const resolvedTeacher = resolveInstructor(teacher, site);
+  .reduce((schemas: object[], teacher) => {
+    const resolvedTeacher = resolveInstructor(teacher as string | object, site);
     if (resolvedTeacher) schemas.push(buildPersonSchema(resolvedTeacher, { site }));
     return schemas;
   }, []);
