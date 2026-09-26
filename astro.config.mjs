@@ -17,7 +17,15 @@ export default defineConfig({
   }),
 
   integrations: [
-    sitemap()
+    sitemap({
+      filter: (page) => {
+        const pathname = new URL(page).pathname.replace(/\\/$/, "") || "/";
+        return ![
+          "/login",
+          "/404"
+        ].includes(pathname);
+      }
+    })
   ],
 
   compressHTML: true,
