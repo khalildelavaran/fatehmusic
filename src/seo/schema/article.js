@@ -37,7 +37,7 @@ export function buildArticleSchema(post, { site, url, keywords = [], topics = []
         keywords,
         author: resolveAuthor(post),
         publisher: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${url}/#webpage` },
+        mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
         isPartOf: { "@id": `${site.url}/#website` },
         mentions: topicRefs.length ? topicRefs : undefined
     };
