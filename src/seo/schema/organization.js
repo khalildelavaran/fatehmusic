@@ -9,6 +9,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
+import { instructorEntityId } from "../geo/entity.js";
 
 /**
  * @param {import("../resolvers/site.js").ResolvedSite} site
@@ -42,7 +43,7 @@ export function buildOrganizationSchema(site) {
     founder: {
       "@type": SCHEMA_TYPES.PERSON,
       name: "خلیل دلاوران",
-      "@id": `${site.url}/instructors/khalil-delavaran#person`
+      "@id": instructorEntityId(`${site.url}/instructors/khalil-delavaran`)
     },
     knowsAbout: [
       "آموزش موسیقی",
