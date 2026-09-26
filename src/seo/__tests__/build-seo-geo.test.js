@@ -47,7 +47,7 @@ describe("buildSEO GEO integration", () => {
             extraSchema: [
                 {
                     "@type": "Course",
-                    "@id": "https://fatehmusic.ir/courses/guitar/#course",
+                    "@id": "https://fatehmusic.ir/courses/guitar#course",
                     name: "گیتار"
                 }
             ]
