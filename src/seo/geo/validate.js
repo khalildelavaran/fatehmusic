@@ -67,6 +67,11 @@ export function validateEntityGraph(graph) {
         validateReference(node, "mainEntity", hasId, errors);
         validateReference(node, "provider", hasId, errors);
         validateReference(node, "worksFor", hasId, errors);
+        for (const mention of asArray(node.mentions)) {
+            if (mention?.["@id"] && !hasId(mention["@id"])) {
+                errors.push(`${node["@type"]} mentions reference is orphaned: ${mention["@id"]}`);
+            }
+        }
 
         if (type.includes("CourseInstance")) {
             const courseId = node.about?.["@id"];
