@@ -55,7 +55,7 @@ const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) 
 const relatedCourseInstructorSchemas = relatedCourse
   ? relatedCourse.instructors
     .map((teacher) => resolveInstructor(teacher, site))
-    .filter(Boolean)
+    .filter((teacher): teacher is NonNullable<typeof teacher> => Boolean(teacher))
     .map((teacher) => buildPersonSchema(teacher, { site }))
   : [];
 const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
