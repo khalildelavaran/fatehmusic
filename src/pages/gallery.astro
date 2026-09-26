@@ -2,7 +2,6 @@
 export const prerender = true;
 
 import MainLayout from "../layouts/MainLayout.astro";
-
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import PageHero from "../components/PageHero.astro";
@@ -11,22 +10,36 @@ import CTA from "../components/CTA.astro";
 ---
 
 <MainLayout
-    title="گالری آموزشگاه موسیقی فاتح | تصاویر کلاس‌ها و هنرجویان"
-    description="گالری تصاویر آموزشگاه موسیقی فاتح شوشتر؛ تصاویر کلاس‌های گیتار، پیانو، ویولون، موسیقی کودک، اجراهای هنرجویان و فضای آموزشگاه."
+    title="عکس کلاس موسیقی شوشتر | گالری آموزشگاه موسیقی فاتح"
+    description="عکس کلاس موسیقی و فضای آموزشگاه موسیقی فاتح شوشتر؛ تصاویر کلاس‌های گیتار، پیانو، ویولن، موسیقی کودک، اجراهای هنرجویان و فعالیت‌های آموزشی."
+    keywords={["عکس کلاس موسیقی", "عکس آموزشگاه موسیقی شوشتر", "گالری آموزشگاه موسیقی فاتح", "کلاس موسیقی شوشتر"]}
+    topics={["shushtar", "music-education", "gallery"]}
+    entityType="ImageGallery"
+    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: 4 }}
 >
-
     <Header />
-	
+
     <PageHero
         badge="گالری"
-        title="گالری آموزشگاه موسیقی فاتح شوشتر"
+        title="عکس کلاس موسیقی و آموزشگاه موسیقی فاتح شوشتر"
         description="تصاویری از فضای آموزشگاه، کلاس‌های موسیقی، تمرین هنرجویان و فعالیت‌های آموزشی آموزشگاه موسیقی فاتح در شوشتر."
     />
 
-    <Gallery />
+    <main>
+        <section class="container" style="padding: 24px 0 10px;">
+            <h2>عکس کلاس‌های موسیقی در آموزشگاه فاتح</h2>
+            <p>در این گالری می‌توانید نمونه‌هایی از فضای آموزشگاه، کلاس‌ها، تمرین هنرجویان و فعالیت‌های موسیقی را ببینید. برای آشنایی با دوره‌ها و اساتید نیز از صفحات اختصاصی سایت استفاده کنید.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="/courses" class="btn btn-primary">مشاهده دوره‌های موسیقی</a>
+                <a href="/instructors" class="btn btn-outline">مشاهده اساتید</a>
+                <a href="/locations/shushtar" class="btn btn-outline">آموزش موسیقی در شوشتر</a>
+                <a href="/register" class="btn btn-outline">ثبت‌نام</a>
+            </div>
+        </section>
+
+        <Gallery />
+    </main>
 
     <CTA />
-
     <Footer />
-
 </MainLayout>
