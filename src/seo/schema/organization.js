@@ -75,6 +75,7 @@ export function buildOrganizationSchema(site) {
       longitude: site.geo.longitude
     },
     hasMap: site.mapUrl,
+    location: { "@id": `${site.url}/locations/shushtar#place` },
     areaServed: site.areaServed,
     openingHoursSpecification: site.openingHoursSpecification,
     sameAs: site.sameAs
