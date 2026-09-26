@@ -16,6 +16,7 @@ import {
   resolveCourse,
   buildCourseSchema,
   buildCourseStyleSchemas,
+  buildPersonSchema,
   buildBreadcrumbSchema,
   answersFromFaq
 } from "../../seo/index.js";
@@ -37,13 +38,15 @@ if (!resolvedCourse) {
 
 const courseSchema = buildCourseSchema(resolvedCourse, { site });
 const courseStyleSchemas = buildCourseStyleSchemas(resolvedCourse, { site });
+const teacherSchemas = resolvedCourse.instructors.map((teacher) => buildPersonSchema(teacher, { site }));
+
 const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "خانه", path: "/" },
   { name: "دوره‌ها", path: "/courses" },
   { name: course.title, path: `/courses/${course.slug}` }
 ], site);
 
-const schema: object[] = [courseSchema, ...courseStyleSchemas, breadcrumbSchema].filter(
+const schema: object[] = [courseSchema, ...courseStyleSchemas, ...teacherSchemas, breadcrumbSchema].filter(
   (item): item is object => item !== null
 );
 
