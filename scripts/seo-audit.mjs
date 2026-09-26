@@ -55,6 +55,12 @@ function stripHtml(html) {
 function firstMatch(re, html) { return html.match(re)?.[1]?.trim() ?? ""; }
 function allMatches(re, html) { return [...html.matchAll(re)].map((m) => m[1] ?? ""); }
 
+function isGenericAlt(value) {
+  const normalized = String(value || "").trim().toLocaleLowerCase("fa");
+  if (!normalized) return false;
+  return new Set(["image", "photo", "picture", "تصویر", "عکس", "image photo", "logo", "لوگو"]).has(normalized);
+}
+
 function parseAttributes(tag) {
   const attrs = {};
   for (const match of tag.matchAll(/([\w:-]+)\s*=\s*["']([^"']*)["']/g)) {
