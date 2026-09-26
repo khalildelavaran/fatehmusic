@@ -42,7 +42,20 @@ export function buildOpenGraph({
 
     if (Number.isFinite(imageWidth) && imageWidth > 0) graph["og:image:width"] = String(imageWidth);
     if (Number.isFinite(imageHeight) && imageHeight > 0) graph["og:image:height"] = String(imageHeight);
-    if (imageType) graph["og:image:type"] = imageType;
+    const resolvedImageType = imageType || inferImageType(image);
+    if (resolvedImageType) graph["og:image:type"] = resolvedImageType;
 
     return Object.freeze(graph);
+}
+
+function inferImageType(image) {
+    const extension = String(image || "").split("?")[0].split("#")[0].split(".").pop()?.toLowerCase();
+    const map = {
+        avif: "image/avif",
+        webp: "image/webp",
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg"
+    };
+    return map[extension] || undefined;
 }
