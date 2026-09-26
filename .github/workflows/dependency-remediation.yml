@@ -25,17 +25,44 @@ jobs:
           set -euo pipefail
           npx --yes npm@11.20.0 install --package-lock-only --ignore-scripts --no-audit --no-fund             astro@7.3.4             @astrojs/cloudflare@14.3.3             miniflare@5.20260925.0-alpha             vitest@4.1.11             wrangler@4.141.0
 
-      - name: Show dependency state
+      - name: Keep install-script allowlist in sync
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const workerd = lock.packages?.['node_modules/workerd']?.version;
+          if (!workerd) throw new Error('Could not resolve workerd version from package-lock.json');
+          pkg.allowScripts = Object.fromEntries(
+            Object.entries(pkg.allowScripts ?? {})
+              .filter(([key]) => !key.startsWith('workerd@'))
+          );
+          pkg.allowScripts['workerd@' + workerd] = true;
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          console.log('Approved workerd install script for', workerd);
+          NODE
+
+      - name: Clean install from updated lockfile
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify dependency tree
         run: |
           npm ls astro @astrojs/cloudflare miniflare vitest wrangler --depth=0
-          npm audit --json > audit.json || true
-          node -e 'const a=require("./audit.json"); console.log(JSON.stringify(a.metadata?.vulnerabilities || {}, null, 2))'
+          npm audit --audit-level=moderate
 
-      - name: Commit dependency update
+      - name: Verify project
         run: |
+          npm run check
+          npm test
+          npm run build
+          npm run seo:audit
+
+      - name: Commit dependency remediation
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json
           git diff --cached --stat
-          git commit -m "fix: update vulnerable dependencies"
+          git commit -m "fix: remediate npm dependency vulnerabilities"
           git push origin HEAD:security/dependency-remediation
