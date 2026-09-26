@@ -60,19 +60,13 @@ export function validateEntityGraph(graph) {
         if (!node || typeof node !== "object") continue;
         const type = Array.isArray(node["@type"]) ? node["@type"] : [node["@type"]];
 
-        if (type.includes("WebPage")) {
-            const mainEntityId = node.mainEntity?.["@id"];
-            if (mainEntityId && !hasId(mainEntityId)) errors.push(`WebPage mainEntity reference is orphaned: ${mainEntityId}`);
-            const publisherId = node.publisher?.["@id"];
-            if (publisherId && !hasId(publisherId)) errors.push(`WebPage publisher reference is orphaned: ${publisherId}`);
-            const websiteId = node.isPartOf?.["@id"];
-            if (websiteId && !hasId(websiteId)) errors.push(`WebPage isPartOf reference is orphaned: ${websiteId}`);
-        }
-
-        if (type.includes("Course")) {
-            const providerId = node.provider?.["@id"];
-            if (providerId && !hasId(providerId)) errors.push(`Course provider reference is orphaned: ${providerId}`);
-        }
+        validateReference(node, "mainEntityOfPage", hasId, errors);
+        validateReference(node, "isPartOf", hasId, errors);
+        validateReference(node, "publisher", hasId, errors);
+        validateReference(node, "about", hasId, errors);
+        validateReference(node, "mainEntity", hasId, errors);
+        validateReference(node, "provider", hasId, errors);
+        validateReference(node, "worksFor", hasId, errors);
 
         if (type.includes("CourseInstance")) {
             const courseId = node.about?.["@id"];
@@ -116,6 +110,13 @@ export function validateEntityGraph(graph) {
 
 function findId(nodes, fragment) {
     return nodes.find((node) => typeof node?.["@id"] === "string" && node["@id"].endsWith(fragment))?.["@id"];
+}
+
+function validateReference(node, property, hasId, errors) {
+    const reference = node?.[property]?.["@id"];
+    if (reference && !hasId(reference)) {
+        errors.push(`${node["@type"]} ${property} reference is orphaned: ${reference}`);
+    }
 }
 
 function asArray(value) {
