@@ -2,40 +2,24 @@
 export const prerender = true;
 
 import type { ResolvedCourse } from "../../types/courses";
-
 import MainLayout from "../../layouts/MainLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import CTA from "../../components/CTA.astro";
 import InstructorSeoContent from "../../components/InstructorSeoContent.astro";
 import FAQSection from "../../components/FAQSection.astro";
-
 import { instructors } from "../../data/instructors";
 import { instructorCourseDisplay } from "../../data/instructor-course-display";
-
-import {
-  resolveSite,
-  resolveInstructor,
-  buildPersonSchema,
-  buildProfilePageSchema,
-  buildBreadcrumbSchema,
-  answersFromFaq
-} from "../../seo/index.js";
+import { resolveSite, resolveInstructor, buildPersonSchema, buildProfilePageSchema, buildBreadcrumbSchema, answersFromFaq } from "../../seo/index.js";
 
 export async function getStaticPaths() {
-  return instructors.map((teacher) => ({
-    params: { slug: teacher.slug },
-    props: { teacher }
-  }));
+  return instructors.map((teacher) => ({ params: { slug: teacher.slug }, props: { teacher } }));
 }
 
 const { teacher } = Astro.props;
 const site = resolveSite();
 const resolvedInstructor = resolveInstructor(teacher, site);
-
-if (!resolvedInstructor) {
-  throw new Error(`Instructor not found: ${teacher.slug}`);
-}
+if (!resolvedInstructor) throw new Error(`Instructor not found: ${teacher.slug}`);
 
 type InstructorSeoContent = {
   quickSummary: string;
@@ -55,9 +39,7 @@ const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "اساتید", path: "/instructors" },
   { name: teacher.name, path: `/instructors/${teacher.slug}` }
 ], site);
-const schema: object[] = [profilePageSchema, personSchema, breadcrumbSchema].filter(
-  (item): item is object => item !== null
-);
+const schema: object[] = [profilePageSchema, personSchema, breadcrumbSchema].filter((item): item is object => item !== null);
 
 const teacherCourses: ResolvedCourse[] = resolvedInstructor.courses as ResolvedCourse[];
 const linkCandidates = teacherCourses.map((course) => ({
@@ -87,26 +69,23 @@ const internalLinkCount = teacherCourses.length + 1;
 const courseDisplayMap = instructorCourseDisplay as Record<string, Record<string, string>>;
 const courseDisplay = courseDisplayMap[teacher.slug] || {};
 
+const specialty = teacher.position.replace(/^مدرس\s*/u, "");
+const instructorTitle = `${teacher.name} | مدرس ${specialty} در آموزشگاه موسیقی فاتح شوشتر`;
+const instructorDescription = `${teacher.name}، مدرس ${specialty} در آموزشگاه موسیقی فاتح شوشتر. آشنایی با تخصص، دوره‌های آموزشی، روش تدریس و مسیر ثبت‌نام.`;
 ---
 
 <MainLayout
-  title={`${teacher.name} | آموزشگاه موسیقی فاتح`}
-  description={teacher.content.biography}
+  title={instructorTitle}
+  description={instructorDescription}
   keywords={teacher.seo.keywords}
-  topics={[...teacher.professional.roles, "شوشتر"]}
+  topics={[...teacher.professional.roles, "شوشتر", "آموزش موسیقی"]}
   entityType="Person"
   answerBlocks={answerBlocks}
   linkCandidates={linkCandidates}
-  auditContext={{
-    h1Count: 1,
-    missingImageAlt: 0,
-    wordCount,
-    internalLinkCount
-  }}
+  auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount }}
   schema={schema}
 >
 <Header />
-
 <section class="teacher-hero">
 <div class="container">
 <div class="teacher-grid">
@@ -125,14 +104,9 @@ const courseDisplay = courseDisplayMap[teacher.slug] || {};
 </div>
 </div>
 </section>
-
 <section class="teacher-courses">
 <div class="container">
-<div class="section-header">
-<span class="section-badge">دوره‌های آموزشی</span>
-<h2>کلاس‌های {teacher.name}</h2>
-<p>دوره‌هایی که توسط این مدرس در آموزشگاه موسیقی فاتح برگزار می‌شود.</p>
-</div>
+<div class="section-header"><span class="section-badge">دوره‌های آموزشی</span><h2>کلاس‌های {teacher.name}</h2><p>دوره‌هایی که توسط این مدرس در آموزشگاه موسیقی فاتح برگزار می‌شود.</p></div>
 {teacherCourses.length > 0 ? (
 <div class="courses-grid">
 {teacherCourses.map((course: ResolvedCourse) => (
@@ -142,12 +116,9 @@ const courseDisplay = courseDisplayMap[teacher.slug] || {};
 </a>
 ))}
 </div>
-) : (
-<div class="empty-state"><p>هنوز دوره‌ای برای این مدرس ثبت نشده است.</p></div>
-)}
+) : <div class="empty-state"><p>هنوز دوره‌ای برای این مدرس ثبت نشده است.</p></div>}
 </div>
 </section>
-
 <section class="teacher-about">
 <div class="container">
 <div class="section-header"><span class="section-badge">درباره مدرس</span><h2>آشنایی بیشتر با {teacher.name}</h2></div>
@@ -157,15 +128,8 @@ const courseDisplay = courseDisplayMap[teacher.slug] || {};
 </div>
 </div>
 </section>
-
 <InstructorSeoContent instructorName={teacher.name} seoContent={seoContent} />
-
-<FAQSection
-  title={`سوالات متداول درباره ${teacher.name}`}
-  subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام می‌پرسند."
-  items={resolvedInstructor.faqs}
-/>
-
+<FAQSection title={`سوالات متداول درباره ${teacher.name}`} subtitle="پاسخ پرسش‌هایی که هنرجویان معمولاً پیش از ثبت‌نام می‌پرسند." items={resolvedInstructor.faqs} />
 <CTA />
 <Footer />
 </MainLayout>
