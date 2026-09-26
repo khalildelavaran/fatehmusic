@@ -6,6 +6,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
+import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
 /**
  * @param {Object} instructor - a resolved instructor (from resolveInstructor)
@@ -16,7 +17,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
 export function buildPersonSchema(instructor, { site }) {
     const taughtCourses = (instructor.courses || []).filter((course) => course?.slug);
     const taughtCourseRefs = taughtCourses.map((course) => ({
-        "@id": `${site.url}/courses/${course.slug.replace(/\/$/, "")}#course`
+        "@id": courseEntityId(`${site.url}/courses/${course.slug}`)
     }));
 
     const knowsAbout = [
@@ -26,7 +27,7 @@ export function buildPersonSchema(instructor, { site }) {
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.PERSON,
-        "@id": `${String(instructor.url).replace(/\/$/, "")}/#person`,
+        "@id": instructorEntityId(instructor.url),
         name: instructor.name,
         jobTitle: instructor.position,
         description: instructor.bio,
