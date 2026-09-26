@@ -19,7 +19,7 @@ export default defineConfig({
   integrations: [
     sitemap({
       filter: (page) => {
-        const pathname = new URL(page).pathname.replace(/\\/$/, "") || "/";
+        const pathname = new URL(page).pathname.replace(/\/$/, "") || "/";
         return ![
           "/login",
           "/404"
