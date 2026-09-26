@@ -7,7 +7,7 @@ export function buildLocalPlaceSchema(site) {
   return {
     "@type": SCHEMA_TYPES.PLACE,
     "@id": `${url}#place`,
-    name: "آموزش موسیقی در شوشتر",
+    name: "آموزشگاه موسیقی فاتح شوشتر",
     url,
     description: "اطلاعات محلی درباره آموزش موسیقی و آموزشگاه موسیقی فاتح در شوشتر، خوزستان.",
     address: {
