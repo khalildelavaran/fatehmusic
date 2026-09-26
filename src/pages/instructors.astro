@@ -13,11 +13,10 @@ import { instructorEntityId } from "../seo/geo/entity.js";
 
 const site = resolveSite();
 const canonical = `${site.url}/instructors`;
-
 const activeInstructors = instructors.filter((instructor) => instructor.active !== false);
 
 const instructorListSchema = buildItemListSchema({
-    name: "مدرسین آموزشگاه موسیقی فاتح",
+    name: "اساتید آموزشگاه موسیقی فاتح شوشتر",
     url: canonical,
     itemType: "Person",
     items: activeInstructors.map((instructor) => ({
@@ -29,24 +28,27 @@ const instructorListSchema = buildItemListSchema({
 ---
 
 <MainLayout
-    title="اساتید آموزشگاه موسیقی فاتح | مدرسین موسیقی در شوشتر"
-    description="آشنایی با اساتید آموزشگاه موسیقی فاتح؛ مدرسین مجرب گیتار، پیانو، ویولون، آواز و سازهای ایرانی."
+    title="اساتید آموزشگاه موسیقی فاتح شوشتر | مدرس‌های موسیقی"
+    description="آشنایی با اساتید آموزشگاه موسیقی فاتح شوشتر؛ مدرس‌های گیتار، پیانو، ویولن، سنتور، تار، سازهای کوبه‌ای، آواز و دروس پایه موسیقی."
     canonical={canonical}
+    keywords={["اساتید موسیقی شوشتر", "مدرس موسیقی شوشتر", "استاد گیتار شوشتر", "استاد پیانو شوشتر", "مدرس آواز شوشتر"]}
+    topics={["shushtar", "instructors", "music-education"]}
+    entityType="ItemList"
+    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: activeInstructors.length }}
     schema={instructorListSchema ? [instructorListSchema] : []}
 >
-
     <Header />
-
     <PageHero
         badge="اساتید"
         title="اساتید آموزشگاه موسیقی فاتح در شوشتر"
         description="آشنایی با مدرسین و اساتید آموزشگاه موسیقی فاتح؛ راهنمای انتخاب استاد برای یادگیری ساز، آواز و مبانی موسیقی در شوشتر."
     />
-	 
-    <Instructors />
-
+    <main>
+        <section class="container" style="padding: 36px 0 10px;">
+            <p>برای انتخاب مدرس، صفحه اختصاصی هر استاد را بررسی کنید تا تخصص، دوره‌های قابل ارائه و مسیر آموزشی مرتبط را ببینید.</p>
+        </section>
+        <Instructors />
+    </main>
     <CTA />
-
     <Footer />
-
 </MainLayout>
