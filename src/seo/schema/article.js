@@ -6,7 +6,7 @@
 
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { absoluteUrl } from "../helpers/url.js";
-import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
+import { articleEntityId, courseEntityId } from "../geo/entity.js";
 
 /**
  * @param {Object} post
@@ -35,7 +35,6 @@ export function buildArticleSchema(post, { site, url, keywords = [], topics = []
         inLanguage: "fa-IR",
         articleSection: post.topic,
         keywords,
-        author: resolveAuthor(post),
         publisher: { "@id": `${site.url}/#organization` },
         mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
         isPartOf: { "@id": `${site.url}/#website` },
@@ -50,18 +49,6 @@ export function buildArticleSchema(post, { site, url, keywords = [], topics = []
     }
 
     return pruneEmpty(schema);
-}
-
-function resolveAuthor(post) {
-    if (post.author_url && post.author_name) {
-        return {
-            "@type": SCHEMA_TYPES.PERSON,
-            "@id": post.author_url.endsWith("#person") ? post.author_url : instructorEntityId(post.author_url),
-            name: post.author_name
-        };
-    }
-    if (post.author_name) return { "@type": SCHEMA_TYPES.PERSON, name: post.author_name };
-    return undefined;
 }
 
 function toIsoDate(value) {
