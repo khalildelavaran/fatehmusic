@@ -1,14 +1,18 @@
 ---
 import GuitarStyleLanding from "../../components/GuitarStyleLanding.astro";
 import { guitarStylePages } from "../../data/guitar-style-content.js";
-import { resolveSite, buildBreadcrumbSchema, buildGuitarStyleSchema } from "../../seo/index.js";
+import { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildPersonSchema, buildBreadcrumbSchema, buildGuitarStyleSchema } from "../../seo/index.js";
 
 const site = resolveSite();
 const baseStyle = guitarStylePages["guitar-pop"];
+const parentCourse = resolveCourse("guitar-course", site);
+const parentInstructor = resolveInstructor("khalil-delavaran", site);
 const style = {
   ...baseStyle,
   schema: [
     buildGuitarStyleSchema(baseStyle),
+    ...(parentCourse ? [buildCourseSchema(parentCourse, { site })] : []),
+    ...(parentInstructor ? [buildPersonSchema(parentInstructor, { site })] : []),
     buildBreadcrumbSchema([
       { name: "خانه", path: "/" },
       { name: "دوره‌ها", path: "/courses" },
