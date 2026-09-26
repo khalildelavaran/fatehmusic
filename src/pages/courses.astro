@@ -9,6 +9,7 @@ import CTA from "../components/CTA.astro";
 import PageHero from "../components/PageHero.astro";
 import { courses } from "../data/courses";
 import { resolveSite, buildItemListSchema } from "../seo/index.js";
+import { courseEntityId } from "../seo/geo/entity.js";
 
 const site = resolveSite();
 const canonical = `${site.url}/courses`;
@@ -22,7 +23,7 @@ const courseListSchema = buildItemListSchema({
     items: activeCourses.map((course) => ({
         name: course.title,
         url: `${site.url}/courses/${course.slug}`,
-        id: `${site.url}/courses/${course.slug}/#course`,
+        id: courseEntityId(`${site.url}/courses/${course.slug}`),
         description: course.content?.description || course.content?.excerpt || undefined,
         provider: { "@id": `${site.url}/#organization` }
     }))
