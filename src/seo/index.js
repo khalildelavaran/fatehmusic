@@ -47,6 +47,9 @@ import { buildSEOIntelligence } from "./v2/orchestrator.js";
  *  title?: string;
  *  description?: string;
  *  image?: string;
+ *  imageWidth?: number;
+ *  imageHeight?: number;
+ *  imageType?: string;
  *  canonical?: string;
  *  noindex?: boolean;
  *  keywords?: string[];
@@ -60,7 +63,7 @@ import { buildSEOIntelligence } from "./v2/orchestrator.js";
  *  articlePosts?: object[];
  * }} options
  */
-export function buildSEO({ path, title, description, image, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [] } = {}) {
+export function buildSEO({ path, title, description, image, imageWidth, imageHeight, imageType, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [] } = {}) {
     const site = resolveSite();
     const effectiveNoindex = Boolean(noindex || isPrivateRoute(path));
     const metadata = buildMetadata({ site, title, description, keywords, noindex: effectiveNoindex });
@@ -74,8 +77,8 @@ export function buildSEO({ path, title, description, image, canonical, noindex =
     const answers = buildAnswerBlocks(answerBlocks);
     const clusterReport = articlePosts.length ? buildContentClusterReport(articlePosts, { courses, siteUrl: site.url }) : null;
     const contentStrategy = clusterReport ? clusterReport.strategy : buildContentStrategy([], courses, { siteUrl: site.url });
-    const openGraph = buildOpenGraph({ site, metadata, image: resolvedImage, url: canonicalUrl });
-    const twitter = buildTwitter({ metadata, image: resolvedImage });
+    const openGraph = buildOpenGraph({ site, metadata, image: resolvedImage, url: canonicalUrl, imageWidth, imageHeight, imageType });
+    const twitter = buildTwitter({ metadata, image: resolvedImage, site });
     const webPageSchema = buildWebPageSchema({ url: canonicalUrl, title: metadata.title, description: metadata.description, image: resolvedImage, keywords: metadata.keywords, topics: topicsResolved, extraSchema, site, lastModified });
     const schemaGraph = buildSchemaGraph([buildOrganizationSchema(site), buildWebsiteSchema(site), webPageSchema, ...buildTopicSchemas(topicsResolved, { site }), ...extraSchema]);
     const audit = auditPage({ metadata, url: canonicalUrl, schemaGraph, indexable: !effectiveNoindex, topicSlugs: topicsResolved.map((topic) => topic.slug), primaryIntent: intent.primary, freshness, ...auditContext });
