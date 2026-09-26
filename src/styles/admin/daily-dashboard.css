@@ -122,7 +122,7 @@
 .dd-student-card.is-excused{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.045)}
 .dd-student-card.is-withdrawn{opacity:.55;background:rgba(255,255,255,.018)}
 .dd-student-head{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"time name" "attendance attendance";align-items:center;column-gap:8px;row-gap:6px;min-height:26px;direction:ltr}
-.dd-student-name-row{grid-area:name;display:flex;align-items:center;min-width:0;direction:rtl}
+.dd-student-name-row{grid-area:name;display:flex;align-items:center;min-width:0;direction:rtl;padding-right:8px}
 .dd-student-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dd-student-time-row{display:flex}.dd-student-time-inline{grid-area:time;display:flex;align-items:center;justify-self:start;direction:rtl}
 .dd-student-head .dd-attendance-buttons{grid-area:attendance;display:flex;gap:5px;justify-self:end;direction:rtl}
