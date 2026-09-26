@@ -78,8 +78,6 @@ function buildAuthor(post, site) {
         "@type": authorUrl ? "Person" : "Organization",
         name: authorName,
         url: authorUrl,
-        "@id": authorUrl
-            ? `${authorUrl.replace(/\/$/, "")}/#person`
-            : `${site.url}/#organization`
+        ...(authorUrl ? {} : { "@id": `${site.url}/#organization` })
     });
 }
