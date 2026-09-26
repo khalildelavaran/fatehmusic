@@ -64,6 +64,7 @@ describe("SEO/GEO Engine v2", () => {
         robots: "index,follow"
       },
       url: "https://fatehmusic.ir/courses/guitar-course",
+      canonical: "https://fatehmusic.ir/courses/guitar-course",
       schemaGraph: {
         "@graph": [
           { "@id": "https://fatehmusic.ir/#organization" },
