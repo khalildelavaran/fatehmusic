@@ -26,7 +26,7 @@ export function buildWebPageSchema({
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.WEB_PAGE,
-        "@id": `${url}/#webpage`,
+        "@id": `${String(url).replace(/\/$/, "")}/#webpage`,
         url,
         name: title,
         description,
