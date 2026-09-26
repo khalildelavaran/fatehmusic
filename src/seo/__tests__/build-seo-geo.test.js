@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildSEO } from "../index.js";
+import { courseEntityId } from "../geo/entity.js";
 import { validateEntityGraph } from "../geo/validate.js";
 
 function idsOf(graph) {
@@ -47,14 +48,14 @@ describe("buildSEO GEO integration", () => {
             extraSchema: [
                 {
                     "@type": "Course",
-                    "@id": "https://fatehmusic.ir/courses/guitar#course",
+                    "@id": courseEntityId("https://fatehmusic.ir/courses/guitar"),
                     name: "گیتار"
                 }
             ]
         });
 
         const course = result.schemaGraph["@graph"].find(
-            (node) => node?.["@id"] === "https://fatehmusic.ir/courses/guitar/#course"
+            (node) => node?.["@id"] === courseEntityId("https://fatehmusic.ir/courses/guitar")
         );
 
         expect(course).toBeDefined();
