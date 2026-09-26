@@ -7,7 +7,7 @@
 
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { buildCourseInstructorRefs, buildCourseRef } from "../geo/graph.js";
-import { courseEntityId } from "../geo/entity.js";
+import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
 const GUITAR_STYLE_TRACKS = [
     {
@@ -126,7 +126,7 @@ export function buildGuitarStyleSchema(style, { site, instructorSlug = "khalil-d
         keywords: style.keywords,
         teaches: [style.title, style.focus],
         provider: { "@id": `${site.url}/#organization` },
-        instructor: { "@id": `${site.url}/instructors/${instructorSlug}#person` },
+        instructor: { "@id": instructorEntityId(`${site.url}/instructors/${instructorSlug}`) },
         isPartOf: { "@id": courseEntityId(parentUrl) },
         mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}#webpage` },
         educationalLevel: "مبتدی، متوسط، پیشرفته",
