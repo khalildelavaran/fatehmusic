@@ -16,7 +16,7 @@ import { SCHEMA_TYPES } from "../config/constants.js";
 export function buildPersonSchema(instructor, { site }) {
     const taughtCourses = (instructor.courses || []).filter((course) => course?.slug);
     const taughtCourseRefs = taughtCourses.map((course) => ({
-        "@id": `${site.url}/courses/${course.slug}/#course`
+        "@id": `${site.url}/courses/${course.slug.replace(/\/$/, "")}#course`
     }));
 
     const knowsAbout = [
@@ -26,14 +26,14 @@ export function buildPersonSchema(instructor, { site }) {
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.PERSON,
-        "@id": `${instructor.url}/#person`,
+        "@id": `${String(instructor.url).replace(/\/$/, "")}/#person`,
         name: instructor.name,
         jobTitle: instructor.position,
         description: instructor.bio,
         image: instructor.image,
         disambiguatingDescription: buildDisambiguatingDescription(instructor),
         worksFor: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${instructor.url}/#webpage` },
+        mainEntityOfPage: { "@id": `${String(instructor.url).replace(/\/$/, "")}/#webpage` },
         teaches: taughtCourseRefs.length ? taughtCourseRefs : undefined,
         knowsAbout: [...new Set(knowsAbout)].filter(Boolean),
         sameAs: instructor.sameAs && instructor.sameAs.length ? instructor.sameAs : undefined
