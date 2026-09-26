@@ -9,7 +9,8 @@
 
 const PRIVATE_ROUTE_PREFIXES = Object.freeze([
     "/admin",
-    "/student"
+    "/student",
+    "/instructor"
 ]);
 
 /**
