@@ -16,24 +16,24 @@
     "seo:live-audit": "node scripts/seo-http-audit.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.1.1",
+    "@astrojs/cloudflare": "^14.3.3",
     "@astrojs/sitemap": "^3.7.3",
-    "astro": "^7.0.6",
-    "@lucide/astro": "^1.37.0"
+    "@lucide/astro": "^1.37.0",
+    "astro": "^7.3.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/node": "^22.0.0",
-    "miniflare": "^4.20260722.1",
+    "miniflare": "^5.20260925.0-alpha",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "wrangler": "^4.0.0"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.141.0"
   },
   "overrides": {
     "undici": "7.29.0"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
-    "workerd@1.20260722.1": true
+    "workerd@1.20260925.1": true
   }
 }
