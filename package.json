@@ -11,7 +11,8 @@
     "check": "astro check",
     "test": "vitest run",
     "db:migrate:local": "wrangler d1 migrations apply fatehmusic-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply fatehmusic-db --remote"
+    "db:migrate:remote": "wrangler d1 migrations apply fatehmusic-db --remote",
+    "seo:audit": "node scripts/seo-audit.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.1",
