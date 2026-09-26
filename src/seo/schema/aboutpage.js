@@ -34,7 +34,7 @@ export function buildAboutPageSchema({ title, description, image, site }) {
         isPartOf: { "@id": `${site.url}/#website` },
         about: { "@id": `${site.url}/#organization` },
         mainEntity: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${url}#webpage` },
+        mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
         primaryImageOfPage: image
             ? { "@type": "ImageObject", url: absoluteUrl(image, site.url), caption: title }
             : undefined,
