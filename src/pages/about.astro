@@ -23,9 +23,9 @@ import {
 } from "../seo/index.js";
 import { instructors } from "../data/instructors.js";
 
-const title = "درباره آموزشگاه موسیقی فاتح";
+const title = "درباره آموزشگاه موسیقی فاتح شوشتر | اساتید و روش آموزش";
 const description =
-    "آموزشگاه موسیقی فاتح در شوشتر، مرکز آموزش خصوصی گیتار، پیانو، ویولن، سنتور، تار، دف، آواز و ۲۳ رشته موسیقی با ۱۴ مدرس متخصص، برای همه سنین و سطوح.";
+    "آشنایی با آموزشگاه موسیقی فاتح شوشتر، اساتید، دوره‌ها، روش آموزش خصوصی و رشته‌های موسیقی برای کودکان، نوجوانان و بزرگسالان.";
 
 const site = resolveSite();
 
@@ -38,12 +38,7 @@ const instructorSchemas = instructors
     .filter((item): item is object => item !== null);
 
 const schema = [
-    buildAboutPageSchema({
-        title,
-        description,
-        image: site.image,
-        site
-    }),
+    buildAboutPageSchema({ title, description, image: site.image, site }),
     buildBreadcrumbSchema(
         [
             { name: "خانه", path: "/" },
@@ -59,16 +54,18 @@ const schema = [
     title={title}
     description={description}
     canonical={`${site.url}/about`}
+    keywords={["درباره آموزشگاه موسیقی فاتح", "آموزشگاه موسیقی شوشتر", "اساتید موسیقی شوشتر", "روش آموزش موسیقی"]}
+    topics={["shushtar", "music-education", "instructors"]}
+    entityType="AboutPage"
+    auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: 6 }}
     schema={schema}
 >
     <Header />
-
     <PageHero
         badge="درباره ما"
         title="درباره آموزشگاه موسیقی فاتح"
         description="آشنایی با آموزشگاه موسیقی فاتح؛ فلسفه آموزشی، اساتید و دوره‌های این مجموعه در شوشتر."
     />
-
     <main>
         <AboutOverview />
         <AboutMission />
@@ -76,8 +73,17 @@ const schema = [
         <AboutCourses />
         <AboutFacilities />
         <AboutFAQ />
+        <section class="container" style="padding: 20px 0 70px;">
+            <h2>دوره‌ها، اساتید و اطلاعات آموزش موسیقی در شوشتر</h2>
+            <p>برای بررسی دوره‌های آموزشی، انتخاب مدرس و دریافت اطلاعات محلی، از صفحات اختصاصی آموزشگاه استفاده کنید.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="/courses" class="btn btn-primary">مشاهده دوره‌های موسیقی</a>
+                <a href="/instructors" class="btn btn-outline">مشاهده اساتید</a>
+                <a href="/locations/shushtar" class="btn btn-outline">آموزش موسیقی در شوشتر</a>
+                <a href="/contact" class="btn btn-outline">تماس با آموزشگاه</a>
+            </div>
+        </section>
     </main>
-
     <CTA />
     <Footer />
 </MainLayout>
