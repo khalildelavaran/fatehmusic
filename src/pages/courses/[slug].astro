@@ -41,8 +41,11 @@ const courseSchema = buildCourseSchema(resolvedCourse, { site });
 const courseStyleSchemas = buildCourseStyleSchemas(resolvedCourse, { site });
 const teacherSchemas = resolvedCourse.instructors
   .map((teacher) => resolveInstructor(teacher, site))
-  .filter((teacher): teacher is NonNullable<typeof teacher> => Boolean(teacher))
-  .map((teacher) => buildPersonSchema(teacher, { site }));
+  .reduce((schemas, teacher) => {
+    const resolvedTeacher = resolveInstructor(teacher, site);
+    if (resolvedTeacher) schemas.push(buildPersonSchema(resolvedTeacher, { site }));
+    return schemas;
+  }, []);
 
 const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "خانه", path: "/" },
