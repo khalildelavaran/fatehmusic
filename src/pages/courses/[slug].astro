@@ -70,6 +70,40 @@ const guitarStyleLinks = course.slug === "guitar-course"
     ]
   : [];
 
+const foundationLinks = course.slug === "guitar-course"
+  ? [
+      { href: "/courses/music-theory-course", title: "تئوری موسیقی", description: "مبانی نت، ریتم، گام و آکورد برای نوازندگی" },
+      { href: "/courses/solfege-course", title: "آموزش سلفژ", description: "تقویت نت‌خوانی، ریتم و گوش موسیقایی" }
+    ]
+  : course.slug === "zarb-tempo-course"
+    ? [
+        { href: "/courses/rhythm-reading-course", title: "آموزش ریتم و وزن‌خوانی", description: "تقویت درک ریتم، میزان و الگوهای ریتمیک" },
+        { href: "/courses/music-theory-course", title: "تئوری موسیقی", description: "آشنایی با میزان، کشش نت و مفاهیم پایه موسیقی" },
+        { href: "/courses/solfege-course", title: "آموزش سلفژ", description: "تقویت گوش موسیقایی و درک ریتم و نت" }
+      ]
+    : [];
+
+const courseSeo = course.slug === "guitar-course"
+  ? {
+      title: "آموزش گیتار در شوشتر | کلاس گیتار از مبتدی تا پیشرفته",
+      description: "کلاس آموزش گیتار در آموزشگاه موسیقی فاتح شوشتر؛ آموزش گیتار کلاسیک، پاپ و فلامنکو برای سطوح مختلف با مدرس دوره."
+    }
+  : course.slug === "zarb-tempo-course"
+    ? {
+        title: "آموزش ضرب و تمپو در شوشتر | کلاس ریتم و تمپو",
+        description: "آموزش ضرب و تمپو و مبانی ریتم در آموزشگاه موسیقی فاتح شوشتر؛ مناسب هنرجویان ساز و آواز برای تقویت درک ضرب، ریتم، میزان و تمپو."
+      }
+    : {
+        title: course.seo.title,
+        description: course.seo.description
+      };
+
+const h1 = course.slug === "guitar-course"
+  ? "آموزش گیتار در شوشتر"
+  : course.slug === "zarb-tempo-course"
+    ? "آموزش ضرب و تمپو در شوشتر"
+    : course.title;
+
 const linkCandidates = [
   ...teachers.map((teacher) => ({
     url: `${site.url}/instructors/${teacher.slug}`,
@@ -94,6 +128,14 @@ const linkCandidates = [
     topics: [item.title, "آموزش گیتار", "شوشتر"],
     priority: 40,
     local: true
+  })),
+  ...foundationLinks.map((item) => ({
+    url: `${site.url}${item.href}`,
+    title: item.title,
+    type: "Course",
+    topics: [item.title, course.title, "شوشتر"],
+    priority: 35,
+    local: true
   }))
 ];
 
@@ -111,15 +153,15 @@ const auditText = [
   resolvedCourse.seoContent?.learningPath?.map((item: { stage: string; description: string }) => `${item.stage} ${item.description}`) || []
 ].flat().filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
-const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleLinks.length + 1;
+const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleLinks.length + foundationLinks.length + 1;
 
 ---
 
 <MainLayout
-  title={course.seo.title}
-  description={course.seo.description}
+  title={courseSeo.title}
+  description={courseSeo.description}
   keywords={course.seo.keywords}
-  topics={[course.instrument, course.category, "گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو", "شوشتر"]}
+  topics={[course.instrument, course.category, "شوشتر", ...foundationLinks.map((item) => item.title)]}
   entityType="Course"
   answerBlocks={answerBlocks}
   linkCandidates={linkCandidates}
@@ -148,7 +190,7 @@ const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleL
 <div class="course-page__hero">
 <div class="course-page__content">
 <span class="course-page__badge">دوره آموزشی</span>
-<h1 class="course-page__title">{course.title}</h1>
+<h1 class="course-page__title">{h1}</h1>
 <p class="course-page__description">{course.content.description}</p>
 <div class="course-page__meta">
 <div class="course-page__meta-item"><strong>اساتید</strong><span>{teachers.map((t: Instructor) => t.name).join(" - ")}</span></div>
@@ -190,6 +232,26 @@ const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleL
 <a href={item.href} class="course-card">
 <div class="course-content">
 <span>مسیر تخصصی</span>
+<h3>{item.title}</h3>
+<p>{item.description}</p>
+</div>
+</a>
+))}
+</div>
+</div>
+</section>
+)}
+
+{foundationLinks.length > 0 && (
+<section class="course-page__section">
+<div class="container">
+<h2>{course.slug === "guitar-course" ? "دروس پایه مرتبط با گیتار" : "دروس پایه مرتبط با ریتم و تمپو"}</h2>
+<p>{course.slug === "guitar-course" ? "برای تقویت مسیر نوازندگی گیتار، آشنایی با تئوری موسیقی و سلفژ می‌تواند در کنار تمرین ساز مفید باشد." : "برای تقویت درک ریتم و تمپو، مطالعه مبانی ریتم، وزن‌خوانی، تئوری موسیقی و سلفژ می‌تواند مسیر آموزشی را کامل‌تر کند."}</p>
+<div class="course-page__related-grid">
+{foundationLinks.map((item) => (
+<a href={item.href} class="course-card">
+<div class="course-content">
+<span>دوره مرتبط</span>
 <h3>{item.title}</h3>
 <p>{item.description}</p>
 </div>
