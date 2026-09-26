@@ -34,87 +34,9 @@ describe('D1 enrollment term transition', () => {
     const env = await mf.getBindings<TestEnv>();
     db = env.DB;
 
-    await db.exec(`
-      CREATE TABLE classes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL
-      );
-
-      CREATE TABLE enrollments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        class_id INTEGER NOT NULL,
-        student_id INTEGER NOT NULL,
-        status TEXT NOT NULL DEFAULT 'active'
-      );
-
-      CREATE TABLE class_term_settings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        class_id INTEGER NOT NULL UNIQUE,
-        billing_type TEXT NOT NULL,
-        planned_sessions INTEGER,
-        tuition_amount INTEGER,
-        tuition_due_days INTEGER,
-        updated_at TEXT DEFAULT datetime('now')
-      );
-
-      CREATE TABLE class_sessions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        class_id INTEGER NOT NULL,
-        session_date TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'scheduled'
-      );
-
-      CREATE TABLE enrollment_terms (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        enrollment_id INTEGER NOT NULL,
-        term_number INTEGER NOT NULL,
-        start_date TEXT NOT NULL,
-        planned_sessions INTEGER,
-        billing_type TEXT NOT NULL,
-        tuition_amount INTEGER,
-        tuition_due_date TEXT,
-        status TEXT NOT NULL,
-        updated_at TEXT DEFAULT datetime('now')
-      );
-
-      CREATE UNIQUE INDEX idx_test_one_active_term
-        ON enrollment_terms(enrollment_id)
-        WHERE status = 'active';
-
-      CREATE TABLE enrollment_sessions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        enrollment_id INTEGER NOT NULL,
-        session_id INTEGER NOT NULL,
-        enrollment_term_id INTEGER,
-        status TEXT NOT NULL,
-        updated_at TEXT DEFAULT datetime('now')
-      );
-
-      CREATE UNIQUE INDEX idx_test_unique_enrollment_session
-        ON enrollment_sessions(enrollment_id, session_id);
-
-      CREATE TABLE invoices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        enrollment_term_id INTEGER NOT NULL,
-        amount INTEGER NOT NULL,
-        due_date TEXT,
-        status TEXT NOT NULL,
-        description TEXT
-      );
-
-      CREATE TABLE payments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        invoice_id INTEGER NOT NULL,
-        amount INTEGER NOT NULL
-      );
-
-      INSERT INTO classes (id, name) VALUES (1, 'گیتار');
-      INSERT INTO enrollments (id, class_id, student_id, status)
-      VALUES (1, 1, 1, 'active');
-      INSERT INTO class_term_settings
-        (class_id, billing_type, planned_sessions, tuition_amount, tuition_due_days)
-      VALUES (1, 'session_based', 8, 800000, 7);
-    `);
+    for (const statement of ["CREATE TABLE classes (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        name TEXT NOT NULL\n      )","CREATE TABLE enrollments (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        class_id INTEGER NOT NULL,\n        student_id INTEGER NOT NULL,\n        status TEXT NOT NULL DEFAULT 'active'\n      )","CREATE TABLE class_term_settings (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        class_id INTEGER NOT NULL UNIQUE,\n        billing_type TEXT NOT NULL,\n        planned_sessions INTEGER,\n        tuition_amount INTEGER,\n        tuition_due_days INTEGER,\n        updated_at TEXT DEFAULT datetime('now')\n      )","CREATE TABLE class_sessions (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        class_id INTEGER NOT NULL,\n        session_date TEXT NOT NULL,\n        status TEXT NOT NULL DEFAULT 'scheduled'\n      )","CREATE TABLE enrollment_terms (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        enrollment_id INTEGER NOT NULL,\n        term_number INTEGER NOT NULL,\n        start_date TEXT NOT NULL,\n        planned_sessions INTEGER,\n        billing_type TEXT NOT NULL,\n        tuition_amount INTEGER,\n        tuition_due_date TEXT,\n        status TEXT NOT NULL,\n        updated_at TEXT DEFAULT datetime('now')\n      )","CREATE UNIQUE INDEX idx_test_one_active_term\n        ON enrollment_terms(enrollment_id)\n        WHERE status = 'active'","CREATE TABLE enrollment_sessions (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        enrollment_id INTEGER NOT NULL,\n        session_id INTEGER NOT NULL,\n        enrollment_term_id INTEGER,\n        status TEXT NOT NULL,\n        updated_at TEXT DEFAULT datetime('now')\n      )","CREATE UNIQUE INDEX idx_test_unique_enrollment_session\n        ON enrollment_sessions(enrollment_id, session_id)","CREATE TABLE invoices (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        enrollment_term_id INTEGER NOT NULL,\n        amount INTEGER NOT NULL,\n        due_date TEXT,\n        status TEXT NOT NULL,\n        description TEXT\n      )","CREATE TABLE payments (\n        id INTEGER PRIMARY KEY AUTOINCREMENT,\n        invoice_id INTEGER NOT NULL,\n        amount INTEGER NOT NULL\n      )","INSERT INTO classes (id, name) VALUES (1, 'گیتار')","INSERT INTO enrollments (id, class_id, student_id, status)\n      VALUES (1, 1, 1, 'active')","INSERT INTO class_term_settings\n        (class_id, billing_type, planned_sessions, tuition_amount, tuition_due_days)\n      VALUES (1, 'session_based', 8, 800000, 7);"]) {
+      await db.exec(statement);
+    }
   });
 
   afterAll(async () => {
