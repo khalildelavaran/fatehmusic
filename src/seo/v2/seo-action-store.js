@@ -1,9 +1,10 @@
-/** @param {D1Database} db @param {{actionType:string,targetUrl?:string|null,targetSlug?:string|null,targetTitle?:string|null,relatedCourseSlug?:string|null,recommendationScore?:number|null,status?:string,source?:string,notes?:string|null}} [options] */
+/** @param {D1Database} db @param {{actionType:string,targetUrl?:string|null,targetSlug?:string|null,targetTitle?:string|null,targetPostId?:number|null,relatedCourseSlug?:string|null,recommendationScore?:number|null,status?:string,source?:string,notes?:string|null}} [options] */
 export async function createSeoAction(db, {
   actionType,
   targetUrl,
   targetSlug,
   targetTitle,
+  targetPostId = null,
   relatedCourseSlug = null,
   recommendationScore = null,
   status = "pending_review",
@@ -12,8 +13,8 @@ export async function createSeoAction(db, {
 } = {}) {
   if (!db) throw new Error("SEO_ACTION_DB_REQUIRED");
   const result = await db.prepare(
-    "INSERT INTO seo_action_log (action_type, target_url, target_slug, target_title, related_course_slug, recommendation_score, status, source, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-  ).bind(actionType, targetUrl, targetSlug, targetTitle, relatedCourseSlug, recommendationScore, status, source, notes).run();
+    "INSERT INTO seo_action_log (action_type, target_url, target_slug, target_title, target_post_id, related_course_slug, recommendation_score, status, source, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(actionType, targetUrl, targetSlug, targetTitle, targetPostId, relatedCourseSlug, recommendationScore, status, source, notes).run();
   return Number(result.meta?.last_row_id || 0);
 }
 
@@ -70,14 +71,14 @@ export async function syncPublishedSeoActionMeasurements(db, {
 
   const site = String(siteUrl).replace(/\/$/, "");
   const rows = await db.prepare(
-    "SELECT a.id, a.target_url, " +
+    "SELECT a.id, a.target_url, a.target_post_id, " +
     "COALESCE(SUM(g.impressions), 0) AS impressions, COALESCE(SUM(g.clicks), 0) AS clicks, " +
     "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN COALESCE(SUM(g.clicks), 0) / SUM(g.impressions) ELSE 0 END AS ctr, " +
     "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN SUM(g.impressions * g.position) / SUM(g.impressions) ELSE NULL END AS position " +
     "FROM seo_action_log a LEFT JOIN gsc_search_signals_v2 g " +
     "ON g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
-    "WHERE a.status = 'published' AND a.target_url IS NOT NULL GROUP BY a.id, a.target_url"
+    "WHERE a.status = 'published' AND a.target_url IS NOT NULL GROUP BY a.id, a.target_url, a.target_post_id"
   ).bind(site, windowStart, windowEnd).all();
 
   const measurementRows = rows.results || [];
@@ -117,7 +118,7 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
 
   const actions = await db.prepare(
     "SELECT id, action_type AS actionType, target_url AS target_url, target_slug AS target_slug, target_title AS target_title, " +
-    "related_course_slug AS related_course_slug, recommendation_score AS recommendation_score, status, source, " +
+    "target_post_id AS target_post_id, related_course_slug AS related_course_slug, recommendation_score AS recommendation_score, status, source, " +
     "created_at AS created_at, updated_at AS updated_at, published_at AS published_at " +
     "FROM seo_action_log ORDER BY updated_at DESC LIMIT ?"
   ).bind(Math.max(1, Math.min(limit, 100))).all();
