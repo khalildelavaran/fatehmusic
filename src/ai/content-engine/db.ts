@@ -8,21 +8,46 @@
 import type { ContentTopicRow, ScoredCandidate, TopicStatus } from "./types";
 import type { ExistingTitleIndex } from "./dedup";
 import { toDedupKey } from "./normalize";
+import { canonicalAssetKey } from "./canonical-identity";
 
 export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTitleIndex> {
   const [topics, posts] = await Promise.all([
-    db.prepare("SELECT title, normalized_key FROM content_topics WHERE status != 'rejected'").all<{ title: string; normalized_key: string }>(),
+    db.prepare(
+      "SELECT title, normalized_key, instrument_key, related_course_slug, audience, level, modifier_type FROM content_topics WHERE status != 'rejected'"
+    ).all<{
+      title: string;
+      normalized_key: string;
+      instrument_key: string | null;
+      related_course_slug: string | null;
+      audience: string;
+      level: string;
+      modifier_type: ContentTopicRow["modifier_type"];
+    }>(),
     db.prepare("SELECT title FROM blog_posts").all<{ title: string }>()
   ]);
+
   const normalizedKeys = new Set<string>(topics.results.map((r) => r.normalized_key));
+  const canonicalKeys = new Set<string>(
+    topics.results.map((row) => canonicalAssetKey({
+      title: row.title,
+      normalizedKey: row.normalized_key,
+      instrumentKey: row.instrument_key,
+      relatedCourseSlug: row.related_course_slug,
+      audience: row.audience as "" | "کودک" | "نوجوان" | "بزرگسال",
+      level: row.level as "" | "مبتدی" | "متوسط" | "پیشرفته",
+      modifierType: row.modifier_type,
+      intent: "informational",
+      source: "stored"
+    }))
+  );
   const titles = [
     ...topics.results.map((r) => r.title),
     ...posts.results.map((r) => r.title)
   ];
-  // blog_posts has no normalized_key column -- derive it here so an
-  // exact-title AI post also blocks re-generating the same topic.
+  // blog_posts has no normalized_key/canonical metadata, so derive only the
+  // exact normalized title key from published or draft posts.
   for (const post of posts.results) normalizedKeys.add(toDedupKey(post.title));
-  return { normalizedKeys, canonicalKeys: normalizedKeys, titles };
+  return { normalizedKeys, canonicalKeys, titles };
 }
 
 export async function getCoverageByCourse(db: D1Database): Promise<Map<string, number>> {
