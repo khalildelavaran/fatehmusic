@@ -80,20 +80,32 @@ export async function syncPublishedSeoActionMeasurements(db, {
     "WHERE a.status = 'published' AND a.target_url IS NOT NULL GROUP BY a.id, a.target_url"
   ).bind(site, windowStart, windowEnd).all();
 
+  const measurementRows = rows.results || [];
   let measured = 0;
-  for (const row of rows.results || []) {
-    const impressions = Math.max(0, Number(row.impressions) || 0);
-    const clicks = Math.max(0, Number(row.clicks) || 0);
 
-    // Store zero-visibility measurements too. A published page with zero
-    // impressions is a real outcome and must not be confused with "not measured".
-    await db.prepare(
-      "INSERT INTO seo_action_measurements (action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console') " +
-      "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, ctr=excluded.ctr, position=excluded.position"
-    ).bind(row.id, measuredAt, windowStart, windowEnd, impressions, clicks, Number(row.ctr) || 0, row.position == null ? null : Number(row.position)).run();
+  for (let offset = 0; offset < measurementRows.length; offset += 50) {
+    const chunk = measurementRows.slice(offset, offset + 50);
+    const statements = chunk.map((row) => {
+      const impressions = Number(row.impressions) || 0;
+      const clicks = Number(row.clicks) || 0;
+      return db.prepare(
+        "INSERT INTO seo_action_measurements (action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console') " +
+        "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, ctr=excluded.ctr, position=excluded.position"
+      ).bind(
+        row.id,
+        measuredAt,
+        windowStart,
+        windowEnd,
+        impressions,
+        clicks,
+        Number(row.ctr) || 0,
+        row.position == null ? null : Number(row.position)
+      );
+    });
 
-    measured += 1;
+    if (statements.length) await db.batch(statements);
+    measured += chunk.length;
   }
 
   return { measured };
