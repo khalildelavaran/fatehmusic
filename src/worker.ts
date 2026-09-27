@@ -1,11 +1,21 @@
 import { handle } from "@astrojs/cloudflare/handler";
 import { runDailyArticleGeneration } from "./ai/content-engine/article-generator";
+import { runTopicDiscovery } from "./ai/content-engine/pipeline";
+import { runScheduledSearchConsoleSync } from "./seo/v2/providers/search-console-sync.js";
+import { runScheduledAhrefsMarketIntelligence } from "./seo/v2/providers/ahrefs.js";
 import { generateClassReminders } from "./server/in-app-notifications";
 
 interface WorkerEnv extends Env {
   DB: D1Database;
   AI: Ai;
   ANTHROPIC_API_KEY?: string;
+  GSC_CLIENT_EMAIL?: string;
+  GSC_PRIVATE_KEY?: string;
+  GSC_SITE_URL?: string;
+  GSC_SYNC_BREAKDOWNS?: string;
+  AHREFS_API_KEY?: string;
+  AHREFS_COUNTRY?: string;
+  AHREFS_TARGET_URL?: string;
   [key: string]: unknown;
 }
 
@@ -15,22 +25,31 @@ export default {
   },
 
   async scheduled(controller: ScheduledController, env: WorkerEnv, ctx: ExecutionContext) {
+    if (controller.cron === "45 0 * * 0") {
+      ctx.waitUntil(runScheduledAhrefsMarketIntelligence(env));
+      return;
+    }
+    if (controller.cron === "15 1 * * *" || controller.cron === "15 3 * * *") {
+      ctx.waitUntil(runScheduledSearchConsoleSync(env));
+      return;
+    }
+
+    if (controller.cron === "45 1 * * *") {
+      ctx.waitUntil(runTopicDiscovery(env.DB, { env }));
+      return;
+    }
+
     if (controller.cron === "30 2 * * *") {
       ctx.waitUntil(runDailyArticleGeneration(env));
       return;
     }
+
     if (controller.cron === "*/30 * * * *") {
-      // Class reminders (spec section 37): reminds students/instructors of
-      // any session starting in the next 30-90 minutes. The window is
-      // wider than the 30-minute run interval so a slow/delayed
-      // invocation never silently skips a session; generateClassReminders
-      // is idempotent per (session, recipient), so overlap is harmless.
       const now = new Date();
       const today = now.toISOString().slice(0, 10);
       const windowStart = new Date(now.getTime() + 30 * 60_000).toISOString().slice(11, 16);
       const windowEnd = new Date(now.getTime() + 90 * 60_000).toISOString().slice(11, 16);
       ctx.waitUntil(generateClassReminders(env.DB, today, windowStart, windowEnd));
-      return;
     }
   }
 };

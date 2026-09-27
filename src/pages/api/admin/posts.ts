@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
+import { markSeoActionPublished } from "../../../seo/v2/seo-action-store.js";
 
 const fields = `id, slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, created_at, updated_at, published_at, is_ai_generated`;
 
@@ -31,9 +32,11 @@ export const POST: APIRoute = async ({ request }) => {
   if (post.id) {
     await db.prepare(`UPDATE blog_posts SET slug=?, title=?, excerpt=?, content=?, topic=?, related_course_slug=?, related_course_title=?, status=?, meta_title=?, meta_description=?, updated_at=datetime('now'), published_at=COALESCE(published_at, ?) WHERE id=?`)
       .bind(post.slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, publishedAt, post.id).run();
+    if (status === "published") await markSeoActionPublished(db, { targetSlug: post.slug, targetTitle: post.title });
   } else {
     await db.prepare(`INSERT INTO blog_posts (slug,title,excerpt,content,topic,related_course_slug,related_course_title,status,meta_title,meta_description,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(post.slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, publishedAt).run();
+    if (status === "published") await markSeoActionPublished(db, { targetSlug: post.slug, targetTitle: post.title });
   }
   return json({ success: true });
 };

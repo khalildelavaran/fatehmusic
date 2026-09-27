@@ -1,0 +1,30 @@
+name: Lighthouse SEO & Performance Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 3 * * 1"
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: [/, /courses, /about, /blog]
+    steps:
+      - name: Run Lighthouse
+        run: |
+          mkdir -p lighthouse
+          npx --yes lighthouse "https://fatehmusic.ir${{ matrix.path }}" \
+            --output=html \
+            --output=json \
+            --output-path="./lighthouse/report" \
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --only-categories="performance,accessibility,best-practices,seo"
+
+      - name: Upload Lighthouse reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-${{ github.run_id }}-${{ strategy.job-index }}
+          path: lighthouse/
+          if-no-files-found: error

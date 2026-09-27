@@ -11,6 +11,9 @@ import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
 import { buildSEOIntelligence, resolveSite } from "../../seo/index.js";
 import { listTopics } from "../../ai/content-engine/db";
+import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
+import { listSeoActions } from "../../seo/v2/seo-action-store.js";
+import { getAhrefsConfig, getLatestAhrefsMarketSnapshot } from "../../seo/v2/providers/ahrefs.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/login");
@@ -19,13 +22,23 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 const posts = await getPublishedPosts();
 const site = resolveSite();
 const db = (env as AdminEnv).DB;
+const gscRows = db ? await getRecentSearchConsoleRows(db, site.url, { days: 90 }) : [];
+const latestGscSync = db ? await getLatestGscSyncRun(db, site.url) : null;
+const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[] : [];
+const ahrefsConfig = getAhrefsConfig(env as unknown as Record<string, unknown>);
+const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsOrganicKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
+  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "metrics" }),
+  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-competitors" }),
+  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "refdomains" }),
+  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-keywords" })
+]) : [null, null, null, null];
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
 const intelligence = buildSEOIntelligence({
   posts,
   courses,
   topicCandidates: activeTopicCandidates,
-  gscRows: [],
+  gscRows,
   siteUrl: site.url
 });
 
@@ -46,8 +59,37 @@ const normalizeSlug = (value: string) => String(value ?? "")
 const publishedTitles = new Set(posts.map((post) => normalizeText(post.title)));
 const publishedSlugs = new Set(posts.map((post) => normalizeSlug(post.slug)));
 
+interface SeoActionMeasurement {
+  measuredAt: string;
+  windowStart: string;
+  windowEnd: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  position: number | null;
+}
+
+interface SeoAction {
+  id: number;
+  actionType: string;
+  target_url: string | null;
+  target_slug: string | null;
+  target_title: string | null;
+  related_course_slug: string | null;
+  recommendation_score: number | null;
+  status: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  latest: SeoActionMeasurement | null;
+  previous: SeoActionMeasurement | null;
+  ctrDelta: number | null;
+  positionDelta: number | null;
+  impressionDelta: number | null;
+}
+
 const opportunities = intelligence.opportunities.filter((item) => {
-  if (item.action !== "NEW_CONTENT") return false;
   const sameTitle = publishedTitles.has(normalizeText(item.title));
   const sameSlug = publishedSlugs.has(normalizeSlug(item.suggestedSlug));
   return !sameTitle && !sameSlug;
@@ -89,7 +131,64 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
           <div class="strategy-stat"><strong>{approvedTopicCount + candidateTopicCount}</strong><span>موضوع فعال</span></div>
         </div>
 
-        <section class="strategy-section">
+        <section class="strategy-section strategy-gsc">
+          <div class="strategy-section-head"><div><span class="admin-hero-label">Google Search Console</span><h2>داده‌ی واقعی جستجو</h2></div>
+            <button type="button" id="gscSyncButton" class="strategy-sync-button">همگام‌سازی GSC</button>
+          </div>
+          <div class="strategy-gsc-status">
+            <span class:list={["strategy-gsc-pill", intelligence.gsc.connected && "is-connected"]}>{intelligence.gsc.connected ? "متصل و دارای داده" : "GSC هنوز داده‌ای ندارد"}</span>
+            <span>{intelligence.gsc.signalRowCount} سیگنال</span>
+            <span>{intelligence.summary.searchBackedCount} فرصت search-backed</span>
+            <span>{intelligence.summary.cannibalizationCount} تعارض</span>
+            {latestGscSync && <span>آخرین sync: {latestGscSync.status}</span>}
+          </div>
+          {intelligence.gsc.connected && <div class="strategy-gsc-grid">
+            <div><strong>Queryهای برتر</strong><div class="strategy-gsc-list">
+              {[...intelligence.gsc.index.byQuery.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
+            </div></div>
+            <div><strong>صفحات برتر</strong><div class="strategy-gsc-list">
+              {[...intelligence.gsc.index.byPage.entries()].slice(0, 8).map(([page, signal]) => <span><code>{page.replace(site.url, "") || "/"}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · CTR {(signal.ctr * 100).toFixed(1)}%</span>)}
+            </div></div>
+          </div>}
+        </section>
+
+        <section class="strategy-section strategy-ahrefs">
+          <div class="strategy-section-head"><div><span class="admin-hero-label">Ahrefs Market Intelligence</span><h2>بازار، رقبا و بک‌لینک</h2></div>
+            <button type="button" id="ahrefsSyncButton" class="strategy-sync-button">همگام‌سازی Ahrefs</button>
+          </div>
+          {!ahrefsConfig.enabled ? (
+            <div class="strategy-empty">Ahrefs هنوز با <code>AHREFS_API_KEY</code> تنظیم نشده است. تا آن زمان موتور از Search Console استفاده می‌کند.</div>
+          ) : (
+            <div class="strategy-ahrefs-grid">
+              <div><strong>Organic keywords</strong><span>{Number(ahrefsMetrics?.payload?.org_keywords || 0).toLocaleString("fa-IR")}</span><small>Top 3: {Number(ahrefsMetrics?.payload?.org_keywords_1_3 || 0).toLocaleString("fa-IR")}</small></div>
+              <div><strong>Organic traffic</strong><span>{Number(ahrefsMetrics?.payload?.org_traffic || 0).toLocaleString("fa-IR")}</span><small>تخمین ماهانه Ahrefs</small></div>
+              <div><strong>Competitors</strong><span>{Array.isArray(ahrefsCompetitors?.payload) ? ahrefsCompetitors.payload.length.toLocaleString("fa-IR") : "0"}</span><small>رقبای ارگانیک ثبت‌شده</small></div>
+              <div><strong>Referring domains</strong><span>{Array.isArray(ahrefsRefdomains?.payload) ? ahrefsRefdomains.payload.length.toLocaleString("fa-IR") : "0"}</span><small>دامنه‌های ارجاع‌دهنده</small></div>
+              <div><strong>Tracked keyword rows</strong><span>{Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload.length.toLocaleString("fa-IR") : "0"}</span><small>نمونه کلمات ارگانیک</small></div>
+            </div>
+          )}
+          {ahrefsConfig.enabled && Array.isArray(ahrefsCompetitors?.payload) && ahrefsCompetitors.payload.length > 0 && (
+            <div class="strategy-ahrefs-list"><strong>رقبای ارگانیک کشف‌شده</strong>
+              {ahrefsCompetitors.payload.slice(0, 8).map((item) => <span><code>{item.competitor_domain || item.competitor_url || "-"}</code> · {Number(item.keywords_common || 0).toLocaleString("fa-IR")} keyword مشترک · سهم {Number(item.share || 0).toFixed(1)}%</span>)}
+            </div>
+          )}
+        </section>
+
+        <section class="strategy-section strategy-actions">
+          <div class="strategy-section-head"><div><span class="admin-hero-label">Closed Loop</span><h2>نتیجه‌ی اقدامات SEO</h2></div><span class="strategy-count">{seoActions.length} اقدام اخیر</span></div>
+          {seoActions.length === 0 ? <div class="strategy-empty">هنوز اقدام قابل اندازه‌گیری ثبت نشده است.</div> : (
+            <div class="strategy-action-list">
+              {seoActions.map((action) => <article class="strategy-action-card">
+                <div><strong>{action.target_title || action.target_slug}</strong><span>{action.status}</span></div>
+                <p>{action.target_url}</p>
+                {action.latest && <small>CTR: {(Number(action.latest.ctr) * 100).toFixed(1)}% · رتبه: {action.latest.position != null ? Number(action.latest.position).toFixed(1) : "-"} · Impression: {Math.round(Number(action.latest.impressions)).toLocaleString("fa-IR")}</small>}
+                {action.ctrDelta != null && <small>تغییر CTR: {(action.ctrDelta * 100).toFixed(2)}% · تغییر رتبه: {action.positionDelta?.toFixed(2) ?? "-"}</small>}
+              </article>)}
+            </div>
+          )}
+        </section>
+
+       <section class="strategy-section">
           <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف نهایی تولید محتوا</h2></div><span class="strategy-count">{opportunityCount} فرصت</span></div>
           {opportunities.length === 0 ? (
             <div class="strategy-empty"><strong>در حال حاضر فرصت محتوایی قابل اقدام شناسایی نشده است.</strong><span>با تولید موضوعات جدید یا انتشار مقاله‌های جدید، این صف خودکار به‌روزرسانی می‌شود.</span></div>
@@ -166,9 +265,43 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
       });
     });
   });
+
+  document.getElementById("ahrefsSyncButton")?.addEventListener("click", async () => {
+    const button = document.getElementById("ahrefsSyncButton");
+    if (!button) return;
+    button.setAttribute("disabled", "true");
+    button.textContent = "در حال همگام‌سازی…";
+    try {
+      const response = await fetch("/api/admin/ahrefs", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || "Ahrefs sync failed");
+      window.location.reload();
+    } catch (error) {
+      button.removeAttribute("disabled");
+      button.textContent = "خطا؛ دوباره تلاش کنید";
+      console.error(error);
+    }
+  });
+
+  document.getElementById("gscSyncButton")?.addEventListener("click", async () => {
+    const button = document.getElementById("gscSyncButton");
+    if (!button) return;
+    button.setAttribute("disabled", "true");
+    button.textContent = "در حال همگام‌سازی…";
+    try {
+      const response = await fetch("/api/admin/gsc", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || "GSC sync failed");
+      window.location.reload();
+    } catch (error) {
+      button.removeAttribute("disabled");
+      button.textContent = "خطا؛ دوباره تلاش کنید";
+      console.error(error);
+    }
+  });
 </script>
 
 <style>
-.strategy-shell{max-width:1280px}.strategy-tabs{display:flex;gap:6px;margin:24px 0 8px;padding:5px;border:1px solid var(--border);border-radius:14px;background:var(--surface);width:max-content;max-width:100%}.strategy-tab{border:0;border-radius:10px;padding:11px 22px;background:transparent;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}.strategy-tab.is-active{background:var(--background);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}.strategy-tab-panel{display:none}.strategy-tab-panel.is-active{display:block}.strategy-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:24px 0}.strategy-stat{padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:flex;flex-direction:column;gap:6px}.strategy-stat strong{font-size:30px;line-height:1}.strategy-stat span{color:var(--muted);font-size:13px}.strategy-stat-hot{border-color:rgba(212,175,55,.45)}.strategy-section{margin-top:28px}.strategy-section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}.strategy-section-head h2{margin:4px 0 0}.strategy-count{color:var(--muted);font-size:13px}.strategy-list{display:grid;gap:14px}.strategy-card{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}.strategy-rank{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--background);border:1px solid var(--border);font-weight:800}.strategy-card-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.strategy-badges{display:flex;flex-wrap:wrap;gap:7px}.strategy-badges span{border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:11px}.strategy-priority.high{border-color:rgba(212,175,55,.6)}.strategy-action.new{border-color:rgba(60,170,110,.45)}.strategy-action.optimize{border-color:rgba(80,130,210,.45)}.strategy-action.merge{border-color:rgba(190,130,60,.55)}.strategy-coverage{color:var(--muted);font-size:12px;white-space:nowrap}.strategy-card h3{margin:13px 0 7px;font-size:19px}.strategy-card p{margin:0;color:var(--muted);line-height:1.8}.strategy-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12px;color:var(--muted)}.strategy-meta strong,.strategy-queries strong,.strategy-links strong,.strategy-existing strong{color:var(--text)}code{direction:ltr;unicode-bidi:plaintext}.strategy-existing{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-existing>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-existing code{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-queries,.strategy-links{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-queries>div,.strategy-links>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-queries span{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-links a{padding:6px 9px;border-radius:9px;border:1px solid var(--border);text-decoration:none;overflow-wrap:anywhere}.strategy-empty{padding:28px;border:1px dashed var(--border);border-radius:16px;display:grid;gap:8px;color:var(--muted)}.strategy-topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.strategy-topic-item{display:flex;justify-content:space-between;gap:10px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
-@media(max-width:900px){.strategy-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.strategy-tabs{width:100%}.strategy-tab{flex:1}.strategy-stats,.strategy-topic-grid{grid-template-columns:1fr}.strategy-card{grid-template-columns:1fr}.strategy-card-top{align-items:flex-start;flex-direction:column}}
+.strategy-shell{max-width:1280px}.strategy-tabs{display:flex;gap:6px;margin:24px 0 8px;padding:5px;border:1px solid var(--border);border-radius:14px;background:var(--surface);width:max-content;max-width:100%}.strategy-tab{border:0;border-radius:10px;padding:11px 22px;background:transparent;color:var(--muted);font:inherit;font-weight:700;cursor:pointer}.strategy-tab.is-active{background:var(--background);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}.strategy-tab-panel{display:none}.strategy-tab-panel.is-active{display:block}.strategy-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin:24px 0}.strategy-stat{padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--surface);display:flex;flex-direction:column;gap:6px}.strategy-stat strong{font-size:30px;line-height:1}.strategy-stat span{color:var(--muted);font-size:13px}.strategy-stat-hot{border-color:rgba(212,175,55,.45)}.strategy-section{margin-top:28px}.strategy-section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:14px}.strategy-section-head h2{margin:4px 0 0}.strategy-count{color:var(--muted);font-size:13px}.strategy-list{display:grid;gap:14px}.strategy-card{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;padding:18px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}.strategy-rank{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:var(--background);border:1px solid var(--border);font-weight:800}.strategy-card-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.strategy-badges{display:flex;flex-wrap:wrap;gap:7px}.strategy-badges span{border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:11px}.strategy-priority.high{border-color:rgba(212,175,55,.6)}.strategy-action.new{border-color:rgba(60,170,110,.45)}.strategy-action.optimize{border-color:rgba(80,130,210,.45)}.strategy-action.merge{border-color:rgba(190,130,60,.55)}.strategy-coverage{color:var(--muted);font-size:12px;white-space:nowrap}.strategy-card h3{margin:13px 0 7px;font-size:19px}.strategy-card p{margin:0;color:var(--muted);line-height:1.8}.strategy-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:12px;color:var(--muted)}.strategy-meta strong,.strategy-queries strong,.strategy-links strong,.strategy-existing strong{color:var(--text)}code{direction:ltr;unicode-bidi:plaintext}.strategy-existing{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-existing>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-existing code{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-queries,.strategy-links{margin-top:13px;display:grid;gap:8px;font-size:12px}.strategy-queries>div,.strategy-links>div{display:flex;flex-wrap:wrap;gap:7px}.strategy-queries span{padding:6px 9px;border-radius:9px;background:var(--background);border:1px solid var(--border)}.strategy-links a{padding:6px 9px;border-radius:9px;border:1px solid var(--border);text-decoration:none;overflow-wrap:anywhere}.strategy-empty{padding:28px;border:1px dashed var(--border);border-radius:16px;display:grid;gap:8px;color:var(--muted)}.strategy-ahrefs-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.strategy-ahrefs-grid>div{padding:15px;border:1px solid var(--border);border-radius:14px;background:var(--surface);display:grid;gap:5px}.strategy-ahrefs-grid span{font-size:24px;font-weight:800}.strategy-ahrefs-grid small,.strategy-ahrefs-list{color:var(--muted);font-size:12px}.strategy-ahrefs-list{display:grid;gap:7px;margin-top:14px}.strategy-ahrefs-list span{display:block}.strategy-ahrefs-list code{margin-inline-end:5px}.strategy-gsc-status{display:flex;flex-wrap:wrap;gap:8px 14px;color:var(--muted);font-size:12px;margin-bottom:14px}.strategy-gsc-pill{padding:6px 9px;border:1px solid var(--border);border-radius:999px}.strategy-gsc-pill.is-connected{border-color:rgba(60,170,110,.45)}.strategy-sync-button{border:1px solid var(--border);border-radius:10px;padding:9px 14px;background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer}.strategy-gsc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.strategy-gsc-grid>div,.strategy-action-card{padding:15px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}.strategy-gsc-list{display:grid;gap:7px;margin-top:9px;color:var(--muted);font-size:12px}.strategy-gsc-list span{display:block}.strategy-action-list{display:grid;gap:10px}.strategy-action-card{display:grid;gap:6px}.strategy-action-card>div{display:flex;justify-content:space-between;gap:12px}.strategy-action-card p{margin:0;color:var(--muted);font-size:12px;word-break:break-all}.strategy-action-card small{color:var(--muted)}.strategy-topic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.strategy-topic-item{display:flex;justify-content:space-between;gap:10px;padding:13px 15px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}
+@media(max-width:900px){.strategy-ahrefs-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-gsc-grid{grid-template-columns:1fr}.strategy-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-topic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.strategy-ahrefs-grid{grid-template-columns:1fr}.strategy-tabs{width:100%}.strategy-tab{flex:1}.strategy-stats,.strategy-topic-grid{grid-template-columns:1fr}.strategy-card{grid-template-columns:1fr}.strategy-card-top{align-items:flex-start;flex-direction:column}}
 </style>

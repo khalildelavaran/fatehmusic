@@ -15,6 +15,7 @@ import { courses } from "../../data/courses.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { getNextApprovedTopic, getRecentlyUsedCourses, markTopicUsed } from "./db";
 import { callClaudeArticle } from "./providers/anthropic";
+import { createSeoAction } from "../../seo/v2/seo-action-store.js";
 import type { ContentTopicRow } from "./types";
 
 interface ArticleEnv {
@@ -42,6 +43,7 @@ interface SelectedTopic {
   relatedCourseTitle: string | null;
   excerpt: string;
   topicLabel: string;
+  scoreTotal: number | null;
 }
 
 function slugify(text: string): string {
@@ -69,12 +71,13 @@ async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
       relatedCourseSlug: course.slug,
       relatedCourseTitle: course.title,
       excerpt: course.content?.excerpt ?? "",
-      topicLabel: course.title
+      topicLabel: course.title,
+      scoreTotal: null
     };
   }
 
   const topic = GENERAL_EVERGREEN_TOPICS[Math.floor(Math.random() * GENERAL_EVERGREEN_TOPICS.length)];
-  return { topicRowId: null, title: topic, relatedCourseSlug: null, relatedCourseTitle: null, excerpt: "", topicLabel: "عمومی" };
+  return { topicRowId: null, title: topic, relatedCourseSlug: null, relatedCourseTitle: null, excerpt: "", topicLabel: "عمومی", scoreTotal: null };
 }
 
 async function selectTopic(db: D1Database): Promise<SelectedTopic> {
@@ -86,7 +89,8 @@ async function selectTopic(db: D1Database): Promise<SelectedTopic> {
       relatedCourseSlug: queued.related_course_slug,
       relatedCourseTitle: queued.related_course_title,
       excerpt: "",
-      topicLabel: queued.category ?? queued.related_course_title ?? "عمومی"
+      topicLabel: queued.category ?? queued.related_course_title ?? "عمومی",
+      scoreTotal: queued.score_total
     };
   }
   return pickFallbackTopic(db);
@@ -123,6 +127,19 @@ const SYSTEM_PROMPT = `تو یک نویسنده‌ی محتوای حرفه‌ا�
 - حداقل ۵ و حداکثر ۸ پاراگراف، پاراگراف‌ها با دو خط جدید (\\n\\n) از هم جدا بشن.
 - هیچ آمار، جایزه، یا نقل‌قولی که در بریف نیومده اختراع نکن.`;
 
+function validateGeneratedArticle(article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string }): string | null {
+  const content = String(article.content || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const excerpt = String(article.excerpt || "").trim();
+  const metaTitle = String(article.meta_title || "").trim();
+  const metaDescription = String(article.meta_description || "").trim();
+  if (content.length < 1200) return "متن تولیدشده کمتر از ۱۲۰۰ نویسه است.";
+  if (excerpt.length < 60) return "خلاصه مقاله کمتر از ۶۰ نویسه است.";
+  if (!metaTitle || metaTitle.length > 70) return "meta_title خارج از محدوده کیفیت است.";
+  if (!metaDescription || metaDescription.length < 80 || metaDescription.length > 180) return "meta_description خارج از محدوده ۸۰ تا ۱۸۰ نویسه است.";
+  if (!String(article.slug || "").trim()) return "slug تولید نشده است.";
+  return null;
+}
+
 function buildBrief(topic: SelectedTopic): string {
   const lines = [`عنوان مقاله (ثابت، تغییر نده): «${topic.title}»`];
   if (topic.relatedCourseTitle) {
@@ -157,6 +174,8 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     return { success: false, message: result.message };
   }
   const article = result.article;
+  const qualityError = validateGeneratedArticle(article);
+  if (qualityError) return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
 
   const dateSuffix = new Date().toISOString().slice(0, 10);
   const baseSlug = /^[a-z0-9-]+$/.test(article.slug) ? article.slug : slugify(topic.title);
@@ -191,6 +210,8 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       console.error("runDailyArticleGeneration: failed to mark topic used (non-fatal):", err)
     );
   }
+
+  await createSeoAction(env.DB, { actionType: "CONTENT_DRAFT", targetUrl: "https://fatehmusic.ir/blog/" + slug, targetSlug: slug, targetTitle: topic.title, relatedCourseSlug: topic.relatedCourseSlug, recommendationScore: topic.scoreTotal, source: "content-engine" }).catch((err) => console.error("runDailyArticleGeneration: failed to register SEO action:", err));
 
   console.log(`runDailyArticleGeneration: created draft "${topic.title}" (${slug})`);
   return { success: true, message: `پیش‌نویس «${topic.title}» با Claude ساخته شد.`, slug };

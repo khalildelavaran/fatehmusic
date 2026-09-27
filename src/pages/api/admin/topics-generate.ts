@@ -11,7 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
   const db = env.DB as unknown as D1Database;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
 
-  const summary = await runTopicDiscovery(db);
+  const summary = await runTopicDiscovery(db, { env: env as unknown as Record<string, unknown> });
   if (summary.status === "failed") {
     return json({ success: false, message: `اجرای کشف موضوع شکست خورد: ${summary.errorMessage}` }, 500);
   }

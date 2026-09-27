@@ -1,24 +1,27 @@
 import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 
 const DEFAULT_PAGE_SIZE = 25000;
-const DEFAULT_MAX_ROWS = 100000;
+const DEFAULT_MAX_ROWS = 25000;
+const BATCH_SIZE = 50;
 
 function toRow(keys = [], dimensions = ["query", "page"], metrics = {}, { startDate, endDate, dataState } = {}) {
-  const values = Object.fromEntries(dimensions.map((dimension, index) => [dimension, keys[index] || null]));
+  const values = Object.fromEntries(dimensions.map((dimension, index) => [dimension, keys[index] || ""]));
   return {
-    query: values.query,
-    page: values.page,
+    query: values.query || null,
+    page: values.page || null,
+    country: values.country || "",
+    device: values.device || "",
+    searchAppearance: values.searchAppearance || "",
     clicks: Number(metrics.clicks) || 0,
     impressions: Number(metrics.impressions) || 0,
     ctr: Number(metrics.ctr) || 0,
     position: Number(metrics.position) || 0,
     startDate: startDate || null,
     endDate: endDate || null,
-    dataState: dataState || null
+    dataState: dataState || "final"
   };
 }
 
-/** Fetch all available rows for a date range, paging within Search Console's row limit. */
 export async function fetchAllSearchAnalytics(client, {
   startDate,
   endDate,
@@ -28,15 +31,26 @@ export async function fetchAllSearchAnalytics(client, {
   dataState = "final"
 } = {}) {
   if (!client?.configured) return { configured: false, rows: [], pages: 0 };
+  if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
+
   const rows = [];
   let startRow = 0;
   let pages = 0;
 
   while (rows.length < maxRows) {
     const rowLimit = Math.min(pageSize, maxRows - rows.length);
-    const result = await client.querySearchAnalytics({ startDate, endDate, dimensions, rowLimit, startRow, dataState });
+    const result = await client.querySearchAnalytics({
+      startDate,
+      endDate,
+      dimensions,
+      rowLimit,
+      startRow,
+      dataState
+    });
     pages += 1;
-    const batch = (result.rows || []).map((row) => toRow(row.keys, dimensions, row, { startDate, endDate, dataState }));
+    const batch = (result.rows || []).map((row) =>
+      toRow(row.keys, dimensions, row, { startDate, endDate, dataState })
+    );
     rows.push(...batch);
     if (batch.length < rowLimit) break;
     startRow += batch.length;
@@ -45,11 +59,53 @@ export async function fetchAllSearchAnalytics(client, {
   return { configured: true, rows, pages };
 }
 
-/**
- * Sync Search Console into D1. The function is intentionally injectable so
- * routes, scheduled workers, and tests can share exactly the same behavior.
- */
-export async function syncSearchConsoleToD1({ db, env = {}, startDate, endDate, dimensions = ["query", "page"], pageSize = DEFAULT_PAGE_SIZE, maxRows = DEFAULT_MAX_ROWS, now = "datetime('now')" } = {}) {
+async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now')") {
+  let rowsStored = 0;
+
+  for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
+    const chunk = rows.slice(offset, offset + BATCH_SIZE);
+    const statements = chunk.map((row) =>
+      db.prepare(
+        "INSERT INTO gsc_search_signals_v2 " +
+        "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ") " +
+        "ON CONFLICT(site_url, query, page, country, device, search_appearance, start_date, end_date) DO UPDATE SET " +
+        "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
+        "position=excluded.position, synced_at=excluded.synced_at"
+      ).bind(
+        env.GSC_SITE_URL,
+        row.query,
+        row.page,
+        row.country,
+        row.device,
+        row.searchAppearance,
+        startDate,
+        endDate,
+        row.dataState,
+        row.clicks,
+        row.impressions,
+        row.ctr,
+        row.position
+      )
+    );
+
+    const results = await db.batch(statements);
+    rowsStored += results.reduce((sum, result) => sum + Number(result.meta?.changes || 0), 0);
+  }
+
+  return rowsStored;
+}
+
+export async function syncSearchConsoleToD1({
+  db,
+  env = {},
+  startDate,
+  endDate,
+  dimensions = ["query", "page"],
+  pageSize = DEFAULT_PAGE_SIZE,
+  maxRows = DEFAULT_MAX_ROWS,
+  dataState = "final"
+} = {}) {
   if (!db) throw new Error("GSC_D1_REQUIRED");
   if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
 
@@ -61,22 +117,121 @@ export async function syncSearchConsoleToD1({ db, env = {}, startDate, endDate, 
 
   if (!client.configured) return { status: "not_configured", rowsReceived: 0, rowsStored: 0 };
 
-  const run = await db.prepare(`INSERT INTO gsc_sync_runs (site_url, start_date, end_date, status) VALUES (?, ?, ?, 'running')`).bind(env.GSC_SITE_URL, startDate, endDate).run();
+  const run = await db.prepare(
+    "INSERT INTO gsc_sync_runs (site_url, start_date, end_date, status) VALUES (?, ?, ?, 'running')"
+  ).bind(env.GSC_SITE_URL, startDate, endDate).run();
+
   const runId = run.meta?.last_row_id || null;
 
   try {
-    const fetched = await fetchAllSearchAnalytics(client, { startDate, endDate, dimensions, pageSize, maxRows });
-    let rowsStored = 0;
+    const fetched = await fetchAllSearchAnalytics(client, {
+      startDate,
+      endDate,
+      dimensions,
+      pageSize,
+      maxRows,
+      dataState
+    });
 
-    for (const row of fetched.rows) {
-      await db.prepare(`INSERT INTO gsc_search_signals (site_url, query, page, start_date, end_date, clicks, impressions, ctr, position, source, synced_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', ${now}) ON CONFLICT(site_url, query, page, start_date, end_date) DO UPDATE SET clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, position=excluded.position, synced_at=excluded.synced_at`).bind(env.GSC_SITE_URL, row.query, row.page, startDate, endDate, row.clicks, row.impressions, row.ctr, row.position).run();
-      rowsStored += 1;
+    const rowsStored = await storeRows(db, env, fetched.rows, startDate, endDate);
+
+    if (runId) {
+      await db.prepare(
+        "UPDATE gsc_sync_runs SET status='success', rows_received=?, rows_stored=?, finished_at=datetime('now') WHERE id=?"
+      ).bind(fetched.rows.length, rowsStored, runId).run();
     }
 
-    if (runId) await db.prepare(`UPDATE gsc_sync_runs SET status='success', rows_received=?, rows_stored=?, finished_at=${now} WHERE id=?`).bind(fetched.rows.length, rowsStored, runId).run();
-    return { status: "success", rowsReceived: fetched.rows.length, rowsStored, pages: fetched.pages };
+    return {
+      status: "success",
+      rowsReceived: fetched.rows.length,
+      rowsStored,
+      pages: fetched.pages,
+      dimensions
+    };
   } catch (error) {
-    if (runId) await db.prepare(`UPDATE gsc_sync_runs SET status='failed', error_message=?, finished_at=${now} WHERE id=?`).bind(error instanceof Error ? error.message : "GSC_SYNC_FAILED", runId).run();
+    if (runId) {
+      await db.prepare(
+        "UPDATE gsc_sync_runs SET status='failed', error_message=?, finished_at=datetime('now') WHERE id=?"
+      ).bind(error instanceof Error ? error.message : "GSC_SYNC_FAILED", runId).run();
+    }
     throw error;
   }
+}
+
+function dateDaysAgo(days, now = new Date()) {
+  const date = new Date(now);
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
+  if (!env.GSC_CLIENT_EMAIL || !env.GSC_PRIVATE_KEY || !env.GSC_SITE_URL) {
+    return { status: "not_configured", windows: [] };
+  }
+  if (!env.DB) throw new Error("GSC_D1_REQUIRED");
+
+  const span = Number(options.spanDays || 28);
+  const endOffset = Number(options.endOffsetDays ?? 3);
+  const pageSize = Math.min(Number(options.pageSize || DEFAULT_PAGE_SIZE), DEFAULT_PAGE_SIZE);
+  const maxRows = Math.min(Number(options.maxRows || DEFAULT_MAX_ROWS), DEFAULT_MAX_ROWS);
+
+  const currentEnd = dateDaysAgo(endOffset);
+  const currentStart = dateDaysAgo(endOffset + span - 1);
+  const previousEnd = dateDaysAgo(endOffset + span);
+  const previousStart = dateDaysAgo(endOffset + span + span - 1);
+
+  const windows = [];
+
+  for (const [label, startDate, endDate] of [
+    ["current", currentStart, currentEnd],
+    ["previous", previousStart, previousEnd]
+  ]) {
+    windows.push({
+      label,
+      ...(await syncSearchConsoleToD1({
+        db: env.DB,
+        env,
+        startDate,
+        endDate,
+        dimensions: ["query", "page"],
+        pageSize,
+        maxRows,
+        dataState: "final"
+      }))
+    });
+  }
+
+  if (String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1") {
+    windows.push({
+      label: "breakdowns-current",
+      ...(await syncSearchConsoleToD1({
+        db: env.DB,
+        env,
+        startDate: currentStart,
+        endDate: currentEnd,
+        dimensions: ["query", "page", "country", "device"],
+        pageSize,
+        maxRows,
+        dataState: "final"
+      }))
+    });
+  }
+
+  try {
+    const { syncPublishedSeoActionMeasurements } = await import("../seo-action-store.js");
+    await syncPublishedSeoActionMeasurements(env.DB, {
+      siteUrl: env.GSC_SITE_URL,
+      windowStart: currentStart,
+      windowEnd: currentEnd
+    });
+  } catch (error) {
+    console.error("GSC action measurement sync failed:", error);
+  }
+
+  return {
+    status: "success",
+    windows,
+    currentWindow: { startDate: currentStart, endDate: currentEnd },
+    previousWindow: { startDate: previousStart, endDate: previousEnd }
+  };
 }

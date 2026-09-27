@@ -45,11 +45,8 @@
         "binding": "BROWSER"
     },
 
-    // Runs daily at 02:30 UTC = 06:00 Iran time. Cron is always UTC on Cloudflare.
-    // The second cron (every 30 minutes) drives class-reminder notifications
-    // (SCHOOL-MANAGEMENT-IMPLEMENTATION.md section 37) via generateClassReminders
-    // in src/worker.ts -- see the scheduled() handler there for the branch logic.
+    // UTC schedules: GSC sync -> topic discovery -> article draft -> late GSC refresh, plus reminders.
     "triggers": {
-        "crons": ["30 2 * * *", "*/30 * * * *"]
+        "crons": ["45 0 * * 0", "15 1 * * *", "45 1 * * *", "30 2 * * *", "15 3 * * *", "*/30 * * * *"]
     }
 }
