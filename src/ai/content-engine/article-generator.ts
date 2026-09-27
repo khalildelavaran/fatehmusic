@@ -270,6 +270,7 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       targetUrl: "https://fatehmusic.ir/blog/" + slug,
       targetSlug: slug,
       targetTitle: topic.title,
+      targetPostId: insertedId,
       relatedCourseSlug: topic.relatedCourseSlug,
       recommendationScore: topic.scoreTotal,
       source: "content-engine"
