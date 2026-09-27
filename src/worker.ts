@@ -2,6 +2,7 @@ import { handle } from "@astrojs/cloudflare/handler";
 import { runDailyArticleGeneration } from "./ai/content-engine/article-generator";
 import { runTopicDiscovery } from "./ai/content-engine/pipeline";
 import { runScheduledSearchConsoleSync } from "./seo/v2/providers/search-console-sync.js";
+import { runScheduledAhrefsMarketIntelligence } from "./seo/v2/providers/ahrefs.js";
 import { generateClassReminders } from "./server/in-app-notifications";
 
 interface WorkerEnv extends Env {
@@ -12,6 +13,9 @@ interface WorkerEnv extends Env {
   GSC_PRIVATE_KEY?: string;
   GSC_SITE_URL?: string;
   GSC_SYNC_BREAKDOWNS?: string;
+  AHREFS_API_KEY?: string;
+  AHREFS_COUNTRY?: string;
+  AHREFS_TARGET_URL?: string;
   [key: string]: unknown;
 }
 
@@ -21,6 +25,10 @@ export default {
   },
 
   async scheduled(controller: ScheduledController, env: WorkerEnv, ctx: ExecutionContext) {
+    if (controller.cron === "45 0 * * 0") {
+      ctx.waitUntil(runScheduledAhrefsMarketIntelligence(env));
+      return;
+    }
     if (controller.cron === "15 1 * * *" || controller.cron === "15 3 * * *") {
       ctx.waitUntil(runScheduledSearchConsoleSync(env));
       return;
