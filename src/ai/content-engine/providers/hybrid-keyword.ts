@@ -8,6 +8,11 @@ export class HybridKeywordProvider implements KeywordProvider {
   private gsc: D1SearchConsoleKeywordProvider;
   private cache = new Map<string, KeywordSignal>();
 
+  private getAhrefsLookupLimit(): number {
+    const value = Number(this.env.AHREFS_MAX_KEYWORDS_PER_RUN ?? 200);
+    return Math.max(25, Math.min(Number.isFinite(value) ? value : 200, 500));
+  }
+
   constructor(db: D1Database, env: Record<string, unknown> = {}) {
     this.db = db;
     this.env = env;
@@ -32,18 +37,24 @@ export class HybridKeywordProvider implements KeywordProvider {
 
       const missing = unique.filter((title) => !ahrefsMap.has(title));
       if (missing.length) {
+        // Do not let one scheduled discovery run explode into an unbounded
+        // number of paid Ahrefs keyword lookups. Fresh cached signals remain
+        // preferred; only a bounded sample is refreshed, and all other
+        // candidates safely fall back to Search Console.
+        const refreshable = missing.slice(0, this.getAhrefsLookupLimit());
         try {
           await syncAhrefsKeywordSignals({
             db: this.db,
             env: this.env,
-            keywords: missing
+            keywords: refreshable
           });
           ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
             country: config.country,
             keywords: unique
           });
         } catch {
-          // GSC remains the safe fallback when Ahrefs is unavailable, rate-limited, or not funded.
+          // GSC remains the safe fallback when Ahrefs is unavailable,
+          // rate-limited, not funded, or temporarily fails.
         }
       }
     }
