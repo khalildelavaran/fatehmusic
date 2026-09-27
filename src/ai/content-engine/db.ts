@@ -189,7 +189,17 @@ export async function getNextApprovedTopic(db: D1Database): Promise<ContentTopic
  * Two concurrent workers may read the same candidate, but only one can
  * transition it from approved -> generating.
  */
+export async function resetStaleGeneratingTopics(db: D1Database, maxAgeHours = 6): Promise<number> {
+  const hours = Math.max(1, Number(maxAgeHours) || 6);
+  const result = await db.prepare(
+    "UPDATE content_topics SET status='approved', updated_at=datetime('now') WHERE status='generating' AND used_by_post_id IS NULL AND updated_at < datetime('now', ?)"
+  ).bind(`-${hours} hours`).run();
+  return Number(result.meta?.changes || 0);
+}
+
 export async function claimNextApprovedTopic(db: D1Database, attempts = 3): Promise<ContentTopicRow | null> {
+  await resetStaleGeneratingTopics(db);
+
   for (let attempt = 0; attempt < Math.max(1, attempts); attempt += 1) {
     const candidate = await getNextApprovedTopic(db);
     if (!candidate) return null;
