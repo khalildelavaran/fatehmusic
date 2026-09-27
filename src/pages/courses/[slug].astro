@@ -90,6 +90,10 @@ const foundationLinks = course.slug === "guitar-course"
     : [];
 
 const fallbackMetaDescription = resolvedCourse.seoContent?.quickSummary || "";
+const baseCourseSeoTitle = String(course.seo.title || course.title || "").trim();
+const optimizedCourseSeoTitle = baseCourseSeoTitle.length < 30
+  ? baseCourseSeoTitle + " | آموزشگاه موسیقی فاتح"
+  : baseCourseSeoTitle;
 const courseSeo = course.slug === "guitar-course"
   ? {
       title: "آموزش گیتار در شوشتر | کلاس گیتار از مبتدی تا پیشرفته",
@@ -101,7 +105,7 @@ const courseSeo = course.slug === "guitar-course"
         description: "آموزش ضرب و تمپو و مبانی ریتم در آموزشگاه موسیقی فاتح شوشتر؛ مناسب هنرجویان ساز و آواز برای تقویت درک ضرب، ریتم، میزان و تمپو."
       }
     : {
-        title: course.seo.title,
+        title: optimizedCourseSeoTitle,
         description: String(course.seo.description || "").trim().length >= 80
           ? course.seo.description
           : (fallbackMetaDescription || course.seo.description)
