@@ -10,7 +10,7 @@ import InstructorSeoContent from "../../components/InstructorSeoContent.astro";
 import FAQSection from "../../components/FAQSection.astro";
 import { instructors } from "../../data/instructors";
 import { instructorCourseDisplay } from "../../data/instructor-course-display";
-import { resolveSite, resolveInstructor, buildPersonSchema, buildProfilePageSchema, buildBreadcrumbSchema, answersFromFaq } from "../../seo/index.js";
+import { resolveSite, resolveInstructor, buildPersonSchema, buildProfilePageSchema, buildBreadcrumbSchema, buildFaqSchema, answersFromFaq } from "../../seo/index.js";
 
 export async function getStaticPaths() {
   return instructors.map((teacher) => ({ params: { slug: teacher.slug }, props: { teacher } }));
@@ -39,7 +39,12 @@ const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "اساتید", path: "/instructors" },
   { name: teacher.name, path: `/instructors/${teacher.slug}` }
 ], site);
-const schema: object[] = [profilePageSchema, personSchema, breadcrumbSchema].filter((item): item is object => item !== null);
+const faqSchema = buildFaqSchema(resolvedInstructor.faqs, {
+  site,
+  url: `${site.url}/instructors/${teacher.slug}`,
+  name: `سوالات متداول درباره ${teacher.name}`
+});
+const schema: object[] = [profilePageSchema, personSchema, breadcrumbSchema, faqSchema].filter((item): item is object => item !== null);
 
 const teacherCourses: ResolvedCourse[] = resolvedInstructor.courses as ResolvedCourse[];
 const linkCandidates = teacherCourses.map((course) => ({
