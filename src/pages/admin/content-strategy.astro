@@ -172,7 +172,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.gsc.signalRowCount} سیگنال</span>
             <span>{intelligence.summary.searchBackedCount} فرصت search-backed</span>
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
-            {latestGscSync && <span class:list={["strategy-data-age", gscStale && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}</span>}
+            {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
           {intelligence.gsc.connected && <div class="strategy-gsc-grid">
             <div><strong>Queryهای برتر</strong><div class="strategy-gsc-list">
