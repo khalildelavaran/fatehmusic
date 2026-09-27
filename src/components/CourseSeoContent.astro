@@ -31,6 +31,7 @@ export interface Props {
 }
 
 const { courseTitle, seoContent } = Astro.props;
+const skillLabel = /سلفژ|تئوری موسیقی|ریتم|صداسازی/i.test(courseTitle) ? "مهارت" : "ساز";
 ---
 
 {seoContent && (
@@ -162,7 +163,7 @@ const { courseTitle, seoContent } = Astro.props;
             </ul>
           </div>
           <div>
-            <h3>مزایای یادگیری این ساز</h3>
+            <h3>مزایای یادگیری این {skillLabel}</h3>
             <ul class="course-page__list">
               {seoContent.benefits.map((item) => <li>{item}</li>)}
             </ul>
