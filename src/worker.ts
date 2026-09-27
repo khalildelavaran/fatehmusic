@@ -33,8 +33,21 @@ export default {
       // Refresh Search Console first, then use the fresh signals for topic discovery.
       // Keeping both tasks under one trigger stays within the Free-plan account limit.
       ctx.waitUntil((async () => {
-        await runScheduledSearchConsoleSync(env);
-        await runTopicDiscovery(env.DB, { env });
+        // A transient GSC outage must not block topic discovery; discovery can
+        // continue safely from the last successful Search Console snapshot.
+        try {
+          const gscResult = await runScheduledSearchConsoleSync(env);
+          console.log("Scheduled GSC sync:", gscResult.status);
+        } catch (error) {
+          console.error("Scheduled GSC sync failed; continuing with existing data:", error);
+        }
+
+        try {
+          const discoveryResult = await runTopicDiscovery(env.DB, { env });
+          console.log("Scheduled topic discovery:", discoveryResult.status);
+        } catch (error) {
+          console.error("Scheduled topic discovery failed:", error);
+        }
       })());
       return;
     }
