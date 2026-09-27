@@ -13,7 +13,7 @@
 
 import { courses } from "../../data/courses.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
-import { claimNextApprovedTopic, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
+import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { callClaudeArticle } from "./providers/anthropic";
 import { createSeoAction } from "../../seo/v2/seo-action-store.js";
 import type { ContentTopicRow } from "./types";
@@ -58,12 +58,16 @@ function slugify(text: string): string {
 }
 
 async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
-  const recentSlugs = await getRecentlyUsedCourses(db, 10);
+  const [recentSlugs, existingIndex] = await Promise.all([
+    getRecentlyUsedCourses(db, 10),
+    getExistingTitleIndex(db)
+  ]);
   const activeCourses = (courses as CourseLike[]).filter((c) => c.active);
+  const unusedCourses = activeCourses.filter((course) => !existingIndex.normalizedKeys.has(course.title) && !existingIndex.titles.includes(course.title));
 
-  if (activeCourses.length > 0 && Math.random() >= 0.2) {
-    const candidates = activeCourses.filter((c) => !recentSlugs.has(c.slug));
-    const pool = candidates.length > 0 ? candidates : activeCourses;
+  if (unusedCourses.length > 0 && Math.random() >= 0.2) {
+    const recentUnused = unusedCourses.filter((c) => !recentSlugs.has(c.slug));
+    const pool = recentUnused.length > 0 ? recentUnused : unusedCourses;
     const course = pool[Math.floor(Math.random() * pool.length)];
     return {
       topicRowId: null,
@@ -76,7 +80,11 @@ async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
     };
   }
 
-  const topic = GENERAL_EVERGREEN_TOPICS[Math.floor(Math.random() * GENERAL_EVERGREEN_TOPICS.length)];
+  const unusedEvergreen = GENERAL_EVERGREEN_TOPICS.filter(
+    (topic) => !existingIndex.normalizedKeys.has(topic) && !existingIndex.titles.includes(topic)
+  );
+  const topicPool = unusedEvergreen.length > 0 ? unusedEvergreen : GENERAL_EVERGREEN_TOPICS;
+  const topic = topicPool[Math.floor(Math.random() * topicPool.length)];
   return { topicRowId: null, title: topic, relatedCourseSlug: null, relatedCourseTitle: null, excerpt: "", topicLabel: "عمومی", scoreTotal: null };
 }
 
@@ -204,7 +212,20 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
 
     const dateSuffix = new Date().toISOString().slice(0, 10);
     const baseSlug = /^[a-z0-9-]+$/.test(article.slug) ? article.slug : slugify(topic.title);
-    const slug = `${baseSlug}-${dateSuffix}`;
+    const baseSlugWithDate = baseSlug + "-" + dateSuffix;
+    let slug = baseSlugWithDate;
+
+    for (let suffix = 2; suffix <= 20; suffix += 1) {
+      const existing = await env.DB.prepare("SELECT 1 AS found FROM blog_posts WHERE slug = ? LIMIT 1").bind(slug).first<{ found: number }>();
+      if (!existing) break;
+      slug = baseSlugWithDate + "-" + suffix;
+    }
+
+    const slugCollision = await env.DB.prepare("SELECT 1 AS found FROM blog_posts WHERE slug = ? LIMIT 1").bind(slug).first<{ found: number }>();
+    if (slugCollision) {
+      await releaseClaim();
+      return { success: false, message: "اسلاگ یکتا برای مقاله پیدا نشد؛ تولید متوقف شد تا محتوای تکراری ساخته نشود." };
+    }
 
     const insertStatement = env.DB.prepare(
       `INSERT INTO blog_posts (slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, is_ai_generated)
