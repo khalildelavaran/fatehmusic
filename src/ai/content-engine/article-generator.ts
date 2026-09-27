@@ -13,7 +13,7 @@
 
 import { courses } from "../../data/courses.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
-import { getNextApprovedTopic, getRecentlyUsedCourses, markTopicUsed } from "./db";
+import { claimNextApprovedTopic, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { callClaudeArticle } from "./providers/anthropic";
 import { createSeoAction } from "../../seo/v2/seo-action-store.js";
 import type { ContentTopicRow } from "./types";
@@ -81,7 +81,7 @@ async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
 }
 
 async function selectTopic(db: D1Database): Promise<SelectedTopic> {
-  const queued: ContentTopicRow | null = await getNextApprovedTopic(db);
+  const queued: ContentTopicRow | null = await claimNextApprovedTopic(db);
   if (queued) {
     return {
       topicRowId: queued.id,
@@ -177,53 +177,89 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
   }
 
   const topic = await selectTopic(env.DB);
+  const claimedTopicId = topic.topicRowId;
+  const releaseClaim = async () => {
+    if (!claimedTopicId) return;
+    await releaseGeneratingTopic(env.DB, claimedTopicId).catch((error) =>
+      console.error("runDailyArticleGeneration: failed to release topic claim:", error)
+    );
+  };
+
   console.log("runDailyArticleGeneration: topic selected ->", topic.title, topic.topicRowId ? `(queue #${topic.topicRowId})` : "(fallback)");
 
-  const result = await callClaudeArticle(env.ANTHROPIC_API_KEY, SYSTEM_PROMPT, buildBrief(topic));
-  if (!result.success) {
-    console.error("runDailyArticleGeneration:", result.message);
-    return { success: false, message: result.message };
-  }
-  const article = result.article;
-  const qualityError = validateGeneratedArticle(article);
-  if (qualityError) return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
-
-  const dateSuffix = new Date().toISOString().slice(0, 10);
-  const baseSlug = /^[a-z0-9-]+$/.test(article.slug) ? article.slug : slugify(topic.title);
-  const slug = `${baseSlug}-${dateSuffix}`;
-
-  let insertedId: number;
   try {
-    const insertResult = await env.DB.prepare(
+    const result = await callClaudeArticle(env.ANTHROPIC_API_KEY, SYSTEM_PROMPT, buildBrief(topic));
+    if (!result.success) {
+      await releaseClaim();
+      console.error("runDailyArticleGeneration:", result.message);
+      return { success: false, message: result.message };
+    }
+
+    const article = result.article;
+    const qualityError = validateGeneratedArticle(article);
+    if (qualityError) {
+      await releaseClaim();
+      return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
+    }
+
+    const dateSuffix = new Date().toISOString().slice(0, 10);
+    const baseSlug = /^[a-z0-9-]+$/.test(article.slug) ? article.slug : slugify(topic.title);
+    const slug = `${baseSlug}-${dateSuffix}`;
+
+    const insertStatement = env.DB.prepare(
       `INSERT INTO blog_posts (slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, is_ai_generated)
        VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, 1)`
-    )
-      .bind(
-        slug,
-        topic.title,
-        article.excerpt,
-        article.content,
-        article.topic || topic.topicLabel,
-        topic.relatedCourseSlug,
-        topic.relatedCourseTitle,
-        article.meta_title || topic.title,
-        article.meta_description || article.excerpt
-      )
-      .run();
-    insertedId = Number(insertResult.meta.last_row_id);
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `ذخیره در دیتابیس شکست خورد: ${detail}` };
-  }
-
-  if (topic.topicRowId) {
-    await markTopicUsed(env.DB, topic.topicRowId, insertedId).catch((err) =>
-      console.error("runDailyArticleGeneration: failed to mark topic used (non-fatal):", err)
+    ).bind(
+      slug,
+      topic.title,
+      article.excerpt,
+      article.content,
+      article.topic || topic.topicLabel,
+      topic.relatedCourseSlug,
+      topic.relatedCourseTitle,
+      article.meta_title || topic.title,
+      article.meta_description || article.excerpt
     );
+
+    // Draft creation and topic consumption must be atomic. D1 batches are
+    // transactional, so a failed update cannot leave a generating topic with
+    // an untracked draft (or vice versa).
+    const statements = [insertStatement];
+    if (topic.topicRowId) {
+      statements.push(
+        env.DB.prepare(
+          "UPDATE content_topics SET status='used', used_at=datetime('now'), used_by_post_id=last_insert_rowid(), updated_at=datetime('now') WHERE id=? AND status='generating'"
+        ).bind(topic.topicRowId)
+      );
+    }
+
+    let insertedId: number;
+    try {
+      const results = await env.DB.batch(statements);
+      insertedId = Number(results[0]?.meta?.last_row_id || 0);
+      if (!insertedId) throw new Error("BLOG_POST_ID_MISSING");
+    } catch (err) {
+      await releaseClaim();
+      const detail = err instanceof Error ? err.message : String(err);
+      return { success: false, message: `ذخیره مقاله یا مصرف Topic شکست خورد: ${detail}` };
+    }
+
+    await createSeoAction(env.DB, {
+      actionType: "CONTENT_DRAFT",
+      targetUrl: "https://fatehmusic.ir/blog/" + slug,
+      targetSlug: slug,
+      targetTitle: topic.title,
+      relatedCourseSlug: topic.relatedCourseSlug,
+      recommendationScore: topic.scoreTotal,
+      source: "content-engine"
+    }).catch((err) => console.error("runDailyArticleGeneration: failed to register SEO action:", err));
+
+    console.log(`runDailyArticleGeneration: created draft "${topic.title}" (${slug})`);
+    return { success: true, message: `پیش‌نویس «${topic.title}» با Claude ساخته شد.`, slug };
+  } catch (err) {
+    await releaseClaim();
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("runDailyArticleGeneration: unexpected failure:", err);
+    return { success: false, message: `تولید مقاله شکست خورد: ${message}` };
   }
-
-  await createSeoAction(env.DB, { actionType: "CONTENT_DRAFT", targetUrl: "https://fatehmusic.ir/blog/" + slug, targetSlug: slug, targetTitle: topic.title, relatedCourseSlug: topic.relatedCourseSlug, recommendationScore: topic.scoreTotal, source: "content-engine" }).catch((err) => console.error("runDailyArticleGeneration: failed to register SEO action:", err));
-
-  console.log(`runDailyArticleGeneration: created draft "${topic.title}" (${slug})`);
-  return { success: true, message: `پیش‌نویس «${topic.title}» با Claude ساخته شد.`, slug };
 }
