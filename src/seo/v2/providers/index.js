@@ -2,3 +2,6 @@ export { createGoogleSearchConsoleClient, GSC_SCOPE } from "./search-console-cli
 export { getSearchConsoleStatus, testSearchConsoleConnection } from "./search-console-status.js";
 export { getSearchConsoleConfig, isSearchConsoleConfigured } from "./search-console-config.js";
 export { fetchAllSearchAnalytics, syncSearchConsoleToD1 } from "./search-console-sync.js";
+
+export { getRecentSearchConsoleRows, getLatestGscSyncRun, getGscPagePerformance } from "./search-console-store.js";
+export { runScheduledSearchConsoleSync } from "./search-console-sync.js";
