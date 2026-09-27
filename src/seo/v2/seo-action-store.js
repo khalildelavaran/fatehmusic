@@ -26,7 +26,7 @@ export async function markSeoActionPublished(db, {
   if (!db) return 0;
   const result = await db.prepare(
     "UPDATE seo_action_log SET status = 'published', published_at = COALESCE(published_at, ?), updated_at = datetime('now') " +
-    "WHERE status IN ('pending_review', 'measuring') AND (target_slug = ? OR target_title = ?)"
+    "WHERE status IN ('pending_review', 'measuring') AND ((target_slug IS NOT NULL AND target_slug != '' AND target_slug = ?) OR ((target_slug IS NULL OR target_slug = '') AND target_title = ?))"
   ).bind(publishedAt, targetSlug, targetTitle).run();
   return Number(result.meta?.changes || 0);
 }
