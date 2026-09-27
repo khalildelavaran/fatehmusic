@@ -19,7 +19,8 @@ import {
     resolveInstructor,
     buildPersonSchema,
     buildBreadcrumbSchema,
-    buildAboutPageSchema
+    buildAboutPageSchema,
+    buildFaqSchema
 } from "../seo/index.js";
 import { instructors } from "../data/instructors.js";
 
@@ -37,6 +38,11 @@ const instructorSchemas = instructors
     })
     .filter((item): item is object => item !== null);
 
+const faqSchema = buildFaqSchema(AboutFAQ.faqs, {
+    site,
+    url: `${site.url}/about`,
+    name: "سوالات متداول درباره آموزشگاه موسیقی فاتح"
+});
 const schema = [
     buildAboutPageSchema({ title, description, image: site.image, site }),
     buildBreadcrumbSchema(
@@ -46,7 +52,8 @@ const schema = [
         ],
         site
     ),
-    ...instructorSchemas
+    ...instructorSchemas,
+    faqSchema
 ].filter((item): item is object => item !== null);
 ---
 
