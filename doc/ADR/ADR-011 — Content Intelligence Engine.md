@@ -77,9 +77,9 @@ This work implements Topic Discovery plus the article-writing handoff — the pi
 
 # 5. Consequences
 
-- The candidate pool is finite (~500–600 titles from the current 23 courses × modifier templates). At roughly one post/day this is over a year of runway, but it will eventually need either more hand-written templates/courses, or a real keyword-expansion provider wired into `KeywordProvider` — tracked as follow-up, not done here.
+- The candidate pool remains deterministic and finite for the seed generator, while GSC and optional Ahrefs demand signals now influence scoring. Expanding the template space or adding more market-intelligence sources remains an optional future enhancement rather than a prerequisite for the current pipeline.
 - `ANTHROPIC_API_KEY` must be set as a Cloudflare Secret (`wrangler secret put ANTHROPIC_API_KEY`) before the article-writing step will work; without it, `runDailyArticleGeneration` returns a clear Persian error rather than silently failing or falling back to a different model.
-- `src/server/ai-post-generator.ts` no longer exists — replaced by `src/ai/content-engine/article-generator.ts`. Both `src/worker.ts` and `/api/admin/generate-post` were updated to the new import.
+- `src/server/ai-post-generator.ts` no longer exists; article generation lives in `src/ai/content-engine/article-generator.ts`.
 
 ---
 
@@ -89,7 +89,7 @@ Future changes to this subsystem must:
 
 ✓ Keep candidate generation free of fabricated search-volume/trend numbers — extend `KeywordProvider`, never hardcode a number.
 
-✓ Keep `thinking` explicitly disabled on DeepSeek calls unless a specific reason to change it is documented here first.
+✓ Keep external search metrics source-backed: never fabricate volume, difficulty, trend or rank values.
 
 ✓ Key any new scoring factor by `related_course_slug`, not by the broader `instrument` field, to respect the "never merge distinct Landing Pages" rule.
 
