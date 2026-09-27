@@ -140,7 +140,7 @@ export async function syncSearchConsoleToD1({
   if (!client.configured) return { status: "not_configured", rowsReceived: 0, rowsStored: 0 };
 
   const run = await db.prepare(
-    "INSERT INTO gsc_sync_runs (site_url, start_date, end_date, status) VALUES (?, ?, ?, 'running')"
+    "INSERT INTO gsc_sync_runs (site_url, start_date, end_date, status, truncated) VALUES (?, ?, ?, 'running', 0)"
   ).bind(normalizeSiteUrl(env.GSC_SITE_URL), startDate, endDate).run();
 
   const runId = run.meta?.last_row_id || null;
@@ -159,8 +159,8 @@ export async function syncSearchConsoleToD1({
 
     if (runId) {
       await db.prepare(
-        "UPDATE gsc_sync_runs SET status='success', rows_received=?, rows_stored=?, finished_at=datetime('now') WHERE id=?"
-      ).bind(fetched.rows.length, rowsStored, runId).run();
+        "UPDATE gsc_sync_runs SET status='success', rows_received=?, rows_stored=?, truncated=?, finished_at=datetime('now') WHERE id=?"
+      ).bind(fetched.rows.length, rowsStored, fetched.truncated ? 1 : 0, runId).run();
     }
 
     return {
