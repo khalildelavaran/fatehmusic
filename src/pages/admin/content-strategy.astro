@@ -24,7 +24,7 @@ const site = resolveSite();
 const db = (env as AdminEnv).DB;
 const gscRows = db ? await getRecentSearchConsoleRows(db, site.url, { days: 90 }) : [];
 const latestGscSync = db ? await getLatestGscSyncRun(db, site.url) : null;
-const seoActions = db ? await listSeoActions(db, { limit: 8 }) : [];
+const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as SeoAction[] : [];
 const ahrefsConfig = getAhrefsConfig(env as unknown as Record<string, unknown>);
 const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsOrganicKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "metrics" }),
@@ -58,6 +58,36 @@ const normalizeSlug = (value: string) => String(value ?? "")
 
 const publishedTitles = new Set(posts.map((post) => normalizeText(post.title)));
 const publishedSlugs = new Set(posts.map((post) => normalizeSlug(post.slug)));
+
+interface SeoActionMeasurement {
+  measuredAt: string;
+  windowStart: string;
+  windowEnd: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  position: number | null;
+}
+
+interface SeoAction {
+  id: number;
+  actionType: string;
+  target_url: string | null;
+  target_slug: string | null;
+  target_title: string | null;
+  related_course_slug: string | null;
+  recommendation_score: number | null;
+  status: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  latest: SeoActionMeasurement | null;
+  previous: SeoActionMeasurement | null;
+  ctrDelta: number | null;
+  positionDelta: number | null;
+  impressionDelta: number | null;
+}
 
 const opportunities = intelligence.opportunities.filter((item) => {
   const sameTitle = publishedTitles.has(normalizeText(item.title));
@@ -134,6 +164,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
               <div><strong>Organic traffic</strong><span>{Number(ahrefsMetrics?.payload?.org_traffic || 0).toLocaleString("fa-IR")}</span><small>تخمین ماهانه Ahrefs</small></div>
               <div><strong>Competitors</strong><span>{Array.isArray(ahrefsCompetitors?.payload) ? ahrefsCompetitors.payload.length.toLocaleString("fa-IR") : "0"}</span><small>رقبای ارگانیک ثبت‌شده</small></div>
               <div><strong>Referring domains</strong><span>{Array.isArray(ahrefsRefdomains?.payload) ? ahrefsRefdomains.payload.length.toLocaleString("fa-IR") : "0"}</span><small>دامنه‌های ارجاع‌دهنده</small></div>
+              <div><strong>Tracked keyword rows</strong><span>{Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload.length.toLocaleString("fa-IR") : "0"}</span><small>نمونه کلمات ارگانیک</small></div>
             </div>
           )}
           {ahrefsConfig.enabled && Array.isArray(ahrefsCompetitors?.payload) && ahrefsCompetitors.payload.length > 0 && (
@@ -150,7 +181,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
               {seoActions.map((action) => <article class="strategy-action-card">
                 <div><strong>{action.target_title || action.target_slug}</strong><span>{action.status}</span></div>
                 <p>{action.target_url}</p>
-                {action.latest && <small>CTR: {(action.latest.ctr * 100).toFixed(1)}% · رتبه: {action.latest.position?.toFixed(1) ?? "-"} · Impression: {Math.round(action.latest.impressions).toLocaleString("fa-IR")}</small>}
+                {action.latest && <small>CTR: {(Number(action.latest.ctr) * 100).toFixed(1)}% · رتبه: {action.latest.position != null ? Number(action.latest.position).toFixed(1) : "-"} · Impression: {Math.round(Number(action.latest.impressions)).toLocaleString("fa-IR")}</small>}
                 {action.ctrDelta != null && <small>تغییر CTR: {(action.ctrDelta * 100).toFixed(2)}% · تغییر رتبه: {action.positionDelta?.toFixed(2) ?? "-"}</small>}
               </article>)}
             </div>
