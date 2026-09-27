@@ -24,7 +24,7 @@ const site = resolveSite();
 const db = (env as AdminEnv).DB;
 const gscRows = db ? await getRecentSearchConsoleRows(db, site.url, { days: 90 }) : [];
 const latestGscSync = db ? await getLatestGscSyncRun(db, site.url) : null;
-const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as SeoAction[] : [];
+const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[] : [];
 const ahrefsConfig = getAhrefsConfig(env as unknown as Record<string, unknown>);
 const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsOrganicKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "metrics" }),
