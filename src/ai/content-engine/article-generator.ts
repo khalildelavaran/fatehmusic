@@ -128,15 +128,26 @@ const SYSTEM_PROMPT = `تو یک نویسنده‌ی محتوای حرفه‌ا�
 - هیچ آمار، جایزه، یا نقل‌قولی که در بریف نیومده اختراع نکن.`;
 
 function validateGeneratedArticle(article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string }): string | null {
-  const content = String(article.content || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const rawContent = String(article.content || "").replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\\r/g, "\r").trim();
+  const content = rawContent.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
   const excerpt = String(article.excerpt || "").trim();
   const metaTitle = String(article.meta_title || "").trim();
   const metaDescription = String(article.meta_description || "").trim();
+  const paragraphCount = rawContent.split(/\\n\\s*\\n/g).map((part) => part.trim()).filter(Boolean).length;
+  const headingCount = (rawContent.match(/^(#{1,4})\\s+.+$/gm) || []).length + (rawContent.match(/<h[1-4]\\b[^>]*>/gi) || []).length;
+  const normalizedMetaTitle = metaTitle.toLocaleLowerCase("fa");
+  const normalizedExcerpt = excerpt.toLocaleLowerCase("fa");
+  const placeholderPattern = /(todo|lorem ipsum|tbd|نام مدرس|نام آموزشگاه|مثال ساختگی)/i;
+
   if (content.length < 1200) return "متن تولیدشده کمتر از ۱۲۰۰ نویسه است.";
+  if (paragraphCount < 5) return "مقاله باید حداقل ۵ پاراگراف مستقل داشته باشد.";
+  if (headingCount < 2) return "مقاله باید حداقل ۲ تیتر ساختاری داشته باشد.";
   if (excerpt.length < 60) return "خلاصه مقاله کمتر از ۶۰ نویسه است.";
   if (!metaTitle || metaTitle.length > 70) return "meta_title خارج از محدوده کیفیت است.";
-  if (!metaDescription || metaDescription.length < 80 || metaDescription.length > 180) return "meta_description خارج از محدوده ۸۰ تا ۱۸۰ نویسه است.";
+  if (metaDescription.length < 80 || metaDescription.length > 180) return "meta_description خارج از محدوده ۸۰ تا ۱۸۰ نویسه است.";
   if (!String(article.slug || "").trim()) return "slug تولید نشده است.";
+  if (placeholderPattern.test(rawContent) || placeholderPattern.test(excerpt) || placeholderPattern.test(metaDescription)) return "متن شامل placeholder یا محتوای ساختگی است.";
+  if (normalizedMetaTitle && normalizedExcerpt && normalizedMetaTitle === normalizedExcerpt) return "meta_title نباید دقیقاً برابر excerpt باشد.";
   return null;
 }
 
