@@ -25,7 +25,7 @@ const ARTICLE_TOOL = {
   input_schema: {
     type: "object",
     properties: {
-      slug: { type: "string", description: "اسلاگ انگلیسی URL، فقط حروف کوچک و خط تیره" },
+      slug: { type: "string", description: "اسلاگ URL با حروف فارسی یا لاتین و خط تیره، بدون فاصله" },
       excerpt: { type: "string", description: "خلاصه‌ی دو تا سه جمله‌ای فارسی" },
       content: { type: "string", description: "متن کامل مقاله به فارسی، پاراگراف‌ها با دو خط جدید (\\n\\n) از هم جدا شده" },
       topic: { type: "string", description: "دسته‌بندی کوتاه فارسی، مثلا: آموزش گیتار" },
