@@ -65,10 +65,10 @@ async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
   const activeCourses = (courses as CourseLike[]).filter((c) => c.active);
   const unusedCourses = activeCourses.filter((course) => !existingIndex.normalizedKeys.has(course.title) && !existingIndex.titles.includes(course.title));
 
-  if (unusedCourses.length > 0 && Math.random() >= 0.2) {
+  if (unusedCourses.length > 0) {
     const recentUnused = unusedCourses.filter((c) => !recentSlugs.has(c.slug));
     const pool = recentUnused.length > 0 ? recentUnused : unusedCourses;
-    const course = pool[Math.floor(Math.random() * pool.length)];
+    const course = pool[0];
     return {
       topicRowId: null,
       title: course.title,
