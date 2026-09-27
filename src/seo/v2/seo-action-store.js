@@ -54,10 +54,11 @@ export async function syncPublishedSeoActionMeasurements(db, {
 
   let measured = 0;
   for (const row of rows.results || []) {
-    const impressions = Number(row.impressions) || 0;
-    const clicks = Number(row.clicks) || 0;
-    if (!impressions && !clicks) continue;
+    const impressions = Math.max(0, Number(row.impressions) || 0);
+    const clicks = Math.max(0, Number(row.clicks) || 0);
 
+    // Store zero-visibility measurements too. A published page with zero
+    // impressions is a real outcome and must not be confused with "not measured".
     await db.prepare(
       "INSERT INTO seo_action_measurements (action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console') " +
