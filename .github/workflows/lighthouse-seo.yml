@@ -12,6 +12,11 @@ jobs:
       matrix:
         path: [/, /courses, /about, /blog]
     steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Run Lighthouse
         run: |
           mkdir -p lighthouse
@@ -21,6 +26,11 @@ jobs:
             --output-path="./lighthouse/report" \
             --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
             --only-categories="performance,accessibility,best-practices,seo"
+
+      - name: Verify Lighthouse reports
+        run: |
+          test -s "lighthouse/report.report.html"
+          test -s "lighthouse/report.report.json"
 
       - name: Upload Lighthouse reports
         uses: actions/upload-artifact@v4
