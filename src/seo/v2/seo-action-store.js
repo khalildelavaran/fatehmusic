@@ -17,17 +17,45 @@ export async function createSeoAction(db, {
   return Number(result.meta?.last_row_id || 0);
 }
 
-/** @param {D1Database} db @param {{targetSlug?:string,targetTitle?:string,publishedAt?:string}} [options] */
+/** @param {D1Database} db @param {{targetUrl?:string,targetSlug?:string,targetTitle?:string,previousTargetSlug?:string|null,previousTargetTitle?:string|null,publishedAt?:string}} [options] */
 export async function markSeoActionPublished(db, {
+  targetUrl = null,
   targetSlug = "",
   targetTitle = "",
+  previousTargetSlug = null,
+  previousTargetTitle = null,
   publishedAt = new Date().toISOString()
 } = {}) {
   if (!db) return 0;
+
+  // Match either the current published identity or the identity that existed
+  // on the AI draft before an editor changed its slug/title. Only one action
+  // is updated so duplicate historical actions cannot all become "published".
+  const row = await db.prepare(
+    "SELECT id FROM seo_action_log " +
+    "WHERE status IN ('pending_review', 'measuring', 'published') AND (" +
+      "(target_slug IS NOT NULL AND target_slug != '' AND target_slug IN (?, ?)) OR " +
+      "((target_slug IS NULL OR target_slug = '') AND target_title IN (?, ?))" +
+    ") ORDER BY CASE " +
+      "WHEN target_slug = ? THEN 0 WHEN target_slug = ? THEN 1 ELSE 2 END, " +
+      "updated_at DESC, id DESC LIMIT 1"
+  ).bind(
+    targetSlug,
+    previousTargetSlug || "",
+    targetTitle,
+    previousTargetTitle || "",
+    targetSlug,
+    previousTargetSlug || ""
+  ).first<{ id: number }>();
+
+  if (!row?.id) return 0;
+
   const result = await db.prepare(
-    "UPDATE seo_action_log SET status = 'published', published_at = COALESCE(published_at, ?), updated_at = datetime('now') " +
-    "WHERE status IN ('pending_review', 'measuring') AND ((target_slug IS NOT NULL AND target_slug != '' AND target_slug = ?) OR ((target_slug IS NULL OR target_slug = '') AND target_title = ?))"
-  ).bind(publishedAt, targetSlug, targetTitle).run();
+    "UPDATE seo_action_log SET status = 'published', target_url = COALESCE(?, target_url), " +
+    "target_slug = COALESCE(NULLIF(?, ''), target_slug), target_title = COALESCE(NULLIF(?, ''), target_title), " +
+    "published_at = COALESCE(published_at, ?), updated_at = datetime('now') WHERE id = ?"
+  ).bind(targetUrl, targetSlug, targetTitle, publishedAt, row.id).run();
+
   return Number(result.meta?.changes || 0);
 }
 
