@@ -6,20 +6,20 @@ the project's own rules in `AGENTS.md` and `doc/`: `courses.js` and
 `instructors.js` stay `FROZEN v1.0` and untouched, no URLs changed, no
 architecture redesign, no invented instructor credentials/awards/statistics.
 
-## How to apply this
+## Current implementation status
 
-I can't push to GitHub directly (no write credentials), so the changes are in
-`fatehmusic-seo-phase1.patch`. From your local clone:
+این فایل ابتدا برای فاز اول SEO نوشته شده بود. از آن زمان، تغییرات SEO به‌صورت
+مستقیم روی `main` اعمال شده‌اند؛ بنابراین بخش‌های زیر تاریخچه تصمیم‌ها هستند،
+نه دستورالعملی برای اعمال patch قدیمی.
 
-```bash
-git apply fatehmusic-seo-phase1.patch
-npm install
-npm run build   # sanity check — should complete with no errors/warnings
-```
+وضعیت فعلی:
+- Content Intelligence به GSC متصل شده و در صورت تنظیم Ahrefs از آن هم استفاده می‌کند.
+- Measurement loop برای actionهای محتوایی پیاده شده است.
+- audit ساخت و audit آنلاین production فعال هستند.
+- برای همه دوره‌های فعال، محتوای SEO ساختاری وجود دارد؛ بخشی دست‌نویس و بخشی fallback اختصاصی هر دوره است.
+- ۱۴ صفحه مدرس محتوای دست‌نویس دارند.
+- FAQهای قابل‌مشاهده در صفحات مربوط، در JSON-LD هم ثبت می‌شوند.
 
-If `git apply` complains about `package-lock.json`, it's safe to delete that
-hunk and just run `npm install` again — it'll regenerate correctly since
-`package.json` already lists `@astrojs/sitemap`.
 
 ---
 
@@ -121,10 +121,12 @@ awards, student counts, press mentions, or festival results anywhere.
 
 | | Done | Remaining |
 |---|---|---|
-| Courses with full content | 1 (`guitar-course`) | 22 |
-| Instructors with full content | 1 (`khalil-delavaran`) | 13 |
-| Architecture (resolvers, components, FAQ wiring) | ✅ complete for all 37 pages | — |
-| Technical SEO (prerender, sitemap) | ✅ site-wide | — |
+| Courses with hand-written long-form content | 5 | 18 use course-specific fallback content |
+| Instructors with hand-written long-form content | 14 | — |
+| Course/instructor content architecture | ✅ complete | — |
+| Technical SEO (prerender, sitemap, audits) | ✅ site-wide | — |
+| GSC/Ahrefs intelligence | ✅ code path complete | Requires production secrets/data |
+| Closed-loop measurement | ✅ code path complete | Requires GSC production data |
 
 I can keep going and fill in the rest — realistically a handful of
 courses/instructors per follow-up message if you want the same depth and
