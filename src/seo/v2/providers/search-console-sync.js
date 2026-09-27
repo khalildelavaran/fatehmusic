@@ -4,6 +4,10 @@ const DEFAULT_PAGE_SIZE = 25000;
 const DEFAULT_MAX_ROWS = 25000;
 const BATCH_SIZE = 50;
 
+function normalizeSiteUrl(value) {
+  return String(value || "").replace(/\\/$/, "");
+}
+
 function toRow(keys = [], dimensions = ["query", "page"], metrics = {}, { startDate, endDate, dataState } = {}) {
   const values = Object.fromEntries(dimensions.map((dimension, index) => [dimension, keys[index] || ""]));
   return {
@@ -60,6 +64,7 @@ export async function fetchAllSearchAnalytics(client, {
 }
 
 async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now')") {
+  const siteUrl = normalizeSiteUrl(env.GSC_SITE_URL);
   let rowsStored = 0;
 
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
@@ -73,7 +78,7 @@ async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now
         "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
         "position=excluded.position, synced_at=excluded.synced_at"
       ).bind(
-        env.GSC_SITE_URL,
+        siteUrl,
         row.query,
         row.page,
         row.country,
@@ -119,7 +124,7 @@ export async function syncSearchConsoleToD1({
 
   const run = await db.prepare(
     "INSERT INTO gsc_sync_runs (site_url, start_date, end_date, status) VALUES (?, ?, ?, 'running')"
-  ).bind(env.GSC_SITE_URL, startDate, endDate).run();
+  ).bind(normalizeSiteUrl(env.GSC_SITE_URL), startDate, endDate).run();
 
   const runId = run.meta?.last_row_id || null;
 
@@ -220,7 +225,7 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
   try {
     const { syncPublishedSeoActionMeasurements } = await import("../seo-action-store.js");
     await syncPublishedSeoActionMeasurements(env.DB, {
-      siteUrl: env.GSC_SITE_URL,
+      siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
       windowStart: currentStart,
       windowEnd: currentEnd
     });
