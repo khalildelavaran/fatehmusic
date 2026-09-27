@@ -120,16 +120,16 @@ async function checkPublicPage(url) {
   const titles = allMatches(/<title[^>]*>([\\s\\S]*?)<\\/title>/gi, body);
   if (titles.length !== 1 || !titles[0].trim()) {
     fail("PUBLIC_TITLE", url + ": expected exactly one non-empty title");
-  } else if (titles[0].trim().length < 20 || titles[0].trim().length > 65) {
-    warn("PUBLIC_TITLE_LENGTH", url + ": title length is outside 20-65 characters");
+  } else if (titles[0].trim().length < 20 || titles[0].trim().length > 60) {
+    warn("PUBLIC_TITLE_LENGTH", url + ": title length is outside 20-60 characters");
   }
 
   const descriptions = allMatches(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["'][^>]*>/gi, body)
     .filter(Boolean);
   if (descriptions.length !== 1) {
     fail("PUBLIC_META_DESCRIPTION", url + ": expected exactly one non-empty meta description");
-  } else if (descriptions[0].length < 80 || descriptions[0].length > 170) {
-    warn("PUBLIC_META_DESCRIPTION_LENGTH", url + ": meta description length is outside 80-170 characters");
+  } else if (descriptions[0].length < 80 || descriptions[0].length > 160) {
+    warn("PUBLIC_META_DESCRIPTION_LENGTH", url + ": meta description length is outside 80-160 characters");
   }
 
   const h1s = allMatches(/<h1\\b[^>]*>([\\s\\S]*?)<\\/h1>/gi, body);
