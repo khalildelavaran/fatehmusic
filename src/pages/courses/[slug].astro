@@ -89,6 +89,7 @@ const foundationLinks = course.slug === "guitar-course"
       ]
     : [];
 
+const fallbackMetaDescription = resolvedCourse.seoContent?.quickSummary || "";
 const courseSeo = course.slug === "guitar-course"
   ? {
       title: "آموزش گیتار در شوشتر | کلاس گیتار از مبتدی تا پیشرفته",
@@ -101,7 +102,9 @@ const courseSeo = course.slug === "guitar-course"
       }
     : {
         title: course.seo.title,
-        description: course.seo.description
+        description: String(course.seo.description || "").trim().length >= 80
+          ? course.seo.description
+          : (fallbackMetaDescription || course.seo.description)
       };
 
 const h1 = course.slug === "guitar-course"
