@@ -12,6 +12,7 @@
 // friction made it unreliable -- see ADR-011's "Amendment" section.
 
 import { courses } from "../../data/courses.js";
+import { instructors } from "../../data/instructors.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { callClaudeArticle } from "./providers/anthropic";
@@ -151,6 +152,7 @@ function validateGeneratedArticle(article: { content?: string; excerpt?: string;
 
   if (content.length < 1200) return "متن تولیدشده کمتر از ۱۲۰۰ نویسه است.";
   if (paragraphCount < 5) return "مقاله باید حداقل ۵ پاراگراف مستقل داشته باشد.";
+  if (paragraphCount > 8) return "مقاله نباید بیشتر از ۸ پاراگراف مستقل داشته باشد.";
   if (headingCount < 2) return "مقاله باید حداقل ۲ تیتر ساختاری داشته باشد.";
   if (excerpt.length < 60) return "خلاصه مقاله کمتر از ۶۰ نویسه است.";
   if (metaTitle.length < 20 || metaTitle.length > 60) return "meta_title باید بین ۲۰ تا ۶۰ نویسه باشد.";
@@ -163,13 +165,34 @@ function validateGeneratedArticle(article: { content?: string; excerpt?: string;
 
 function buildBrief(topic: SelectedTopic): string {
   const lines = [`عنوان مقاله (ثابت، تغییر نده): «${topic.title}»`];
-  if (topic.relatedCourseTitle) {
-    lines.push(`این مقاله باید به دوره‌ی «${topic.relatedCourseTitle}» (اسلاگ: ${topic.relatedCourseSlug}) در آموزشگاه موسیقی فاتح در شوشتر مرتبط باشد.`);
+
+  if (topic.relatedCourseSlug) {
+    const course = (courses as Array<any>).find((item) => item.slug === topic.relatedCourseSlug);
+    lines.push(`این مقاله باید به دوره‌ی «${topic.relatedCourseTitle || course?.title || topic.relatedCourseSlug}» در آموزشگاه موسیقی فاتح در شوشتر مرتبط باشد.`);
+
+    if (course) {
+      const teacherNames = (course.instructors || [])
+        .map((id: number) => (instructors as Array<any>).find((teacher) => teacher.id === id)?.name)
+        .filter(Boolean);
+
+      lines.push("فکت‌های رسمی که مجاز به استفاده از آن‌ها هستی:");
+      lines.push(`- عنوان دوره: ${course.title}`);
+      lines.push(`- سطح‌ها: ${(course.level || []).join("، ") || "در داده رسمی مشخص نشده"}`);
+      lines.push(`- گروه سنی: ${(course.ageGroup || []).join("، ") || "در داده رسمی مشخص نشده"}`);
+      lines.push(`- دسته‌بندی: ${course.category || "در داده رسمی مشخص نشده"}`);
+      lines.push(`- نوع کلاس: ${course.classType || "در داده رسمی مشخص نشده"}`);
+      lines.push(`- مدت: ${course.duration || "در داده رسمی مشخص نشده"}`);
+      if (teacherNames.length) lines.push(`- مدرس/مدرس‌ها: ${teacherNames.join("، ")}`);
+      if (course.content?.description) lines.push(`- توضیح رسمی دوره: ${course.content.description}`);
+      if (course.seo?.keywords?.length) lines.push(`- کلیدواژه‌های رسمی دوره: ${course.seo.keywords.join("، ")}`);
+      lines.push("فقط همین اطلاعات مدرسه را به‌عنوان فکت اختصاصی آموزشگاه استفاده کن؛ درباره سابقه، تعداد هنرجو، قیمت، زمان کلاس یا دستاوردهایی که اینجا داده نشده‌اند چیزی نساز.");
+    }
   } else {
-    lines.push("این مقاله موضوعی عمومی درباره‌ی آموزش موسیقی است، وبلاگ آموزشگاه موسیقی فاتح در شوشتر.");
+    lines.push("این مقاله موضوعی عمومی درباره‌ی آموزش موسیقی است. درباره آموزشگاه فقط اطلاعاتی را ذکر کن که در همین بریف آمده و از ساختن فکت اختصاصی درباره مدرس، قیمت، زمان یا آمار خودداری کن.");
   }
-  if (topic.excerpt) lines.push(`توضیح کوتاه دوره: ${topic.excerpt}`);
-  lines.push("submit_article رو با فیلدهای کامل صدا بزن.");
+
+  if (topic.excerpt) lines.push(`توضیح کوتاه موجود: ${topic.excerpt}`);
+  lines.push("عنوان، موضوع و فکت‌های رسمی بالا را مبنا قرار بده و submit_article را با فیلدهای کامل صدا بزن.");
   return lines.join("\n");
 }
 
