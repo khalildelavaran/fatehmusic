@@ -47,14 +47,16 @@ interface SelectedTopic {
 }
 
 function slugify(text: string): string {
-  const base = text
+  const base = String(text || "")
+    .normalize("NFKC")
     .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
+    .toLocaleLowerCase("fa")
+    .replace(/[^a-z0-9\u0600-\u06ff\s-]/g, "")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
-    .slice(0, 60);
-  return base || `post-${Date.now()}`;
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return base;
 }
 
 async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
