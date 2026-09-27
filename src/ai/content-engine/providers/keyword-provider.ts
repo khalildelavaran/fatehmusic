@@ -13,7 +13,12 @@
 export interface KeywordSignal {
   available: boolean;
   estimatedVolume?: number;
-  difficulty?: number; // 0-100
+  difficulty?: number;
+  searchImpressions?: number;
+  searchClicks?: number;
+  searchCtr?: number;
+  searchPosition?: number;
+  matchedQueries?: string[];
   source: string;
 }
 
