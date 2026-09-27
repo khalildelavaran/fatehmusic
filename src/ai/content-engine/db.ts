@@ -184,6 +184,35 @@ export async function getNextApprovedTopic(db: D1Database): Promise<ContentTopic
   return row ?? null;
 }
 
+/**
+ * Atomically claim one approved topic before an AI generation run.
+ * Two concurrent workers may read the same candidate, but only one can
+ * transition it from approved -> generating.
+ */
+export async function claimNextApprovedTopic(db: D1Database, attempts = 3): Promise<ContentTopicRow | null> {
+  for (let attempt = 0; attempt < Math.max(1, attempts); attempt += 1) {
+    const candidate = await getNextApprovedTopic(db);
+    if (!candidate) return null;
+
+    const claimed = await db
+      .prepare("UPDATE content_topics SET status='generating', updated_at=datetime('now') WHERE id=? AND status='approved'")
+      .bind(candidate.id)
+      .run();
+
+    if (Number(claimed.meta?.changes || 0) === 1) {
+      return { ...candidate, status: "generating", updated_at: new Date().toISOString() };
+    }
+  }
+  return null;
+}
+
+export async function releaseGeneratingTopic(db: D1Database, id: number): Promise<void> {
+  await db
+    .prepare("UPDATE content_topics SET status='approved', updated_at=datetime('now') WHERE id=? AND status='generating'")
+    .bind(id)
+    .run();
+}
+
 export async function markTopicUsed(db: D1Database, id: number, postId: number): Promise<void> {
   await db
     .prepare("UPDATE content_topics SET status = 'used', used_at = datetime('now'), used_by_post_id = ?, updated_at = datetime('now') WHERE id = ?")
