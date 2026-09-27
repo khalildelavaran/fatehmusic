@@ -62,7 +62,12 @@ const auditText = [
   ...(teacherCourses.map((course) => course.content.description)),
   seoContent?.quickSummary || "",
   ...(seoContent?.teachingPhilosophy || []),
-  ...(seoContent?.typicalProgression || [])
+  ...(seoContent?.methodBySubject?.map((item) => `${item.subject} ${item.description}`) || []),
+  ...(seoContent?.whoShouldStudyWithThem || []),
+  ...(seoContent?.typicalProgression || []),
+  ...(seoContent?.commonStudentMistakes?.map((item) => `${item.mistake} ${item.fix}`) || []),
+  ...(seoContent?.whyStudentsChooseThem || []),
+  ...(resolvedInstructor.faqs?.map((item) => `${item.question} ${item.answer}`) || [])
 ].filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
 const internalLinkCount = teacherCourses.length + 1;
