@@ -7,9 +7,9 @@
 
 const LIMITS = Object.freeze({
     titleMin: 20,
-    titleMax: 65,
+    titleMax: 60,
     descriptionMin: 80,
-    descriptionMax: 170
+    descriptionMax: 160
 });
 
 /**
