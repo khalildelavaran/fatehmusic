@@ -31,10 +31,12 @@ export function truncate(text, maxLength) {
         return value;
     }
 
-    const cut = value.slice(0, maxLength);
+    // The ellipsis itself is part of the output, so reserve one character
+    // to keep the returned string at or below maxLength.
+    const cut = value.slice(0, Math.max(1, maxLength - 1));
     const lastSpace = cut.lastIndexOf(" ");
 
-    return `${cut.slice(0, lastSpace > 0 ? lastSpace : maxLength)}…`;
+    return `${cut.slice(0, lastSpace > 0 ? lastSpace : cut.length)}…`;
 }
 
 /**
