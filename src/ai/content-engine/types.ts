@@ -23,7 +23,7 @@ export type ModifierType =
   | "career_path"
   | "evergreen_general";
 
-export type TopicStatus = "candidate" | "approved" | "rejected" | "used";
+export type TopicStatus = "candidate" | "approved" | "generating" | "rejected" | "used";
 
 /** A single instrument/course anchor, derived from src/data/courses.js
  * (never duplicated by hand -- courses.js is the frozen source of truth). */
