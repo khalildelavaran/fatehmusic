@@ -18,7 +18,7 @@ export async function createSeoAction(db, {
   return Number(result.meta?.last_row_id || 0);
 }
 
-/** @param {D1Database} db @param {{targetUrl?:string,targetSlug?:string,targetTitle?:string,previousTargetSlug?:string|null,previousTargetTitle?:string|null,publishedAt?:string}} [options] */
+/** @param {D1Database} db @param {{targetPostId?:number|null,targetUrl?:string|null,targetSlug?:string,targetTitle?:string,previousTargetSlug?:string|null,previousTargetTitle?:string|null,publishedAt?:string}} [options] */
 export async function markSeoActionPublished(db, {
   targetPostId = null,
   targetUrl = null,
