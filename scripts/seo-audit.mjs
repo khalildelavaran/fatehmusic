@@ -234,17 +234,37 @@ function validateHtmlFiles() {
     const descriptions = allMatches(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["'][^>]*>/gi, html);
     const canonicals = allMatches(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*)["'][^>]*>/gi, html);
     const robots = firstMatch(/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']*)["'][^>]*>/i, html);
+    const htmlTag = firstMatch(/<html\b([^>]*)>/i, html);
+    const metaByName = (name) => firstMatch(new RegExp(`<meta[^>]+name=["']${name}["'][^>]+content=["']([^"']*)["'][^>]*>`, "i"), html);
+    const metaByProperty = (property) => firstMatch(new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']*)["'][^>]*>`, "i"), html);
     const h1s = allMatches(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi, html);
     const imageTags = [...html.matchAll(/<img\b[^>]*>/gi)].map((m) => parseAttributes(m[0]));
     const jsonLd = allMatches(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi, html);
     const anchors = allMatches(/<a\b[^>]+href=["']([^"'#]+)["']/gi, html);
 
     if (!title) error("TITLE_MISSING", route + ": title missing");
+    if (title.trim().length < 20 || title.trim().length > 65) warn("TITLE_LENGTH", route + ": title length is outside 20-65 characters");
     if (descriptions.length !== 1 || !descriptions[0]) {
       error("META_DESCRIPTION", route + ": expected exactly one non-empty meta description");
+    } else if (descriptions[0].trim().length < 80 || descriptions[0].trim().length > 170) {
+      warn("META_DESCRIPTION_LENGTH", route + ": meta description length is outside 80-170 characters");
     }
     if (canonicals.length !== 1) error("CANONICAL_COUNT", route + ": expected exactly one canonical");
     if (h1s.length !== 1) error("H1_COUNT", route + ": expected exactly one H1, found " + h1s.length);
+    if (!/\blang=["']fa["']/i.test(htmlTag) || !/\bdir=["']rtl["']/i.test(htmlTag)) {
+      error("HTML_LANGUAGE", route + ": expected <html lang="fa" dir="rtl">");
+    }
+    for (const [label, value] of [
+      ["og:title", metaByProperty("og:title")],
+      ["og:description", metaByProperty("og:description")],
+      ["og:url", metaByProperty("og:url")],
+      ["og:image", metaByProperty("og:image")],
+      ["twitter:card", metaByName("twitter:card")],
+      ["twitter:title", metaByName("twitter:title")],
+      ["twitter:description", metaByName("twitter:description")]
+    ]) {
+      if (!value) warn("SOCIAL_META", route + ": missing " + label);
+    }
     if (robots.toLowerCase().includes("noindex")) warn("NOINDEX_PUBLIC", route + ": public rendered page is noindex");
 
     for (const attrs of imageTags) {
