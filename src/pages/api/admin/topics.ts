@@ -6,7 +6,7 @@ import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { listTopics, updateTopicStatus, deleteTopic } from "../../../ai/content-engine/db";
 import type { TopicStatus } from "../../../ai/content-engine/types";
 
-const VALID_STATUSES: TopicStatus[] = ["candidate", "approved", "rejected", "used"];
+const VALID_STATUSES: TopicStatus[] = ["candidate", "approved", "generating", "rejected", "used"];
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN]);
@@ -31,7 +31,7 @@ export const PATCH: APIRoute = async ({ request }) => {
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
 
   const body = (await request.json()) as { id?: number; status?: string };
-  if (!body.id || !body.status || !VALID_STATUSES.includes(body.status as TopicStatus)) {
+  if (!body.id || !body.status || !VALID_STATUSES.includes(body.status as TopicStatus) || body.status === "generating") {
     return json({ success: false, message: "شناسه یا وضعیت نامعتبر است." }, 422);
   }
   await updateTopicStatus(db, body.id, body.status as TopicStatus);
