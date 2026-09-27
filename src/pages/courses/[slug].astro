@@ -19,6 +19,7 @@ import {
   buildPersonSchema,
   resolveInstructor,
   buildBreadcrumbSchema,
+  buildFaqSchema,
   answersFromFaq
 } from "../../seo/index.js";
 
@@ -53,7 +54,12 @@ const breadcrumbSchema = buildBreadcrumbSchema([
   { name: course.title, path: `/courses/${course.slug}` }
 ], site);
 
-const schema: object[] = [courseSchema, ...courseStyleSchemas, ...teacherSchemas, breadcrumbSchema].filter(
+const faqSchema = buildFaqSchema(resolvedCourse.faqs, {
+  site,
+  url: `${site.url}/courses/${course.slug}`,
+  name: `سوالات متداول درباره ${course.title}`
+});
+const schema: object[] = [courseSchema, ...courseStyleSchemas, ...teacherSchemas, breadcrumbSchema, faqSchema].filter(
   (item): item is object => item !== null
 );
 
