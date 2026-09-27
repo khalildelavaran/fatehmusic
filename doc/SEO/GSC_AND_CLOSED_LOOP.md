@@ -13,7 +13,7 @@ Service Account باید دسترسی مشاهده به Property آموزشگا�
 ## چرخه‌ی روزانه
 
 1. Search Console برای دو پنجره‌ی ۲۸روزه‌ی اخیر و قبلی همگام می‌شود.
-2. موتور Topic Discovery با impressionهای واقعی queryها سیگنال تقاضا می‌گیرد.
+2. بلافاصله بعد از sync، Topic Discovery با impressionهای واقعی queryها اجرا می‌شود.
 3. صف محتوایی بر اساس پوشش، intent، ارتباط تجاری، محلی بودن و demand امتیاز می‌گیرد.
 4. Worker از بهترین topic تأییدشده یک draft تولید می‌کند.
 5. draft به‌عنوان یک SEO action ثبت می‌شود.
