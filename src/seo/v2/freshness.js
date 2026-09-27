@@ -15,7 +15,9 @@ export function daysSince(value, now = new Date()) {
     const iso = toIsoDate(value);
     if (!iso) return undefined;
     const then = new Date(iso).getTime();
-    return Math.max(0, Math.floor((now.getTime() - then) / 86400000));
+    const ageMs = now.getTime() - then;
+    if (ageMs < 0) return undefined;
+    return Math.floor(ageMs / 86400000);
 }
 
 /**
