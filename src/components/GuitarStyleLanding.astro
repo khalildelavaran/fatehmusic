@@ -62,6 +62,7 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
   auditContext={{
     h1Count: 1,
     missingImageAlt: 0,
+    imageAudit: { missingDimensions: 0, genericAlt: 0, heroPriority: true },
     wordCount: `${style.overview} ${style.curriculum.map((item) => item[0] + " " + item[1]).join(" ")} ${style.faqs.flat().join(" ")}`.trim().split(/\s+/).length,
     internalLinkCount: 3
   }}
@@ -84,7 +85,15 @@ const instructorUrl = `${site.url}/instructors/khalil-delavaran`;
           <a href={`/register?course=guitar-course`} class="btn btn-primary">ثبت نام آموزش گیتار</a>
         </div>
         <div class="course-page__image">
-          <img src={style.image} alt={style.title} />
+          <img
+            src={style.image}
+            alt={style.title}
+            width="800"
+            height="450"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
         </div>
       </div>
     </div>
