@@ -9,10 +9,10 @@
  * (id/slug/media/content.excerpt/seo) is not to be changed.
  * This file is purely additive: src/seo/resolvers/course.js looks
  * up an entry here by `course.slug` and merges it in as an
- * optional `seoContent` field. Every course NOT listed here simply
- * resolves `seoContent: null`, and the page/components render
- * without that section — so filling this in one course at a time
- * is always safe and never breaks the other course pages.
+ * optional `seoContent` field. Courses not listed here receive a
+ * subject-specific structured fallback from course-content-fallback.js,
+ * so every active course has meaningful SEO content while the entries
+ * in this file remain the editorial source for fully hand-written pages.
  *
  * Content rules (see doc/CONTENT_ENGINE_SPECIFICATION.md and
  * AGENTS.md "TRUST" section):
@@ -52,8 +52,8 @@ export const courseContent = {
 
   /* ======================================================================
      guitar-course — fully worked template.
-     Remaining 22 courses intentionally left unset for now; see the
-     chat response for the phased plan to fill these in.
+     This remains the hand-written reference template; courses without
+     editorial entries use course-content-fallback.js.
   ====================================================================== */
   "guitar-course": {
 
