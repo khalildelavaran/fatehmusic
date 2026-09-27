@@ -31,13 +31,12 @@ export async function getCoverageByCourse(db: D1Database): Promise<Map<string, n
     const key = slug ?? "__general__";
     coverage.set(key, (coverage.get(key) ?? 0) + by);
   };
-  const [topics, posts] = await Promise.all([
-    db.prepare("SELECT related_course_slug AS slug, COUNT(*) AS n FROM content_topics WHERE status != 'rejected' GROUP BY related_course_slug")
-      .all<{ slug: string | null; n: number }>(),
-    db.prepare("SELECT related_course_slug AS slug, COUNT(*) AS n FROM blog_posts WHERE status = 'published' GROUP BY related_course_slug")
-      .all<{ slug: string | null; n: number }>()
-  ]);
-  for (const row of topics.results) bump(row.slug, row.n);
+  // Coverage is real published content only. Candidate/approved topic rows are
+  // opportunities, not content coverage; counting them here suppresses valid
+  // gaps before an article actually exists.
+  const posts = await db.prepare(
+    "SELECT related_course_slug AS slug, COUNT(*) AS n FROM blog_posts WHERE status = 'published' GROUP BY related_course_slug"
+  ).all<{ slug: string | null; n: number }>();
   for (const row of posts.results) bump(row.slug, row.n);
   return coverage;
 }
@@ -47,7 +46,7 @@ export async function getRecentlyUsedCourses(db: D1Database, withinDays = 21): P
   const [topics, posts] = await Promise.all([
     db.prepare("SELECT DISTINCT related_course_slug AS slug FROM content_topics WHERE status = 'used' AND used_at >= ?")
       .bind(cutoff).all<{ slug: string | null }>(),
-    db.prepare("SELECT DISTINCT related_course_slug AS slug FROM blog_posts WHERE created_at >= ?")
+    db.prepare("SELECT DISTINCT related_course_slug AS slug FROM blog_posts WHERE status = 'published' AND created_at >= ?")
       .bind(cutoff).all<{ slug: string | null }>()
   ]);
   const out = new Set<string>();
