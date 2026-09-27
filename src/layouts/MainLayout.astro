@@ -65,7 +65,7 @@ const openGraph = seo.openGraph as Record<string, string>;
 const twitter = seo.twitter as Record<string, string>;
 
 const pathname = Astro.url.pathname;
-const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard))(?:\/|$)/.test(pathname);
+const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?:\/|$)/.test(pathname);
 ---
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
