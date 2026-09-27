@@ -4,11 +4,10 @@
  * Fateh Music Academy
  * Component: CourseSeoContent
  * Description: Renders the long-form seoContent block that
- * src/seo/resolvers/course.js merges in from
- * src/data/course-content.js. Renders nothing at all when a
- * course has no entry there yet (`seoContent === null`), so
- * rolling this content out one course at a time never breaks
- * the courses that don't have it yet.
+ * src/seo/resolvers/course.js merges from the hand-written content
+ * file or its subject-specific fallback. Every active course can
+ * therefore render a structured SEO content section without
+ * duplicating the frozen course catalog.
  * --------------------------------------------------------
  */
 
