@@ -148,9 +148,20 @@ const answerBlocks = answersFromFaq(
 const auditText = [
   course.content.excerpt,
   course.content.description,
+  resolvedCourse.seoContent?.quickSummary || "",
   resolvedCourse.seoContent?.overview || [],
+  resolvedCourse.seoContent?.whoIsItFor || [],
+  resolvedCourse.seoContent?.whoIsItNotFor || [],
+  resolvedCourse.seoContent?.prerequisites || "",
+  resolvedCourse.seoContent?.learningPath?.map((item: { stage: string; description: string }) => `${item.stage} ${item.description}`) || [],
   resolvedCourse.seoContent?.curriculum?.map((item: { title: string; description: string }) => `${item.title} ${item.description}`) || [],
-  resolvedCourse.seoContent?.learningPath?.map((item: { stage: string; description: string }) => `${item.stage} ${item.description}`) || []
+  resolvedCourse.seoContent?.teachingMethod || [],
+  resolvedCourse.seoContent?.practicePlan || [],
+  resolvedCourse.seoContent?.commonMistakes?.map((item: { mistake: string; fix: string }) => `${item.mistake} ${item.fix}`) || [],
+  resolvedCourse.seoContent?.skillsGained || [],
+  resolvedCourse.seoContent?.benefits || [],
+  resolvedCourse.seoContent?.localContext || [],
+  resolvedCourse.seoContent?.faqAdditions?.map((item: { question: string; answer: string }) => `${item.question} ${item.answer}`) || []
 ].flat().filter(Boolean).join(" ");
 const wordCount = auditText.trim() ? auditText.trim().split(/\s+/).length : 0;
 const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleLinks.length + foundationLinks.length + 1;
