@@ -35,7 +35,7 @@ export async function markSeoActionPublished(db, {
   // is updated so duplicate historical actions cannot all become "published".
   const row = await db.prepare(
     "SELECT id FROM seo_action_log " +
-    "WHERE status IN ('pending_review', 'measuring', 'published') AND (" +
+    "WHERE status IN ('pending_review', 'measuring', 'published', 'unpublished') AND (" +
       "(target_post_id = ?) OR " +
       "(target_post_id IS NULL AND (" +
         "(target_slug IS NOT NULL AND target_slug != '' AND target_slug IN (?, ?)) OR " +
@@ -66,6 +66,28 @@ export async function markSeoActionPublished(db, {
     "updated_at = datetime('now') WHERE id = ?"
   ).bind(targetUrl, targetSlug, targetTitle, targetPostId, publishedAt, row.id).run();
 
+  return Number(result.meta?.changes || 0);
+}
+
+/** @param {D1Database} db @param {{targetPostId?:number|null,targetSlug?:string,targetTitle?:string,status?:string}} [options] */
+export async function markSeoActionUnpublished(db, {
+  targetPostId = null,
+  targetSlug = "",
+  targetTitle = "",
+  status = "unpublished"
+} = {}) {
+  if (!db) return 0;
+  const row = await db.prepare(
+    "SELECT id FROM seo_action_log WHERE status IN ('published', 'measuring', 'pending_review') AND (" +
+      "(target_post_id = ?) OR " +
+      "(target_post_id IS NULL AND ((target_slug = ? AND ? != '') OR (target_title = ? AND ? != '')))" +
+    ") ORDER BY updated_at DESC, id DESC LIMIT 1"
+  ).bind(targetPostId, targetSlug, targetSlug, targetTitle, targetTitle).first();
+  if (!row?.id) return 0;
+
+  const result = await db.prepare(
+    "UPDATE seo_action_log SET status = ?, completed_at = CASE WHEN ? = 'removed' THEN datetime('now') ELSE completed_at END, updated_at = datetime('now') WHERE id = ?"
+  ).bind(status, status, row.id).run();
   return Number(result.meta?.changes || 0);
 }
 
