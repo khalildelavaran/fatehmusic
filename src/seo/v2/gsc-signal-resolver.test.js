@@ -28,6 +28,14 @@ describe("GSC signal resolver", () => {
     expect(conflicts[0].actionable).toBe(true);
   });
 
+  it("does not confuse a page handoff between reporting windows with simultaneous cannibalization", () => {
+    const conflicts = detectSearchCannibalization([
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/blog/guitar", clicks: 20, impressions: 1000, ctr: 0.02, position: 7, startDate: "2026-08-01", endDate: "2026-08-28" },
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/blog/guitar-guide", clicks: 18, impressions: 900, ctr: 0.02, position: 8, startDate: "2026-08-29", endDate: "2026-09-25" }
+    ]);
+    expect(conflicts).toHaveLength(0);
+  });
+
   it("uses semantic evidence before escalating cannibalization", () => {
     const conflicts = detectSearchCannibalization(rows, {
       similarityThreshold: 0.55,
