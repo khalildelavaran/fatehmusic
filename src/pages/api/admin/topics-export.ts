@@ -6,7 +6,7 @@ import { requireRole, ROLES, json } from "../../../server/admin-auth";
 import { listTopics } from "../../../ai/content-engine/db";
 import type { TopicStatus } from "../../../ai/content-engine/types";
 
-const VALID_STATUSES: TopicStatus[] = ["candidate", "approved", "rejected", "used"];
+const VALID_STATUSES: TopicStatus[] = ["candidate", "approved", "generating", "rejected", "used"];
 const COLUMNS = [
   "id", "title", "status", "score_total", "intent", "modifier_type",
   "category", "related_course_title", "audience", "level", "reasoning", "created_at"
