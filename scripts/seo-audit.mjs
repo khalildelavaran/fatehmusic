@@ -178,6 +178,23 @@ function validateSchema(route, scripts) {
         if (!node[field]) error("LOCALBUSINESS_FIELD_MISSING", route + ": LocalBusiness " + field + " missing");
       }
     }
+    if (type.includes("FAQPage")) {
+      if (!Array.isArray(node.mainEntity) || node.mainEntity.length === 0) {
+        error("FAQ_MAIN_ENTITY_MISSING", route + ": FAQPage has no Question entries");
+      } else {
+        for (const question of node.mainEntity) {
+          const qType = schemaTypes(question);
+          if (!qType.includes("Question") || !question["@id"] || !question.name) {
+            error("FAQ_QUESTION_INVALID", route + ": FAQ Question is missing @id, name, or Question type");
+          }
+          const answer = question.acceptedAnswer;
+          const answerTypes = schemaTypes(answer);
+          if (!answer || !answerTypes.includes("Answer") || !answer.text) {
+            error("FAQ_ANSWER_INVALID", route + ": FAQ Question has no valid acceptedAnswer");
+          }
+        }
+      }
+    }
   }
 }
 
