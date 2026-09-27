@@ -6,14 +6,16 @@ import { json, requireRole, ROLES, type AdminEnv } from "../../../server/admin-a
 import { runScheduledSearchConsoleSync } from "../../../seo/v2/providers/search-console-sync.js";
 import { getLatestGscSyncRun } from "../../../seo/v2/providers/search-console-store.js";
 
+const runtimeEnv = env as unknown as Record<string, any>;
+
 export const GET: APIRoute = async ({ request }) => {
   const denied = await requireRole(request, env as AdminEnv, [ROLES.ADMIN]);
   if (denied) return denied;
 
-  const latestRun = await getLatestGscSyncRun(env.DB, env.GSC_SITE_URL || "https://fatehmusic.ir");
+  const latestRun = await getLatestGscSyncRun(runtimeEnv.DB, runtimeEnv.GSC_SITE_URL || "https://fatehmusic.ir");
   return json({
     success: true,
-    configured: Boolean(env.GSC_CLIENT_EMAIL && env.GSC_PRIVATE_KEY && env.GSC_SITE_URL),
+    configured: Boolean(runtimeEnv.GSC_CLIENT_EMAIL && runtimeEnv.GSC_PRIVATE_KEY && runtimeEnv.GSC_SITE_URL),
     latestRun
   });
 };
@@ -23,7 +25,7 @@ export const POST: APIRoute = async ({ request }) => {
   if (denied) return denied;
 
   try {
-    const result = await runScheduledSearchConsoleSync(env);
+    const result = await runScheduledSearchConsoleSync(runtimeEnv);
     if (result.status === "not_configured") {
       return json({ success: false, message: "Google Search Console هنوز تنظیم نشده است.", result }, 503);
     }
