@@ -110,17 +110,27 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
     "FROM seo_action_log ORDER BY updated_at DESC LIMIT ?"
   ).bind(Math.max(1, Math.min(limit, 100))).all();
 
-  const out = [];
-  for (const action of actions.results || []) {
-    const measurements = await db.prepare(
-      "SELECT measured_at AS measuredAt, window_start AS windowStart, window_end AS windowEnd, impressions, clicks, ctr, position " +
-      "FROM seo_action_measurements WHERE action_id = ? ORDER BY measured_at DESC LIMIT 2"
-    ).bind(action.id).all();
+  const actionRows = actions.results || [];
+  if (!actionRows.length) return [];
 
-    const latest = measurements.results?.[0] || null;
-    const previous = measurements.results?.[1] || null;
+  const placeholders = actionRows.map(() => "?").join(",");
+  const measurements = await db.prepare(
+    "SELECT action_id AS actionId, measured_at AS measuredAt, window_start AS windowStart, window_end AS windowEnd, impressions, clicks, ctr, position " +
+    "FROM seo_action_measurements WHERE action_id IN (" + placeholders + ") ORDER BY measured_at DESC"
+  ).bind(...actionRows.map((action) => action.id)).all();
 
-    out.push({
+  const measurementsByAction = new Map();
+  for (const row of measurements.results || []) {
+    const list = measurementsByAction.get(row.actionId) || [];
+    if (list.length < 2) list.push(row);
+    measurementsByAction.set(row.actionId, list);
+  }
+
+  return actionRows.map((action) => {
+    const list = measurementsByAction.get(action.id) || [];
+    const latest = list[0] || null;
+    const previous = list[1] || null;
+    return {
       ...action,
       latest,
       previous,
@@ -131,8 +141,6 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
       impressionDelta: latest && previous
         ? Number(latest.impressions) - Number(previous.impressions)
         : null
-    });
-  }
-
-  return out;
+    };
+  });
 }
