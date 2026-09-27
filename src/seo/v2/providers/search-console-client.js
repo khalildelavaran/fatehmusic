@@ -16,7 +16,8 @@ function base64UrlEncode(value) {
 }
 
 function pemToArrayBuffer(pem) {
-  const base64 = pem.replace(/-----BEGIN PRIVATE KEY-----/g, "").replace(/-----END PRIVATE KEY-----/g, "").replace(/\s/g, "");
+  const normalizedPem = String(pem || "").replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+  const base64 = normalizedPem.replace(/-----BEGIN PRIVATE KEY-----/g, "").replace(/-----END PRIVATE KEY-----/g, "").replace(/\s/g, "");
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -71,13 +72,23 @@ async function getAccessToken({ clientEmail, privateKey, fetchImpl = fetch }) {
 export function createGoogleSearchConsoleClient({ clientEmail, privateKey, siteUrl, fetchImpl = fetch } = {}) {
   const configured = Boolean(clientEmail && privateKey && siteUrl);
 
+  let tokenCache = null;
+
+  async function getCachedToken() {
+    const now = Date.now();
+    if (tokenCache && tokenCache.expiresAt > now + 300_000) return tokenCache.token;
+    const token = await getAccessToken({ clientEmail, privateKey, fetchImpl });
+    tokenCache = { token, expiresAt: now + 3_300_000 };
+    return token;
+  }
+
   return {
     configured,
     async querySearchAnalytics({ startDate, endDate, dimensions = ["query", "page"], rowLimit = 25000, startRow = 0, dataState = "final" } = {}) {
       if (!configured) return { configured: false, rows: [], error: "GSC_NOT_CONFIGURED" };
       if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
 
-      const token = await getAccessToken({ clientEmail, privateKey, fetchImpl });
+      const token = await getCachedToken();
       const encodedSite = encodeURIComponent(siteUrl);
       const response = await fetchImpl(`${GSC_BASE}/${encodedSite}/searchAnalytics/query`, {
         method: "POST",
