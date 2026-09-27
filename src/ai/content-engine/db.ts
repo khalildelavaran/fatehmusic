@@ -34,7 +34,7 @@ export async function getCoverageByCourse(db: D1Database): Promise<Map<string, n
   const [topics, posts] = await Promise.all([
     db.prepare("SELECT related_course_slug AS slug, COUNT(*) AS n FROM content_topics WHERE status != 'rejected' GROUP BY related_course_slug")
       .all<{ slug: string | null; n: number }>(),
-    db.prepare("SELECT related_course_slug AS slug, COUNT(*) AS n FROM blog_posts GROUP BY related_course_slug")
+    db.prepare("SELECT related_course_slug AS slug, COUNT(*) AS n FROM blog_posts WHERE status = 'published' GROUP BY related_course_slug")
       .all<{ slug: string | null; n: number }>()
   ]);
   for (const row of topics.results) bump(row.slug, row.n);
