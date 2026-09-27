@@ -77,15 +77,46 @@ export async function finishRun(
 export async function insertScoredCandidates(db: D1Database, candidates: ScoredCandidate[], runId: number): Promise<number> {
   if (candidates.length === 0) return 0;
   const autoApproveThreshold = 55;
-  const statements = candidates.map((c) =>
-    db
-      .prepare(
+  // A rejected topic may legitimately be reconsidered on a later run.
+  // Because normalized_key is unique, revive rejected rows before the insert;
+  // INSERT OR IGNORE alone would silently keep the old rejected row forever.
+  const targetStatus = (c: ScoredCandidate) => c.scoreTotal >= autoApproveThreshold ? "approved" : "candidate";
+  const statements = [];
+  for (const c of candidates) {
+    const status = targetStatus(c);
+    statements.push(
+      db.prepare(
+        `UPDATE content_topics
+         SET title=?, instrument_key=?, related_course_slug=?, related_course_title=?, category=?,
+             audience=?, level=?, modifier_type=?, intent=?, score_total=?, score_breakdown=?,
+             reasoning=?, status=?, source=?, run_id=?, updated_at=datetime('now'), used_by_post_id=NULL, used_at=NULL
+         WHERE normalized_key=? AND status='rejected'`
+      ).bind(
+        c.title,
+        c.instrumentKey,
+        c.relatedCourseSlug,
+        c.relatedCourseTitle,
+        c.category,
+        c.audience,
+        c.level,
+        c.modifierType,
+        c.intent,
+        c.scoreTotal,
+        JSON.stringify(c.scoreBreakdown),
+        c.reasoning,
+        status,
+        c.source,
+        runId,
+        c.normalizedKey
+      )
+    );
+    statements.push(
+      db.prepare(
         `INSERT OR IGNORE INTO content_topics
          (title, normalized_key, instrument_key, related_course_slug, related_course_title, category,
           audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, run_id)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      )
-      .bind(
+      ).bind(
         c.title,
         c.normalizedKey,
         c.instrumentKey,
@@ -99,13 +130,18 @@ export async function insertScoredCandidates(db: D1Database, candidates: ScoredC
         c.scoreTotal,
         JSON.stringify(c.scoreBreakdown),
         c.reasoning,
-        c.scoreTotal >= autoApproveThreshold ? "approved" : "candidate",
+        status,
         c.source,
         runId
       )
-  );
+    );
+  }
   const results = await db.batch(statements);
-  return results.reduce((sum, r) => sum + (r.meta.changes ?? 0), 0);
+  return results.reduce((sum, r, index) => {
+    // Count each candidate once when its row was either revived or inserted.
+    if (index % 2 === 0) return sum + (r.meta.changes ? 1 : 0);
+    return sum + (r.meta.changes ? 1 : 0);
+  }, 0) / 2;
 }
 
 export interface TopicListFilters {
