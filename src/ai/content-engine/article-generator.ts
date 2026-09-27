@@ -221,7 +221,12 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     }
 
     const dateSuffix = new Date().toISOString().slice(0, 10);
-    const baseSlug = /^[a-z0-9-]+$/.test(article.slug) ? article.slug : slugify(topic.title);
+    const modelSlug = slugify(article.slug || "");
+    const baseSlug = modelSlug || slugify(topic.title);
+    if (!baseSlug) {
+      await releaseClaim();
+      return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
+    }
     const baseSlugWithDate = baseSlug + "-" + dateSuffix;
     let slug = baseSlugWithDate;
 
