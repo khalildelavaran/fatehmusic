@@ -75,7 +75,13 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
     return this.rowsPromise;
   }
 
-  async lookup(title: string): Promise<KeywordSignal> {
+  async lookupMany(titles: string[]): Promise<KeywordSignal[]> {
+    const rows = await this.loadRows();
+    return Promise.all(titles.map((title) => this.lookupFromRows(title, rows)));
+  }
+
+  private async lookupFromRows(title: string, rows: QuerySignalRow[]): Promise<KeywordSignal> {
+
     const target = tokens(title);
     if (!target.size) return { available: false, source: "google-search-console" };
 
