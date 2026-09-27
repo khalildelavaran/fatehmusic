@@ -20,6 +20,7 @@ export async function createSeoAction(db, {
 
 /** @param {D1Database} db @param {{targetUrl?:string,targetSlug?:string,targetTitle?:string,previousTargetSlug?:string|null,previousTargetTitle?:string|null,publishedAt?:string}} [options] */
 export async function markSeoActionPublished(db, {
+  targetPostId = null,
   targetUrl = null,
   targetSlug = "",
   targetTitle = "",
@@ -35,16 +36,23 @@ export async function markSeoActionPublished(db, {
   const row = await db.prepare(
     "SELECT id FROM seo_action_log " +
     "WHERE status IN ('pending_review', 'measuring', 'published') AND (" +
-      "(target_slug IS NOT NULL AND target_slug != '' AND target_slug IN (?, ?)) OR " +
-      "((target_slug IS NULL OR target_slug = '') AND target_title IN (?, ?))" +
+      "(target_post_id = ?) OR " +
+      "(target_post_id IS NULL AND (" +
+        "(target_slug IS NOT NULL AND target_slug != '' AND target_slug IN (?, ?)) OR " +
+        "((target_slug IS NULL OR target_slug = '') AND target_title IN (?, ?))" +
+      "))" +
     ") ORDER BY CASE " +
-      "WHEN target_slug = ? THEN 0 WHEN target_slug = ? THEN 1 ELSE 2 END, " +
+      "WHEN target_post_id = ? THEN 0 " +
+      "WHEN target_slug = ? THEN 1 " +
+      "WHEN target_slug = ? THEN 2 ELSE 3 END, " +
       "updated_at DESC, id DESC LIMIT 1"
   ).bind(
+    targetPostId,
     targetSlug,
     previousTargetSlug || "",
     targetTitle,
     previousTargetTitle || "",
+    targetPostId,
     targetSlug,
     previousTargetSlug || ""
   ).first<{ id: number }>();
@@ -54,8 +62,9 @@ export async function markSeoActionPublished(db, {
   const result = await db.prepare(
     "UPDATE seo_action_log SET status = 'published', target_url = COALESCE(?, target_url), " +
     "target_slug = COALESCE(NULLIF(?, ''), target_slug), target_title = COALESCE(NULLIF(?, ''), target_title), " +
-    "published_at = COALESCE(published_at, ?), updated_at = datetime('now') WHERE id = ?"
-  ).bind(targetUrl, targetSlug, targetTitle, publishedAt, row.id).run();
+    "target_post_id = COALESCE(?, target_post_id), published_at = COALESCE(published_at, ?), " +
+    "updated_at = datetime('now') WHERE id = ?"
+  ).bind(targetUrl, targetSlug, targetTitle, targetPostId, publishedAt, row.id).run();
 
   return Number(result.meta?.changes || 0);
 }
