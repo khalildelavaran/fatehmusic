@@ -7,15 +7,17 @@ import {
   getRecentlyUsedCourses, insertScoredCandidates
 } from "./db";
 import { D1SearchConsoleKeywordProvider } from "./providers/gsc-keyword";
+import { HybridKeywordProvider } from "./providers/hybrid-keyword";
 import type { DiscoveryRunSummary } from "./types";
 import type { KeywordProvider } from "./providers/keyword-provider";
 
 export interface RunDiscoveryOptions {
   keywordProvider?: KeywordProvider;
+  env?: Record<string, unknown>;
 }
 
 export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOptions = {}): Promise<DiscoveryRunSummary> {
-  const keywordProvider = options.keywordProvider ?? new D1SearchConsoleKeywordProvider({ db });
+  const keywordProvider = options.keywordProvider ?? (options.env?.AHREFS_API_KEY ? new HybridKeywordProvider(db, options.env) : new D1SearchConsoleKeywordProvider({ db }));
   const runId = await createRun(db);
 
   try {
@@ -27,17 +29,29 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
     ]);
     const afterDedup = filterAgainstExisting(generated, existingIndex);
 
-    const signalEntries = await Promise.all(
-      afterDedup.map(async (candidate) => [
-        candidate.normalizedKey,
-        await keywordProvider.lookup(candidate.title)
-      ] as const)
-    );
+    let keywordSignals = new Map<string, Awaited<ReturnType<KeywordProvider["lookup"]>>>();
+    const titles = afterDedup.map((candidate) => candidate.title);
+    const batchProvider = keywordProvider as KeywordProvider & {
+      lookupMany?: (items: string[]) => Promise<Awaited<ReturnType<KeywordProvider["lookup"]>>[]>;
+    };
+
+    if (typeof batchProvider.lookupMany === "function") {
+      const results = await batchProvider.lookupMany(titles);
+      afterDedup.forEach((candidate, index) => keywordSignals.set(candidate.normalizedKey, results[index] || { available: false, source: "none" }));
+    } else {
+      const signalEntries = await Promise.all(
+        afterDedup.map(async (candidate) => [
+          candidate.normalizedKey,
+          await keywordProvider.lookup(candidate.title)
+        ] as const)
+      );
+      keywordSignals = new Map(signalEntries);
+    }
 
     const scored = scoreCandidates(afterDedup, {
       coverageByCourse,
       recentlyUsedCourses,
-      keywordSignals: new Map(signalEntries)
+      keywordSignals
     });
 
     const approvedCount = scored.filter((c) => c.scoreTotal >= 55).length;
