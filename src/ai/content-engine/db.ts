@@ -11,7 +11,7 @@ import { toDedupKey } from "./normalize";
 
 export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTitleIndex> {
   const [topics, posts] = await Promise.all([
-    db.prepare("SELECT title, normalized_key FROM content_topics").all<{ title: string; normalized_key: string }>(),
+    db.prepare("SELECT title, normalized_key FROM content_topics WHERE status != 'rejected'").all<{ title: string; normalized_key: string }>(),
     db.prepare("SELECT title FROM blog_posts").all<{ title: string }>()
   ]);
   const normalizedKeys = new Set<string>(topics.results.map((r) => r.normalized_key));
