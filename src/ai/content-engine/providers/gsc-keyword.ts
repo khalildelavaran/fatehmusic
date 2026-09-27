@@ -14,6 +14,8 @@ function normalize(value: string): string {
     .toLowerCase();
 }
 
+const GENERIC_QUERY_TERMS = new Set(["آموزش", "موسیقی", "کلاس", "دوره", "شوشتر", "فاتح", "یادگیری", "مدرس"]);
+
 function tokens(value: string): Set<string> {
   return new Set(normalize(value).split(/\s+/).filter((token) => token.length >= 2));
 }
@@ -86,9 +88,11 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
     const matches = rows
       .map((row) => {
         const normalizedQuery = normalize(row.query);
-        const similarity = normalizedTitle.includes(normalizedQuery)
+        const queryTokens = tokens(row.query);
+        const isGenericSingleTerm = queryTokens.size === 1 && [...queryTokens].every((token) => GENERIC_QUERY_TERMS.has(token));
+        const similarity = !isGenericSingleTerm && normalizedTitle.includes(normalizedQuery) && queryTokens.size >= 1
           ? 1
-          : overlap(target, tokens(row.query));
+          : overlap(target, queryTokens);
         return { row, similarity: similarity >= 0.34 ? similarity : 0 };
       })
       .filter((item) => item.similarity > 0)
