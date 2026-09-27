@@ -40,6 +40,7 @@ export async function fetchAllSearchAnalytics(client, {
   const rows = [];
   let startRow = 0;
   let pages = 0;
+  let truncated = false;
 
   while (rows.length < maxRows) {
     const rowLimit = Math.min(pageSize, maxRows - rows.length);
@@ -60,7 +61,23 @@ export async function fetchAllSearchAnalytics(client, {
     startRow += batch.length;
   }
 
-  return { configured: true, rows, pages };
+  // The Search Console API can return exactly maxRows without telling us
+  // whether more rows exist. Probe one additional row when the cap is hit so
+  // the caller can surface incomplete data instead of treating it as complete.
+  if (rows.length >= maxRows) {
+    const probe = await client.querySearchAnalytics({
+      startDate,
+      endDate,
+      dimensions,
+      rowLimit: 1,
+      startRow: rows.length,
+      dataState
+    });
+    pages += 1;
+    truncated = (probe.rows || []).length > 0;
+  }
+
+  return { configured: true, rows: rows.slice(0, maxRows), pages, truncated };
 }
 
 async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now')") {
@@ -151,6 +168,7 @@ export async function syncSearchConsoleToD1({
       rowsReceived: fetched.rows.length,
       rowsStored,
       pages: fetched.pages,
+      truncated: Boolean(fetched.truncated),
       dimensions
     };
   } catch (error) {
