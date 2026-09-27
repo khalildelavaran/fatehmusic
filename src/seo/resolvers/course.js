@@ -15,6 +15,7 @@ import { instructors } from "../../data/instructors.js";
 import { pricing } from "../../data/pricing.js";
 import { generateCourseFAQ } from "../../data/faq.js";
 import { courseContent } from "../../data/course-content.js";
+import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { absoluteUrl } from "../helpers/url.js";
 
 
@@ -89,7 +90,7 @@ export function resolveCourse(slugOrCourse, site) {
 				/** @type {keyof typeof courseContent} */
 				(course.slug)
 			  ]
-			: null;
+			: buildFallbackCourseContent(course);
 
 
 return Object.freeze({
