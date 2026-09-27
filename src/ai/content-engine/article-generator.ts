@@ -184,7 +184,15 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     };
   }
 
-  const topic = await selectTopic(env.DB);
+  let topic: SelectedTopic;
+  try {
+    topic = await selectTopic(env.DB);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error("runDailyArticleGeneration: topic selection failed:", error);
+    return { success: false, message: `انتخاب موضوع برای تولید مقاله شکست خورد: ${detail}` };
+  }
+
   const claimedTopicId = topic.topicRowId;
   const releaseClaim = async () => {
     if (!claimedTopicId) return;
