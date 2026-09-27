@@ -153,20 +153,30 @@ function normalizeSemanticMap(pageSemantics = []) {
 }
 
 export function detectSearchCannibalization(rows = [], { minImpressions = 50, similarityThreshold = 0.55, pageSemantics = [] } = {}) {
+  // Compare pages that rank for the same query within the same GSC
+  // reporting window. A page switching ownership between windows is a
+  // temporal transition, not simultaneous cannibalization.
   const groups = new Map();
   for (const row of rows) {
     const query = normalizeText(row.query);
     const page = normalizeUrl(row.page);
+    const startDate = String(row.startDate || row.start_date || "").trim();
+    const endDate = String(row.endDate || row.end_date || "").trim();
     if (!query || !page || Number(row.impressions) < minImpressions) continue;
-    const pages = groups.get(query) || new Map();
+    const period = startDate || endDate ? `${startDate}|${endDate}` : "undated";
+    const groupKey = `${query}|${period}`;
+    const pages = groups.get(groupKey) || new Map();
     pages.set(page, (pages.get(page) || 0) + Math.max(0, Number(row.impressions) || 0));
-    groups.set(query, pages);
+    groups.set(groupKey, pages);
   }
 
   const semanticMap = normalizeSemanticMap(pageSemantics);
   return [...groups.entries()]
     .filter(([, pages]) => pages.size > 1)
-    .map(([query, pages]) => {
+    .map(([groupKey, pages]) => {
+      const separator = groupKey.lastIndexOf("|");
+      const query = separator >= 0 ? groupKey.slice(0, separator) : groupKey;
+      const period = separator >= 0 ? groupKey.slice(separator + 1) : "undated";
       const ranked = [...pages.entries()].sort((a, b) => b[1] - a[1]);
       const totalImpressions = ranked.reduce((sum, [, value]) => sum + value, 0);
       const competition = ranked.map(([page, impressions], index) => ({ page, impressions, share: totalImpressions ? impressions / totalImpressions : 0, rank: index + 1 }));
@@ -186,7 +196,7 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
       const severity = semanticConfirmed ? distributionSeverity : "LOW";
       const confidenceBase = severity === "HIGH" ? 0.9 : severity === "MEDIUM" ? 0.7 : 0.45;
       const confidence = hasSemanticEvidence ? confidenceBase * semanticSimilarity : Math.min(confidenceBase, 0.5);
-      return Object.freeze({ query, pages: competition, severity, confidence: Number(confidence.toFixed(3)), semanticSimilarity, semanticEvidence: hasSemanticEvidence, similarityThreshold, actionable: severity === "HIGH" && (!hasSemanticEvidence || semanticSimilarity >= similarityThreshold) });
+      return Object.freeze({ query, period, pages: competition, severity, confidence: Number(confidence.toFixed(3)), semanticSimilarity, semanticEvidence: hasSemanticEvidence, similarityThreshold, actionable: severity === "HIGH" && (!hasSemanticEvidence || semanticSimilarity >= similarityThreshold) });
     })
     .filter((item) => item.actionable || item.severity !== "LOW")
     .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
