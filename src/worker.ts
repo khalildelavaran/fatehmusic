@@ -26,7 +26,14 @@ export default {
 
   async scheduled(controller: ScheduledController, env: WorkerEnv, ctx: ExecutionContext) {
     if (controller.cron === "45 0 * * 0") {
-      ctx.waitUntil(runScheduledAhrefsMarketIntelligence(env));
+      ctx.waitUntil((async () => {
+        try {
+          const result = await runScheduledAhrefsMarketIntelligence(env);
+          console.log("Scheduled Ahrefs market intelligence:", result.status);
+        } catch (error) {
+          console.error("Scheduled Ahrefs market intelligence failed; keeping previous snapshot:", error);
+        }
+      })());
       return;
     }
     if (controller.cron === "15 1 * * *") {
