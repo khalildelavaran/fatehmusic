@@ -162,8 +162,16 @@ function validateSchema(route, scripts) {
 
   for (const node of nodes) {
     const type = schemaTypes(node);
-    if (type.includes("Article") && !node.author) {
-      error("ARTICLE_AUTHOR_MISSING", route + ": Article author missing");
+    if (type.includes("Article")) {
+      if (!node.author) error("ARTICLE_AUTHOR_MISSING", route + ": Article author missing");
+      for (const field of ["headline", "datePublished", "dateModified", "publisher", "mainEntityOfPage"]) {
+        if (!node[field]) error("ARTICLE_FIELD_MISSING", route + ": Article " + field + " missing");
+      }
+    }
+    if (type.includes("WebPage")) {
+      for (const field of ["name", "description", "url", "inLanguage"]) {
+        if (!node[field]) error("WEBPAGE_FIELD_MISSING", route + ": WebPage " + field + " missing");
+      }
     }
     if (type.includes("BreadcrumbList") && (!Array.isArray(node.itemListElement) || node.itemListElement.length < 2)) {
       error("BREADCRUMB_TOO_SHORT", route + ": BreadcrumbList needs at least two items");
