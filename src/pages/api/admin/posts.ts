@@ -3,7 +3,7 @@ export const prerender = false;
 import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
-import { markSeoActionPublished } from "../../../seo/v2/seo-action-store.js";
+import { markSeoActionPublished, markSeoActionUnpublished } from "../../../seo/v2/seo-action-store.js";
 
 const fields = `id, slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, created_at, updated_at, published_at, is_ai_generated`;
 
@@ -41,6 +41,12 @@ export const POST: APIRoute = async ({ request }) => {
         targetTitle: post.title,
         previousTargetSlug: existing?.slug || null,
         previousTargetTitle: existing?.title || null
+      });
+    } else {
+      await markSeoActionUnpublished(db, {
+        targetPostId: Number(post.id),
+        targetSlug: post.slug,
+        targetTitle: post.title
       });
     }
   } else {
