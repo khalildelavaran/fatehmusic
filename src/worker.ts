@@ -27,7 +27,7 @@ export default {
     }
 
     if (controller.cron === "45 1 * * *") {
-      ctx.waitUntil(runTopicDiscovery(env.DB));
+      ctx.waitUntil(runTopicDiscovery(env.DB, { env }));
       return;
     }
 
