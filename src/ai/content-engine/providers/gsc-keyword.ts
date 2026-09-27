@@ -55,9 +55,11 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
 
   private loadRows(): Promise<QuerySignalRow[]> {
     if (this.rowsPromise) return this.rowsPromise;
+
     const cutoff = new Date();
     cutoff.setUTCDate(cutoff.getUTCDate() - this.days);
     const cutoffDate = cutoff.toISOString().slice(0, 10);
+
     this.rowsPromise = this.db.prepare(
       "SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions, " +
       "CASE WHEN SUM(impressions) > 0 THEN SUM(impressions * position) / SUM(impressions) ELSE 0 END AS position " +
@@ -72,20 +74,14 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
         position: Number(row.position) || 0
       }))
     );
+
     return this.rowsPromise;
   }
 
-  async lookupMany(titles: string[]): Promise<KeywordSignal[]> {
-    const rows = await this.loadRows();
-    return Promise.all(titles.map((title) => this.lookupFromRows(title, rows)));
-  }
-
   private async lookupFromRows(title: string, rows: QuerySignalRow[]): Promise<KeywordSignal> {
-
     const target = tokens(title);
     if (!target.size) return { available: false, source: "google-search-console" };
 
-    const rows = await this.loadRows();
     const normalizedTitle = normalize(title);
     const matches = rows
       .map((row) => {
@@ -118,5 +114,14 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
       matchedQueries: matches.map((item) => item.row.query),
       source: "google-search-console"
     };
+  }
+
+  async lookup(title: string): Promise<KeywordSignal> {
+    return this.lookupFromRows(title, await this.loadRows());
+  }
+
+  async lookupMany(titles: string[]): Promise<KeywordSignal[]> {
+    const rows = await this.loadRows();
+    return Promise.all(titles.map((title) => this.lookupFromRows(title, rows)));
   }
 }
