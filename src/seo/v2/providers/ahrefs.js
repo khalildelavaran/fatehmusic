@@ -175,7 +175,8 @@ export async function syncAhrefsKeywordSignals({ db, env = {}, keywords = [] } =
 
 export async function getCachedAhrefsKeywordSignals(db, {
   country = DEFAULT_COUNTRY,
-  keywords = []
+  keywords = [],
+  maxAgeDays = 14
 } = {}) {
   if (!db) return new Map();
   const normalizedCountry = normalizeCountry(country);
@@ -188,8 +189,8 @@ export async function getCachedAhrefsKeywordSignals(db, {
     const placeholders = chunk.map(() => "?").join(",");
     const result = await db.prepare(
       "SELECT keyword, volume, volume_monthly, difficulty, traffic_potential, cpc, intents, serp_features " +
-      "FROM seo_keyword_signals WHERE source='ahrefs' AND country=? AND keyword IN (" + placeholders + ")"
-    ).bind(normalizedCountry, ...chunk).all();
+      "FROM seo_keyword_signals WHERE source='ahrefs' AND country=? AND keyword IN (" + placeholders + ") AND fetched_at >= datetime('now', ?)"
+    ).bind(normalizedCountry, ...chunk, "-" + Math.max(1, Number(maxAgeDays) || 14) + " days").all();
 
     for (const row of result.results || []) {
       out.set(String(row.keyword), {
@@ -268,4 +269,17 @@ export async function getLatestAhrefsMarketSnapshot(db, {
 
 export function isAhrefsConfigured(env = {}) {
   return Boolean(env.AHREFS_API_KEY);
+}
+
+
+export async function runScheduledAhrefsMarketIntelligence(env = {}, options = {}) {
+  if (!env?.AHREFS_API_KEY || !env?.DB) return { status: "not_configured" };
+
+  const result = await syncAhrefsMarketIntelligence({
+    db: env.DB,
+    env,
+    date: options.date || today()
+  });
+
+  return result;
 }
