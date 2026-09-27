@@ -90,6 +90,10 @@ interface SeoAction {
 }
 
 const opportunities = intelligence.opportunities.filter((item) => {
+  // Existing URLs are the target of optimization/expansion/link/merge actions.
+  // Only a genuine NEW_CONTENT opportunity should be hidden when its title or
+  // canonical slug already belongs to a published article.
+  if (item.action !== "NEW_CONTENT") return true;
   const sameTitle = publishedTitles.has(normalizeText(item.title));
   const sameSlug = publishedSlugs.has(normalizeSlug(item.suggestedSlug));
   return !sameTitle && !sameSlug;
