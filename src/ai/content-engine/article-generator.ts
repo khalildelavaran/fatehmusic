@@ -220,20 +220,20 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
     }
 
-    const dateSuffix = new Date().toISOString().slice(0, 10);
     const modelSlug = slugify(article.slug || "");
     const baseSlug = modelSlug || slugify(topic.title);
     if (!baseSlug) {
       await releaseClaim();
       return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
     }
-    const baseSlugWithDate = baseSlug + "-" + dateSuffix;
-    let slug = baseSlugWithDate;
 
+    // Keep clean, durable slugs. Add a numeric suffix only on collision
+    // instead of embedding the publication date in every URL.
+    let slug = baseSlug;
     for (let suffix = 2; suffix <= 20; suffix += 1) {
       const existing = await env.DB.prepare("SELECT 1 AS found FROM blog_posts WHERE slug = ? LIMIT 1").bind(slug).first<{ found: number }>();
       if (!existing) break;
-      slug = baseSlugWithDate + "-" + suffix;
+      slug = baseSlug + "-" + suffix;
     }
 
     const slugCollision = await env.DB.prepare("SELECT 1 AS found FROM blog_posts WHERE slug = ? LIMIT 1").bind(slug).first<{ found: number }>();
