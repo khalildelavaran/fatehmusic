@@ -1,3 +1,4 @@
+/** @param {D1Database} db @param {{actionType:string,targetUrl?:string|null,targetSlug?:string|null,targetTitle?:string|null,relatedCourseSlug?:string|null,recommendationScore?:number|null,status?:string,source?:string,notes?:string|null}} [options] */
 export async function createSeoAction(db, {
   actionType,
   targetUrl,
@@ -16,6 +17,7 @@ export async function createSeoAction(db, {
   return Number(result.meta?.last_row_id || 0);
 }
 
+/** @param {D1Database} db @param {{targetSlug?:string,targetTitle?:string,publishedAt?:string}} [options] */
 export async function markSeoActionPublished(db, {
   targetSlug = "",
   targetTitle = "",
@@ -29,6 +31,7 @@ export async function markSeoActionPublished(db, {
   return Number(result.meta?.changes || 0);
 }
 
+/** @param {D1Database} db @param {{siteUrl?:string,windowStart?:string,windowEnd?:string,measuredAt?:string}} [options] */
 export async function syncPublishedSeoActionMeasurements(db, {
   siteUrl = "https://fatehmusic.ir",
   windowStart,
@@ -67,6 +70,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
   return { measured };
 }
 
+/** @param {D1Database} db @param {{limit?:number}} [options] */
 export async function listSeoActions(db, { limit = 20 } = {}) {
   if (!db) return [];
 
