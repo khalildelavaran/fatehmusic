@@ -71,6 +71,15 @@ export const DELETE: APIRoute = async ({ request }) => {
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
   const { id } = await request.json() as { id?: number };
   if (!id) return json({ success: false, message: "شناسه نوشته ارسال نشده است." }, 422);
+  const existing = await db.prepare("SELECT slug, title FROM blog_posts WHERE id=?").bind(id).first<{ slug: string; title: string }>();
   await db.prepare("DELETE FROM blog_posts WHERE id=?").bind(id).run();
+  if (existing) {
+    await markSeoActionUnpublished(db, {
+      targetPostId: Number(id),
+      targetSlug: existing.slug,
+      targetTitle: existing.title,
+      status: "removed"
+    });
+  }
   return json({ success: true });
 };
