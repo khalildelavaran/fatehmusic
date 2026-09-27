@@ -137,11 +137,15 @@ export async function insertScoredCandidates(db: D1Database, candidates: ScoredC
     );
   }
   const results = await db.batch(statements);
-  return results.reduce((sum, r, index) => {
-    // Count each candidate once when its row was either revived or inserted.
-    if (index % 2 === 0) return sum + (r.meta.changes ? 1 : 0);
-    return sum + (r.meta.changes ? 1 : 0);
-  }, 0) / 2;
+  let changed = 0;
+  for (let index = 0; index < results.length; index += 2) {
+    // Count each candidate exactly once when either the rejected row was
+    // revived or a new row was inserted.
+    const revived = Number(results[index]?.meta?.changes || 0) > 0;
+    const inserted = Number(results[index + 1]?.meta?.changes || 0) > 0;
+    if (revived || inserted) changed += 1;
+  }
+  return changed;
 }
 
 export interface TopicListFilters {
