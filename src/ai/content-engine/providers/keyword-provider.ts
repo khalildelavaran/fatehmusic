@@ -23,6 +23,7 @@ export interface KeywordSignal {
 
 export interface KeywordProvider {
   lookup(title: string): Promise<KeywordSignal>;
+  lookupMany?(titles: string[]): Promise<KeywordSignal[]>;
 }
 
 export class NullKeywordProvider implements KeywordProvider {
