@@ -29,4 +29,29 @@ describe("D1SearchConsoleKeywordProvider", () => {
     expect(signal.estimatedVolume).toBeUndefined();
     expect(signal.source).toBe("google-search-console");
   });
+  it("does not let a generic one-word query dominate a specific course topic", async () => {
+    const db = {
+      prepare() {
+        return {
+          bind() {
+            return {
+              all: async () => ({
+                results: [
+                  { query: "آموزش", clicks: 500, impressions: 20000, position: 3 },
+                  { query: "آموزش ویولن شوشتر", clicks: 8, impressions: 160, position: 9 }
+                ]
+              })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    const provider = new D1SearchConsoleKeywordProvider({ db });
+    const signal = await provider.lookup("آموزش ویولن در شوشتر");
+
+    expect(signal.available).toBe(true);
+    expect(signal.matchedQueries).toContain("آموزش ویولن شوشتر");
+    expect(signal.matchedQueries).not.toContain("آموزش");
+  });
 });
