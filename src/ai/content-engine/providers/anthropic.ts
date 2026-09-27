@@ -63,27 +63,49 @@ export async function callClaudeArticle(
     return { success: false, message: "ANTHROPIC_API_KEY تنظیم نشده است. آن را به‌صورت Cloudflare Secret اضافه کنید." };
   }
 
-  let response: Response;
-  try {
-    response = await fetch(ANTHROPIC_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": ANTHROPIC_VERSION
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-        tools: [ARTICLE_TOOL],
-        tool_choice: { type: "tool", name: "submit_article" }
-      })
-    });
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `اتصال به Anthropic برقرار نشد: ${detail}` };
+  let response: Response | null = null;
+  const requestBody = {
+    model: MODEL,
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages: [{ role: "user", content: userPrompt }],
+    tools: [ARTICLE_TOOL],
+    tool_choice: { type: "tool", name: "submit_article" }
+  };
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      response = await fetch(ANTHROPIC_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": ANTHROPIC_VERSION
+        },
+        body: JSON.stringify(requestBody)
+      });
+    } catch (err) {
+      if (attempt === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 750));
+        continue;
+      }
+      const detail = err instanceof Error ? err.message : String(err);
+      return { success: false, message: `اتصال به Anthropic برقرار نشد: ${detail}` };
+    }
+
+    if (response.ok || (response.status !== 429 && response.status < 500)) break;
+
+    if (attempt === 0) {
+      const retryAfter = Number(response.headers.get("retry-after"));
+      const delayMs = Number.isFinite(retryAfter)
+        ? Math.min(3000, Math.max(500, retryAfter * 1000))
+        : 750;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  if (!response) {
+    return { success: false, message: "پاسخ قابل دریافت از Anthropic نبود." };
   }
 
   if (!response.ok) {
