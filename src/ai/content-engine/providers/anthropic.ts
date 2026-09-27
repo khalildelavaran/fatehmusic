@@ -29,8 +29,8 @@ const ARTICLE_TOOL = {
       excerpt: { type: "string", description: "خلاصه‌ی دو تا سه جمله‌ای فارسی" },
       content: { type: "string", description: "متن کامل مقاله به فارسی، پاراگراف‌ها با دو خط جدید (\\n\\n) از هم جدا شده" },
       topic: { type: "string", description: "دسته‌بندی کوتاه فارسی، مثلا: آموزش گیتار" },
-      meta_title: { type: "string", description: "عنوان سئو، زیر ۶۰ کاراکتر" },
-      meta_description: { type: "string", description: "توضیح متای سئو، زیر ۱۵۵ کاراکتر" }
+      meta_title: { type: "string", description: "عنوان سئو، بین ۲۰ تا ۶۰ کاراکتر" },
+      meta_description: { type: "string", description: "توضیح متای سئو، بین ۸۰ تا ۱۶۰ کاراکتر" }
     },
     required: ["slug", "excerpt", "content", "topic", "meta_title", "meta_description"]
   }
