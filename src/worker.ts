@@ -29,13 +29,13 @@ export default {
       ctx.waitUntil(runScheduledAhrefsMarketIntelligence(env));
       return;
     }
-    if (controller.cron === "15 1 * * *" || controller.cron === "15 3 * * *") {
-      ctx.waitUntil(runScheduledSearchConsoleSync(env));
-      return;
-    }
-
-    if (controller.cron === "45 1 * * *") {
-      ctx.waitUntil(runTopicDiscovery(env.DB, { env }));
+    if (controller.cron === "15 1 * * *") {
+      // Refresh Search Console first, then use the fresh signals for topic discovery.
+      // Keeping both tasks under one trigger stays within the Free-plan account limit.
+      ctx.waitUntil((async () => {
+        await runScheduledSearchConsoleSync(env);
+        await runTopicDiscovery(env.DB, { env });
+      })());
       return;
     }
 
