@@ -216,7 +216,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                   <div class="strategy-card-main">
                     <div class="strategy-card-top"><div class="strategy-badges">
                       <span class:list={["strategy-priority", item.priority >= 85 && "high"]}>امتیاز {item.priority}</span>
-                      <span class="strategy-action" class={actionClass[item.action] || "new"}>{actionLabel[item.action] || item.action}</span>
+                      <span class:list={["strategy-action", actionClass[item.action] || "new"]}>{actionLabel[item.action] || item.action}</span>
                       <span class="strategy-intent">{item.searchIntent}</span>
                       <span class="strategy-topic">{item.topicName}</span>
                       <span class="strategy-source">{sourceLabel[item.source] || item.source}</span>
