@@ -45,8 +45,9 @@
         "binding": "BROWSER"
     },
 
-    // UTC schedules: GSC sync -> topic discovery -> article draft -> late GSC refresh, plus reminders.
+    // UTC schedules: weekly Ahrefs -> daily GSC + topic discovery -> daily draft -> reminders.
+    // Keep this Worker at four triggers to remain within the Cloudflare Free-plan account limit.
     "triggers": {
-        "crons": ["45 0 * * 0", "15 1 * * *", "45 1 * * *", "30 2 * * *", "15 3 * * *", "*/30 * * * *"]
+        "crons": ["45 0 * * 0", "15 1 * * *", "30 2 * * *", "*/30 * * * *"]
     }
 }
