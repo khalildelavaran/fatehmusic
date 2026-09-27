@@ -15,6 +15,7 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** @param {Record<string, any>} [env] */
 export function getAhrefsConfig(env = {}) {
   return {
     apiKey: env.AHREFS_API_KEY || "",
@@ -24,6 +25,7 @@ export function getAhrefsConfig(env = {}) {
   };
 }
 
+/** @param {Record<string, any>} [env] @param {typeof fetch} [fetchImpl] */
 export function createAhrefsClient(env = {}, fetchImpl = fetch) {
   const config = getAhrefsConfig(env);
 
@@ -139,6 +141,7 @@ async function chunked(values, size, worker) {
   return out;
 }
 
+/** @param {{db:D1Database,env?:Record<string, any>,keywords?:string[]}} [options] */
 export async function syncAhrefsKeywordSignals({ db, env = {}, keywords = [] } = {}) {
   const config = getAhrefsConfig(env);
   if (!db) throw new Error("AHREFS_D1_REQUIRED");
@@ -173,6 +176,7 @@ export async function syncAhrefsKeywordSignals({ db, env = {}, keywords = [] } =
   return { status: "success", requested: uniqueKeywords.length, stored: rows.length };
 }
 
+/** @param {D1Database} db @param {{country?:string,keywords?:string[],maxAgeDays?:number}} [options] */
 export async function getCachedAhrefsKeywordSignals(db, {
   country = DEFAULT_COUNTRY,
   keywords = [],
@@ -207,6 +211,7 @@ export async function getCachedAhrefsKeywordSignals(db, {
   return out;
 }
 
+/** @param {{db:D1Database,env?:Record<string, any>,date?:string}} [options] */
 export async function syncAhrefsMarketIntelligence({ db, env = {}, date = today() } = {}) {
   const config = getAhrefsConfig(env);
   if (!db) throw new Error("AHREFS_D1_REQUIRED");
@@ -244,6 +249,7 @@ export async function syncAhrefsMarketIntelligence({ db, env = {}, date = today(
   };
 }
 
+/** @param {D1Database} db @param {{target?:string,country?:string,snapshotType:string}} options */
 export async function getLatestAhrefsMarketSnapshot(db, {
   target = DEFAULT_TARGET,
   country = DEFAULT_COUNTRY,
@@ -267,11 +273,13 @@ export async function getLatestAhrefsMarketSnapshot(db, {
   };
 }
 
+/** @param {Record<string, any>} [env] */
 export function isAhrefsConfigured(env = {}) {
   return Boolean(env.AHREFS_API_KEY);
 }
 
 
+/** @param {Record<string, any>} [env] @param {{date?:string}} [options] */
 export async function runScheduledAhrefsMarketIntelligence(env = {}, options = {}) {
   if (!env?.AHREFS_API_KEY || !env?.DB) return { status: "not_configured" };
 
