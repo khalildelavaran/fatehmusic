@@ -42,6 +42,40 @@ function canonicalFromHtml(html) {
   return html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i)?.[1] || null;
 }
 
+function allMatches(re, html) {
+  return [...html.matchAll(re)].map((match) => match[1] ?? "");
+}
+
+function firstMatch(re, html) {
+  return html.match(re)?.[1]?.trim() || "";
+}
+
+function jsonLdIsValidGraph(html) {
+  const scripts = allMatches(/<script[^>]+type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi, html);
+  if (scripts.length !== 1) {
+    return { ok: false, reason: "expected exactly one JSON-LD script, found " + scripts.length };
+  }
+  try {
+    const graph = JSON.parse(scripts[0]);
+    if (!graph || !Array.isArray(graph["@graph"]) || graph["@graph"].length < 3) {
+      return { ok: false, reason: "JSON-LD graph is missing or too small" };
+    }
+    const ids = new Set();
+    for (const node of graph["@graph"]) {
+      if (!node || typeof node !== "object" || !node["@id"]) {
+        return { ok: false, reason: "JSON-LD node is invalid or missing @id" };
+      }
+      if (ids.has(node["@id"])) {
+        return { ok: false, reason: "duplicate JSON-LD @id: " + node["@id"] };
+      }
+      ids.add(node["@id"]);
+    }
+    return { ok: true, graph };
+  } catch {
+    return { ok: false, reason: "JSON-LD is not valid JSON" };
+  }
+}
+
 function isRedirect(status) {
   return status >= 300 && status < 400;
 }
@@ -71,15 +105,45 @@ async function checkPublicPage(url) {
     return;
   }
 
+  const contentType = response.headers.get("content-type") || "";
+  if (!/text\\/html/i.test(contentType)) {
+    fail("PUBLIC_CONTENT_TYPE", url + ": expected text/html, received " + contentType);
+  }
+
   const canonical = canonicalFromHtml(body);
   if (!canonical) {
     fail("PUBLIC_CANONICAL_MISSING", url + ": canonical link missing");
-  } else if (absoluteUrl(canonical) !== url) {
+  } else if (absoluteUrl(canonical).replace(/\\/$/, "") !== url.replace(/\\/$/, "")) {
     fail("PUBLIC_CANONICAL_MISMATCH", url + ": canonical is " + absoluteUrl(canonical));
   }
 
+  const titles = allMatches(/<title[^>]*>([\\s\\S]*?)<\\/title>/gi, body);
+  if (titles.length !== 1 || !titles[0].trim()) {
+    fail("PUBLIC_TITLE", url + ": expected exactly one non-empty title");
+  } else if (titles[0].trim().length < 20 || titles[0].trim().length > 65) {
+    warn("PUBLIC_TITLE_LENGTH", url + ": title length is outside 20-65 characters");
+  }
+
+  const descriptions = allMatches(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["'][^>]*>/gi, body)
+    .filter(Boolean);
+  if (descriptions.length !== 1) {
+    fail("PUBLIC_META_DESCRIPTION", url + ": expected exactly one non-empty meta description");
+  } else if (descriptions[0].length < 80 || descriptions[0].length > 170) {
+    warn("PUBLIC_META_DESCRIPTION_LENGTH", url + ": meta description length is outside 80-170 characters");
+  }
+
+  const h1s = allMatches(/<h1\\b[^>]*>([\\s\\S]*?)<\\/h1>/gi, body);
+  if (h1s.length !== 1) {
+    fail("PUBLIC_H1", url + ": expected exactly one H1, found " + h1s.length);
+  }
+
+  const schema = jsonLdIsValidGraph(body);
+  if (!schema.ok) {
+    fail("PUBLIC_JSONLD", url + ": " + schema.reason);
+  }
+
   if (/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(body)) {
-    warn("PUBLIC_NOINDEX", url + ": live page is noindex");
+    fail("PUBLIC_NOINDEX", url + ": live page is noindex but is present in sitemap");
   }
 }
 
