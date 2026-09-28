@@ -2,6 +2,31 @@ import type { KeywordProvider, KeywordSignal } from "./keyword-provider";
 import { D1SearchConsoleKeywordProvider } from "./gsc-keyword";
 import { getCachedAhrefsKeywordSignals, syncAhrefsKeywordSignals, getAhrefsConfig } from "../../../seo/v2/providers/ahrefs.js";
 
+function cacheKey(value: string): string {
+  return String(value || "")
+    .normalize("NFKC")
+    .replace(/[يى]/g, "ی")
+    .replace(/[ك]/g, "ک")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase("fa");
+}
+
+function signalValue(signal: KeywordSignal | undefined): number {
+  const volume = Number(signal?.estimatedVolume);
+  const difficulty = Number(signal?.difficulty);
+  if (!Number.isFinite(volume) || volume <= 0) return 0;
+  if (!Number.isFinite(difficulty)) return volume;
+  return volume * Math.max(0.1, 1 - difficulty / 150);
+}
+
+/**
+ * Hybrid demand provider:
+ * - First-party GSC supplies the queries real users already used.
+ * - Ahrefs supplies market volume/difficulty for those real queries.
+ * - The long article title itself is still queried as a fallback, but it is
+ *   no longer treated as the only keyword worth measuring.
+ */
 export class HybridKeywordProvider implements KeywordProvider {
   private db: D1Database;
   private env: Record<string, unknown>;
@@ -25,22 +50,47 @@ export class HybridKeywordProvider implements KeywordProvider {
   }
 
   async lookupMany(titles: string[]): Promise<KeywordSignal[]> {
-    const unique = [...new Set(titles.map((value) => String(value || "").trim()).filter(Boolean))];
-    const config = getAhrefsConfig(this.env);
-    let ahrefsMap = new Map();
+    const unique = [...new Set(
+      titles.map((value) => String(value || "").trim()).filter(Boolean)
+    )];
+    if (!unique.length) return [];
 
-    if (config.enabled) {
-      ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
-        country: config.country,
-        keywords: unique
+    const gscSignals = await this.gsc.lookupMany(unique);
+    const gscByTitle = new Map(unique.map((title, index) => [cacheKey(title), gscSignals[index] || { available: false, source: "none" }]));
+
+    const pending = unique.filter((title) => !this.cache.has(cacheKey(title)));
+    const config = getAhrefsConfig(this.env);
+
+    if (config.enabled && pending.length) {
+      const keywordCandidates = new Map<string, string[]>();
+      for (const title of pending) {
+        const gsc = gscByTitle.get(cacheKey(title));
+        const candidates = [...new Set([
+          title,
+          ...(gsc?.matchedQueries || []).slice(0, 4)
+        ].map((value) => String(value || "").trim()).filter(Boolean))];
+        keywordCandidates.set(cacheKey(title), candidates);
+      }
+
+      const allKeywords = [...new Set(
+        [...keywordCandidates.values()].flat().map(cacheKey)
+      )].map((key) => {
+        for (const values of keywordCandidates.values()) {
+          const original = values.find((value) => cacheKey(value) === key);
+          if (original) return original;
+        }
+        return key;
       });
 
-      const missing = unique.filter((title) => !ahrefsMap.has(title));
+      let ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
+        country: config.country,
+        keywords: allKeywords
+      });
+
+      const missing = allKeywords.filter((keyword) => !ahrefsMap.has(keyword));
       if (missing.length) {
-        // Do not let one scheduled discovery run explode into an unbounded
-        // number of paid Ahrefs keyword lookups. Fresh cached signals remain
-        // preferred; only a bounded sample is refreshed, and all other
-        // candidates safely fall back to Search Console.
+        // Bound paid lookups per discovery run while preferring real GSC
+        // queries over synthetic keyword guesses.
         const refreshable = missing.slice(0, this.getAhrefsLookupLimit());
         try {
           await syncAhrefsKeywordSignals({
@@ -50,28 +100,43 @@ export class HybridKeywordProvider implements KeywordProvider {
           });
           ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
             country: config.country,
-            keywords: unique
+            keywords: allKeywords
           });
         } catch {
-          // GSC remains the safe fallback when Ahrefs is unavailable,
-          // rate-limited, not funded, or temporarily fails.
+          // Search Console remains the authoritative fallback.
+        }
+      }
+
+      for (const title of pending) {
+        const candidates = keywordCandidates.get(cacheKey(title)) || [title];
+        const scored = candidates
+          .map((keyword) => ({ keyword, signal: ahrefsMap.get(keyword) }))
+          .filter((item) => item.signal)
+          .sort((a, b) => signalValue(b.signal) - signalValue(a.signal));
+
+        if (scored.length) {
+          const selected = scored[0];
+          const base = selected.signal as KeywordSignal;
+          this.cache.set(cacheKey(title), {
+            ...base,
+            matchedQueries: [...new Set([
+              ...(base.matchedQueries || []),
+              ...candidates
+            ])].slice(0, 8)
+          });
         }
       }
     }
 
-    const results = [];
-    for (const title of unique) {
-      const ahrefs = ahrefsMap.get(title);
-      if (ahrefs) {
-        results.push(ahrefs);
-        this.cache.set(title, ahrefs);
-        continue;
-      }
-      const gsc = await this.gsc.lookup(title);
-      results.push(gsc);
-      this.cache.set(title, gsc);
-    }
+    return unique.map((title) => {
+      const key = cacheKey(title);
+      const cached = this.cache.get(key);
+      if (cached) return cached;
 
-    return results;
+      const gsc = gscByTitle.get(key);
+      const fallback = gsc || { available: false, source: "none" };
+      this.cache.set(key, fallback);
+      return fallback;
+    });
   }
 }
