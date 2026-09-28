@@ -183,6 +183,42 @@ describe("opportunity scoring", () => {
     expect(result.decisionConfidence).toBeGreaterThan(80);
   });
 
+
+  it("exposes an auditable decision trace for the final action", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 80,
+      searchSignal: {
+        available: true,
+        impressions: 300,
+        ctr: 0.015,
+        position: 6,
+        matchedQueries: ["آموزش گیتار"]
+      },
+      searchOwnership: {
+        available: true,
+        matchType: "EXACT",
+        ownerStatus: "STABLE",
+        impressions: 300,
+        topShare: 1
+      },
+      marketSignal: {
+        available: true,
+        matchType: "EXACT",
+        matchedKeyword: "آموزش گیتار",
+        estimatedVolume: 200,
+        difficulty: 30
+      }
+    });
+
+    expect(result.action).toBe("LINK");
+    expect(result.scoreBreakdown.decisionTrace.action).toBe("LINK");
+    expect(result.scoreBreakdown.decisionTrace.reasonCodes).toEqual(
+      expect.arrayContaining(["GSC_EXACT_OWNER_STABLE", "MARKET_SIGNAL_PRESENT", "TOP10_LOW_CTR", "CROSS_SOURCE_EVIDENCE"])
+    );
+    expect(result.scoreBreakdown.decisionTrace.evidenceQuality).toBe("STRONG");
+  });
+
 });
 
   it("does not force link action from related-only ownership", () => {
