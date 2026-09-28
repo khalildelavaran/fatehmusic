@@ -3,14 +3,12 @@
  * Canonical site-wide semantic link candidates.
  * Never invents URLs: every target comes from a real route or data entity.
  */
-import { courses } from "../../data/courses.js";
-import { instructors } from "../../data/instructors.js";
 import { absoluteUrl } from "../helpers/url.js";
 
-export function buildSiteLinkCandidates(site) {
+export function buildSiteLinkCandidates(site, { courses = [], instructors = [] } = {}) {
   const candidates = [];
 
-  for (const course of courses.filter((item) => item.active !== false)) {
+  for (const course of (courses || []).filter((item) => item.active !== false)) {
     candidates.push({
       url: absoluteUrl(`/courses/${course.slug}`, site.url),
       title: course.title,
@@ -21,7 +19,7 @@ export function buildSiteLinkCandidates(site) {
     });
   }
 
-  for (const instructor of instructors.filter((item) => item.active !== false)) {
+  for (const instructor of (instructors || []).filter((item) => item.active !== false)) {
     candidates.push({
       url: absoluteUrl(`/instructors/${instructor.slug}`, site.url),
       title: instructor.name,
