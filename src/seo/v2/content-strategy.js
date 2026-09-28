@@ -4,12 +4,17 @@ import { COMPARISON_PAIRS } from "../../data/content-engine-seeds.ts";
 import { TOPICS } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "../helpers/text.js";
+import {
+  INTENT_PRIORITY,
+  INTENT_SUFFIX,
+  INTENTS,
+  SCOPE_ONLY_TOPICS,
+  areIntentsCompatible,
+  choosePrimaryIntent,
+  mergeIntents
+} from "./content-strategy/policy.js";
 
-const INTENT_PRIORITY = Object.freeze({ transactional: 100, local: 92, commercial: 84, informational: 70, navigational: 58 });
-const INTENT_SUFFIX = Object.freeze({ informational: "راهنمای جامع", commercial: "راهنمای انتخاب", transactional: "هزینه و ثبت‌نام", local: "در شوشتر", navigational: "معرفی و مسیر دسترسی" });
-const INTENTS = Object.freeze(["informational", "commercial", "transactional", "local", "navigational"]);
-const COMPATIBLE_INTENTS = Object.freeze({ local: new Set(["local", "commercial", "transactional"]), commercial: new Set(["local", "commercial", "transactional"]), transactional: new Set(["local", "commercial", "transactional"]), informational: new Set(["informational"]), navigational: new Set(["navigational"]) });
-const SCOPE_ONLY_TOPICS = new Set(["shushtar"]);
+
 function normalize(value) { return normalizeSemanticText(value); }
 function findTopic(slug) { return TOPICS.find((topic) => topic.slug === slug) || null; }
 function isShushtarTopic(topic) { return topic?.slug === "shushtar" || containsSemanticPhrase(topic?.name || "", "شوشتر"); }
@@ -240,9 +245,7 @@ function canonicalAssetKey(item) {
   const courseKey = item.course?.slug || item.courseSlug || "general";
   return [topic?.slug || item.topic, canonicalScope(topic, local), courseKey, angle, audience, level].join("|");
 }
-export function areIntentsCompatible(a, b) { return Boolean(COMPATIBLE_INTENTS[a]?.has(b) && COMPATIBLE_INTENTS[b]?.has(a)); }
-function choosePrimaryIntent(intents = []) { return [...new Set(intents)].sort((a, b) => (INTENT_PRIORITY[b] ?? 0) - (INTENT_PRIORITY[a] ?? 0))[0] || "informational"; }
-function mergeIntents(a = [], b = []) { return [...new Set([...a, ...b])].filter((intent) => INTENTS.includes(intent)); }
+export { areIntentsCompatible };
 function mergeQueryAngles(topic, intents, course) { return Object.freeze([...new Set(intents.flatMap((intent) => buildQueryAngles(topic, intent, course)))].slice(0, 15)); }
 function makeCourseRef(course, baseUrl) { return course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null; }
 function buildBrief(gap, courses = [], siteUrl) {
