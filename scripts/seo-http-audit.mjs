@@ -117,7 +117,12 @@ async function checkPublicPage(url) {
     fail("PUBLIC_CANONICAL_MISMATCH", url + ": canonical is " + absoluteUrl(canonical));
   }
 
-  const titles = allMatches(/<title[^>]*>([\s\S]*?)<\/title>/gi, body);
+  const htmlTag = firstMatch(/<html\\b([^>]*)>/i, body);
+  if (!/\\blang=["']fa["']/i.test(htmlTag) || !/\\bdir=["']rtl["']/i.test(htmlTag)) {
+    fail("PUBLIC_HTML_LANGUAGE", url + ': expected <html lang="fa" dir="rtl">');
+  }
+
+  const titles = allMatches(/<title[^>]*>([\\s\\S]*?)<\\/title>/gi, body);
   if (titles.length !== 1 || !titles[0].trim()) {
     fail("PUBLIC_TITLE", url + ": expected exactly one non-empty title");
   } else if (titles[0].trim().length < 20 || titles[0].trim().length > 60) {
