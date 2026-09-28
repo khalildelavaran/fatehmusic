@@ -257,9 +257,15 @@ function validateGeneratedArticle(
   }
 
   const absoluteInternalUrls = rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || [];
-  const relativeInternalUrls = [...rawContent.matchAll(/\]\((\/(?!\/)[^\s)]+)\)/g)].map((match) => match[1]);
-  const internalUrls = [...new Set([...absoluteInternalUrls, ...relativeInternalUrls])]
-    .map((url) => String(url).replace(/[.,،؛:]+$/u, ""));
+  const relativeMarkdownUrls = [...rawContent.matchAll(/\]\((\/(?!\/)[^\s)]+)\)/g)].map((match) => match[1]);
+  const relativeHtmlUrls = [...rawContent.matchAll(/<a\\s+[^>]*href=["'](\\/(?!\/)[^"']+)["'][^>]*>/gi)].map((match) => match[1]);
+  const absoluteHtmlUrls = [...rawContent.matchAll(/<a\\s+[^>]*href=["'](https?:\\/\\/(?:www\\.)?fatehmusic\\.ir[^"']+)["'][^>]*>/gi)].map((match) => match[1]);
+  const internalUrls = [...new Set([
+    ...absoluteInternalUrls,
+    ...relativeMarkdownUrls,
+    ...relativeHtmlUrls,
+    ...absoluteHtmlUrls
+  ])].map((url) => String(url).replace(/[.,،؛:]+$/u, ""));
   const canonicalInternalUrls = internalUrls.map((url) =>
     url.startsWith("/")
       ? "https://fatehmusic.ir" + url.split("#")[0].split("?")[0]
