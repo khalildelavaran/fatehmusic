@@ -35,6 +35,30 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBe(1500);
   });
 
+  it("does not use a course page signal for a brand-new article opportunity", () => {
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        targetEntity: { url: "https://fatehmusic.ir/courses/guitar-course" }
+      }
+    ], buildGscSignalIndex([
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        clicks: 20,
+        impressions: 5000,
+        ctr: 0.04,
+        position: 5
+      }
+    ]));
+
+    expect(result[0].searchSignalSource).toBe("none");
+    expect(result[0].searchSignal.available).toBe(false);
+  });
+
   it("detects a potential conflict when multiple pages share a query", () => {
     const conflicts = detectSearchCannibalization(rows);
     expect(conflicts).toHaveLength(1);
