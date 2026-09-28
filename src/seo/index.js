@@ -80,7 +80,16 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const answers = buildAnswerBlocks(answerBlocks);
     const clusterReport = articlePosts.length ? buildContentClusterReport(articlePosts, { courses, siteUrl: site.url }) : null;
     const contentStrategy = clusterReport ? clusterReport.strategy : buildContentStrategy([], courses, { siteUrl: site.url });
-    const openGraph = buildOpenGraph({ site, metadata, image: resolvedImage, url: canonicalUrl, imageWidth, imageHeight, imageType });
+    const openGraph = buildOpenGraph({
+        site,
+        metadata,
+        image: resolvedImage,
+        url: canonicalUrl,
+        type: entityType === "Article" ? "article" : undefined,
+        imageWidth,
+        imageHeight,
+        imageType
+    });
     const twitter = buildTwitter({ metadata, image: resolvedImage, site });
     const webPageSchema = buildWebPageSchema({ url: canonicalUrl, title: metadata.title, description: metadata.description, image: resolvedImage, keywords: metadata.keywords, topics: topicsResolved, extraSchema, site, lastModified });
     const schemaGraph = buildSchemaGraph([
