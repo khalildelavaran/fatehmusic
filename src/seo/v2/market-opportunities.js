@@ -4,7 +4,7 @@
  */
 
 import { isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
-import { containsSemanticPhrase, semanticTokens } from "../helpers/text.js";
+import { semanticTokens } from "../helpers/text.js";
 
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Number(value) || 0));
