@@ -19,6 +19,14 @@ export function currentScoringRows(rows = []) {
   );
 }
 
+export function temporalAnalysisRows(rows = []) {
+  const labelled = rows.filter((row) => {
+    const label = String(row?.snapshotLabel || row?.snapshot_label || "");
+    return label === "current" || label === "previous";
+  });
+  return labelled.length ? labelled : rows;
+}
+
 /** Enrich the unified content queue with real GSC signals when available. */
 export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
   // Scoring uses only the current snapshot. The previous snapshot remains
@@ -26,7 +34,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const scoringRows = currentScoringRows(rows);
   const index = buildGscSignalIndex(scoringRows);
   const conflicts = detectSearchCannibalization(scoringRows, options);
-  const temporal = detectTemporalCannibalization(rows, options);
+  const temporal = detectTemporalCannibalization(temporalAnalysisRows(rows), options);
   const conflictByPage = new Map();
   for (const conflict of conflicts) {
     for (const page of conflict.pages) {
