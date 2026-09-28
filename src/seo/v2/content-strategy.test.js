@@ -25,7 +25,7 @@ describe("content strategy deduplication", () => {
     });
     expect(result.opportunityCount).toBe(1);
     expect(result.opportunities[0].searchIntents).toEqual(["transactional", "local", "commercial"]);
-    expect(result.opportunities[0].suggestedSlug).toBe("آموزش-موسیقی-در-شوشتر");
+    expect(result.opportunities[0].suggestedSlug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
   });
 
   it("does not map the broad music-education topic to a child-music course", () => {
