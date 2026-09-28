@@ -89,7 +89,16 @@ const SNAPSHOT_LABELS = new Set([
   "staging-breakdowns-current"
 ]);
 
-async function storeRows(db, env, rows, startDate, endDate, snapshotLabel, now = "datetime('now')") {
+async function storeRows(
+  db,
+  env,
+  rows,
+  startDate,
+  endDate,
+  snapshotLabel,
+  now = "datetime('now')",
+  tableName = "gsc_search_signals_v2"
+) {
   const siteUrl = normalizeSiteUrl(env.GSC_SITE_URL);
   if (!SNAPSHOT_LABELS.has(snapshotLabel)) throw new Error("GSC_SNAPSHOT_LABEL_INVALID");
   let rowsStored = 0;
@@ -98,7 +107,7 @@ async function storeRows(db, env, rows, startDate, endDate, snapshotLabel, now =
     const chunk = rows.slice(offset, offset + BATCH_SIZE);
     const statements = chunk.map((row) =>
       db.prepare(
-        "INSERT INTO gsc_search_signals_v2 " +
+        "INSERT INTO " + tableName + " " +
         "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ", ?) " +
         "ON CONFLICT(site_url, query, page, country, device, search_appearance, start_date, end_date) DO UPDATE SET " +
@@ -186,25 +195,38 @@ export async function syncSearchConsoleToD1({
       };
     }
 
-    const stagingLabel = "staging-" + snapshotLabel;
-    // Write the new snapshot under an isolated staging label. If any batch
-    // fails, the live current/previous snapshot is untouched.
+    // Write to the isolated staging table. If any batch fails, live data stays
+    // completely untouched.
     await db.prepare(
-      "DELETE FROM gsc_search_signals_v2 WHERE site_url=? AND snapshot_label=?"
-    ).bind(normalizeSiteUrl(env.GSC_SITE_URL), stagingLabel).run();
+      "DELETE FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=?"
+    ).bind(normalizeSiteUrl(env.GSC_SITE_URL), snapshotLabel).run();
 
-    const rowsStored = await storeRows(db, env, fetched.rows, startDate, endDate, stagingLabel);
+    const rowsStored = await storeRows(
+      db,
+      env,
+      fetched.rows,
+      startDate,
+      endDate,
+      snapshotLabel,
+      "datetime('now')",
+      "gsc_search_signals_staging"
+    );
 
-    // Swap the staging snapshot into the live label in one D1 transaction.
-    // This prevents a partial multi-batch write from contaminating the
-    // last-known-good reporting snapshot.
+    // Atomically replace only the requested live snapshot from staging.
+    // The DELETE + INSERT + staging cleanup are one D1 transaction.
     await db.batch([
       db.prepare(
         "DELETE FROM gsc_search_signals_v2 WHERE site_url=? AND snapshot_label=?"
       ).bind(normalizeSiteUrl(env.GSC_SITE_URL), snapshotLabel),
       db.prepare(
-        "UPDATE gsc_search_signals_v2 SET snapshot_label=? WHERE site_url=? AND snapshot_label=? AND start_date=? AND end_date=?"
-      ).bind(snapshotLabel, normalizeSiteUrl(env.GSC_SITE_URL), stagingLabel, startDate, endDate)
+        "INSERT INTO gsc_search_signals_v2 " +
+        "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +
+        "SELECT site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, ? " +
+        "FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=?"
+      ).bind(snapshotLabel, normalizeSiteUrl(env.GSC_SITE_URL), snapshotLabel),
+      db.prepare(
+        "DELETE FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=?"
+      ).bind(normalizeSiteUrl(env.GSC_SITE_URL), snapshotLabel)
     ]);
 
     if (runId) {
@@ -223,10 +245,9 @@ export async function syncSearchConsoleToD1({
       snapshotLabel
     };
   } catch (error) {
-    const stagingLabel = "staging-" + snapshotLabel;
     await db.prepare(
-      "DELETE FROM gsc_search_signals_v2 WHERE site_url=? AND snapshot_label=?"
-    ).bind(normalizeSiteUrl(env.GSC_SITE_URL), stagingLabel).run().catch(() => undefined);
+      "DELETE FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=?"
+    ).bind(normalizeSiteUrl(env.GSC_SITE_URL), snapshotLabel).run().catch(() => undefined);
     if (runId) {
       await db.prepare(
         "UPDATE gsc_sync_runs SET status='failed', error_message=?, finished_at=datetime('now') WHERE id=?"
