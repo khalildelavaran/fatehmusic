@@ -269,10 +269,15 @@ function buildDecisionTrace(item, action, evidence) {
   else if (item.cannibalization?.severity === "MEDIUM") reasonCodes.push("CANNIBALIZATION_MEDIUM");
 
   if (item.temporalCannibalization?.actionable) {
+    const prefix = item.temporalCannibalization.mode === "SEMANTIC_CLUSTER"
+      ? "TEMPORAL_SEMANTIC_OWNER_SHIFT_"
+      : "TEMPORAL_OWNER_SHIFT_";
     reasonCodes.push(
-      item.temporalCannibalization.severity === "HIGH"
-        ? "TEMPORAL_OWNER_SHIFT_HIGH"
-        : "TEMPORAL_OWNER_SHIFT_MEDIUM"
+      prefix + (
+        item.temporalCannibalization.severity === "HIGH"
+          ? "HIGH"
+          : "MEDIUM"
+      )
     );
   }
 
