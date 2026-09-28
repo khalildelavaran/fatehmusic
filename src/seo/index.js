@@ -47,7 +47,7 @@ import { scoreOpportunity, scoreOpportunities, classifyOpportunityAction, decisi
 import { auditPage } from "./v2/audit.js";
 import { buildSEOIntelligence } from "./v2/orchestrator.js";
 import { buildKnowledgeGraph, validateKnowledgeGraph, findRelatedEntities, findRelationPaths } from "./v2/knowledge-graph.js";
-import { buildMarketOpportunityReport } from "./v2/market-opportunities.js";
+import { buildMarketOpportunityReport, buildMarketSignalMap } from "./v2/market-opportunities.js";
 import { runDiagnostics } from "./v2/diagnostics.js";
 
 /**
