@@ -4,7 +4,7 @@
  */
 import { buildContentClusterReport, buildArticleProfiles } from "./content-clusters.js";
 import { buildUnifiedContentOpportunities } from "./content-strategy.js";
-import { enrichOpportunitiesWithSearchConsole } from "./gsc-intelligence.js";
+import { enrichOpportunitiesWithSearchConsole, currentScoringRows } from "./gsc-intelligence.js";
 import { buildGscSignalIndex, detectSearchCannibalization } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { buildLinkGraph } from "./internal-links.js";
@@ -80,7 +80,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const pages = articleSemantics(posts, siteUrl);
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
   const pageNodes = pages.map((page) => ({ url: page.url, title: page.title, type: "Article", topics: page.topics, priority: 12, local: true }));
-  const gscIndex = buildGscSignalIndex(gscRows);
+  const gscIndex = buildGscSignalIndex(currentScoringRows(gscRows));
   const cannibalization = detectSearchCannibalization(gscRows, { pageSemantics: pages });
   const temporalCannibalization = search.temporalCannibalization || detectTemporalCannibalization(gscRows);
   const opportunities = scoreOpportunities(search.opportunities);
