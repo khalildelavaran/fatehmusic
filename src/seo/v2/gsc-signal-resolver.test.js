@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery } from "./gsc-signal-resolver.js";
 
 describe("GSC signal resolver", () => {
   const rows = [
@@ -137,5 +137,17 @@ describe("GSC signal resolver", () => {
     expect(conflicts[0].severity).toBe("HIGH");
     expect(conflicts[0].semanticEvidence).toBe(true);
     expect(conflicts[0].semanticSimilarity).toBeGreaterThanOrEqual(0.55);
+  });
+
+  it("keeps brand navigation out of topic demand matching", () => {
+    expect(isBrandNavigationQuery("fatehmusic.ir")).toBe(true);
+    const index = buildGscSignalIndex([
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/about", clicks: 0, impressions: 1000, ctr: 0, position: 4 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 1, impressions: 50, ctr: 0.02, position: 8 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      { title: "آموزش گیتار در شوشتر", topicName: "گیتار", topic: "guitar" }
+    ], index);
+    expect(result[0].searchSignal.impressions).toBe(50);
   });
 });
