@@ -146,7 +146,7 @@ export async function insertScoredCandidates(
       "related_course_title=excluded.related_course_title, category=excluded.category, audience=excluded.audience, " +
       "level=excluded.level, modifier_type=excluded.modifier_type, intent=excluded.intent, score_total=excluded.score_total, " +
       "score_breakdown=excluded.score_breakdown, reasoning=excluded.reasoning, " +
-      "status=CASE WHEN content_topics.status IN ('approved', 'used') THEN content_topics.status ELSE excluded.status END, " +
+      "status=CASE WHEN content_topics.status IN ('approved', 'drafted', 'used') THEN content_topics.status ELSE excluded.status END, " +
       "source=excluded.source, run_id=excluded.run_id, updated_at=datetime('now'), " +
       "used_by_post_id=CASE WHEN content_topics.status='used' THEN content_topics.used_by_post_id ELSE NULL END, " +
       "used_at=CASE WHEN content_topics.status='used' THEN content_topics.used_at ELSE NULL END"
@@ -267,9 +267,25 @@ export async function releaseGeneratingTopic(db: D1Database, id: number): Promis
     .run();
 }
 
-export async function markTopicUsed(db: D1Database, id: number, postId: number): Promise<void> {
+export async function markTopicDrafted(db: D1Database, id: number, postId: number): Promise<void> {
   await db
-    .prepare("UPDATE content_topics SET status = 'used', used_at = datetime('now'), used_by_post_id = ?, updated_at = datetime('now') WHERE id = ?")
+    .prepare("UPDATE content_topics SET status = 'drafted', used_at = NULL, used_by_post_id = ?, updated_at = datetime('now') WHERE id = ? AND status = 'generating'")
     .bind(postId, id)
     .run();
+}
+
+export async function markTopicUsed(db: D1Database, postId: number): Promise<number> {
+  const result = await db
+    .prepare("UPDATE content_topics SET status = 'used', used_at = COALESCE(used_at, datetime('now')), updated_at = datetime('now') WHERE used_by_post_id = ? AND status = 'drafted'")
+    .bind(postId)
+    .run();
+  return Number(result.meta?.changes || 0);
+}
+
+export async function releaseDraftedTopic(db: D1Database, postId: number): Promise<number> {
+  const result = await db
+    .prepare("UPDATE content_topics SET status = 'approved', used_by_post_id = NULL, used_at = NULL, updated_at = datetime('now') WHERE used_by_post_id = ? AND status = 'drafted'")
+    .bind(postId)
+    .run();
+  return Number(result.meta?.changes || 0);
 }
