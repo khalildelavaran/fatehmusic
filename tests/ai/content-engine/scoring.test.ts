@@ -81,3 +81,40 @@ describe("scoreCandidate", () => {
     expect(scored.reasoning.length).toBeGreaterThan(0);
   });
 });
+
+
+describe("GSC position validation", () => {
+  it("does not treat a missing/zero search position as a top ranking", () => {
+    const zeroPosition = scoreCandidate(
+      candidate("آموزش گیتار در شوشتر"),
+      {
+        ...emptyContext,
+        keywordSignal: {
+          available: true,
+          searchImpressions: 1000,
+          searchClicks: 0,
+          searchCtr: 0,
+          searchPosition: 0,
+          source: "google-search-console"
+        }
+      }
+    );
+
+    const lowRank = scoreCandidate(
+      candidate("آموزش گیتار در شوشتر"),
+      {
+        ...emptyContext,
+        keywordSignal: {
+          available: true,
+          searchImpressions: 1000,
+          searchClicks: 0,
+          searchCtr: 0,
+          searchPosition: 50,
+          source: "google-search-console"
+        }
+      }
+    );
+
+    expect(zeroPosition.scoreBreakdown.keywordSignal).toBeLessThan(lowRank.scoreBreakdown.keywordSignal + 1);
+  });
+});
