@@ -32,6 +32,10 @@ function toRow(keys = [], dimensions = ["query", "page"], metrics = {}, { startD
   };
 }
 
+/**
+ * @param {object} client
+ * @param {{startDate:string,endDate:string,dimensions?:string[],pageSize?:number,maxRows?:number,dataState?:string}} options
+ */
 export async function fetchAllSearchAnalytics(client, {
   startDate,
   endDate,
