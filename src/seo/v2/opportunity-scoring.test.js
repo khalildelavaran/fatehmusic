@@ -322,8 +322,6 @@ describe("opportunity scoring", () => {
     expect(result.scoreBreakdown.evidenceStrengthScore).toBe(result.decisionConfidence);
   });
 
-});
-
   it("does not force link action from related-only ownership", () => {
     expect(classifyOpportunityAction({
       action: "NEW_CONTENT",
@@ -337,3 +335,5 @@ describe("opportunity scoring", () => {
       }
     })).toBe("NEW_CONTENT");
   });
+
+});
