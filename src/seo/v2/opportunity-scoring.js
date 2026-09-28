@@ -205,11 +205,22 @@ function marketSignalScore(signal = {}) {
   return clamp(score);
 }
 
+function isCtrUnderperforming(signal = {}) {
+  const ctr = Math.max(0, Number(signal.ctr) || 0);
+  const benchmark = Number(signal.ctrBenchmark);
+  if (Number.isFinite(benchmark) && benchmark > 0) {
+    const ratio = ctr / benchmark;
+    return ratio < 0.65;
+  }
+  return ctr < 0.03;
+}
+
 function searchSignalScore(signal = {}) {
   if (!signal?.available) return 0;
   const impressions = Math.max(0, Number(signal.impressions) || 0);
   const position = Number(signal.position);
   const ctr = Math.max(0, Number(signal.ctr) || 0);
+  const benchmark = Number(signal.ctrBenchmark);
   let score = 0;
   if (impressions >= 2000) score += 35;
   else if (impressions >= 1000) score += 30;
@@ -221,9 +232,16 @@ function searchSignalScore(signal = {}) {
     else if (position > 10 && position <= 20) score += 25;
     else if (position > 20 && position <= 50) score += 10;
   }
-  if (ctr < 0.02) score += 25;
-  else if (ctr < 0.04) score += 18;
-  else if (ctr < 0.06) score += 8;
+  if (Number.isFinite(benchmark) && benchmark > 0) {
+    const ratio = ctr / benchmark;
+    if (ratio < 0.45) score += 25;
+    else if (ratio < 0.65) score += 18;
+    else if (ratio < 0.85) score += 8;
+  } else {
+    if (ctr < 0.02) score += 25;
+    else if (ctr < 0.04) score += 18;
+    else if (ctr < 0.06) score += 8;
+  }
   return clamp(score);
 }
 
@@ -311,7 +329,7 @@ function buildDecisionTrace(item, action, evidence) {
 
   const position = Number(item.searchSignal?.position);
   const ctr = Number(item.searchSignal?.ctr);
-  if (Number.isFinite(position) && position >= 1 && position <= 10 && Number.isFinite(ctr) && ctr < 0.03) {
+  if (Number.isFinite(position) && position >= 1 && position <= 10 && Number.isFinite(ctr) && isCtrUnderperforming(item.searchSignal)) {
     reasonCodes.push("TOP10_LOW_CTR");
   }
   if (Number.isFinite(position) && position > 10 && position <= 30) {
