@@ -39,7 +39,7 @@ const comparisonCourses = findComparisonCourses(post.title)
   .filter((course): course is NonNullable<typeof course> => Boolean(course));
 const relatedCoursesForSchema = [...new Map(
   [relatedCourse, ...comparisonCourses]
-    .filter(Boolean)
+    .filter((course): course is NonNullable<typeof course> => Boolean(course))
     .map((course) => [course.slug, course])
 ).values()];
 const title = post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`;
