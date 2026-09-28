@@ -53,6 +53,31 @@ describe("D1SearchConsoleKeywordProvider", () => {
 
     expect(sql).toContain("snapshot_label = 'current'");
   });
+  it("ignores an invalid ranking position when calculating the weighted signal", async () => {
+    const db = {
+      prepare() {
+        return {
+          bind() {
+            return {
+              all: async () => ({
+                results: [
+                  { query: "آموزش نی", clicks: 10, impressions: 1000, position: "invalid" as unknown as number },
+                  { query: "کلاس نی", clicks: 4, impressions: 200, position: 8 }
+                ]
+              })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    const provider = new D1SearchConsoleKeywordProvider({ db });
+    const signal = await provider.lookup("آموزش نی");
+
+    expect(signal.available).toBe(true);
+    expect(signal.searchPosition).toBe(8);
+  });
+
   it("does not let a generic one-word query dominate a specific course topic", async () => {
     const db = {
       prepare() {
