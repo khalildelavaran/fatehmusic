@@ -2,7 +2,7 @@ import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 
-function currentScoringRows(rows = []) {
+export function currentScoringRows(rows = []) {
   const current = rows.filter((row) => String(row?.snapshotLabel || row?.snapshot_label || "") === "current");
   if (current.length) return current;
 
@@ -25,7 +25,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   // available to temporal analysis so historical ownership changes are not lost.
   const scoringRows = currentScoringRows(rows);
   const index = buildGscSignalIndex(scoringRows);
-  const conflicts = detectSearchCannibalization(rows, options);
+  const conflicts = detectSearchCannibalization(scoringRows, options);
   const temporal = detectTemporalCannibalization(rows, options);
   const conflictByPage = new Map();
   for (const conflict of conflicts) {
