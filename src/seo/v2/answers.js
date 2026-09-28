@@ -36,3 +36,43 @@ export function answersFromFaq(faqs = [], sourceUrl, entityId) {
         }))
     );
 }
+
+/**
+ * Extract concise GEO answer blocks directly from article Markdown.
+ * Only question-like headings are eligible; no new facts are generated.
+ *
+ * @param {string} markdown
+ * @param {string} sourceUrl
+ * @param {string} [entityId]
+ */
+export function answersFromArticle(markdown = "", sourceUrl, entityId) {
+    const lines = String(markdown || "").replace(/\r\n?/g, "\n").split("\n");
+    const blocks = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const heading = lines[index].match(/^#{2,4}\s+(.+?)\s*$/);
+        if (!heading) continue;
+
+        const question = heading[1].trim();
+        const isQuestion = /[؟?]$/.test(question) || /^(آیا|چگونه|چرا|برای چه|چه زمانی|کدام|چطور)\b/.test(question);
+        if (question.length < 12 || !isQuestion) continue;
+
+        let answer = "";
+        for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+            const line = lines[cursor].trim();
+            if (!line) {
+                if (answer) break;
+                continue;
+            }
+            if (/^#{1,6}\s+/.test(line) || /^[-*]\s+/.test(line) || /^\d+\.\s+/.test(line)) break;
+            answer = answer ? answer + " " + line : line;
+            if (answer.length >= 320) break;
+        }
+
+        if (answer.length >= 40) {
+            blocks.push({ question, answer: answer.slice(0, 320), sourceUrl, entityId, priority: blocks.length });
+        }
+    }
+
+    return buildAnswerBlocks(blocks).slice(0, 6);
+}
