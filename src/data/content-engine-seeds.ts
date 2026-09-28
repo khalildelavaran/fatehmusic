@@ -45,7 +45,7 @@ export const MODIFIER_TEMPLATES: Record<ModifierType, string[]> = {
   ],
   local_shushtar: [
     "آموزش {name} در شوشتر؛ چه انتظاری داشته باشیم",
-    "چرا آموزشگاه فاتح برای یادگیری {name} در شوشتر انتخاب خوبی است"
+    "برای یادگیری {name} در شوشتر به چه نکاتی توجه کنیم؟"
   ],
   age_specific: [
     // Index 0: کودک, 1: نوجوان, 2: بزرگسال -- picked by audience in candidates.ts
