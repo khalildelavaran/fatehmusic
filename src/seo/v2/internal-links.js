@@ -1,4 +1,4 @@
-import { findRelatedEntities } from "./knowledge-graph.js";
+import { findRelatedEntities, findRelationPaths } from "./knowledge-graph.js";
 
 /**
  * --------------------------------------------------------
@@ -71,21 +71,37 @@ function findRelationEvidence(currentUrl, candidateUrl, semanticGraph) {
     const related = findRelatedEntities(semanticGraph, current.id, { direction: "both", limit: 100 })
       .filter((item) => item.entity?.id === candidate.id);
 
-    if (!related.length) return { score: 0, relations: [] };
-
     const weights = {
         teaches: 45,
         about: 40,
         worksFor: 30,
         location: 25,
         provider: 20,
-        publisher: 12
+        publisher: 12,
+        knowsAbout: 28
     };
 
+    if (related.length) {
+        return {
+            score: Math.max(...related.map((item) => (weights[item.relation] || 10) * Math.max(0.5, item.confidence))),
+            relations: [...new Set(related.map((item) =>
+              item.direction === "out" ? item.relation : "reverse:" + item.relation
+            ))]
+        };
+    }
+
+    const paths = findRelationPaths(semanticGraph, current.id, candidate.id, {
+        maxDepth: 2,
+        relations: ["about", "knowsAbout"],
+        direction: "both",
+        limit: 3
+    });
+
+    if (!paths.length) return { score: 0, relations: [] };
+
+    const bestPath = paths[0];
     return {
-        score: Math.max(...related.map((item) => (weights[item.relation] || 10) * Math.max(0.5, item.confidence))),
-        relations: [...new Set(related.map((item) =>
-          item.direction === "out" ? item.relation : "reverse:" + item.relation
-        ))]
+        score: Math.round(18 * Math.max(0.5, bestPath.confidence)),
+        relations: [...new Set(bestPath.edges.map((edge) => "path:" + edge.relation))]
     };
 }
