@@ -601,3 +601,18 @@ describe("GSC query ownership map", () => {
     expect(map[0].query).toBe("کلاس گیتار");
   });
 });
+
+describe("position-aware CTR benchmarking", () => {
+  it("derives a CTR benchmark from the same ranking bucket", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar", clicks: 10, impressions: 100, position: 6 },
+      { query: "آموزش سنتور", page: "https://fatehmusic.ir/courses/santur", clicks: 20, impressions: 100, position: 7 }
+    ]);
+
+    const signal = index.byPageNonBrand.get("https://fatehmusic.ir/courses/guitar");
+    expect(signal.ctrBenchmark).toBeCloseTo(0.15);
+    expect(signal.ctrGap).toBeCloseTo(0.05);
+    expect(signal.ctrRatioToBenchmark).toBeCloseTo(2 / 3);
+  });
+});
+
