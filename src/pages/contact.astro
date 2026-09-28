@@ -10,8 +10,8 @@ import ContactFAQ from "../components/ContactFAQ.astro";
 import { resolveSite, buildContactPageSchema, buildBreadcrumbSchema, buildFaqSchema } from "../seo/index.js";
 
 const site = resolveSite();
-const title = "تماس با آموزشگاه موسیقی فاتح شوشتر | آدرس و شماره تماس";
-const description = "آدرس، شماره تماس، ساعات کاری، موقعیت روی نقشه و راه‌های ارتباط با آموزشگاه موسیقی فاتح شوشتر برای ثبت‌نام و مشاوره دوره‌های موسیقی.";
+const title = "تماس با آموزشگاه موسیقی فاتح شوشتر | آدرس، تلفن و نقشه";
+const description = "آدرس، شماره تلفن، ساعات کاری، موقعیت روی نقشه و راه‌های ارتباط با آموزشگاه موسیقی فاتح شوشتر برای ثبت‌نام و مشاوره.";
 const canonical = `${site.url}/contact`;
 const faqSchema = buildFaqSchema(ContactFAQ.faqs, {
     site,
