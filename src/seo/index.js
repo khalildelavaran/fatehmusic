@@ -30,8 +30,8 @@ import { buildContactPageSchema } from "./schema/contactpage.js";
 import { absoluteUrl } from "./helpers/url.js";
 import { normalizeQuery, queryTokens, isBrandNavigationQuery, isOwnershipEligibleQuery } from "./helpers/query.js";
 import { isPrivateRoute } from "./helpers/private-route.js";
-import { courses } from "../data/courses.js";
-import { instructors } from "../data/instructors.js";
+import { courses as defaultCourses } from "../data/courses.js";
+import { instructors as defaultInstructors } from "../data/instructors.js";
 import { resolveTopics, topicSlugs } from "./v2/topics.js";
 import { classifyIntent } from "./v2/intents.js";
 import { getFreshness } from "./v2/freshness.js";
@@ -70,9 +70,11 @@ import { runDiagnostics } from "./v2/diagnostics.js";
  *  auditContext?: object;
  *  extraSchema?: object[];
  *  articlePosts?: object[];
+ *  courses?: object[];
+ *  instructors?: object[];
  * }} options
  */
-export function buildSEO({ path, title, description, image, imageWidth, imageHeight, imageType, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [] } = {}) {
+export function buildSEO({ path, title, description, image, imageWidth, imageHeight, imageType, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [], courses = defaultCourses, instructors = defaultInstructors } = {}) {
     const site = resolveSite();
     const effectiveNoindex = Boolean(noindex || isPrivateRoute(path));
     const metadata = buildMetadata({ site, title, description, keywords, noindex: effectiveNoindex });
