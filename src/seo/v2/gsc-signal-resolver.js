@@ -61,6 +61,23 @@ function tokens(value) {
   );
 }
 
+function phraseIncludes(source, phrase) {
+  const haystack = normalizeText(source).split(/\s+/).filter(Boolean);
+  const needle = normalizeText(phrase).split(/\s+/).filter(Boolean);
+  if (!haystack.length || !needle.length || needle.length > haystack.length) return false;
+  for (let i = 0; i <= haystack.length - needle.length; i += 1) {
+    if (needle.every((token, offset) => haystack[i + offset] === token)) return true;
+  }
+  return false;
+}
+
+function querySignalQuality(impressions) {
+  if (impressions >= 100) return "HIGH";
+  if (impressions >= 20) return "MEDIUM";
+  if (impressions >= 5) return "LOW";
+  return "TRACE";
+}
+
 function jaccard(a, b) {
   const left = a instanceof Set ? a : tokens(a), right = b instanceof Set ? b : tokens(b);
   if (!left.size || !right.size) return 0;
@@ -165,7 +182,7 @@ function queryMatches(item, query) {
   const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return false;
-  const exact = haystack.includes(normalizedQuery) ? 1 : 0;
+  const exact = phraseIncludes(haystack, normalizedQuery) ? 1 : 0;
   const overlap = jaccard(tokens(haystack), tokens(normalizedQuery));
   return exact === 1 || overlap >= 0.25;
 }
@@ -200,7 +217,7 @@ function isExactQueryMatch(item, query) {
     item?.course?.title
   ].filter(Boolean).join(" | "));
   const normalizedQuery = normalizeText(query);
-  return Boolean(haystack && normalizedQuery && haystack.includes(normalizedQuery));
+  return Boolean(haystack && normalizedQuery && phraseIncludes(haystack, normalizedQuery));
 }
 
 function buildQueryOwnership(querySignals = [], item = {}) {
@@ -258,6 +275,14 @@ function buildQueryOwnership(querySignals = [], item = {}) {
     pages,
     topPage: pages[0]?.page || null,
     topShare: pages[0]?.share || 0,
+    ownerStatus: !pages.length
+      ? "NO_OWNER"
+      : totalImpressions < 5
+        ? "EMERGING"
+        : (pages[0]?.share || 0) >= 0.7
+          ? "STABLE"
+          : "SPLIT",
+    signalQuality: querySignalQuality(totalImpressions),
     source: "google-search-console"
   });
 }
@@ -305,6 +330,14 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
           pageCount: pages.size,
           topPage: rankedPages[0]?.page || null,
           topShare: rankedPages[0]?.share || 0,
+          ownerStatus: !rankedPages.length
+            ? "NO_OWNER"
+            : totalImpressions < 5
+              ? "EMERGING"
+              : (rankedPages[0]?.share || 0) >= 0.7
+                ? "STABLE"
+                : "SPLIT",
+          signalQuality: querySignalQuality(totalImpressions),
           pages: Object.freeze(rankedPages)
         });
       })
