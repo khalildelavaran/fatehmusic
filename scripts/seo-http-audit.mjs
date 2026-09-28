@@ -51,7 +51,7 @@ function firstMatch(re, html) {
 }
 
 function jsonLdIsValidGraph(html) {
-  const scripts = allMatches(/<script[^>]+type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi, html);
+  const scripts = allMatches(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi, html);
   if (scripts.length !== 1) {
     return { ok: false, reason: "expected exactly one JSON-LD script, found " + scripts.length };
   }
@@ -113,11 +113,11 @@ async function checkPublicPage(url) {
   const canonical = canonicalFromHtml(body);
   if (!canonical) {
     fail("PUBLIC_CANONICAL_MISSING", url + ": canonical link missing");
-  } else if (absoluteUrl(canonical).replace(/\\/$/, "") !== url.replace(/\\/$/, "")) {
+  } else if (absoluteUrl(canonical).replace(/\/$/, "") !== url.replace(/\/$/, "")) {
     fail("PUBLIC_CANONICAL_MISMATCH", url + ": canonical is " + absoluteUrl(canonical));
   }
 
-  const titles = allMatches(/<title[^>]*>([\\s\\S]*?)<\\/title>/gi, body);
+  const titles = allMatches(/<title[^>]*>([\s\S]*?)<\/title>/gi, body);
   if (titles.length !== 1 || !titles[0].trim()) {
     fail("PUBLIC_TITLE", url + ": expected exactly one non-empty title");
   } else if (titles[0].trim().length < 20 || titles[0].trim().length > 60) {
@@ -132,7 +132,7 @@ async function checkPublicPage(url) {
     warn("PUBLIC_META_DESCRIPTION_LENGTH", url + ": meta description length is outside 80-160 characters");
   }
 
-  const h1s = allMatches(/<h1\\b[^>]*>([\\s\\S]*?)<\\/h1>/gi, body);
+  const h1s = allMatches(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi, body);
   if (h1s.length !== 1) {
     fail("PUBLIC_H1", url + ": expected exactly one H1, found " + h1s.length);
   }
