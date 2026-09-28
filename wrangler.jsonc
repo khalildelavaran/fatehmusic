@@ -49,6 +49,6 @@
     // Five triggers fit the current Workers Free account limit and keep each
     // D1-heavy SEO job in its own invocation/query budget.
     "triggers": {
-        "crons": ["45 0 * * 0", "15 1 * * *", "45 1 * * *", "30 2 * * *", "*/30 * * * *"]
+        "crons": ["45 0 * * SUN", "15 1 * * *", "45 1 * * *", "30 2 * * *", "*/30 * * * *"]
     }
 }
