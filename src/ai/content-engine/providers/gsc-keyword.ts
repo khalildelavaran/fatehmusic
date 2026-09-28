@@ -51,7 +51,7 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
   constructor(options: GscKeywordProviderOptions) {
     this.db = options.db;
     this.siteUrl = String(options.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, "");
-    this.days = options.days ?? 90;
+    this.days = options.days ?? 60;
     this.limit = options.limit ?? 3000;
   }
 
@@ -66,7 +66,7 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
       "SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions, " +
       "CASE WHEN SUM(impressions) > 0 THEN SUM(impressions * position) / SUM(impressions) ELSE 0 END AS position " +
       "FROM gsc_search_signals_v2 " +
-      "WHERE site_url = ? AND start_date >= ? AND country = '' AND device = '' AND search_appearance = '' " +
+      "WHERE site_url = ? AND start_date >= ? AND snapshot_label = 'current' AND country = '' AND device = '' AND search_appearance = '' " +
       "AND query IS NOT NULL AND query != '' GROUP BY query ORDER BY impressions DESC LIMIT ?"
     ).bind(this.siteUrl, cutoffDate, this.limit).all<QuerySignalRow>().then((result) =>
       (result.results || []).map((row) => ({
