@@ -140,6 +140,8 @@ export async function syncPublishedSeoActionMeasurements(db, {
 
   return { measured: Number(result.meta?.changes || 0) };
 }
+import { classifySeoActionMeasurement } from "./action-attribution.js";
+
 /** @param {D1Database} db @param {{limit?:number}} [options] */
 export async function listSeoActions(db, { limit = 20 } = {}) {
   if (!db) return [];
@@ -186,7 +188,8 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
         : null,
       impressionDelta: latest && previous
         ? Number(latest.impressions) - Number(previous.impressions)
-        : null
+        : null,
+      outcome: classifySeoActionMeasurement(latest, previous)
     };
   });
 }
