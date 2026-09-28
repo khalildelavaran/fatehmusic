@@ -160,6 +160,25 @@ export async function syncSearchConsoleToD1({
       dataState
     });
 
+    if (fetched.rows.length === 0) {
+      // An empty API response is not enough evidence to erase a last-known-good
+      // snapshot. Keep the previous snapshot and let consumers continue using it.
+      if (runId) {
+        await db.prepare(
+          "UPDATE gsc_sync_runs SET status='success', rows_received=0, rows_stored=0, truncated=?, finished_at=datetime('now') WHERE id=?"
+        ).bind(fetched.truncated ? 1 : 0, runId).run();
+      }
+      return {
+        status: "empty",
+        rowsReceived: 0,
+        rowsStored: 0,
+        pages: fetched.pages,
+        truncated: Boolean(fetched.truncated),
+        dimensions,
+        snapshotLabel
+      };
+    }
+
     const rowsStored = await storeRows(db, env, fetched.rows, startDate, endDate, snapshotLabel);
 
     // Only discard an older snapshot after the new snapshot has been stored
