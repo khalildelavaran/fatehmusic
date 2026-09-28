@@ -1,5 +1,5 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
-import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { semanticTokens } from "../helpers/text.js";
 import { queryTokens } from "../helpers/query.js";
@@ -61,10 +61,15 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 50
   });
   const conflicts = detectSearchCannibalization(scoringRows, options);
+  const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, options);
   const temporal = detectTemporalCannibalization(temporalAnalysisRows(rows), options);
   const conflictByPage = new Map();
   const severityRank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
-  for (const conflict of conflicts) {
+  for (const conflict of [...conflicts, ...semanticConflicts.map((conflict) => ({
+    ...conflict,
+    mode: "SEMANTIC_CLUSTER",
+    query: conflict.query
+  }))]) {
     for (const page of conflict.pages) {
       const signal = {
         query: conflict.query,
@@ -124,6 +129,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     signalRowCount: scoringRows.length,
     connected: scoringRows.length > 0,
     cannibalization: Object.freeze(conflicts),
+    semanticCannibalization: Object.freeze(semanticConflicts),
     temporalCannibalization: Object.freeze(temporal),
     queryOwnership: Object.freeze(queryOwnership),
     queryClusters: Object.freeze(index.queryClusters || []),
@@ -142,6 +148,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       newContentCount: scored.filter((item) => item.action === "NEW_CONTENT").length,
       temporalCannibalizationCount: temporal.length,
       temporalActionableCount: temporal.filter((item) => item.actionable).length,
+      semanticCannibalizationCount: semanticConflicts.length,
+      semanticCannibalizationActionableCount: semanticConflicts.filter((item) => item.actionable).length,
       queryOwnershipCount: queryOwnership.length,
       queryClusterCount: index.queryClusters?.length || 0,
       gscCompleteness: gscDataQuality.completeness,
