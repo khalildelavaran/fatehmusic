@@ -56,10 +56,20 @@ export async function getGscPagePerformance(db, siteUrl = DEFAULT_SITE_URL, { da
   const map = new Map();
   for (const row of currentRows) {
     if (!row.page) continue;
-    const current = map.get(row.page) || { page: row.page, clicks: 0, impressions: 0, weightedPosition: 0 };
+    const current = map.get(row.page) || {
+      page: row.page,
+      clicks: 0,
+      impressions: 0,
+      weightedPosition: 0,
+      positionImpressions: 0
+    };
     current.clicks += row.clicks;
     current.impressions += row.impressions;
-    current.weightedPosition += row.impressions * row.position;
+    const position = Number(row.position);
+    if (row.impressions > 0 && Number.isFinite(position) && position > 0) {
+      current.weightedPosition += row.impressions * position;
+      current.positionImpressions += row.impressions;
+    }
     map.set(row.page, current);
   }
   return [...map.values()]
@@ -68,7 +78,7 @@ export async function getGscPagePerformance(db, siteUrl = DEFAULT_SITE_URL, { da
       clicks: item.clicks,
       impressions: item.impressions,
       ctr: item.impressions ? item.clicks / item.impressions : 0,
-      position: item.impressions ? item.weightedPosition / item.impressions : null
+      position: item.positionImpressions ? item.weightedPosition / item.positionImpressions : null
     }))
     .sort((a, b) => b.impressions - a.impressions)
     .slice(0, limit);
