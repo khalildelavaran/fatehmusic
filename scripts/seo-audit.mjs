@@ -452,16 +452,28 @@ function validateCanonicalRedirectCoverage(pages, redirects) {
   for (const [route, page] of pages) {
     if (route === "/" || page.noindex) continue;
     const slashVariant = route + "/";
-    if (!redirects.has(slashVariant)) {
+    let match = null;
+    if (redirects.has(slashVariant)) {
+      match = { source: slashVariant, rule: redirects.get(slashVariant), dynamic: false };
+    } else if (route.startsWith("/blog/") && redirects.has("/blog/:slug/")) {
+      match = { source: "/blog/:slug/", rule: redirects.get("/blog/:slug/"), dynamic: true };
+    }
+
+    if (!match) {
       error("TRAILING_SLASH_REDIRECT_MISSING", route + ": missing 301 from " + slashVariant + " to " + route);
       continue;
     }
-    const rule = redirects.get(slashVariant);
-    if (rule.to !== route) {
-      error("TRAILING_SLASH_REDIRECT_TARGET", route + ": " + slashVariant + " must redirect directly to " + route + " (found " + rule.to + ")");
+
+    if (match.dynamic) {
+      if (match.rule.to !== "/blog/:slug") {
+        error("TRAILING_SLASH_REDIRECT_TARGET", route + ": /blog/:slug/ must redirect to /blog/:slug");
+      }
+    } else if (match.rule.to !== route) {
+      error("TRAILING_SLASH_REDIRECT_TARGET", route + ": " + slashVariant + " must redirect directly to " + route + " (found " + match.rule.to + ")");
     }
-    if (String(rule.status) !== "301") {
-      error("TRAILING_SLASH_REDIRECT_STATUS", route + ": " + slashVariant + " must use 301");
+
+    if (String(match.rule.status) !== "301") {
+      error("TRAILING_SLASH_REDIRECT_STATUS", route + ": " + match.source + " must use 301");
     }
   }
 }
