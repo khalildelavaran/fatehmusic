@@ -351,6 +351,7 @@ describe("GSC query ownership map", () => {
 
     expect(map).toHaveLength(1);
     expect(map[0].query).toBe("اموزش گیتار");
+    expect(map[0].displayQuery).toBe("آموزش گیتار");
     expect(map[0].impressions).toBe(100);
     expect(map[0].topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
     expect(map[0].topShare).toBe(0.8);
