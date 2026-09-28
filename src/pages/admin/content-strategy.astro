@@ -9,7 +9,7 @@ import "../../styles/admin/topics.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
-import { buildSEOIntelligence, buildGscSignalIndex, buildQueryOwnershipMap, resolveSite } from "../../seo/index.js";
+import { buildSEOIntelligence, buildGscSignalIndex, resolveSite } from "../../seo/index.js";
 import { listTopics } from "../../ai/content-engine/db";
 import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
 import { listSeoActions } from "../../seo/v2/seo-action-store.js";
@@ -42,7 +42,6 @@ const currentGscRows = (gscRows as Array<Record<string, unknown>>).filter((row) 
   String(row.snapshotLabel || row.snapshot_label || "") === "current"
 );
 const currentGscIndex = buildGscSignalIndex(currentGscRows);
-const gscQueryOwnership = buildQueryOwnershipMap(currentGscRows, { minImpressions: 1, limit: 12 });
 const intelligence = buildSEOIntelligence({
   posts,
   courses,
@@ -193,7 +192,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
-          {intelligence.gsc.connected && gscQueryOwnership.length > 0 && (
+          {intelligence.gsc.connected && intelligence.queryOwnership.length > 0 && (
             <div class="strategy-gsc-ownership">
               <div class="strategy-gsc-ownership-head">
                 <strong>نقشه مالکیت Query</strong>
@@ -203,7 +202,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                 <table class="strategy-gsc-ownership-table">
                   <thead><tr><th>Query</th><th>Impression</th><th>URL اصلی</th><th>سهم URL اصلی</th><th>تعداد URL</th></tr></thead>
                   <tbody>
-                    {gscQueryOwnership.map((item) => (
+                    {intelligence.queryOwnership.slice(0, 12).map((item) => (
                       <tr>
                         <td><code>{item.query}</code></td>
                         <td>{Math.round(item.impressions).toLocaleString("fa-IR")}</td>
