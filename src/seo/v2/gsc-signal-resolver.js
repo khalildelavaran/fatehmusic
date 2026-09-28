@@ -294,7 +294,8 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
           .map(([page, impressions]) => ({
             page,
             impressions,
-            share: totalImpressions ? impressions / totalImpressions : 0
+            share: totalImpressions ? impressions / totalImpressions : 0,
+            shareInterval95: wilsonInterval(impressions, totalImpressions)
           }))
           .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
           .slice(0, 5);
@@ -432,16 +433,21 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
     const pageSignals = item.action === "NEW_CONTENT"
       ? []
       : getCandidatePages(item).map((page) => index.byPageNonBrand?.get(page)).filter(Boolean);
-    const querySignals = relevantQueryRows(index, item)
+    const matchedQueryRows = relevantQueryRows(index, item)
       .filter((row) => !isBrandNavigationQuery(row.query))
-      .filter((row) => queryMatches(item, row.query))
+      .filter((row) => queryMatches(item, row.query));
+
+    // Keep the dashboard signal compact, but never truncate the evidence set
+    // used for exact query ownership. The owner calculation must see every
+    // page that contributed impressions for the matching query.
+    const querySignals = matchedQueryRows
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
-      .slice(0, 10);
+      .slice(0, 20);
     const relevantQuerySignal = aggregate(querySignals);
-    const ownership = buildQueryOwnership(querySignals, item);
+    const ownership = buildQueryOwnership(matchedQueryRows, item);
     const semanticQueryClusters = index.queryClusterByQuery
       ? [...new Map(
-          querySignals
+          matchedQueryRows
             .map((row) => index.queryClusterByQuery.get(normalizeText(row?.query)))
             .filter(Boolean)
             .map((cluster) => [cluster.key, cluster])
