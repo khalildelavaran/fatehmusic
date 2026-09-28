@@ -30,4 +30,15 @@ describe("SEO action outcome classifier", () => {
 
     expect(result.effect).toBe("NEUTRAL");
   });
+
+
+  it("does not treat a one-impression position change as positive evidence", () => {
+    const result = classifySeoActionMeasurement(
+      { impressions: 1, clicks: 0, ctr: 0, position: 4 },
+      { impressions: 1, clicks: 0, ctr: 0, position: 8 }
+    );
+
+    expect(result.positionEvidenceStrong).toBe(false);
+    expect(result.effect).toBe("NEUTRAL");
+  });
 });
