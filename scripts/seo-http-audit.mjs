@@ -137,6 +137,25 @@ async function checkPublicPage(url) {
     fail("PUBLIC_H1", url + ": expected exactly one H1, found " + h1s.length);
   }
 
+  const ogTitle = firstMatch(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["'][^>]*>/i, body);
+  const ogDescription = firstMatch(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["'][^>]*>/i, body);
+  const ogUrl = firstMatch(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']*)["'][^>]*>/i, body);
+  const ogImage = firstMatch(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["'][^>]*>/i, body);
+  const twitterCard = firstMatch(/<meta[^>]+name=["']twitter:card["'][^>]+content=["']([^"']*)["'][^>]*>/i, body);
+
+  if (!ogTitle || !ogDescription || !ogImage) {
+    fail("PUBLIC_SOCIAL_META", url + ": required Open Graph metadata is incomplete");
+  }
+  if (ogUrl && absoluteUrl(ogUrl).replace(/\/$/, "") !== url.replace(/\/$/, "")) {
+    fail("PUBLIC_OG_URL_MISMATCH", url + ": og:url is " + absoluteUrl(ogUrl));
+  }
+  if (ogImage && !/^https?:\/\//i.test(ogImage)) {
+    fail("PUBLIC_OG_IMAGE_NOT_ABSOLUTE", url + ": og:image is not an absolute URL");
+  }
+  if (!twitterCard) {
+    fail("PUBLIC_TWITTER_CARD", url + ": twitter:card is missing");
+  }
+
   const schema = jsonLdIsValidGraph(body);
   if (!schema.ok) {
     fail("PUBLIC_JSONLD", url + ": " + schema.reason);
