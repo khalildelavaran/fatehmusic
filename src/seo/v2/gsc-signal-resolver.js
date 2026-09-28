@@ -11,6 +11,23 @@ function normalizeText(value) { return normalizeQuery(value); }
 const tokens = queryTokens;
 
 
+function wilsonInterval(successes, trials, z = 1.96) {
+  const n = Math.max(0, Number(trials) || 0);
+  const x = Math.min(n, Math.max(0, Number(successes) || 0));
+  if (n <= 0) return null;
+
+  const p = x / n;
+  const z2 = z * z;
+  const denominator = 1 + z2 / n;
+  const center = (p + z2 / (2 * n)) / denominator;
+  const halfWidth = z * Math.sqrt((p * (1 - p) / n) + (z2 / (4 * n * n))) / denominator;
+
+  return Object.freeze({
+    lower: Number(Math.max(0, center - halfWidth).toFixed(4)),
+    upper: Number(Math.min(1, center + halfWidth).toFixed(4))
+  });
+}
+
 function querySignalQuality(impressions) {
   if (impressions >= 100) return "HIGH";
   if (impressions >= 20) return "MEDIUM";
@@ -47,6 +64,7 @@ function aggregate(rows = []) {
     position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
     matchedQueries: [...new Set(rows.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
     matchedPages: [...new Set(rows.map((row) => normalizeUrl(row?.page)).filter(Boolean))].slice(0, 10),
+    ctrInterval95: wilsonInterval(total.clicks, total.impressions),
     source: "google-search-console"
   };
 }
@@ -232,6 +250,12 @@ function buildQueryOwnership(querySignals = [], item = {}) {
         : (pages[0]?.share || 0) >= 0.7
           ? "STABLE"
           : "SPLIT",
+    ownerShareInterval95: pages[0]?.shareInterval95 || null,
+    ownerShareLower95: pages[0]?.shareInterval95?.lower ?? null,
+    ownerDominanceEvidence:
+      pages[0]?.shareInterval95?.lower >= 0.5 ? "STRONG" :
+      pages[0]?.shareInterval95?.lower >= 0.35 ? "MODERATE" :
+      "WEAK",
     signalQuality: querySignalQuality(totalImpressions),
     source: "google-search-console"
   });
@@ -289,6 +313,12 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
               : (rankedPages[0]?.share || 0) >= 0.7
                 ? "STABLE"
                 : "SPLIT",
+          ownerShareInterval95: rankedPages[0]?.shareInterval95 || null,
+          ownerShareLower95: rankedPages[0]?.shareInterval95?.lower ?? null,
+          ownerDominanceEvidence:
+            rankedPages[0]?.shareInterval95?.lower >= 0.5 ? "STRONG" :
+            rankedPages[0]?.shareInterval95?.lower >= 0.35 ? "MODERATE" :
+            "WEAK",
           signalQuality: querySignalQuality(totalImpressions),
           pages: Object.freeze(rankedPages)
         });
