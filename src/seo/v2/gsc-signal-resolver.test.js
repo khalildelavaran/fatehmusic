@@ -354,6 +354,35 @@ describe("GSC signal resolver", () => {
   });
 
 
+  it("prioritizes exact and intent-aligned GSC queries for the compact search signal", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "گیتار در شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 900
+      },
+      {
+        query: "آموزش گیتار در شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 50
+      }
+    ]);
+
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "OPTIMIZE_EXISTING",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "informational",
+        targetEntity: { url: "https://fatehmusic.ir/courses/guitar-course" }
+      }
+    ], index);
+
+    expect(result[0].searchSignal.matchedQueries[0]).toBe("آموزش گیتار در شوشتر");
+  });
+
+
   it("computes ownership from all matching rows, not the compact 20-row signal window", () => {
     const rows = [
       ...Array.from({ length: 40 }, () => ({
