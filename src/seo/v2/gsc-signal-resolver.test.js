@@ -59,6 +59,20 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.available).toBe(false);
   });
 
+  it("does not let generic queries create demand signals for a specific opportunity", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 200, impressions: 10000, ctr: 0.02, position: 4 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 20, impressions: 300, ctr: 0.067, position: 8 }
+    ]);
+
+    const result = resolveOpportunitySearchSignals([
+      { title: "آموزش گیتار در شوشتر", topicName: "گیتار", topic: "guitar", action: "NEW_CONTENT" }
+    ], index);
+
+    expect(result[0].searchSignal.available).toBe(true);
+    expect(result[0].searchSignal.impressions).toBe(300);
+  });
+
   it("detects a potential conflict when multiple pages share a query", () => {
     const conflicts = detectSearchCannibalization(rows);
     expect(conflicts).toHaveLength(1);
