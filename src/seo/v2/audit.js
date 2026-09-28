@@ -168,20 +168,23 @@ export function auditPage({
         return sum + max;
     }, 0);
     const score = theoreticalPoints ? Math.round((applicablePoints / theoreticalPoints) * 100) : 0;
+    const qualityScore = Math.round(score * coverageScore / 100);
     const errors = checks.filter((item) => item.status === "fail");
     const warnings = checks.filter((item) => item.status === "warn");
 
     return Object.freeze({
         score,
         coverageScore,
+        qualityScore,
         status: errors.length ? "error" : warnings.length ? "warning" : "pass",
         checks,
         errors,
         warnings,
         summary: {
             url,
-            score,
+                score,
             coverageScore,
+            qualityScore,
             errors: errors.length,
             warnings: warnings.length,
             graphNodes: graphNodes.length,
