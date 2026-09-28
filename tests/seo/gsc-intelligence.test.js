@@ -161,6 +161,18 @@ describe("GSC query ownership exposure", () => {
     expect(result.opportunities[0].gscDataQuality.completeness).toBeNull();
   });
 
+  it("keeps long-tail query ownership in the engine beyond the small dashboard display", () => {
+    const rows = Array.from({ length: 120 }, (_, index) => ({
+      query: `آموزش ساز ${index + 1}`,
+      page: `https://fatehmusic.ir/courses/course-${index + 1}`,
+      impressions: 5,
+      snapshotLabel: "current"
+    }));
+    const result = enrichOpportunitiesWithSearchConsole([], rows);
+
+    expect(result.queryOwnership.length).toBe(120);
+  });
+
   it("accepts ownership filtering options without affecting search scoring", () => {
     const result = enrichOpportunitiesWithSearchConsole([], [
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2, snapshotLabel: "current" },
