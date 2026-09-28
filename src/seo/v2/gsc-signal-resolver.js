@@ -44,7 +44,39 @@ function jaccard(a, b) {
   return intersection / (left.size + right.size - intersection);
 }
 
-function aggregate(rows = []) {
+function positionBucket(position) {
+  const value = Number(position);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  if (value <= 3) return "TOP_3";
+  if (value <= 10) return "TOP_10";
+  if (value <= 20) return "TOP_20";
+  if (value <= 50) return "TOP_50";
+  return "BEYOND_50";
+}
+
+function buildCtrBenchmarks(rows = []) {
+  const buckets = new Map();
+  for (const row of rows) {
+    const bucket = positionBucket(row?.position);
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    const clicks = Math.max(0, Number(row?.clicks) || 0);
+    if (!bucket || impressions <= 0) continue;
+    const current = buckets.get(bucket) || { clicks: 0, impressions: 0 };
+    current.clicks += clicks;
+    current.impressions += impressions;
+    buckets.set(bucket, current);
+  }
+  return Object.freeze(
+    Object.fromEntries(
+      [...buckets.entries()].map(([bucket, value]) => [
+        bucket,
+        value.impressions > 0 ? value.clicks / value.impressions : null
+      ])
+    )
+  );
+}
+
+function aggregate(rows = [], ctrBenchmarks = {}) {
   const total = rows.reduce((acc, row) => {
     const impressions = Math.max(0, Number(row.impressions) || 0);
     const clicks = Math.max(0, Number(row.clicks) || 0);
@@ -57,11 +89,30 @@ function aggregate(rows = []) {
     acc.impressions += impressions;
     return acc;
   }, { clicks: 0, impressions: 0, weightedPosition: 0, positionImpressions: 0 });
+  const ctr = total.impressions ? total.clicks / total.impressions : 0;
+  const benchmarkWeight = rows.reduce((sum, row) => {
+    const benchmark = ctrBenchmarks[positionBucket(row?.position)];
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    return Number.isFinite(benchmark) && impressions > 0 ? sum + impressions : sum;
+  }, 0);
+  const weightedBenchmark = benchmarkWeight > 0
+    ? rows.reduce((sum, row) => {
+        const benchmark = ctrBenchmarks[positionBucket(row?.position)];
+        const impressions = Math.max(0, Number(row?.impressions) || 0);
+        return Number.isFinite(benchmark) && impressions > 0 ? sum + benchmark * impressions : sum;
+      }, 0) / benchmarkWeight
+    : null;
+  const ctrGap = weightedBenchmark == null ? null : weightedBenchmark - ctr;
+  const ctrRatioToBenchmark = weightedBenchmark > 0 ? ctr / weightedBenchmark : null;
+
   return {
     available: total.impressions > 0 || total.clicks > 0,
     impressions: total.impressions,
     clicks: total.clicks,
-    ctr: total.impressions ? total.clicks / total.impressions : 0,
+    ctr,
+    ctrBenchmark: weightedBenchmark,
+    ctrGap,
+    ctrRatioToBenchmark,
     position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
     matchedQueries: [...new Set(rows.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
     matchedPages: [...new Set(rows.map((row) => normalizeUrl(row?.page)).filter(Boolean))].slice(0, 10),
@@ -95,6 +146,7 @@ export function buildGscSignalIndex(rows = []) {
   const nonBrandQueryRows = new Map();
   const queryTokenRows = new Map();
   const opportunities = [];
+  const nonBrandItems = [];
   for (const row of rows) {
     const page = normalizeUrl(row.page);
     const query = normalizeText(row.query);
@@ -115,6 +167,7 @@ export function buildGscSignalIndex(rows = []) {
       if (isBrandNavigationQuery(query)) continue;
       nonBrandQueryRows.set(query, [...(nonBrandQueryRows.get(query) || []), item]);
       if (page) nonBrandPageRows.set(page, [...(nonBrandPageRows.get(page) || []), item]);
+      nonBrandItems.push(item);
       for (const token of tokenized) {
         const bucket = queryTokenRows.get(token) || [];
         bucket.push(item);
@@ -123,6 +176,7 @@ export function buildGscSignalIndex(rows = []) {
     }
     opportunities.push(Object.freeze({ ...item, brandNavigation: isBrandNavigationQuery(query), opportunitySignalScore: scoreRow(item) }));
   }
+  const ctrBenchmarks = buildCtrBenchmarks(nonBrandItems);
   const semanticQueryClusters = buildSemanticQueryClusters(rows, { minImpressions: 1, limit: 5000 });
   const queryClusterByQuery = new Map();
   for (const cluster of semanticQueryClusters) {
@@ -132,10 +186,11 @@ export function buildGscSignalIndex(rows = []) {
   }
 
   return Object.freeze({
-    byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
-    byPageNonBrand: new Map([...nonBrandPageRows].map(([key, values]) => [key, aggregate(values)])),
-    byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
-    byQueryNonBrand: new Map([...nonBrandQueryRows].map(([key, values]) => [key, aggregate(values)])),
+    ctrBenchmarks,
+    byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values, ctrBenchmarks)])),
+    byPageNonBrand: new Map([...nonBrandPageRows].map(([key, values]) => [key, aggregate(values, ctrBenchmarks)])),
+    byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values, ctrBenchmarks)])),
+    byQueryNonBrand: new Map([...nonBrandQueryRows].map(([key, values]) => [key, aggregate(values, ctrBenchmarks)])),
     queryTokenRows: new Map([...queryTokenRows].map(([key, values]) => [key, Object.freeze(values)])),
     queryClusters: semanticQueryClusters,
     queryClusterByQuery: Object.freeze(queryClusterByQuery),
@@ -481,7 +536,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
         return Number(b.impressions || 0) - Number(a.impressions || 0);
       })
       .slice(0, 20);
-    const relevantQuerySignal = aggregate(querySignals);
+    const relevantQuerySignal = aggregate(querySignals, index.ctrBenchmarks || {});
     const ownership = buildQueryOwnership(matchedQueryRows, item);
     const semanticQueryClusters = index.queryClusterByQuery
       ? [...new Map(
