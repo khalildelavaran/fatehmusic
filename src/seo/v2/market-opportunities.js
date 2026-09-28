@@ -39,6 +39,14 @@ function positionScore(position) {
   return 8;
 }
 
+function effectiveRankingPosition(ahrefsPosition, gscSignal) {
+  if (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0) return ahrefsPosition;
+  if (Number.isFinite(Number(gscSignal?.position)) && Number(gscSignal.position) > 0) {
+    return Number(gscSignal.position);
+  }
+  return null;
+}
+
 function classifyMarketOpportunity(position, gscImpressions) {
   if (Number.isFinite(position) && position >= 11 && position <= 20) return "STRIKING_DISTANCE";
   if (Number.isFinite(position) && position >= 21 && position <= 50) return "CONTENT_EXPANSION";
@@ -100,6 +108,8 @@ export function buildMarketSignalMap(opportunities = []) {
       action: item?.action || null,
       intents: item?.intents || null,
       serpFeatures: item?.serpFeatures || null,
+      fetchedAt: item?.fetchedAt || item?.fetched_at || null,
+      dataFreshness: item?.dataFreshness || null,
       source: "ahrefs",
       matchedKeyword: item?.keyword,
       matchType: "EXACT"
@@ -125,13 +135,14 @@ export function buildMarketOpportunityReport({
     const key = normalizeQuery(keyword);
     const volume = Math.max(0, Number(row?.volume_monthly ?? row?.volume) || 0);
     const difficulty = Number(row?.keyword_difficulty ?? row?.difficulty);
-    const position = Number(row?.best_position);
+    const ahrefsPosition = Number(row?.best_position);
 
     if (!keyword || !key || seen.has(key) || volume < Math.max(1, Number(minVolume) || 1)) continue;
     if (isBrandNavigationQuery(keyword)) continue;
 
     seen.add(key);
     const gscSignal = gscExactSignal(keyword, gsc);
+    const position = effectiveRankingPosition(ahrefsPosition, gscSignal);
     const classification = classifyMarketOpportunity(position, gscSignal?.impressions || 0);
     const marketScore = Math.round(clamp(
       volumeScore(volume) * 0.45 +
@@ -152,6 +163,9 @@ export function buildMarketOpportunityReport({
       volume,
       difficulty: Number.isFinite(difficulty) ? difficulty : null,
       bestPosition: Number.isFinite(position) && position > 0 ? position : null,
+      bestPositionSource: Number.isFinite(ahrefsPosition) && ahrefsPosition > 0
+        ? "ahrefs"
+        : (gscSignal?.position != null ? "gsc" : null),
       bestPositionUrl: row?.best_position_url || null,
       classification,
       action,
@@ -160,6 +174,7 @@ export function buildMarketOpportunityReport({
       marketScore,
       intents: row?.intents || null,
       serpFeatures: row?.serp_features || row?.serpFeatures || null,
+      fetchedAt: row?.fetched_at || row?.fetchedAt || null,
       source: "ahrefs"
     }));
   }
