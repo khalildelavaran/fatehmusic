@@ -15,6 +15,27 @@ const WEIGHTS = Object.freeze({
 
 const CATEGORIES = Object.freeze(Object.keys(WEIGHTS));
 
+const CHECK_MAX_POINTS = Object.freeze({
+  title: 10,
+  description: 10,
+  indexability: 10,
+  canonical: 10,
+  schema: 10,
+  h1: 10,
+  "image-alt": 5,
+  "image-dimensions": 5,
+  "image-alt-quality": 5,
+  "hero-image-priority": 5,
+  "content-depth": 5,
+  "internal-links": 10,
+  "web-vitals-lcp": 5,
+  "web-vitals-inp": 5,
+  "web-vitals-cls": 5,
+  topics: 5,
+  intent: 5,
+  freshness: 5
+});
+
 const CATEGORY_RULES = Object.freeze({
   metadata: new Set(["title", "description", "canonical", "indexability"]),
   schema: new Set(["schema"]),
@@ -48,7 +69,8 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
 
   const categoryBuckets = new Map(
     CATEGORIES.map((category) => [category, {
-      scores: [],
+      earnedPoints: 0,
+      possiblePoints: 0,
       checks: 0,
       covered: 0,
       errors: 0,
@@ -65,7 +87,9 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
       const bucket = categoryBuckets.get(category);
       bucket.checks += 1;
       bucket.covered += 1;
-      bucket.scores.push(Number(check.points) || 0);
+      const maxPoints = CHECK_MAX_POINTS[check.id] || Math.max(0, Number(check.points) || 0);
+      bucket.earnedPoints += Math.max(0, Number(check.points) || 0);
+      bucket.possiblePoints += maxPoints;
       if (check.status === "fail") bucket.errors += 1;
       if (check.status === "warn") bucket.warnings += 1;
       if (check.status !== "pass") {
@@ -105,11 +129,13 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
   const categories = {};
   for (const category of CATEGORIES) {
     const bucket = categoryBuckets.get(category);
-    const score = bucket.scores.length
-      ? Math.round(bucket.scores.reduce((sum, value) => sum + value, 0) / bucket.scores.length)
+    const score = bucket.possiblePoints
+      ? Math.round((bucket.earnedPoints / bucket.possiblePoints) * 100)
       : null;
-    const coverage = normalizedAudits.length
-      ? Math.round((bucket.covered / Math.max(1, normalizedAudits.length)) * 100)
+    const categoryMaximum = [...CATEGORY_RULES[category]]
+      .reduce((sum, id) => sum + (CHECK_MAX_POINTS[id] || 0), 0);
+    const coverage = categoryMaximum
+      ? Math.round((bucket.possiblePoints / categoryMaximum) * 100)
       : 0;
 
     categories[category] = Object.freeze({
