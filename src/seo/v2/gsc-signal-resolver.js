@@ -331,7 +331,10 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
 
 
 function queryClusterKey(query) {
-  return [...queryTokens(query)].sort().join(" ");
+  const tokens = [...queryTokens(query)].sort();
+  const normalized = normalizeText(query);
+  const scope = normalized.split(/\s+/).includes("شوشتر") ? "scope:local" : "scope:global";
+  return [scope, ...tokens].join(" ");
 }
 
 export function buildSemanticQueryClusters(rows = [], { minImpressions = 1, limit = 50 } = {}) {
