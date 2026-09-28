@@ -146,7 +146,7 @@ export async function insertScoredCandidates(
       "related_course_title=excluded.related_course_title, category=excluded.category, audience=excluded.audience, " +
       "level=excluded.level, modifier_type=excluded.modifier_type, intent=excluded.intent, score_total=excluded.score_total, " +
       "score_breakdown=excluded.score_breakdown, reasoning=excluded.reasoning, " +
-      "status=CASE WHEN content_topics.status IN ('approved', 'drafted', 'used') THEN content_topics.status ELSE excluded.status END, " +
+      "status=CASE WHEN content_topics.status IN ('approved', 'used') THEN content_topics.status ELSE excluded.status END, " +
       "source=excluded.source, run_id=excluded.run_id, updated_at=datetime('now'), " +
       "used_by_post_id=CASE WHEN content_topics.status='used' THEN content_topics.used_by_post_id ELSE NULL END, " +
       "used_at=CASE WHEN content_topics.status='used' THEN content_topics.used_at ELSE NULL END"
@@ -179,7 +179,6 @@ export async function insertScoredCandidates(
     const previousStatus = existingStatuses.get(candidate.normalizedKey);
     const isNewApproval = candidate.scoreTotal >= autoApproveThreshold &&
       previousStatus !== "approved" &&
-      previousStatus !== "drafted" &&
       previousStatus !== "used";
     return sum + (isNewApproval ? 1 : 0);
   }, 0);
