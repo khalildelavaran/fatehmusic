@@ -172,6 +172,18 @@ function validateSchema(route, scripts) {
     }
   }
 
+  if (route === "/locations/shushtar") {
+    const localBusiness = nodes.find((node) =>
+      schemaTypes(node).includes("LocalBusiness") && String(node["@id"] || "").endsWith("#localbusiness")
+    );
+    if (!localBusiness) {
+      error("LOCAL_ENTITY_MISSING", route + ": canonical LocalBusiness location entity missing");
+    } else if (webpage?.mainEntity?.["@id"] !== localBusiness["@id"]) {
+      error("LOCAL_MAINENTITY_MISMATCH", route + ": WebPage mainEntity must reference the location LocalBusiness entity");
+    }
+  }
+
+
   for (const node of nodes) {
     const type = schemaTypes(node);
     if (type.includes("Article")) {
@@ -196,6 +208,28 @@ function validateSchema(route, scripts) {
     }
     if (type.includes("BreadcrumbList") && (!Array.isArray(node.itemListElement) || node.itemListElement.length < 2)) {
       error("BREADCRUMB_TOO_SHORT", route + ": BreadcrumbList needs at least two items");
+    }
+    if (type.includes("ItemList")) {
+      if (!Array.isArray(node.itemListElement) || node.itemListElement.length === 0) {
+        error("ITEMLIST_EMPTY", route + ": ItemList has no items");
+      } else {
+        const itemUrls = new Set();
+        for (const item of node.itemListElement) {
+          const itemUrl = String(item?.url || item?.item?.url || "").trim();
+          if (!itemUrl) {
+            error("ITEMLIST_URL_MISSING", route + ": ItemList entry is missing a canonical URL");
+            continue;
+          }
+          const normalized = itemUrl.replace(/\/$/, "");
+          if (itemUrls.has(normalized)) {
+            error("ITEMLIST_DUPLICATE_URL", route + ": ItemList contains duplicate URL " + normalized);
+          }
+          itemUrls.add(normalized);
+          if (item?.item?.url && itemUrl.replace(/\/$/, "") !== String(item.item.url).replace(/\/$/, "")) {
+            error("ITEMLIST_URL_MISMATCH", route + ": ListItem.url differs from item.url");
+          }
+        }
+      }
     }
     if (type.includes("Course")) {
       for (const field of ["name", "description", "url"]) {
