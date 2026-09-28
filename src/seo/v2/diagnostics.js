@@ -43,7 +43,7 @@ const CATEGORY_RULES = Object.freeze({
   performance: new Set(["web-vitals-lcp", "web-vitals-inp", "web-vitals-cls", "image-dimensions", "hero-image-priority"]),
   accessibility: new Set(["h1", "image-alt", "image-alt-quality"]),
   security: new Set([]),
-  aiReadiness: new Set(["schema", "topics", "intent", "content-depth"])
+  aiReadiness: new Set(["schema", "topics", "intent", "content-depth", "answer-blocks", "answer-sources", "entity-graph"])
 });
 
 function categoryForCheck(id) {
