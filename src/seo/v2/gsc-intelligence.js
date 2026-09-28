@@ -39,14 +39,19 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       : ageDays <= 8
         ? "AGING"
         : "STALE";
-  const completeness = options.gscDataQuality?.truncated
-    ? 0.7
-    : (currentRows.length ? 1 : 0);
+  const truncated = Boolean(options.gscDataQuality?.truncated);
+  const completeness = truncated ? null : (currentRows.length ? 1 : 0);
+  const coverageStatus = truncated
+    ? "PARTIAL"
+    : currentRows.length
+      ? "COMPLETE"
+      : "EMPTY";
 
   const gscDataQuality = Object.freeze({
-    truncated: Boolean(options.gscDataQuality?.truncated),
+    truncated,
     rows: currentRows.length,
     completeness,
+    coverageStatus,
     ageDays,
     freshness
   });
