@@ -197,7 +197,8 @@ function validateGeneratedArticle(article: { content?: string; excerpt?: string;
   const normalizedExcerpt = excerpt.toLocaleLowerCase("fa");
   const placeholderPattern = /(todo|lorem ipsum|tbd|نام مدرس|نام آموزشگاه|مثال ساختگی)/i;
 
-  if (content.length < 1200) return "متن تولیدشده کمتر از ۱۲۰۰ نویسه است.";
+  if (content.length < 2800) return "متن تولیدشده کمتر از ۲۸۰۰ نویسه است.";
+  if (wordCount < 450) return "مقاله کمتر از ۴۵۰ واژه دارد و برای محتوای عمیق کافی نیست.";
   if (paragraphCount < 5) return "مقاله باید حداقل ۵ پاراگراف مستقل داشته باشد.";
   if (paragraphCount > 8) return "مقاله نباید بیشتر از ۸ پاراگراف مستقل داشته باشد.";
   if (headingCount < 2) return "مقاله باید حداقل ۲ تیتر ساختاری داشته باشد.";
