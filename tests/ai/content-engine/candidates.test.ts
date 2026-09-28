@@ -82,3 +82,17 @@ describe("COMPARISON_PAIRS data integrity", () => {
     }
   });
 });
+
+
+describe("age-specific topic generation", () => {
+  it("creates distinct child-range titles for the children's music course", async () => {
+    const { generateCandidates } = await import("../../../src/ai/content-engine/candidates");
+    const candidates = generateCandidates().filter(
+      (candidate) => candidate.relatedCourseSlug === "children-music-course" && candidate.modifierType === "age_specific"
+    );
+
+    expect(candidates).toHaveLength(2);
+    expect(new Set(candidates.map((candidate) => candidate.title)).size).toBe(2);
+    expect(candidates.map((candidate) => candidate.audience).sort()).toEqual(["۳ تا ۷ سال", "۷ تا ۱۲ سال"].sort());
+  });
+});
