@@ -35,17 +35,32 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
       lookupMany?: (items: string[]) => Promise<Awaited<ReturnType<KeywordProvider["lookup"]>>[]>;
     };
 
-    if (typeof batchProvider.lookupMany === "function") {
-      const results = await batchProvider.lookupMany(titles);
-      afterDedup.forEach((candidate, index) => keywordSignals.set(candidate.normalizedKey, results[index] || { available: false, source: "none" }));
-    } else {
-      const signalEntries = await Promise.all(
-        afterDedup.map(async (candidate) => [
+    try {
+      if (typeof batchProvider.lookupMany === "function") {
+        const results = await batchProvider.lookupMany(titles);
+        afterDedup.forEach((candidate, index) => keywordSignals.set(
           candidate.normalizedKey,
-          await keywordProvider.lookup(candidate.title)
-        ] as const)
+          results[index] || { available: false, source: "none" }
+        ));
+      } else {
+        const signalEntries = await Promise.all(
+          afterDedup.map(async (candidate) => [
+            candidate.normalizedKey,
+            await keywordProvider.lookup(candidate.title)
+          ] as const)
+        );
+        keywordSignals = new Map(signalEntries);
+      }
+    } catch (error) {
+      // Search-demand intelligence is enrichment. A provider outage must not
+      // prevent the deterministic topic queue from refreshing.
+      console.warn("[topic-discovery] keyword provider unavailable; scoring without demand:", error);
+      keywordSignals = new Map(
+        afterDedup.map((candidate) => [
+          candidate.normalizedKey,
+          { available: false, source: "unavailable" }
+        ])
       );
-      keywordSignals = new Map(signalEntries);
     }
 
     const scored = scoreCandidates(afterDedup, {
