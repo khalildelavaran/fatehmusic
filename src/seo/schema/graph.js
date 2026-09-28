@@ -9,14 +9,21 @@
  */
 
 import { mergeEntityNodes } from "../geo/graph.js";
+import { compileKnowledgeGraphEdges } from "./compiler.js";
+import { validateSchemaTypes } from "./registry.js";
 
 /**
  * @param {Object[]} nodes
  * @returns {Object}
  */
-export function buildSchemaGraph(nodes) {
-    return {
+export function buildSchemaGraph(nodes = [], { knowledgeGraph = null } = {}) {
+    const merged = mergeEntityNodes(nodes.filter(Boolean));
+    const compiled = compileKnowledgeGraphEdges(merged, knowledgeGraph);
+    const validation = validateSchemaTypes(compiled);
+
+    return Object.freeze({
         "@context": "https://schema.org",
-        "@graph": mergeEntityNodes((nodes || []).filter(Boolean))
-    };
+        "@graph": compiled,
+        registryValidation: validation
+    });
 }
