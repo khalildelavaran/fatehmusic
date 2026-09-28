@@ -4,6 +4,7 @@ import type { APIRoute } from "astro";
 import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { markSeoActionPublished, markSeoActionUnpublished } from "../../../seo/v2/seo-action-store.js";
+import { markTopicUsed, releaseDraftedTopic } from "../../../ai/content-engine/db";
 
 const fields = `id, slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, created_at, updated_at, published_at, is_ai_generated`;
 
@@ -37,6 +38,7 @@ export const POST: APIRoute = async ({ request }) => {
     await db.prepare(`UPDATE blog_posts SET slug=?, title=?, excerpt=?, content=?, topic=?, related_course_slug=?, related_course_title=?, status=?, meta_title=?, meta_description=?, updated_at=datetime('now'), published_at=? WHERE id=?`)
       .bind(post.slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, nextPublishedAt, post.id).run();
     if (status === "published") {
+      await markTopicUsed(db, Number(post.id));
       await markSeoActionPublished(db, {
         targetPostId: Number(post.id),
         targetUrl: `https://fatehmusic.ir/blog/${post.slug}`,
@@ -46,6 +48,7 @@ export const POST: APIRoute = async ({ request }) => {
         previousTargetTitle: existing?.title || null
       });
     } else {
+      await releaseDraftedTopic(db, Number(post.id));
       await markSeoActionUnpublished(db, {
         targetPostId: Number(post.id),
         targetSlug: post.slug,
@@ -76,6 +79,7 @@ export const DELETE: APIRoute = async ({ request }) => {
   if (!id) return json({ success: false, message: "شناسه نوشته ارسال نشده است." }, 422);
   const existing = await db.prepare("SELECT slug, title FROM blog_posts WHERE id=?").bind(id).first<{ slug: string; title: string }>();
   await db.prepare("DELETE FROM blog_posts WHERE id=?").bind(id).run();
+  await releaseDraftedTopic(db, Number(id));
   if (existing) {
     await markSeoActionUnpublished(db, {
       targetPostId: Number(id),
