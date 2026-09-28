@@ -5,7 +5,7 @@
 import { buildContentClusterReport, buildArticleProfiles } from "./content-clusters.js";
 import { buildUnifiedContentOpportunities } from "./content-strategy.js";
 import { enrichOpportunitiesWithSearchConsole, currentScoringRows } from "./gsc-intelligence.js";
-import { buildGscSignalIndex, detectSearchCannibalization } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { buildLinkGraph } from "./internal-links.js";
 import { resolveTopics } from "./topics.js";
@@ -119,7 +119,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const pageNodes = [...graphNodeMap.values()];
   const currentGscRows = currentScoringRows(gscRows);
   const gscIndex = buildGscSignalIndex(currentGscRows);
-  const cannibalization = detectSearchCannibalization(currentGscRows, { pageSemantics: pages });
+  const cannibalization = search.cannibalization || [];
+  const semanticCannibalization = search.semanticCannibalization || [];
   const temporalCannibalization = search.temporalCannibalization || detectTemporalCannibalization(gscRows);
   const opportunities = search.opportunities;
   const decisionConfidenceAverage = opportunities.length
@@ -142,6 +143,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       signalRowCount: search.signalRowCount,
       index: gscIndex,
       cannibalization: freeze(cannibalization),
+      semanticCannibalization: freeze(semanticCannibalization),
       temporalCannibalization: freeze(temporalCannibalization),
       queryOwnership: freeze(search.queryOwnership),
       queryClusters: freeze(search.queryClusters || [])
@@ -162,6 +164,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       searchBackedCount: opportunities.filter((item) => item.searchSignal?.available).length,
       marketBackedCount: opportunities.filter((item) => item.marketSignal?.available).length,
       cannibalizationCount: cannibalization.length,
+      semanticCannibalizationCount: semanticCannibalization.length,
+      semanticCannibalizationActionableCount: semanticCannibalization.filter((item) => item.actionable).length,
       temporalCannibalizationCount: temporalCannibalization.length,
       temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length,
       queryOwnershipCount: search.queryOwnership?.length || 0,
