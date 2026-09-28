@@ -520,4 +520,88 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
     .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
 }
 
+
+export function detectSemanticQueryCannibalization(rows = [], {
+  minImpressions = 50,
+  similarityThreshold = 0.55,
+  pageSemantics = []
+} = {}) {
+  const semanticMap = normalizeSemanticMap(pageSemantics);
+  const periods = new Map();
+
+  for (const row of rows) {
+    const query = normalizeText(row?.query);
+    const page = normalizeUrl(row?.page);
+    const startDate = String(row?.startDate || row?.start_date || "").trim();
+    const endDate = String(row?.endDate || row?.end_date || "").trim();
+    if (!query || !page || !isOwnershipEligibleQuery(query)) continue;
+
+    const period = startDate || endDate ? `${startDate}|${endDate}` : "undated";
+    const bucket = periods.get(period) || [];
+    bucket.push(row);
+    periods.set(period, bucket);
+  }
+
+  const results = [];
+  for (const [period, periodRows] of periods) {
+    const clusters = buildSemanticQueryClusters(periodRows, {
+      minImpressions,
+      limit: 5000
+    });
+
+    for (const cluster of clusters) {
+      if (cluster.pageCount < 2) continue;
+
+      const pairScores = [];
+      for (let i = 0; i < cluster.pages.length; i += 1) {
+        for (let j = i + 1; j < cluster.pages.length; j += 1) {
+          const left = semanticMap.get(cluster.pages[i].page);
+          const right = semanticMap.get(cluster.pages[j].page);
+          if (left && right) pairScores.push(pageSimilarity(left, right));
+        }
+      }
+
+      const semanticSimilarity = pairScores.length ? Math.max(...pairScores) : 0;
+      const semanticEvidence = pairScores.length > 0;
+      const semanticConfirmed = !semanticEvidence || semanticSimilarity >= similarityThreshold;
+      const dominantShare = cluster.topShare;
+      const distributionSeverity =
+        dominantShare < 0.7 ? "HIGH" :
+        dominantShare < 0.85 ? "MEDIUM" :
+        "LOW";
+      const severity = semanticConfirmed ? distributionSeverity : "LOW";
+      const confidenceBase =
+        severity === "HIGH" ? 0.9 :
+        severity === "MEDIUM" ? 0.7 :
+        0.45;
+      const confidence = semanticEvidence
+        ? confidenceBase * semanticSimilarity
+        : Math.min(confidenceBase, 0.5);
+
+      results.push(Object.freeze({
+        clusterKey: cluster.key,
+        query: cluster.queries[0]?.displayQuery || cluster.key,
+        queryVariants: cluster.queries,
+        period,
+        pages: cluster.pages,
+        totalImpressions: cluster.impressions,
+        dominantShare,
+        severity,
+        confidence: Number(confidence.toFixed(3)),
+        semanticSimilarity,
+        semanticEvidence,
+        similarityThreshold,
+        actionable: severity === "HIGH" &&
+          (!semanticEvidence || semanticSimilarity >= similarityThreshold)
+      }));
+    }
+  }
+
+  return Object.freeze(
+    results
+      .filter((item) => item.actionable || item.severity !== "LOW")
+      .sort((a, b) => b.totalImpressions - a.totalImpressions || a.clusterKey.localeCompare(b.clusterKey))
+  );
+}
+
 export { normalizeText, normalizeUrl, jaccard, pageSimilarity, isBrandNavigationQuery, isOwnershipEligibleQuery };
