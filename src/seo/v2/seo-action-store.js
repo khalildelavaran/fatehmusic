@@ -118,8 +118,8 @@ export async function syncPublishedSeoActionMeasurements(db, {
   for (let offset = 0; offset < measurementRows.length; offset += 50) {
     const chunk = measurementRows.slice(offset, offset + 50);
     const statements = chunk.map((row) => {
-      const impressions = Number(row.impressions) || 0;
-      const clicks = Number(row.clicks) || 0;
+      const impressions = Math.max(0, Number(row.impressions) || 0);
+      const clicks = Math.max(0, Number(row.clicks) || 0);
       return db.prepare(
         "INSERT INTO seo_action_measurements (action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console') " +
