@@ -105,6 +105,91 @@ describe("GSC snapshot isolation", () => {
 
 });
 
+describe("GSC query intent evidence", () => {
+  it("reports impression-weighted intent from matching queries", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "هزینه کلاس گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "transactional",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [
+      {
+        query: "هزینه کلاس گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar",
+        impressions: 100,
+        clicks: 5,
+        position: 7,
+        snapshotLabel: "current"
+      }
+    ]);
+
+    const evidence = result.opportunities[0].searchSignal.queryIntentEvidence;
+    expect(evidence.primary).toBe("transactional");
+    expect(evidence.primaryShare).toBe(1);
+    expect(evidence.sampleImpressions).toBe(100);
+  });
+
+  it("penalizes a strong GSC intent conflict with the proposed content intent", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "راهنمای گیتار",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "informational",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [
+      {
+        query: "هزینه کلاس گیتار",
+        page: "https://fatehmusic.ir/courses/guitar",
+        impressions: 100,
+        clicks: 5,
+        position: 7,
+        snapshotLabel: "current"
+      }
+    ]);
+
+    expect(result.opportunities[0].decisionConfidence).toBeLessThan(
+      80 + 20
+    );
+  });
+
+  it("marks mixed query intent as ambiguous", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "local",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [
+      {
+        query: "هزینه کلاس گیتار",
+        page: "https://fatehmusic.ir/courses/guitar",
+        impressions: 50,
+        snapshotLabel: "current"
+      },
+      {
+        query: "چگونه گیتار یاد بگیریم",
+        page: "https://fatehmusic.ir/blog/guitar",
+        impressions: 50,
+        snapshotLabel: "current"
+      }
+    ]);
+
+    const evidence = result.opportunities[0].searchSignal.queryIntentEvidence;
+    expect(evidence.queryCount).toBe(2);
+    expect(evidence.primaryShare).toBe(0.5);
+  });
+});
+
 describe("GSC query ownership exposure", () => {
   it("exposes site-wide ownership from current scoring rows", () => {
     const result = enrichOpportunitiesWithSearchConsole([], [
