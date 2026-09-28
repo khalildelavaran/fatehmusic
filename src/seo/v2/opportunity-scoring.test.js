@@ -235,6 +235,24 @@ describe("opportunity scoring", () => {
     })).toBe("NEW_CONTENT");
   });
 
+
+  it("traces semantic temporal ownership shifts distinctly", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 70,
+      temporalCannibalization: {
+        mode: "SEMANTIC_CLUSTER",
+        severity: "HIGH",
+        actionable: true
+      },
+      searchSignal: { available: false }
+    });
+
+    expect(result.scoreBreakdown.decisionTrace.reasonCodes).toContain(
+      "TEMPORAL_SEMANTIC_OWNER_SHIFT_HIGH"
+    );
+  });
+
 });
 
   it("does not force link action from related-only ownership", () => {
