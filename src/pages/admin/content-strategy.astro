@@ -190,6 +190,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.gsc.signalRowCount} سیگنال</span>
             <span>{intelligence.summary.searchBackedCount} فرصت search-backed</span>
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
+            <span>اطمینان تصمیم: {intelligence.summary.decisionConfidenceAverage}%</span>
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
           {intelligence.gsc.connected && intelligence.gsc.queryOwnership.length > 0 && (
@@ -200,7 +201,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
               </div>
               <div class="strategy-gsc-ownership-table-wrap">
                 <table class="strategy-gsc-ownership-table">
-                  <thead><tr><th>Query</th><th>Impression</th><th>URL اصلی</th><th>سهم URL اصلی</th><th>تعداد URL</th></tr></thead>
+                  <thead><tr><th>Query</th><th>Impression</th><th>URL اصلی</th><th>سهم URL اصلی</th><th>وضعیت</th><th>تعداد URL</th></tr></thead>
                   <tbody>
                     {intelligence.gsc.queryOwnership.slice(0, 12).map((item) => (
                       <tr>
@@ -208,6 +209,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                         <td>{Math.round(item.impressions).toLocaleString("fa-IR")}</td>
                         <td><code>{item.topPage?.replace(site.url, "") || "/"}</code></td>
                         <td>{(Number(item.topShare || 0) * 100).toFixed(0)}%</td>
+                        <td>{item.ownerStatus === "STABLE" ? "پایدار" : item.ownerStatus === "SPLIT" ? "تقسیم‌شده" : item.ownerStatus === "EMERGING" ? "نوظهور" : "بدون مالک"}</td>
                         <td>{item.pageCount.toLocaleString("fa-IR")}</td>
                       </tr>
                     ))}
@@ -297,6 +299,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                       {item.gapDetected && <div><strong>Gap Score:</strong> {item.gapPriority}</div>}
                       {item.searchSignal?.available && <div><strong>داده جستجو:</strong> {Math.round(Number(item.searchSignal.impressions || 0)).toLocaleString("fa-IR")} impression · CTR {(Number(item.searchSignal.ctr || 0) * 100).toFixed(1)}% · رتبه {item.searchSignal.position != null ? Number(item.searchSignal.position).toFixed(1) : "-"}</div>}
                     </div>
+                    {item.decisionConfidence != null && <div><strong>اطمینان تصمیم:</strong> {item.decisionConfidence}%</div>}
                     {item.searchSignal?.available && item.searchSignal.matchedQueries?.length > 0 && (
                       <div class="strategy-search-evidence">
                         <strong>Queryهای مؤثر</strong>
