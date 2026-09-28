@@ -49,4 +49,22 @@ describe("semantic internal links", () => {
       }
     }
   });
+
+  it("enforces the inbound cap globally instead of only reporting saturation", () => {
+    const graph = buildLinkGraph(pages, { limit: 2, maxInboundLinks: 1, maxOutboundLinks: 2 });
+    const inbound = new Map();
+
+    for (const page of graph) {
+      expect(page.links.length).toBeLessThanOrEqual(2);
+      for (const link of page.links) {
+        const key = link.url.replace(/\/$/, "");
+        inbound.set(key, (inbound.get(key) || 0) + 1);
+        expect(link.inboundLinksAfterPlan).toBeGreaterThan(0);
+      }
+    }
+
+    for (const count of inbound.values()) {
+      expect(count).toBeLessThanOrEqual(1);
+    }
+  });
 });
