@@ -123,6 +123,16 @@ export function auditPage({
     else warn("freshness", "freshness signal unavailable", 0);
 
     const applicablePoints = checks.reduce((sum, item) => sum + item.points, 0);
+    const knownChecks = new Set([
+        "title", "description", "indexability", "canonical", "schema", "h1",
+        "image-alt", "image-dimensions", "image-alt-quality", "hero-image-priority",
+        "content-depth", "internal-links", "web-vitals-lcp", "web-vitals-inp",
+        "web-vitals-cls", "topics", "intent", "freshness"
+    ]);
+    const coverageChecks = checks.filter((item) => knownChecks.has(item.id));
+    const coverageScore = knownChecks.size
+        ? Math.round((new Set(coverageChecks.map((item) => item.id)).size / knownChecks.size) * 100)
+        : 0;
     const theoreticalPoints = checks.reduce((sum, item) => {
         const max = { title: 10, description: 10, indexability: 10, canonical: 10, schema: 10, h1: 10, "image-alt": 5, "content-depth": 5,
             "image-dimensions": 5,
@@ -139,6 +149,7 @@ export function auditPage({
 
     return Object.freeze({
         score,
+        coverageScore,
         status: errors.length ? "error" : warnings.length ? "warning" : "pass",
         checks,
         errors,
@@ -146,6 +157,7 @@ export function auditPage({
         summary: {
             url,
             score,
+            coverageScore,
             errors: errors.length,
             warnings: warnings.length,
             graphNodes: graphNodes.length,
