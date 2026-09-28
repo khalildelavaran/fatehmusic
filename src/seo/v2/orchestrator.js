@@ -11,6 +11,7 @@ import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
 import { buildMarketOpportunityReport, buildMarketSignalMap } from "./market-opportunities.js";
+import { buildCompetitiveGapReport } from "./competitive-gaps.js";
 import { buildSiteLinkCandidates } from "./site-graph.js";
 import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 
@@ -65,9 +66,9 @@ function articleSemantics(posts = [], siteUrl = "") {
 
 /**
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
- * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], siteUrl?: string}} options
+ * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], competitorKeywordRows?: object[], targetKeywordRows?: object[], targetQueries?: string[], siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
@@ -77,6 +78,11 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gscRows: currentScoringRows(gscRows)
   });
   const marketSignalMap = buildMarketSignalMap(marketOpportunities);
+  const competitorGaps = buildCompetitiveGapReport({
+    competitorKeywordRows,
+    targetKeywordRows,
+    targetQueries
+  });
   const mergedMarketSignals = new Map(marketSignalMap);
   if (marketSignals instanceof Map) {
     for (const [key, value] of marketSignals.entries()) mergedMarketSignals.set(key, value);
@@ -93,6 +99,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     pageSemantics: pages,
     gscDataQuality,
     marketDataQuality,
+    competitorGaps,
     marketSignals: mergedMarketSignals
   });
   const articleNodes = pages.map((page) => ({
@@ -154,6 +161,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     knowledgeGraph,
     knowledgeGraphValidation,
     marketOpportunities: freeze(marketOpportunities),
+    competitorGaps: freeze(competitorGaps),
     opportunities: freeze(opportunities),
     summary: Object.freeze({
       opportunityCount: opportunities.length,
@@ -185,7 +193,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       marketFreshness: search.marketDataQuality?.freshness || "UNKNOWN",
       marketAgeDays: search.marketDataQuality?.ageDays ?? null,
       marketSignalCount: search.marketDataQuality?.signalCount || 0,
-      marketOpportunityCount: marketOpportunities.length
+      marketOpportunityCount: marketOpportunities.length,
+      competitorGapCount: competitorGaps.length,
+      competitorGapBackedCount: opportunities.filter((item) => item.competitorGap?.available).length
     })
   });
 }
