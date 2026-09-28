@@ -90,7 +90,10 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
     const candidates = linkCandidates?.length
         ? linkCandidates
-        : [...buildSiteLinkCandidates(site), ...buildArticleLinkCandidates(articlePosts, site.url)];
+        : [
+            ...buildSiteLinkCandidates(site, { courses, instructors }),
+            ...buildArticleLinkCandidates(articlePosts, site.url)
+        ];
     const links = buildInternalLinkPlan({
         currentUrl: canonicalUrl,
         currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }),
