@@ -127,6 +127,7 @@ export function normalizeSemanticText(text) {
         .replace(/[ك]/g, "ک")
         .replace(/[أإٱ]/g, "ا")
         .replace(/[ۀة]/g, "ه")
+        .replace(/[\u064B-\u065F\u0670]/g, "")
         .replace(/ـ/g, ""))
         .toLocaleLowerCase("fa");
 }
