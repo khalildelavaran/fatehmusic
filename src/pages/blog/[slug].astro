@@ -91,7 +91,9 @@ function escapeHtml(value: string) {
 function inlineMarkdown(value: string) {
   let html = escapeHtml(value);
   html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" rel="noopener noreferrer">$1</a>');
+  html = html.replace(/\[(.+?)\]\((\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
+  html = html.replace(/\[(.+?)\]\((https:\/\/fatehmusic\.ir[^\s)]*)\)/g, '<a href="$2">$1</a>');
+  html = html.replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>');
   return html;
 }
 
