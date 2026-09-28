@@ -94,6 +94,25 @@ describe("opportunity scoring", () => {
     })).toBe("NEW_CONTENT");
   });
 
+  it("discounts stale market demand in the final priority", () => {
+    const fresh = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 70,
+      searchSignal: { available: false },
+      marketDataQuality: { ageDays: 3, freshness: "FRESH" },
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 }
+    });
+    const stale = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 70,
+      searchSignal: { available: false },
+      marketDataQuality: { ageDays: 30, freshness: "STALE" },
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 }
+    });
+
+    expect(fresh.priority).toBeGreaterThan(stale.priority);
+  });
+
   it("reduces evidence strength when market data is stale", () => {
     const fresh = scoreOpportunity({
       action: "NEW_CONTENT",
