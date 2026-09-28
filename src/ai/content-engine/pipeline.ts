@@ -4,7 +4,7 @@ import { dedupWithinBatch, filterAgainstExisting } from "./dedup";
 import { scoreCandidates } from "./scoring";
 import {
   createRun, finishRun, getCoverageByCourse, getExistingTitleIndex,
-  getRecentlyUsedCourses, insertScoredCandidates, getRunApprovedCount
+  getRecentlyUsedCourses, insertScoredCandidates
 } from "./db";
 import { D1SearchConsoleKeywordProvider } from "./providers/gsc-keyword";
 import { HybridKeywordProvider } from "./providers/hybrid-keyword";
