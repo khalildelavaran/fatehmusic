@@ -121,6 +121,12 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     }
   }
   const marketSignals = normalizeMarketSignals(options.marketSignals);
+  const competitorGaps = Array.isArray(options.competitorGaps) ? options.competitorGaps : [];
+  const competitorGapSignals = normalizeMarketSignals(competitorGaps.map((item) => ({
+    ...item,
+    keyword: item.keyword,
+    source: "competitor-gap"
+  })));
   const marketAgeDays = resolveAgeDays(
     options.marketDataQuality?.fetchedAt ||
     options.marketDataQuality?.finishedAt ||
@@ -143,11 +149,13 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
     const page = normalizeUrl(item.url || item.targetEntity?.url || "");
     const marketSignal = resolveMarketSignal(item, marketSignals);
+    const competitorGap = resolveCompetitorGap(item, competitorGapSignals);
     return Object.freeze({
       ...item,
       cannibalization: conflictByPage.get(page) || null,
       temporalCannibalization: temporalByPage.get(page) || null,
       marketSignal,
+      competitorGap,
       gscDataQuality,
       marketDataQuality
     });
@@ -190,7 +198,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       gscAgeDays: gscDataQuality.ageDays,
       marketFreshness: marketDataQuality.freshness,
       marketAgeDays: marketDataQuality.ageDays,
-      marketSignalCount: marketDataQuality.signalCount
+      marketSignalCount: marketDataQuality.signalCount,
+      competitorGapCount: competitorGaps.length,
+      competitorGapBackedCount: scored.filter((item) => item.competitorGap?.available).length
     })
   });
 }
@@ -213,6 +223,71 @@ function normalizeMarketSignals(value) {
     return new Map(Object.entries(value).map(([key, item]) => [normalizeText(key), item]).filter(([key]) => key));
   }
   return new Map();
+}
+
+function resolveCompetitorGap(item, signals) {
+  if (!signals?.size) return null;
+
+  const candidates = [
+    item.title,
+    item.topicName,
+    item.topic,
+    ...(item.searchSignal?.matchedQueries || [])
+  ].filter(Boolean);
+
+  for (const value of candidates) {
+    const exact = signals.get(normalizeText(value));
+    if (exact?.available) {
+      return Object.freeze({
+        ...exact,
+        matchedKeyword: String(value),
+        matchType: "EXACT"
+      });
+    }
+  }
+
+  const targetTokens = queryTokens(candidates.join(" "));
+  if (!targetTokens.size) return null;
+
+  let best = null;
+  for (const [keyword, signal] of signals) {
+    if (!signal?.available) continue;
+    const keywordTokens = queryTokens(keyword);
+    if (!keywordTokens.size) continue;
+
+    let shared = 0;
+    for (const token of keywordTokens) {
+      if (targetTokens.has(token)) shared += 1;
+    }
+
+    const keywordCoverage = shared / keywordTokens.size;
+    const targetCoverage = shared / targetTokens.size;
+    const union = new Set([...keywordTokens, ...targetTokens]).size;
+    const similarity = union ? shared / union : 0;
+
+    if (keywordCoverage < 0.6 || targetCoverage < 0.5 || similarity < 0.55) continue;
+
+    const score =
+      similarity * 100 +
+      keywordCoverage * 20 +
+      targetCoverage * 10 +
+      Math.min(20, Math.log10(Math.max(1, Number(signal.estimatedVolume) || 0)) * 4);
+
+    if (!best || score > best.score) {
+      best = { score, similarity, keywordCoverage, targetCoverage, signal, keyword };
+    }
+  }
+
+  if (!best) return null;
+
+  return Object.freeze({
+    ...best.signal,
+    matchedKeyword: best.keyword,
+    matchType: "SEMANTIC",
+    semanticSimilarity: Number(best.similarity.toFixed(3)),
+    competitorKeywordCoverage: Number(best.keywordCoverage.toFixed(3)),
+    targetConceptCoverage: Number(best.targetCoverage.toFixed(3))
+  });
 }
 
 function resolveMarketSignal(item, signals) {
