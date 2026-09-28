@@ -204,7 +204,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                   <tbody>
                     {intelligence.queryOwnership.slice(0, 12).map((item) => (
                       <tr>
-                        <td><code>{item.query}</code></td>
+                        <td><code>{item.displayQuery || item.query}</code></td>
                         <td>{Math.round(item.impressions).toLocaleString("fa-IR")}</td>
                         <td><code>{item.topPage?.replace(site.url, "") || "/"}</code></td>
                         <td>{(Number(item.topShare || 0) * 100).toFixed(0)}%</td>
