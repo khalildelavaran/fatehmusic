@@ -459,19 +459,27 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
     }
 
-    // Keep clean, durable slugs. Add a numeric suffix only on collision
-    // instead of embedding the publication date in every URL.
-    let slug = baseSlug;
-    for (let suffix = 2; suffix <= 20; suffix += 1) {
-      const existing = await env.DB.prepare("SELECT 1 AS found FROM blog_posts WHERE slug = ? LIMIT 1").bind(slug).first<{ found: number }>();
-      if (!existing) break;
-      slug = baseSlug + "-" + suffix;
-    }
+    // Keep clean, durable slugs. Resolve all existing numeric collisions
+    // with one indexed query instead of one round-trip per suffix.
+    const slugRows = await env.DB.prepare(
+      "SELECT slug FROM blog_posts WHERE slug = ? OR slug LIKE ?"
+    ).bind(baseSlug, baseSlug + "-%").all<{ slug: string }>();
 
-    const slugCollision = await env.DB.prepare("SELECT 1 AS found FROM blog_posts WHERE slug = ? LIMIT 1").bind(slug).first<{ found: number }>();
-    if (slugCollision) {
-      await releaseClaim();
-      return { success: false, message: "اسلاگ یکتا برای مقاله پیدا نشد؛ تولید متوقف شد تا محتوای تکراری ساخته نشود." };
+    const occupiedSlugs = new Set((slugRows.results || []).map((row) => String(row.slug || "")));
+    let slug = baseSlug;
+    if (occupiedSlugs.has(slug)) {
+      slug = "";
+      for (let suffix = 2; suffix <= 20; suffix += 1) {
+        const candidate = baseSlug + "-" + suffix;
+        if (!occupiedSlugs.has(candidate)) {
+          slug = candidate;
+          break;
+        }
+      }
+      if (!slug) {
+        await releaseClaim();
+        return { success: false, message: "اسلاگ یکتا برای مقاله پیدا نشد؛ تولید متوقف شد تا محتوای تکراری ساخته نشود." };
+      }
     }
 
     const insertStatement = env.DB.prepare(
