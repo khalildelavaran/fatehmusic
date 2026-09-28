@@ -161,6 +161,23 @@ describe("GSC query ownership exposure", () => {
     expect(result.opportunities[0].gscDataQuality.completeness).toBeNull();
   });
 
+  it("marks a non-truncated current snapshot as complete coverage", () => {
+    const result = enrichOpportunitiesWithSearchConsole([], [
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 12,
+        snapshotLabel: "current"
+      }
+    ], {
+      gscDataQuality: { truncated: false }
+    });
+
+    expect(result.dataQuality.truncated).toBe(false);
+    expect(result.dataQuality.coverageStatus).toBe("COMPLETE");
+    expect(result.dataQuality.completeness).toBe(1);
+  });
+
   it("accepts ownership filtering options without affecting search scoring", () => {
     const result = enrichOpportunitiesWithSearchConsole([], [
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2, snapshotLabel: "current" },
