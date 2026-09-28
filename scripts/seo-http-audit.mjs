@@ -3,6 +3,7 @@
 const SITE_ORIGIN = (process.env.SEO_SITE_URL || "https://fatehmusic.ir").replace(/\/$/, "");
 const CONCURRENCY = Number(process.env.SEO_HTTP_CONCURRENCY || 6);
 const HTTP_TIMEOUT_MS = Math.max(1000, Number(process.env.SEO_HTTP_TIMEOUT_MS || 15000));
+const CRITICAL_PUBLIC_ROUTES = ["/", "/courses", "/instructors", "/about", "/contact", "/register", "/locations/shushtar", "/blog"];
 
 const errors = [];
 const warnings = [];
@@ -284,7 +285,11 @@ async function main() {
     .map((url) => absoluteUrl(url).replace(/\/$/, ""))
     .filter((url) => url.startsWith(SITE_ORIGIN) && !/\/sitemap[^/]*\.xml$/i.test(url));
 
-  await mapLimit(uniquePages, CONCURRENCY, checkPublicPage);
+  const auditPages = [...new Set([
+    ...uniquePages,
+    ...CRITICAL_PUBLIC_ROUTES.map((route) => absoluteUrl(route).replace(/\/$/, "") || SITE_ORIGIN)
+  ])];
+  await mapLimit(auditPages, CONCURRENCY, checkPublicPage);
 
   const redirectsPath = new URL("../_redirects", import.meta.url);
   try {
@@ -301,6 +306,7 @@ async function main() {
   console.log("[SEO LIVE AUDIT] " + (errors.length ? "FAIL" : warnings.length ? "WARN" : "PASS"));
   console.log("Checked URLs: " + checked.length);
   console.log("Sitemap pages: " + uniquePages.length);
+  console.log("Critical public routes: " + CRITICAL_PUBLIC_ROUTES.length);
   console.log("Errors: " + errors.length);
   console.log("Warnings: " + warnings.length);
 
