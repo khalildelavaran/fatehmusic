@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGscSignalIndex, buildQueryOwnershipMap, buildSemanticQueryClusters, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, buildQueryOwnershipMap, buildSemanticQueryClusters, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
 
 describe("GSC signal resolver", () => {
   const rows = [
@@ -312,6 +312,28 @@ describe("GSC signal resolver", () => {
 
     expect(result[0].semanticQueryCluster?.impressions).toBe(200);
     expect(result[0].semanticQueryCluster?.queryCount).toBe(2);
+  });
+
+
+  it("detects cannibalization across semantically equivalent query variants", () => {
+    const conflicts = detectSemanticQueryCannibalization([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 60 },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 40 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 40 },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 60 }
+    ], {
+      pageSemantics: [
+        { url: "https://fatehmusic.ir/courses/guitar-course", topics: ["guitar"], intent: "commercial", entity: "Course" },
+        { url: "https://fatehmusic.ir/blog/guitar-guide", topics: ["guitar"], intent: "commercial", entity: "Article" }
+      ]
+    });
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].queryVariants).toHaveLength(2);
+    expect(conflicts[0].pages).toHaveLength(2);
+    expect(conflicts[0].severity).toBe("HIGH");
+    expect(conflicts[0].actionable).toBe(true);
+    expect(conflicts[0].semanticEvidence).toBe(true);
   });
 
 });
