@@ -14,6 +14,8 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+const MIN_OWNERSHIP_QUERY_TOKENS = 2;
+
 const GENERIC_QUERY_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
   "و", "یا", "با", "را", "این", "یک", "چه", "چگونه", "چطور",
@@ -189,7 +191,7 @@ function isExactQueryMatch(item, query) {
 function buildQueryOwnership(querySignals = [], item = {}) {
   const eligible = querySignals.filter((row) => {
     const query = String(row?.query || "");
-    return !isBrandNavigationQuery(query) && tokens(query).size > 0 && Number(row?.impressions || 0) > 0;
+    return !isBrandNavigationQuery(query) && tokens(query).size >= MIN_OWNERSHIP_QUERY_TOKENS && Number(row?.impressions || 0) > 0;
   });
   const exactEligible = eligible.filter((row) => isExactQueryMatch(item, row?.query));
 
