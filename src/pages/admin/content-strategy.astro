@@ -53,7 +53,8 @@ const intelligence = buildSEOIntelligence({
   topicCandidates: activeTopicCandidates,
   gscRows,
   gscDataQuality: {
-    truncated: Number(latestGscSync?.truncated) === 1
+    truncated: Number(latestGscSync?.truncated) === 1,
+    finishedAt: latestGscSync?.finishedAt || undefined
   },
   marketSignals,
   marketKeywordRows: Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : [],
@@ -210,6 +211,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
             <span>اطمینان تصمیم: {intelligence.summary.decisionConfidenceAverage}%</span>
             <span>پوشش داده GSC: {(Number(intelligence.summary.gscCompleteness || 0) * 100).toFixed(0)}%</span>
+            <span>تازگی GSC: {intelligence.summary.gscFreshness === "FRESH" ? "تازه" : intelligence.summary.gscFreshness === "AGING" ? "در حال کهنگی" : intelligence.summary.gscFreshness === "STALE" ? "قدیمی" : "نامشخص"}</span>
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
           {intelligence.gsc.connected && intelligence.gsc.queryOwnership.length > 0 && (
