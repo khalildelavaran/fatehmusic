@@ -187,7 +187,6 @@ const internalLinkCount = teachers.length + relatedCourses.length + guitarStyleL
   image={course.media.cover || course.media.image}
   imageWidth={800}
   imageHeight={450}
-  imageType="image/webp"
   keywords={course.seo.keywords}
   topics={[course.instrument, course.category, "شوشتر", ...foundationLinks.map((item) => item.title)]}
   entityType="Course"
