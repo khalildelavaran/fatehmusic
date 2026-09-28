@@ -65,7 +65,8 @@ function resolveMainEntity(extraSchema) {
         SCHEMA_TYPES.ABOUT_PAGE,
         SCHEMA_TYPES.CONTACT_PAGE,
         "ItemList",
-        SCHEMA_TYPES.PLACE
+        SCHEMA_TYPES.PLACE,
+        "LocalBusiness"
     ]);
 
     const node = extraSchema.find(
