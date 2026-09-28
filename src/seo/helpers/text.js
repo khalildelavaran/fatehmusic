@@ -110,3 +110,55 @@ export function expandWeekdayRange(label) {
 export function dedupe(items) {
     return [...new Set((items || []).filter(Boolean))];
 }
+
+
+/**
+ * Canonical semantic normalization shared by topic, intent and search engines.
+ * Keeps Persian spelling variants equivalent while preserving token boundaries.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function normalizeSemanticText(text) {
+    return clean(String(text || "")
+        .normalize("NFKC")
+        .replace(/[\u200c\u200f\u200e]/g, "")
+        .replace(/[يى]/g, "ی")
+        .replace(/[ك]/g, "ک")
+        .replace(/[أإٱ]/g, "ا")
+        .replace(/[ۀة]/g, "ه")
+        .replace(/ـ/g, ""))
+        .toLocaleLowerCase("fa");
+}
+
+/**
+ * Tokenize canonical semantic text, retaining Persian and Latin words.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function semanticTokens(text) {
+    return normalizeSemanticText(text).split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Match a phrase by complete token sequence, never by raw substring.
+ *
+ * @param {string} source
+ * @param {string} phrase
+ * @returns {boolean}
+ */
+export function containsSemanticPhrase(source, phrase) {
+    const haystack = semanticTokens(source);
+    const needle = semanticTokens(phrase);
+    if (!haystack.length || !needle.length || needle.length > haystack.length) {
+        return false;
+    }
+
+    for (let index = 0; index <= haystack.length - needle.length; index += 1) {
+        if (needle.every((token, offset) => haystack[index + offset] === token)) {
+            return true;
+        }
+    }
+    return false;
+}
