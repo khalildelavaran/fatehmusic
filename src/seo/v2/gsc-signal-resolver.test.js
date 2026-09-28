@@ -43,6 +43,7 @@ describe("GSC signal resolver", () => {
 
     expect(result[0].searchSignal.impressions).toBe(20);
     expect(result[0].searchSignal.matchedQueries).toEqual(["آموزش گیتار"]);
+    expect(result[0].searchSignal.matchedPages).toEqual(["https://fatehmusic.ir/courses/guitar-course"]);
   });
 
   it("resolves a search signal for a matching opportunity", () => {
