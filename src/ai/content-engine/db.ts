@@ -34,8 +34,7 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
       relatedCourseSlug: row.related_course_slug,
       audience: row.audience as "" | "کودک" | "نوجوان" | "بزرگسال",
       level: row.level as "" | "مبتدی" | "متوسط" | "پیشرفته",
-      modifierType: row.modifier_type,
-      source: "stored"
+      modifierType: row.modifier_type
     }))
   );
   const titles = [
