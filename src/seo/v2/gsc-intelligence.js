@@ -81,13 +81,14 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const scored = scoreOpportunities(enriched);
   return Object.freeze({
     opportunities: Object.freeze(scored),
-    signalRowCount: rows.length,
-    connected: rows.length > 0,
+    signalRowCount: searchRows.length,
+    connected: searchRows.length > 0,
     cannibalization: Object.freeze(conflicts),
     temporalCannibalization: Object.freeze(temporal),
     summary: Object.freeze({
-      connected: rows.length > 0,
-      signalRows: rows.length,
+      connected: searchRows.length > 0,
+      signalRows: searchRows.length,
+      temporalSignalRows: rows.length,
       opportunityCount: scored.length,
       searchBackedCount: scored.filter((item) => item.searchSignal?.available).length,
       optimizeExistingCount: scored.filter((item) => item.action === "OPTIMIZE_EXISTING").length,
