@@ -23,6 +23,35 @@ describe("buildSEOIntelligence", () => {
     expect(Array.isArray(result.opportunities)).toBe(true);
   });
 
+  it("feeds a real competitor keyword gap into the opportunity score", () => {
+    const result = buildSEOIntelligence({
+      courses: [{ slug: "guitar", title: "آموزش گیتار", instrument: "guitar" }],
+      topicCandidates: [{
+        title: "آموزش گیتار",
+        intent: "commercial",
+        modifierType: "course",
+        relatedCourseSlug: "guitar",
+        scoreTotal: 80
+      }],
+      competitorKeywordRows: [{
+        keyword: "کلاس گیتار در شوشتر",
+        competitor_domain: "competitor.example",
+        volume_monthly: 120,
+        keyword_difficulty: 25
+      }],
+      targetKeywordRows: [],
+      targetQueries: [],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.competitorGaps).toHaveLength(1);
+    expect(result.opportunities[0].competitorGap.available).toBe(true);
+    expect(result.opportunities[0].scoreBreakdown.competitorGapScore).toBeGreaterThan(0);
+    expect(result.opportunities[0].scoreBreakdown.evidenceSignals).toContain("COMPETITOR_GAP");
+    expect(result.summary.competitorGapBackedCount).toBe(1);
+  });
+
   it("exposes market opportunities and the explicit knowledge graph", () => {
     const result = buildSEOIntelligence({
       posts: [{
