@@ -217,7 +217,8 @@ function normalizeGeneratedText(value: string): string {
 
 function validateGeneratedArticle(
   article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string },
-  allowedLinks: Set<string> = new Set()
+  allowedLinks: Set<string> = new Set(),
+  expectedTitle = ""
 ): string | null {
   const rawContent = normalizeGeneratedText(article.content || "");
   const content = rawContent.replace(/<[^>]+>/g, " ")
@@ -263,11 +264,16 @@ function validateGeneratedArticle(
   if (placeholderPattern.test(rawContent) || placeholderPattern.test(excerpt) || placeholderPattern.test(metaDescription)) return "متن شامل placeholder یا محتوای ساختگی است.";
   if (normalizedMetaTitle && normalizedExcerpt && normalizedMetaTitle === normalizedExcerpt) return "meta_title نباید دقیقاً برابر excerpt باشد.";
 
+  if (expectedTitle && titleSimilarity(expectedTitle, metaTitle) < 0.35) {
+    return "meta_title با عنوان Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
+  }
+
   const internalUrls = [...new Set(
-    rawContent.match(/https:\/\/fatehmusic\\.ir[^\s)<>"]+/g) || []
+    rawContent.match(/https?:\\/\\/(?:www\\.)?fatehmusic\\.ir[^\\s)<>"]+/gi) || []
   )].map((url) => url.replace(/[.,،؛:]+$/u, ""));
   for (const url of internalUrls) {
-    if (!allowedLinks.has(url)) return "مقاله شامل لینک داخلی خارج از whitelist است: " + url;
+    const canonicalInternalUrl = url.replace(/^http:\\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir");
+    if (!allowedLinks.has(canonicalInternalUrl)) return "مقاله شامل لینک داخلی خارج از whitelist است: " + url;
   }
 
   return null;
@@ -422,7 +428,7 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     }
 
     const article = result.article;
-    const qualityError = validateGeneratedArticle(article, allowedInternalLinks(topic));
+    const qualityError = validateGeneratedArticle(article, allowedInternalLinks(topic), topic.title);
     if (qualityError) {
       await releaseClaim();
       return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
