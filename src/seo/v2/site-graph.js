@@ -39,7 +39,7 @@ export function buildSiteLinkCandidates(site) {
     { url: absoluteUrl("/about", site.url), title: "درباره آموزشگاه موسیقی فاتح", type: "AboutPage", topics: ["آموزش موسیقی", "شوشتر"], priority: 8, local: true },
     { url: absoluteUrl("/contact", site.url), title: "تماس با آموزشگاه موسیقی فاتح", type: "ContactPage", topics: ["شوشتر", "آدرس", "تماس"], priority: 8, local: true },
     { url: absoluteUrl("/register", site.url), title: "ثبت‌نام آموزشگاه موسیقی فاتح", type: "WebPage", topics: ["ثبت‌نام", "آموزش موسیقی", "شوشتر"], priority: 10, local: true },
-    { url: absoluteUrl("/locations/shushtar", site.url), title: "آموزش موسیقی در شوشتر", type: "Place", topics: ["شوشتر", "آموزش موسیقی"], priority: 25, local: true }
+    { url: absoluteUrl("/locations/shushtar", site.url), title: "آموزش موسیقی در شوشتر", type: "LocalBusiness", topics: ["شوشتر", "آموزش موسیقی"], priority: 25, local: true }
   );
 
   return candidates;
