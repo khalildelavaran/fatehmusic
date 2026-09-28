@@ -102,25 +102,27 @@ function readRedirectFile(file) {
 }
 
 function validateRedirectFileParity(primary, secondary, primaryLabel = "public/_redirects", secondaryLabel = "_redirects") {
+  const issues = [];
   const keys = new Set([...primary.keys(), ...secondary.keys()]);
   for (const from of keys) {
     const left = primary.get(from);
     const right = secondary.get(from);
     if (!left || !right) {
-      error(
-        "REDIRECT_FILE_PARITY",
-        "redirect source exists only in " + (left ? primaryLabel : secondaryLabel) + ": " + from
-      );
+      const message =
+        "redirect source exists only in " + (left ? primaryLabel : secondaryLabel) + ": " + from;
+      error("REDIRECT_FILE_PARITY", message);
+      issues.push(message);
       continue;
     }
     if (left.to !== right.to || String(left.status) !== String(right.status)) {
-      error(
-        "REDIRECT_FILE_PARITY",
+      const message =
         "redirect differs between " + primaryLabel + " and " + secondaryLabel + ": " +
-        from + " -> " + left.to + " " + left.status + " vs " + right.to + " " + right.status
-      );
+        from + " -> " + left.to + " " + left.status + " vs " + right.to + " " + right.status;
+      error("REDIRECT_FILE_PARITY", message);
+      issues.push(message);
     }
   }
+  return issues;
 }
 
 function readRedirects() {
