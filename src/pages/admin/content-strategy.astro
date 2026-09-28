@@ -119,6 +119,13 @@ interface SeoAction {
   ctrDelta: number | null;
   positionDelta: number | null;
   impressionDelta: number | null;
+  outcome: {
+    effect: string;
+    confidence: number;
+    ctrLift: number | null;
+    positionImprovement: number | null;
+    impressionGrowth: number | null;
+  };
 }
 
 const opportunities = intelligence.opportunities.filter((item) => {
