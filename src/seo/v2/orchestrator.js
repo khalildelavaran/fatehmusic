@@ -11,8 +11,9 @@ import { buildLinkGraph } from "./internal-links.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
-import { buildMarketOpportunityReport } from "./market-opportunities.js";
-import { normalizeSemanticText } from "../helpers/text.js";
+import { buildMarketOpportunityReport, buildMarketSignalMap } from "./market-opportunities.js";
+import { buildSiteLinkCandidates } from "./site-graph.js";
+import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
 
@@ -43,7 +44,7 @@ function filterStaleBroadCourseCandidates(candidates = [], courses = []) {
     // course opportunity (the exact source of the duplicate queue entries).
     if (resolvedSubjects.length === 0) {
       const explicitlyNamesCourse = courseTopic && title.includes(courseTopic);
-      const explicitlyNamesCourseTitle = courseName && title.includes(courseName);
+      const explicitlyNamesCourseTitle = courseName && containsSemanticPhrase(title, courseName);
       if (!explicitlyNamesCourse && !explicitlyNamesCourseTitle) return false;
     }
 
@@ -72,10 +73,27 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
-  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages, gscDataQuality, marketSignals });
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
     gscRows: currentScoringRows(gscRows)
+  });
+  const marketSignalMap = buildMarketSignalMap(marketOpportunities);
+  const mergedMarketSignals = new Map(marketSignalMap);
+  if (marketSignals instanceof Map) {
+    for (const [key, value] of marketSignals.entries()) mergedMarketSignals.set(key, value);
+  } else if (Array.isArray(marketSignals)) {
+    for (const item of marketSignals) {
+      if (item?.keyword) mergedMarketSignals.set(normalize(item.keyword), item);
+    }
+  } else if (marketSignals && typeof marketSignals === "object") {
+    for (const [key, value] of Object.entries(marketSignals)) {
+      mergedMarketSignals.set(normalize(key), value);
+    }
+  }
+  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, {
+    pageSemantics: pages,
+    gscDataQuality,
+    marketSignals: mergedMarketSignals
   });
   const articleNodes = pages.map((page) => ({
     url: page.url,
@@ -85,11 +103,14 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     priority: 12,
     local: page.local ?? true
   }));
-  const siteNodes = buildSiteLinkCandidates({
-    url: siteUrl,
-    name: "آموزشگاه موسیقی فاتح",
-    keywords: ["آموزش موسیقی", "آموزشگاه موسیقی", "شوشتر"]
-  });
+  const siteNodes = buildSiteLinkCandidates(
+    {
+      url: siteUrl,
+      name: "آموزشگاه موسیقی فاتح",
+      keywords: ["آموزش موسیقی", "آموزشگاه موسیقی", "شوشتر"]
+    },
+    { courses, instructors }
+  );
   const graphNodeMap = new Map();
   for (const node of [...siteNodes, ...articleNodes]) {
     if (!node?.url || graphNodeMap.has(node.url)) continue;
