@@ -39,7 +39,10 @@ describe("SEO audit evidence coverage", () => {
       imageAudit: { missingDimensions: 0, genericAlt: 0, heroPriority: true },
       wordCount: 700,
       internalLinkCount: 6,
-      webVitals: { lcp: 1800, inp: 120, cls: 0.05 }
+      webVitals: { lcp: 1800, inp: 120, cls: 0.05 },
+      answerBlockCount: 2,
+      answerBlockSourceCount: 2,
+      knowledgeGraphStats: { nodeCount: 10, edgeCount: 12 }
     });
 
     expect(audit.coverageScore).toBe(100);
