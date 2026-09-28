@@ -149,7 +149,9 @@ function classifySearchOpportunity(signal) {
 export function resolveOpportunitySearchSignals(opportunities = [], index) {
   if (!index) return opportunities;
   return opportunities.map((item) => {
-    const pageSignals = getCandidatePages(item).map((page) => index.byPage.get(page)).filter(Boolean);
+    const pageSignals = item.action === "NEW_CONTENT"
+      ? []
+      : getCandidatePages(item).map((page) => index.byPage.get(page)).filter(Boolean);
     const querySignals = relevantQueryRows(index, item)
       .filter((row) => queryMatches(item, row.query))
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
