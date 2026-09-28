@@ -5,6 +5,16 @@
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number(value) || 0));
 
+function ctrZScore(latestClicks, latestImpressions, previousClicks, previousImpressions) {
+  if (latestImpressions <= 0 || previousImpressions <= 0) return null;
+  const latestRate = latestClicks / latestImpressions;
+  const previousRate = previousClicks / previousImpressions;
+  const pooled = (latestClicks + previousClicks) / (latestImpressions + previousImpressions);
+  const variance = pooled * (1 - pooled) * (1 / latestImpressions + 1 / previousImpressions);
+  if (variance <= 0) return latestRate === previousRate ? 0 : null;
+  return (latestRate - previousRate) / Math.sqrt(variance);
+}
+
 export function classifySeoActionMeasurement(latest, previous) {
   if (!latest || !previous) {
     return {
@@ -18,6 +28,8 @@ export function classifySeoActionMeasurement(latest, previous) {
 
   const latestImpressions = Math.max(0, Number(latest.impressions) || 0);
   const previousImpressions = Math.max(0, Number(previous.impressions) || 0);
+  const latestClicks = Math.max(0, Number(latest.clicks) || Math.round(latestImpressions * Math.max(0, Number(latest.ctr) || 0)));
+  const previousClicks = Math.max(0, Number(previous.clicks) || Math.round(previousImpressions * Math.max(0, Number(previous.ctr) || 0)));
   const latestCtr = Number(latest.ctr);
   const previousCtr = Number(previous.ctr);
   const latestPosition = Number(latest.position);
@@ -32,6 +44,8 @@ export function classifySeoActionMeasurement(latest, previous) {
   const impressionGrowth = previousImpressions > 0
     ? (latestImpressions - previousImpressions) / previousImpressions
     : null;
+  const ctrZ = ctrZScore(latestClicks, latestImpressions, previousClicks, previousImpressions);
+  const ctrStatisticallyStrong = Number.isFinite(ctrZ) && Math.abs(ctrZ) >= 1.96;
 
   const sampleScore =
     (latestImpressions >= 100 ? 35 : latestImpressions >= 30 ? 25 : latestImpressions >= 10 ? 15 : 5) +
@@ -41,16 +55,24 @@ export function classifySeoActionMeasurement(latest, previous) {
   if (ctrLift != null) confidence += 15;
   if (positionImprovement != null) confidence += 15;
   if (impressionGrowth != null) confidence += 10;
+  if (ctrStatisticallyStrong) confidence += 12;
   confidence = Math.round(clamp(confidence));
 
-  const positive = (ctrLift != null && ctrLift >= 0.005) || (positionImprovement != null && positionImprovement >= 1);
-  const negative = (ctrLift != null && ctrLift <= -0.005) || (positionImprovement != null && positionImprovement <= -1);
+  const positiveCtr = ctrLift != null && ctrLift >= 0.005 && ctrStatisticallyStrong && ctrZ > 0;
+  const negativeCtr = ctrLift != null && ctrLift <= -0.005 && ctrStatisticallyStrong && ctrZ < 0;
+  const positivePosition = positionImprovement != null && positionImprovement >= 1;
+  const negativePosition = positionImprovement != null && positionImprovement <= -1;
+  const positive = positiveCtr || positivePosition;
+  const negative = negativeCtr || negativePosition;
 
   return {
     effect: positive && !negative ? "POSITIVE" : negative && !positive ? "NEGATIVE" : "NEUTRAL",
     confidence,
     ctrLift,
+    ctrZScore: Number.isFinite(ctrZ) ? Number(ctrZ.toFixed(3)) : null,
+    ctrStatisticallyStrong,
     positionImprovement,
-    impressionGrowth
+    impressionGrowth,
+    evidenceType: "DESCRIPTIVE_BEFORE_AFTER"
   };
 }
