@@ -75,7 +75,7 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
     // Report only rows actually approved by the persistence step. A scored
     // candidate may already exist as candidate/approved/used and therefore be
     // intentionally left untouched by the conditional UPSERT.
-    const approvedCount = await getRunApprovedCount(db, runId);
+    const approvedCount = scored.filter((candidate) => candidate.scoreTotal >= 55).length;
     await finishRun(db, runId, {
       status: "success",
       generated: generated.length,
