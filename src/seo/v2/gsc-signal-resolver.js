@@ -217,7 +217,7 @@ function buildQueryOwnership(querySignals = [], item = {}) {
     topShare: pages[0]?.share || 0,
     ownerStatus: !pages.length
       ? "NO_OWNER"
-      : totalImpressions < 5
+      : totalImpressions < 20
         ? "EMERGING"
         : (pages[0]?.share || 0) >= 0.7
           ? "STABLE"
@@ -274,7 +274,7 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
           topShare: rankedPages[0]?.share || 0,
           ownerStatus: !rankedPages.length
             ? "NO_OWNER"
-            : totalImpressions < 5
+            : totalImpressions < 20
               ? "EMERGING"
               : (rankedPages[0]?.share || 0) >= 0.7
                 ? "STABLE"
