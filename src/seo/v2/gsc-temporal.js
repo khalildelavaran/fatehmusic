@@ -2,7 +2,7 @@
  * Temporal cannibalization analysis built on top of the existing GSC resolver.
  * Detects changes in query ownership across dated Search Console windows.
  */
-import { normalizeText, normalizeUrl, isOwnershipEligibleQuery } from "./gsc-signal-resolver.js";
+import { buildSemanticQueryClusters, normalizeText, normalizeUrl, isOwnershipEligibleQuery } from "./gsc-signal-resolver.js";
 
 function numeric(value) {
   return Math.max(0, Number(value) || 0);
@@ -90,6 +90,89 @@ export function detectTemporalCannibalization(rows = [], {
   }
 
   return transitions.sort((a, b) => b.shareDelta - a.shareDelta || a.query.localeCompare(b.query, "fa"));
+}
+
+
+export function detectSemanticTemporalCannibalization(rows = [], {
+  minImpressions = 50,
+  minOwnerShare = 0.20,
+  minShareDelta = 0.15
+} = {}) {
+  const byPeriod = new Map();
+
+  for (const row of rows) {
+    const period = periodKey(row);
+    const query = normalizeText(row?.query);
+    if (!period || !query || !isOwnershipEligibleQuery(query)) continue;
+
+    const bucket = byPeriod.get(period) || [];
+    bucket.push(row);
+    byPeriod.set(period, bucket);
+  }
+
+  const snapshots = [...byPeriod.entries()]
+    .sort(([left], [right]) => sortPeriods(left, right))
+    .map(([period, periodRows]) => ({
+      period,
+      clusters: new Map(
+        buildSemanticQueryClusters(periodRows, {
+          minImpressions,
+          limit: 5000
+        }).map((cluster) => [cluster.key, cluster])
+      )
+    }));
+
+  const transitions = [];
+  for (let index = 1; index < snapshots.length; index += 1) {
+    const previousSnapshot = snapshots[index - 1];
+    const currentSnapshot = snapshots[index];
+
+    for (const [clusterKey, currentCluster] of currentSnapshot.clusters) {
+      const previousCluster = previousSnapshot.clusters.get(clusterKey);
+      if (!previousCluster || currentCluster.pageCount < 2 || previousCluster.pageCount < 1) continue;
+
+      const previousOwner = previousCluster.pages[0];
+      const currentOwner = currentCluster.pages[0];
+      if (!previousOwner || !currentOwner || previousOwner.page === currentOwner.page) continue;
+      if (previousOwner.share < minOwnerShare || currentOwner.share < minOwnerShare) continue;
+
+      const historicalNewOwnerShare =
+        previousCluster.pages.find((item) => item.page === currentOwner.page)?.share || 0;
+      const retainedPreviousOwnerShare =
+        currentCluster.pages.find((item) => item.page === previousOwner.page)?.share || 0;
+      const previousLoss = previousOwner.share - retainedPreviousOwnerShare;
+      const currentGain = currentOwner.share - historicalNewOwnerShare;
+      const shareDelta = Math.max(previousLoss, currentGain);
+      if (shareDelta < minShareDelta) continue;
+
+      transitions.push(Object.freeze({
+        mode: "SEMANTIC_CLUSTER",
+        clusterKey,
+        query: currentCluster.queries[0]?.displayQuery || previousCluster.queries[0]?.displayQuery || clusterKey,
+        queryVariants: currentCluster.queries,
+        fromPeriod: previousSnapshot.period,
+        toPeriod: currentSnapshot.period,
+        previousOwner: Object.freeze({
+          page: previousOwner.page,
+          share: previousOwner.share,
+          impressions: previousOwner.impressions
+        }),
+        currentOwner: Object.freeze({
+          page: currentOwner.page,
+          share: currentOwner.share,
+          impressions: currentOwner.impressions
+        }),
+        retainedShare: retainedPreviousOwnerShare,
+        historicalNewOwnerShare,
+        shareDelta,
+        severity: shareDelta >= 0.35 ? "HIGH" : shareDelta >= 0.20 ? "MEDIUM" : "LOW",
+        actionable: shareDelta >= 0.20,
+        semanticEvidence: true
+      }));
+    }
+  }
+
+  return transitions.sort((a, b) => b.shareDelta - a.shareDelta || a.clusterKey.localeCompare(b.clusterKey));
 }
 
 export { periodKey, ownerForRows };
