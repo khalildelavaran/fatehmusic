@@ -84,6 +84,19 @@ describe("SEO/GEO Engine v2", () => {
     expect(audit.errors).toHaveLength(0);
   });
 
+  it("builds automatic internal-link recommendations when no custom links are supplied", () => {
+    const result = buildSEO({
+      path: "/blog/guitar-guide",
+      title: "راهنمای یادگیری گیتار در شوشتر",
+      description: "راهنمای عملی یادگیری گیتار در شوشتر برای شروع مسیر نوازندگی.",
+      keywords: ["گیتار", "شوشتر"],
+      entityType: "Article"
+    });
+
+    expect(result.geo.internalLinks.length).toBeGreaterThan(0);
+    expect(result.geo.internalLinks.some((link) => link.url.includes("/courses/"))).toBe(true);
+  });
+
   it("adds v2 semantic signals to buildSEO", () => {
     const result = buildSEO({
       path: "/courses/guitar-course",
