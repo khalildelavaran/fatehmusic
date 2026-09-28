@@ -161,20 +161,25 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
   const placeholders = actionRows.map(() => "?").join(",");
   const measurements = await db.prepare(
     "SELECT action_id AS actionId, measured_at AS measuredAt, window_start AS windowStart, window_end AS windowEnd, impressions, clicks, ctr, position " +
-    "FROM seo_action_measurements WHERE action_id IN (" + placeholders + ") ORDER BY measured_at DESC"
+    "FROM seo_action_measurements WHERE action_id IN (" + placeholders + ") " +
+    "AND window_start >= date('now', '-180 days') ORDER BY window_start DESC"
   ).bind(...actionRows.map((action) => action.id)).all();
 
   const measurementsByAction = new Map();
   for (const row of measurements.results || []) {
     const list = measurementsByAction.get(row.actionId) || [];
-    if (list.length < 2) list.push(row);
+    list.push(row);
     measurementsByAction.set(row.actionId, list);
   }
 
   return actionRows.map((action) => {
     const list = measurementsByAction.get(action.id) || [];
     const latest = list[0] || null;
-    const previous = list[1] || null;
+    // Compare against the nearest earlier non-overlapping reporting window.
+    // This avoids treating overlapping rolling 28-day snapshots as before/after.
+    const previous = latest
+      ? list.find((item) => String(item.windowEnd || "") < String(latest.windowStart || ""))
+      : null;
     return {
       ...action,
       latest,
