@@ -14,6 +14,8 @@
 import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
+import { derivePlainName } from "./candidates";
+import { toDedupKey } from "./normalize";
 import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { callClaudeArticle } from "./providers/anthropic";
 import { createSeoAction } from "../../seo/v2/seo-action-store.js";
@@ -60,35 +62,76 @@ function slugify(text: string): string {
   return base;
 }
 
+function stableIndex(size: number, offset = 0): number {
+  if (!size) return 0;
+  const day = new Date().toISOString().slice(0, 10);
+  let hash = offset;
+  for (const char of day) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return hash % size;
+}
+
+function isExistingTitle(existing: Awaited<ReturnType<typeof getExistingTitleIndex>>, title: string): boolean {
+  const normalized = toDedupKey(title);
+  return existing.normalizedKeys.has(normalized) || existing.titles.some((item) => toDedupKey(item) === normalized);
+}
+
+function fallbackArticleTitles(course: CourseLike): string[] {
+  const name = derivePlainName(course.title);
+  return [
+    `چگونه ${name} را از صفر یاد بگیریم؟`,
+    `راهنمای شروع یادگیری ${name} برای مبتدی‌ها`,
+    `اشتباهات رایج در شروع یادگیری ${name}`
+  ];
+}
+
 async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
   const [recentSlugs, existingIndex] = await Promise.all([
     getRecentlyUsedCourses(db, 10),
     getExistingTitleIndex(db)
   ]);
-  const activeCourses = (courses as CourseLike[]).filter((c) => c.active);
-  const unusedCourses = activeCourses.filter((course) => !existingIndex.normalizedKeys.has(course.title) && !existingIndex.titles.includes(course.title));
 
-  if (unusedCourses.length > 0) {
-    const recentUnused = unusedCourses.filter((c) => !recentSlugs.has(c.slug));
-    const pool = recentUnused.length > 0 ? recentUnused : unusedCourses;
-    const course = pool[0];
+  const activeCourses = (courses as CourseLike[]).filter((c) => c.active);
+  const unusedCourses = activeCourses.filter((course) =>
+    !recentSlugs.has(course.slug)
+  );
+  const coursePool = unusedCourses.length > 0 ? unusedCourses : activeCourses;
+
+  // Never use the course landing-page title itself as a blog title.
+  // The fallback must create a genuinely editorial query that can coexist
+  // with the canonical course page without deliberate title cannibalization.
+  const safeCourseTopics = coursePool
+    .map((course) => ({
+      course,
+      titles: fallbackArticleTitles(course).filter((title) => !isExistingTitle(existingIndex, title))
+    }))
+    .filter((item) => item.titles.length > 0);
+
+  if (safeCourseTopics.length > 0) {
+    const picked = safeCourseTopics[stableIndex(safeCourseTopics.length)];
+    const title = picked.titles[stableIndex(picked.titles.length, 17)];
     return {
       topicRowId: null,
-      title: course.title,
-      relatedCourseSlug: course.slug,
-      relatedCourseTitle: course.title,
-      excerpt: course.content?.excerpt ?? "",
-      topicLabel: course.title,
+      title,
+      relatedCourseSlug: picked.course.slug,
+      relatedCourseTitle: picked.course.title,
+      excerpt: picked.course.content?.excerpt ?? "",
+      topicLabel: picked.course.title,
       scoreTotal: null
     };
   }
 
-  const unusedEvergreen = GENERAL_EVERGREEN_TOPICS.filter(
-    (topic) => !existingIndex.normalizedKeys.has(topic) && !existingIndex.titles.includes(topic)
-  );
-  const topicPool = unusedEvergreen.length > 0 ? unusedEvergreen : GENERAL_EVERGREEN_TOPICS;
-  const topic = topicPool[Math.floor(Math.random() * topicPool.length)];
-  return { topicRowId: null, title: topic, relatedCourseSlug: null, relatedCourseTitle: null, excerpt: "", topicLabel: "عمومی", scoreTotal: null };
+  const safeEvergreen = GENERAL_EVERGREEN_TOPICS.filter((topic) => !isExistingTitle(existingIndex, topic));
+  const topicPool = safeEvergreen.length > 0 ? safeEvergreen : GENERAL_EVERGREEN_TOPICS;
+  const topic = topicPool[stableIndex(topicPool.length, 43)];
+  return {
+    topicRowId: null,
+    title: topic,
+    relatedCourseSlug: null,
+    relatedCourseTitle: null,
+    excerpt: "",
+    topicLabel: "عمومی",
+    scoreTotal: null
+  };
 }
 
 async function selectTopic(db: D1Database): Promise<SelectedTopic> {
