@@ -20,6 +20,22 @@ const GENERIC_QUERY_TOKENS = new Set([
   "شوشتر", "فاتح", "یادگیری", "مدرس"
 ]);
 
+
+/**
+ * Queries that identify the site itself rather than a substantive topic.
+ * Keep them in the raw GSC index for reporting, but do not let them create
+ * content-demand signals or topic opportunities for unrelated pages.
+ */
+function isBrandNavigationQuery(query) {
+  const normalized = normalizeText(query);
+  if (!normalized) return false;
+  return normalized === "fatehmusic.ir" ||
+    normalized === "www.fatehmusic.ir" ||
+    normalized === "fateh music" ||
+    normalized === "fateh music academy" ||
+    normalized === "آموزشگاه موسیقی فاتح";
+}
+
 function tokens(value) {
   return new Set(
     normalizeText(value)
@@ -99,13 +115,14 @@ export function buildGscSignalIndex(rows = []) {
     if (query) {
       queryRows.set(query, [...(queryRows.get(query) || []), item]);
       const tokenized = tokens(query);
+      if (isBrandNavigationQuery(query)) continue;
       for (const token of tokenized) {
         const bucket = queryTokenRows.get(token) || [];
         bucket.push(item);
         queryTokenRows.set(token, bucket);
       }
     }
-    opportunities.push(Object.freeze({ ...item, opportunitySignalScore: scoreRow(item) }));
+    opportunities.push(Object.freeze({ ...item, brandNavigation: isBrandNavigationQuery(query), opportunitySignalScore: scoreRow(item) }));
   }
   return Object.freeze({
     byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
@@ -166,6 +183,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       ? []
       : getCandidatePages(item).map((page) => index.byPage.get(page)).filter(Boolean);
     const querySignals = relevantQueryRows(index, item)
+      .filter((row) => !isBrandNavigationQuery(row.query))
       .filter((row) => queryMatches(item, row.query))
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
       .slice(0, 10);
@@ -252,4 +270,4 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
     .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
 }
 
-export { normalizeText, normalizeUrl, jaccard, pageSimilarity };
+export { normalizeText, normalizeUrl, jaccard, pageSimilarity, isBrandNavigationQuery };
