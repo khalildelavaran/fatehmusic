@@ -71,7 +71,12 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
       keywordSignals
     });
 
-    const persisted = await insertScoredCandidates(db, scored, runId);
+    const configuredPersistLimit = Number(options.env?.SEO_DISCOVERY_PERSIST_LIMIT ?? 20);
+    const persistLimit = Math.max(
+      1,
+      Math.min(Number.isFinite(configuredPersistLimit) ? configuredPersistLimit : 20, 200)
+    );
+    const persisted = await insertScoredCandidates(db, scored, runId, persistLimit);
     // Count only approvals created by this discovery run. Existing approved or
     // used topics are not counted again just because their score was refreshed.
     const approvedCount = persisted.newlyApproved;
