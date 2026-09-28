@@ -1,0 +1,126 @@
+import { isBrandNavigationQuery, normalizeQuery } from "../helpers/query.js";
+
+function scoreGap(volume, difficulty, competitorCount) {
+  const normalizedVolume = Math.max(0, Number(volume) || 0);
+  const normalizedDifficulty = Number(difficulty);
+  let score = 0;
+
+  if (normalizedVolume >= 1000) score += 45;
+  else if (normalizedVolume >= 500) score += 36;
+  else if (normalizedVolume >= 100) score += 28;
+  else if (normalizedVolume >= 50) score += 20;
+  else if (normalizedVolume > 0) score += 10;
+
+  if (Number.isFinite(normalizedDifficulty)) {
+    if (normalizedDifficulty <= 20) score += 25;
+    else if (normalizedDifficulty <= 40) score += 18;
+    else if (normalizedDifficulty <= 60) score += 10;
+    else if (normalizedDifficulty <= 80) score += 4;
+  }
+
+  if (competitorCount >= 5) score += 30;
+  else if (competitorCount >= 3) score += 22;
+  else if (competitorCount >= 2) score += 14;
+  else if (competitorCount === 1) score += 6;
+
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+export function buildCompetitiveGapReport({
+  competitorKeywordRows = [],
+  targetKeywordRows = [],
+  targetQueries = [],
+  minVolume = 1,
+  limit = 100
+} = {}) {
+  const targetSet = new Set(
+    [...targetKeywordRows, ...targetQueries]
+      .map((row) => typeof row === "string" ? row : row?.keyword || row?.query)
+      .map(normalizeQuery)
+      .filter(Boolean)
+  );
+
+  const grouped = new Map();
+
+  for (const row of Array.isArray(competitorKeywordRows) ? competitorKeywordRows : []) {
+    const keyword = String(row?.keyword || "").trim();
+    const normalizedKeyword = normalizeQuery(keyword);
+    const volume = Math.max(
+      0,
+      Number(row?.volume_monthly ?? row?.volume) || 0
+    );
+    const difficulty = Number(row?.keyword_difficulty ?? row?.difficulty);
+    const domain = String(
+      row?.competitor_domain ||
+      row?.competitorDomain ||
+      row?.domain ||
+      ""
+    ).trim();
+
+    if (
+      !keyword ||
+      !normalizedKeyword ||
+      volume < Math.max(1, Number(minVolume) || 1) ||
+      targetSet.has(normalizedKeyword) ||
+      isBrandNavigationQuery(keyword)
+    ) continue;
+
+    const current = grouped.get(normalizedKeyword) || {
+      keyword,
+      normalizedKeyword,
+      competitorDomains: new Set(),
+      volumes: [],
+      difficulties: []
+    };
+
+    if (domain) current.competitorDomains.add(domain);
+    current.volumes.push(volume);
+    if (Number.isFinite(difficulty)) current.difficulties.push(difficulty);
+    if (volume > Math.max(...current.volumes, 0)) current.keyword = keyword;
+    grouped.set(normalizedKeyword, current);
+  }
+
+  const gaps = [...grouped.values()].map((item) => {
+    const volume = Math.max(...item.volumes, 0);
+    const difficulty = item.difficulties.length
+      ? item.difficulties.reduce((sum, value) => sum + value, 0) / item.difficulties.length
+      : null;
+    const competitorCount = item.competitorDomains.size;
+    return Object.freeze({
+      keyword: item.keyword,
+      normalizedKeyword: item.normalizedKeyword,
+      estimatedVolume: volume,
+      difficulty: Number.isFinite(difficulty) ? Number(difficulty.toFixed(1)) : null,
+      competitorCount,
+      competitorDomains: Object.freeze([...item.competitorDomains].sort()),
+      gapScore: scoreGap(volume, difficulty, competitorCount),
+      source: "competitor-gap"
+    });
+  });
+
+  return Object.freeze(
+    gaps
+      .sort((a, b) => b.gapScore - a.gapScore || b.estimatedVolume - a.estimatedVolume || a.keyword.localeCompare(b.keyword, "fa"))
+      .slice(0, Math.max(1, Number(limit) || 100))
+  );
+}
+
+export function buildCompetitiveGapSignalMap(gaps = []) {
+  const map = new Map();
+  for (const gap of Array.isArray(gaps) ? gaps : []) {
+    const key = normalizeQuery(gap?.keyword);
+    if (!key) continue;
+    map.set(key, Object.freeze({
+      available: true,
+      source: "competitor-gap",
+      matchedKeyword: gap.keyword,
+      estimatedVolume: Number(gap.estimatedVolume) || 0,
+      difficulty: Number.isFinite(Number(gap.difficulty)) ? Number(gap.difficulty) : null,
+      competitorCount: Number(gap.competitorCount) || 0,
+      competitorDomains: gap.competitorDomains || [],
+      gapScore: Number(gap.gapScore) || 0,
+      matchType: "EXACT"
+    }));
+  }
+  return map;
+}
