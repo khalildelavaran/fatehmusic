@@ -61,6 +61,26 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchAction).toBe("MONITOR");
   });
 
+
+  it("returns matched query evidence with the non-brand search signal", () => {
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "OPTIMIZE_EXISTING",
+        title: "آموزش گیتار",
+        topicName: "گیتار",
+        targetEntity: { url: "https://fatehmusic.ir/courses/guitar-course" }
+      }
+    ], buildGscSignalIndex([
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 0, impressions: 1000, ctr: 0, position: 4 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 2, impressions: 20, ctr: 0.1, position: 5 },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 1, impressions: 10, ctr: 0.1, position: 6 }
+    ]));
+    expect(result[0].searchSignal.matchedQueries).toEqual(
+      expect.arrayContaining(["آموزش گیتار", "کلاس گیتار"])
+    );
+    expect(result[0].searchSignal.matchedQueries).not.toContain("fatehmusic.ir");
+  });
+
   it("does not use a course page signal for a brand-new article opportunity", () => {
     const result = resolveOpportunitySearchSignals([
       {
