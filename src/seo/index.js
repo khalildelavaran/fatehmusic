@@ -87,6 +87,7 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         instructors,
         posts: articlePosts
     });
+    const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
     const candidates = linkCandidates?.length
         ? linkCandidates
         : [...buildSiteLinkCandidates(site), ...buildArticleLinkCandidates(articlePosts, site.url)];
