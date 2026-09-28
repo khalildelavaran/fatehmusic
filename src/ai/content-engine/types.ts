@@ -1,7 +1,7 @@
 // Shared types for the Content Intelligence Engine.
 // See doc/ADR/ADR-011 — Content Intelligence Engine.md for the design rationale.
 
-export type Audience = "" | "کودک" | "نوجوان" | "بزرگسال";
+export type Audience = "" | "کودک" | "۳ تا ۷ سال" | "۷ تا ۱۲ سال" | "نوجوان" | "بزرگسال";
 export type Level = "" | "مبتدی" | "متوسط" | "پیشرفته";
 
 export type SearchIntent = "informational" | "commercial" | "transactional" | "navigational";
