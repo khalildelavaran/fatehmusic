@@ -171,6 +171,7 @@ const SYSTEM_PROMPT = `تو یک نویسنده‌ی محتوای حرفه‌ا�
 - پاراگراف آخر رو به یک «جمع‌بندی» فرمولیک که کل متن رو خلاصه می‌کنه تبدیل نکن؛ به‌جاش با یک نکته‌ی عملی، یک دعوت طبیعی، یا یک فکر باز تمومش کن.
 - از این کلیشه‌های رایج متن‌های تولیدشده با هوش مصنوعی در فارسی به‌طور خاص پرهیز کن: «در دنیای امروز»، «در این راستا»، «شایان ذکر است»، «نقش بسزایی ایفا می‌کند»، «بدون شک/بی‌تردید» به‌عنوان شروع جمله، و استفاده‌ی مکرر از «همچنین» به‌عنوان تنها ابزار اتصال جمله‌ها.
 - به‌جای فعل‌ها و عبارات رسمی و پرطمطراق، فعل ساده و مستقیم رو ترجیح بده (مثلاً «کمک می‌کند» به‌جای «نقش بسزایی در ... ایفا می‌کند»).
+- حداقل ۲ لینک داخلی مرتبط در متن قرار بده و یکی از آن‌ها باید به نزدیک‌ترین صفحه‌ی موضوعی/دوره/مدرس/موقعیت محلی در whitelist بریف باشد.
 - لینک داخلی فقط از URLهای whitelist شده در بریف استفاده کن؛ URL جدید، slug حدسی یا مسیر ساختگی ایجاد نکن.
 
 محدودیت‌های محتوا:
@@ -259,11 +260,30 @@ function validateGeneratedArticle(
   const relativeInternalUrls = [...rawContent.matchAll(/\]\((\/(?!\/)[^\s)]+)\)/g)].map((match) => match[1]);
   const internalUrls = [...new Set([...absoluteInternalUrls, ...relativeInternalUrls])]
     .map((url) => String(url).replace(/[.,،؛:]+$/u, ""));
-  for (const url of internalUrls) {
-    const canonicalInternalUrl = url.startsWith("/")
+  const canonicalInternalUrls = internalUrls.map((url) =>
+    url.startsWith("/")
       ? "https://fatehmusic.ir" + url.split("#")[0].split("?")[0]
-      : url.replace(/^http:\/\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir").split("#")[0].split("?")[0];
-    if (!allowedLinks.has(canonicalInternalUrl)) return "مقاله شامل لینک داخلی خارج از whitelist است: " + url;
+      : url.replace(/^http:\/\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir").split("#")[0].split("?")[0]
+  );
+
+  for (let index = 0; index < canonicalInternalUrls.length; index += 1) {
+    const canonicalInternalUrl = canonicalInternalUrls[index];
+    if (!allowedLinks.has(canonicalInternalUrl)) {
+      return "مقاله شامل لینک داخلی خارج از whitelist است: " + internalUrls[index];
+    }
+  }
+
+  if (canonicalInternalUrls.length < 2) {
+    return "مقاله باید حداقل ۲ لینک داخلی معتبر داشته باشد.";
+  }
+
+  const genericLinks = new Set([
+    "https://fatehmusic.ir/blog",
+    "https://fatehmusic.ir/courses",
+    "https://fatehmusic.ir/register"
+  ]);
+  if (!canonicalInternalUrls.some((url) => !genericLinks.has(url))) {
+    return "مقاله باید حداقل یک لینک داخلی مرتبط با موضوع/دوره/مدرس/موقعیت محلی داشته باشد.";
   }
 
   return null;
