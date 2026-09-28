@@ -76,6 +76,29 @@ function decisionConfidenceScore(item = {}) {
   ));
 }
 
+function evidenceStrength(item = {}) {
+  const score = decisionConfidenceScore(item);
+  const sources = new Set();
+  if (item.searchSignal?.available) sources.add("GSC");
+  if (item.searchOwnership?.matchType === "EXACT") sources.add("GSC-OWNERSHIP");
+  if (item.marketSignal?.available) sources.add("MARKET");
+  if (Number.isFinite(Number(item.intentConfidence)) && Number(item.intentConfidence) > 0) sources.add("INTENT");
+  if (item.gapDetected) sources.add("CONTENT-GAP");
+  if (item.cannibalization?.severity) sources.add("CANNIBALIZATION");
+  const quality =
+    score >= 85 ? "STRONG" :
+    score >= 65 ? "MODERATE" :
+    score >= 45 ? "WEAK" :
+    "INSUFFICIENT";
+  return Object.freeze({
+    score,
+    quality,
+    sourceCount: sources.size,
+    sources: Object.freeze([...sources]),
+    independentMarketAndGsc: sources.has("MARKET") && sources.has("GSC")
+  });
+}
+
 function marketSignalScore(signal = {}) {
   if (!signal?.available) return null;
 
@@ -144,12 +167,16 @@ export function classifyOpportunityAction(item = {}) {
     return "LINK";
   }
 
+  // Hard conflicts must be resolved before creation. A page with strong
+  // simultaneous competition should not bypass the merge decision merely
+  // because its upstream candidate action was NEW_CONTENT.
+  if (competition === "HIGH") return "MERGE_CONTENT";
+  if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
+
   // Search demand can justify creating a new article, but it cannot turn a
   // non-existent article into an "optimize existing" task when no established
   // owner is present.
   if (item.action === "NEW_CONTENT" && !hasExistingTarget) return "NEW_CONTENT";
-  if (competition === "HIGH") return "MERGE_CONTENT";
-  if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
   if (temporal?.severity === "MEDIUM" && temporal.actionable && item.internalLinkGap !== true && item.linkGap !== true) return "OPTIMIZE_EXISTING";
   if (item.internalLinkGap === true || item.linkGap === true) return "LINK";
 
@@ -157,9 +184,6 @@ export function classifyOpportunityAction(item = {}) {
   // new content opportunity without an established owner, use that demand as a
   // scoring signal only; do not relabel the action as an optimization/
   // expansion of a page that does not exist.
-  const hasExistingContent = Number(item.articleCount || 0) > 0 ||
-    (Array.isArray(item.existingArticleSlugs) && item.existingArticleSlugs.length > 0);
-  if (item.action === "NEW_CONTENT" && !hasExistingContent) return "NEW_CONTENT";
 
   if (signal.available) {
     if (signal.position != null && signal.position <= 10 && signal.ctr < 0.03) return "OPTIMIZE_EXISTING";
@@ -188,6 +212,10 @@ export function scoreOpportunity(item = {}) {
   const decisionConfidence = Math.round(clamp(
     30 + confidenceEvidence.reduce((sum, [, value]) => sum + value, 0)
   ));
+  const evidence = evidenceStrength({
+    ...item,
+    marketSignal: market == null ? undefined : item.marketSignal
+  });
   return Object.freeze({
     ...item,
     action: classifyOpportunityAction(item),
@@ -200,6 +228,9 @@ export function scoreOpportunity(item = {}) {
       temporalBonus,
       marketSignal: market,
       decisionConfidence,
+      evidenceStrength: evidence.quality,
+      evidenceSourceCount: evidence.sourceCount,
+      evidenceSources: evidence.sources,
       confidenceEvidence: Object.freeze(confidenceEvidence)
     })
   });
@@ -210,4 +241,4 @@ export function scoreOpportunities(items = []) {
 }
 
 
-export { decisionConfidenceScore, decisionConfidenceEvidence };
+export { decisionConfidenceScore, decisionConfidenceEvidence, evidenceStrength };
