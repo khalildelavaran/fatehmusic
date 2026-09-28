@@ -407,7 +407,7 @@ function appendCourseBrief(lines: string[], course: any, label = "دوره") {
   if (course.content?.description) lines.push(`- توضیح رسمی دوره: ${course.content.description}`);
   if (course.seo?.keywords?.length) lines.push(`- کلیدواژه‌های رسمی دوره: ${course.seo.keywords.join("، ")}`);
 
-  const editorial = courseContent[course.slug] || buildFallbackCourseContent(course);
+  const editorial = courseContent[course.slug as keyof typeof courseContent] || buildFallbackCourseContent(course);
   if (editorial) {
     if (editorial.overview?.length) lines.push(`- نکات محتوایی مجاز: ${editorial.overview.slice(0, 2).join(" ")}`);
     if (editorial.learningPath?.length) lines.push(`- مسیر یادگیری: ${editorial.learningPath.slice(0, 4).map((item: any) => item.stage + ": " + item.description).join(" | ")}`);
