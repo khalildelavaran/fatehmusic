@@ -53,4 +53,23 @@ describe("temporal cannibalization", () => {
     expect(detectTemporalCannibalization(noisy)).toHaveLength(0);
   });
 
+
+  it("detects semantic ownership shifts across equivalent query variants", () => {
+    const transitions = detectSemanticTemporalCannibalization([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 90, startDate: "2026-07-01", endDate: "2026-07-28" },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 90, startDate: "2026-07-01", endDate: "2026-07-28" },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 30, startDate: "2026-07-01", endDate: "2026-07-28" },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 30, startDate: "2026-07-01", endDate: "2026-07-28" },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 30, startDate: "2026-08-01", endDate: "2026-08-28" },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 30, startDate: "2026-08-01", endDate: "2026-08-28" },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 90, startDate: "2026-08-01", endDate: "2026-08-28" },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 90, startDate: "2026-08-01", endDate: "2026-08-28" }
+    ]);
+
+    expect(transitions).toHaveLength(1);
+    expect(transitions[0].mode).toBe("SEMANTIC_CLUSTER");
+    expect(transitions[0].shareDelta).toBeGreaterThanOrEqual(0.2);
+    expect(transitions[0].actionable).toBe(true);
+  });
+
 });
