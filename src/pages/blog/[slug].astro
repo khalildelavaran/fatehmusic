@@ -12,6 +12,7 @@ import {
   resolveInstructor,
   resolveSite,
   answersFromFaq,
+  answersFromArticle,
   resolveTopics,
   buildArticleClusterLinks,
   buildArticleLinkCandidates,
@@ -73,7 +74,7 @@ const relatedCourseInstructorSchemas = [...new Map(
     .filter((teacher): teacher is NonNullable<typeof teacher> => Boolean(teacher))
     .map((teacher) => [teacher.slug, buildPersonSchema(teacher, { site })])
 )].map(([, schema]) => schema);
-const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
+const answerBlocks = answersFromArticle(post.content, canonicalUrl, canonicalUrl + "#article");
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
 const internalLinkCandidates = [
   ...buildArticleLinkCandidates(allPosts, site.url),
