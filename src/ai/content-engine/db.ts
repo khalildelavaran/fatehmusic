@@ -13,7 +13,7 @@ import { canonicalAssetKey } from "./canonical-identity";
 export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTitleIndex> {
   const [topics, posts] = await Promise.all([
     db.prepare(
-      "SELECT title, normalized_key, instrument_key, related_course_slug, audience, level, modifier_type FROM content_topics WHERE status != 'rejected'"
+      "SELECT title, normalized_key, instrument_key, related_course_slug, audience, level, modifier_type FROM content_topics WHERE status != 'rejected' OR updated_at >= datetime('now', '-30 days')"
     ).all<{
       title: string;
       normalized_key: string;
