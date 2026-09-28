@@ -76,7 +76,14 @@ const relatedCourseInstructorSchemas = [...new Map(
 )].map(([, schema]) => schema);
 const answerBlocks = answersFromArticle(post.content, canonicalUrl, canonicalUrl + "#article");
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
-const internalLinkCandidates = [
+const internalLinkCandidates: Array<{
+  url: string;
+  title: string;
+  type?: string;
+  topics?: string[];
+  priority?: number;
+  local?: boolean;
+}> = [
   ...buildArticleLinkCandidates(allPosts, site.url),
   ...buildSiteLinkCandidates(site)
 ];
