@@ -5,7 +5,7 @@
  * --------------------------------------------------------
  */
 
-import { clean, stripZwnj } from "../helpers/text.js";
+import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 
 export const TOPICS = Object.freeze([
     { slug: "music-education", name: "آموزش موسیقی", aliases: ["آموزش موسیقی", "کلاس موسیقی", "یادگیری موسیقی"] },
@@ -32,14 +32,12 @@ export const TOPICS = Object.freeze([
 const PARENT_TOPIC = "music-education";
 const LOCAL_TOPIC = "shushtar";
 
-function normalize(value) {
-    return stripZwnj(clean(value)).replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").toLowerCase();
-}
+function normalize(value) { return normalizeSemanticText(value); }
 
 function resolveTopicMatches(corpus) {
     return TOPICS
         .map((topic) => {
-            const matches = topic.aliases.filter((alias) => corpus.includes(normalize(alias)));
+            const matches = topic.aliases.filter((alias) => containsSemanticPhrase(corpus, alias));
             return {
                 ...topic,
                 score: matches.length ? Math.min(95, 35 + matches.length * 20) : 0,
