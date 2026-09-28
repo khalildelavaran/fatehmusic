@@ -1,11 +1,15 @@
 import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 
-// Conservative defaults for a Workers Free account. D1 counts each SQL
-// statement inside db.batch() toward the per-invocation query limit.
+// D1 limits the number of executed SQL statements per Worker invocation.
+ // Store many rows in one prepared multi-row INSERT so GSC can ingest a
+ // materially larger snapshot without multiplying SQL statement count.
 const DEFAULT_PAGE_SIZE = 1000;
-const DEFAULT_MAX_ROWS = 450;
-const DEFAULT_BREAKDOWN_MAX_ROWS = 225;
-const BATCH_SIZE = 25;
+const DEFAULT_MAX_ROWS = 2000;
+const MAX_STANDARD_ROWS = 3000;
+const DEFAULT_BREAKDOWN_MAX_ROWS = 600;
+const MAX_BREAKDOWN_ROWS = 800;
+const BATCH_SIZE = 200;
+const INSERT_COLUMN_COUNT = 14;
 
 function normalizeSiteUrl(value) {
   return String(value || "").replace(/\/$/, "");
@@ -119,18 +123,27 @@ async function storeRows(
   }
   let rowsStored = 0;
   const conflictTarget = conflictTargetForTable(tableName);
+  const columns = [
+    "site_url", "query", "page", "country", "device", "search_appearance",
+    "start_date", "end_date", "data_state", "clicks", "impressions", "ctr",
+    "position", "source", "synced_at", "snapshot_label"
+  ];
 
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
     const chunk = rows.slice(offset, offset + BATCH_SIZE);
-    const statements = chunk.map((row) =>
-      db.prepare(
-        "INSERT INTO " + tableName + " " +
-        "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ", ?) " +
-        "ON CONFLICT(" + conflictTarget + ") DO UPDATE SET " +
-        "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
-        "position=excluded.position, synced_at=excluded.synced_at, snapshot_label=excluded.snapshot_label"
-      ).bind(
+    const placeholders = chunk
+      .map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ", ?)")
+      .join(", ");
+    const sql =
+      "INSERT INTO " + tableName + " (" + columns.join(", ") + ") " +
+      "VALUES " + placeholders + " " +
+      "ON CONFLICT(" + conflictTarget + ") DO UPDATE SET " +
+      "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
+      "position=excluded.position, synced_at=excluded.synced_at, snapshot_label=excluded.snapshot_label";
+
+    const bindings = [];
+    for (const row of chunk) {
+      bindings.push(
         siteUrl,
         row.query,
         row.page,
@@ -145,11 +158,13 @@ async function storeRows(
         row.ctr,
         row.position,
         snapshotLabel
-      )
-    );
+      );
+    }
 
-    const results = await db.batch(statements);
-    rowsStored += results.reduce((sum, result) => sum + Number(result.meta?.changes || 0), 0);
+    // One prepared statement now stores an entire chunk rather than one
+    // statement per row. This keeps D1 query usage predictable as maxRows grows.
+    const result = await db.prepare(sql).bind(...bindings).run();
+    rowsStored += Number(result.meta?.changes || 0);
   }
 
   return rowsStored;
@@ -299,13 +314,15 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
     env.GSC_SYNC_MAX_ROWS ||
     DEFAULT_MAX_ROWS
   ), 1);
-  // D1 Free currently allows 50 queries per Worker invocation; each statement
-  // inside db.batch() counts individually. Keep the two 28-day snapshots plus
-  // optional breakdown snapshot within that budget by default.
+  // Keep standard query/page snapshots materially larger than before while
+  // protecting the Worker/D1 invocation budget. Breakdown rows are intentionally
+  // smaller because they are supplemental evidence, not the primary ownership dataset.
   const breakdownsEnabled = String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1";
-  const maxRows = breakdownsEnabled
-    ? Math.min(requestedMaxRows, Number(env.GSC_SYNC_BREAKDOWN_MAX_ROWS || DEFAULT_BREAKDOWN_MAX_ROWS))
-    : Math.min(requestedMaxRows, DEFAULT_MAX_ROWS);
+  const maxRows = Math.min(requestedMaxRows, MAX_STANDARD_ROWS);
+  const breakdownMaxRows = Math.min(
+    Math.max(Number(env.GSC_SYNC_BREAKDOWN_MAX_ROWS || DEFAULT_BREAKDOWN_MAX_ROWS), 1),
+    MAX_BREAKDOWN_ROWS
+  );
 
   const currentEnd = dateDaysAgo(endOffset);
   const currentStart = dateDaysAgo(endOffset + span - 1);
