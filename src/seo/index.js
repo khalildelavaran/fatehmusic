@@ -121,7 +121,20 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         ...buildTopicSchemas(topicsResolved, { site }),
         ...extraSchema
     ], { knowledgeGraph });
-    const audit = auditPage({ metadata, url: canonicalUrl, canonical: canonicalUrl, schemaGraph, indexable: !effectiveNoindex, topicSlugs: topicsResolved.map((topic) => topic.slug), primaryIntent: intent.primary, freshness, ...auditContext });
+    const audit = auditPage({
+        metadata,
+        url: canonicalUrl,
+        canonical: canonicalUrl,
+        schemaGraph,
+        indexable: !effectiveNoindex,
+        topicSlugs: topicsResolved.map((topic) => topic.slug),
+        primaryIntent: intent.primary,
+        freshness,
+        answerBlockCount: answers.length,
+        answerBlockSourceCount: answers.filter((block) => block?.sourceUrl).length,
+        knowledgeGraphStats: knowledgeGraph.statistics,
+        ...auditContext
+    });
     const diagnostics = runDiagnostics({
         audits: [audit],
         graphValidation: knowledgeGraphValidation,
