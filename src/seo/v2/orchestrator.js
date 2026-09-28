@@ -65,14 +65,14 @@ function articleSemantics(posts = [], siteUrl = "") {
 
 /**
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
- * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], marketSignals?: object[]|Map|string, marketKeywordRows?: object[], siteUrl?: string}} options
+ * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], marketSignals = [], marketKeywordRows = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketSignals = [], marketKeywordRows = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
-  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages, marketSignals });
+  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages, gscDataQuality, marketSignals });
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
     gscRows: currentScoringRows(gscRows)
@@ -147,6 +147,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       knowledgeGraphNodeCount: knowledgeGraph.statistics.nodeCount,
       knowledgeGraphEdgeCount: knowledgeGraph.statistics.edgeCount,
       knowledgeGraphValid: knowledgeGraphValidation.valid,
+      gscCompleteness: search.dataQuality?.completeness || 0,
       marketOpportunityCount: marketOpportunities.length
     })
   });
