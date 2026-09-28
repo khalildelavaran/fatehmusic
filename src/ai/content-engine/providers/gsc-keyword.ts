@@ -1,19 +1,11 @@
 import type { KeywordProvider, KeywordSignal } from "./keyword-provider";
 
 const DEFAULT_SITE_URL = "https://fatehmusic.ir";
+import { normalizeSemanticText } from "../../../seo/helpers/text.js";
 
 function normalize(value: string): string {
-  return String(value || "")
-    .normalize("NFKC")
-    .replace(/[\u200c\u200f\u200e]/g, "")
-    .replace(/[يى]/g, "ی")
-    .replace(/[ك]/g, "ک")
-    .replace(/[؟?!.,،؛:]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
+  return normalizeSemanticText(value);
 }
-
 const GENERIC_QUERY_TERMS = new Set(["آموزش", "موسیقی", "کلاس", "دوره", "شوشتر", "فاتح", "یادگیری", "مدرس"]);
 
 const GENERIC_TOKENS = new Set([
