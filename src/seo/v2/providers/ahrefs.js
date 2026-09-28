@@ -218,34 +218,46 @@ export async function syncAhrefsMarketIntelligence({ db, env = {}, date = today(
   if (!config.enabled) return { status: "not_configured", snapshots: [] };
 
   const client = createAhrefsClient(env);
-  const [metrics, competitors, refdomains, organicKeywords] = await Promise.all([
-    client.metrics({ date }),
-    client.organicCompetitors({ date }),
-    client.refdomains(),
-    client.organicKeywords({ date, limit: 100 })
-  ]);
-
-  const snapshots = [
-    ["metrics", metrics],
-    ["organic-competitors", competitors],
-    ["refdomains", refdomains],
-    ["organic-keywords", organicKeywords]
+  const tasks = [
+    ["metrics", () => client.metrics({ date })],
+    ["organic-competitors", () => client.organicCompetitors({ date })],
+    ["refdomains", () => client.refdomains()],
+    ["organic-keywords", () => client.organicKeywords({ date, limit: 100 })]
   ];
 
-  for (const [type, payload] of snapshots) {
+  const results = await Promise.all(tasks.map(async ([type, run]) => {
+    try {
+      return { type, payload: await run() };
+    } catch (error) {
+      return {
+        type,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }));
+
+  const successful = results.filter((item) => !("error" in item));
+  const failed = results.filter((item) => "error" in item);
+
+  for (const item of successful) {
     await db.prepare(
       "INSERT INTO seo_market_snapshots (source, snapshot_type, target, country, snapshot_date, payload, fetched_at) " +
       "VALUES ('ahrefs', ?, ?, ?, ?, ?, datetime('now')) " +
       "ON CONFLICT(source, snapshot_type, target, country, snapshot_date) DO UPDATE SET payload=excluded.payload, fetched_at=excluded.fetched_at"
-    ).bind(type, config.target, config.country, date, JSON.stringify(payload)).run();
+    ).bind(item.type, config.target, config.country, date, JSON.stringify(item.payload)).run();
   }
 
+  const competitorPayload = successful.find((item) => item.type === "organic-competitors")?.payload;
+  const refdomainPayload = successful.find((item) => item.type === "refdomains")?.payload;
+  const keywordPayload = successful.find((item) => item.type === "organic-keywords")?.payload;
+
   return {
-    status: "success",
-    snapshots: snapshots.map(([type]) => type),
-    competitors: competitors.length,
-    refdomains: refdomains.length,
-    organicKeywords: organicKeywords.length
+    status: failed.length ? (successful.length ? "partial" : "failed") : "success",
+    snapshots: successful.map((item) => item.type),
+    failed: failed.map((item) => ({ type: item.type, error: item.error })),
+    competitors: Array.isArray(competitorPayload) ? competitorPayload.length : 0,
+    refdomains: Array.isArray(refdomainPayload) ? refdomainPayload.length : 0,
+    organicKeywords: Array.isArray(keywordPayload) ? keywordPayload.length : 0
   };
 }
 
