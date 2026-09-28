@@ -32,7 +32,8 @@ export async function fetchAllSearchAnalytics(client, {
   dimensions = ["query", "page"],
   pageSize = DEFAULT_PAGE_SIZE,
   maxRows = DEFAULT_MAX_ROWS,
-  dataState = "final"
+  dataState = "final",
+  snapshotLabel = "current"
 } = {}) {
   if (!client?.configured) return { configured: false, rows: [], pages: 0 };
   if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
@@ -80,8 +81,11 @@ export async function fetchAllSearchAnalytics(client, {
   return { configured: true, rows: rows.slice(0, maxRows), pages, truncated };
 }
 
-async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now')") {
+const SNAPSHOT_LABELS = new Set(["current", "previous", "breakdowns-current"]);
+
+async function storeRows(db, env, rows, startDate, endDate, snapshotLabel, now = "datetime('now')") {
   const siteUrl = normalizeSiteUrl(env.GSC_SITE_URL);
+  if (!SNAPSHOT_LABELS.has(snapshotLabel)) throw new Error("GSC_SNAPSHOT_LABEL_INVALID");
   let rowsStored = 0;
 
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
@@ -89,8 +93,8 @@ async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now
     const statements = chunk.map((row) =>
       db.prepare(
         "INSERT INTO gsc_search_signals_v2 " +
-        "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ") " +
+        "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ", ?) " +
         "ON CONFLICT(site_url, query, page, country, device, search_appearance, start_date, end_date) DO UPDATE SET " +
         "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
         "position=excluded.position, synced_at=excluded.synced_at"
@@ -107,7 +111,8 @@ async function storeRows(db, env, rows, startDate, endDate, now = "datetime('now
         row.clicks,
         row.impressions,
         row.ctr,
-        row.position
+        row.position,
+        snapshotLabel
       )
     );
 
@@ -155,7 +160,14 @@ export async function syncSearchConsoleToD1({
       dataState
     });
 
-    const rowsStored = await storeRows(db, env, fetched.rows, startDate, endDate);
+    const rowsStored = await storeRows(db, env, fetched.rows, startDate, endDate, snapshotLabel);
+
+    // Only discard an older snapshot after the new snapshot has been stored
+    // successfully. This preserves the last known good data if fetching or
+    // writing the new GSC window fails.
+    await db.prepare(
+      "DELETE FROM gsc_search_signals_v2 WHERE site_url=? AND snapshot_label=? AND (start_date != ? OR end_date != ?)"
+    ).bind(normalizeSiteUrl(env.GSC_SITE_URL), snapshotLabel, startDate, endDate).run();
 
     if (runId) {
       await db.prepare(
@@ -169,7 +181,8 @@ export async function syncSearchConsoleToD1({
       rowsStored,
       pages: fetched.pages,
       truncated: Boolean(fetched.truncated),
-      dimensions
+      dimensions,
+      snapshotLabel
     };
   } catch (error) {
     if (runId) {
@@ -219,7 +232,8 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
         dimensions: ["query", "page"],
         pageSize,
         maxRows,
-        dataState: "final"
+        dataState: "final",
+        snapshotLabel: label
       }))
     });
   }
@@ -235,7 +249,8 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
         dimensions: ["query", "page", "country", "device"],
         pageSize,
         maxRows,
-        dataState: "final"
+        dataState: "final",
+        snapshotLabel: "breakdowns-current"
       }))
     });
   }
