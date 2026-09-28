@@ -48,7 +48,7 @@ describe("SEO yellow-layer safeguards", () => {
         "@graph": [
           { "@id": "https://fatehmusic.ir/#organization" },
           { "@id": "https://fatehmusic.ir/#website" },
-          { "@id": "https://fatehmusic.ir/courses/guitar-course/#webpage" }
+          { "@id": "https://fatehmusic.ir/courses/guitar-course#webpage" }
         ]
       },
       topicSlugs: ["guitar", "shushtar"],
