@@ -6,7 +6,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
-import { absoluteUrl } from "../helpers/url.js";
+import { absoluteUrl, webPageEntityId } from "../helpers/url.js";
 
 export function buildWebPageSchema({
     url,
@@ -26,7 +26,7 @@ export function buildWebPageSchema({
 
     return pruneEmpty({
         "@type": SCHEMA_TYPES.WEB_PAGE,
-        "@id": `${String(url).replace(/\/$/, "")}/#webpage`,
+        "@id": webPageEntityId(url),
         url,
         name: title,
         description,
