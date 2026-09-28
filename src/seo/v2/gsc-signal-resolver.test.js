@@ -602,6 +602,32 @@ describe("GSC query ownership map", () => {
   });
 });
 
+describe("query ownership performance evidence", () => {
+  it("aggregates clicks, CTR and weighted rank for an owned query", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "آموزش گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar",
+        clicks: 10,
+        impressions: 100,
+        position: 5
+      },
+      {
+        query: "آموزش گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar",
+        clicks: 5,
+        impressions: 50,
+        position: 9
+      }
+    ]);
+
+    const ownership = index.queryOwnership.find((item) => item.query === "آموزش گیتار شوشتر");
+    expect(ownership.clicks).toBe(15);
+    expect(ownership.ctr).toBeCloseTo(0.1);
+    expect(ownership.position).toBeCloseTo(6.333, 2);
+  });
+});
+
 describe("position-aware CTR benchmarking", () => {
   it("derives a CTR benchmark from the same ranking bucket", () => {
     const index = buildGscSignalIndex([
