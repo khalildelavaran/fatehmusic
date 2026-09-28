@@ -267,11 +267,14 @@ function validateGeneratedArticle(
     return "meta_title با عنوان Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
   }
 
-  const internalUrls = [...new Set(
-    rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || []
-  )].map((url) => url.replace(/[.,،؛:]+$/u, ""));
+  const absoluteInternalUrls = rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || [];
+  const relativeInternalUrls = [...rawContent.matchAll(/\]\((\/(?!\/)[^\s)]+)\)/g)].map((match) => match[1]);
+  const internalUrls = [...new Set([...absoluteInternalUrls, ...relativeInternalUrls])]
+    .map((url) => String(url).replace(/[.,،؛:]+$/u, ""));
   for (const url of internalUrls) {
-    const canonicalInternalUrl = url.replace(/^http:\/\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir");
+    const canonicalInternalUrl = url.startsWith("/")
+      ? "https://fatehmusic.ir" + url.split("#")[0].split("?")[0]
+      : url.replace(/^http:\/\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir").split("#")[0].split("?")[0];
     if (!allowedLinks.has(canonicalInternalUrl)) return "مقاله شامل لینک داخلی خارج از whitelist است: " + url;
   }
 
