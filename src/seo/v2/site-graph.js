@@ -4,11 +4,15 @@
  * Never invents URLs: every target comes from a real route or data entity.
  */
 import { absoluteUrl } from "../helpers/url.js";
+import { courses as defaultCourses } from "../../data/courses.js";
+import { instructors as defaultInstructors } from "../../data/instructors.js";
 
-export function buildSiteLinkCandidates(site, { courses = [], instructors = [] } = {}) {
+export function buildSiteLinkCandidates(site, { courses = null, instructors = null } = {}) {
   const candidates = [];
+  const courseList = Array.isArray(courses) ? courses : defaultCourses;
+  const instructorList = Array.isArray(instructors) ? instructors : defaultInstructors;
 
-  for (const course of (courses || []).filter((item) => item.active !== false)) {
+  for (const course of courseList.filter((item) => item.active !== false)) {
     candidates.push({
       url: absoluteUrl(`/courses/${course.slug}`, site.url),
       title: course.title,
@@ -19,7 +23,7 @@ export function buildSiteLinkCandidates(site, { courses = [], instructors = [] }
     });
   }
 
-  for (const instructor of (instructors || []).filter((item) => item.active !== false)) {
+  for (const instructor of instructorList.filter((item) => item.active !== false)) {
     candidates.push({
       url: absoluteUrl(`/instructors/${instructor.slug}`, site.url),
       title: instructor.name,
