@@ -169,7 +169,7 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
   <body>
     <slot />
 
-  {!isPrivateAppRoute && linkCandidates?.length === 0 && (
+  {!isPrivateAppRoute && !linkCandidates?.length && (
     <SeoInternalLinks items={seo.geo.internalLinks} />
   )}
 
