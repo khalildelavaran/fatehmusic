@@ -3,7 +3,8 @@ import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 // Conservative defaults for a Workers Free account. D1 counts each SQL
 // statement inside db.batch() toward the per-invocation query limit.
 const DEFAULT_PAGE_SIZE = 1000;
-const DEFAULT_MAX_ROWS = 350;
+const DEFAULT_MAX_ROWS = 500;
+const DEFAULT_BREAKDOWN_MAX_ROWS = 225;
 const BATCH_SIZE = 25;
 
 function normalizeSiteUrl(value) {
@@ -291,12 +292,18 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
     Math.max(Number(options.pageSize || DEFAULT_PAGE_SIZE), 1),
     25000
   );
-  const requestedMaxRows = Math.max(Number(options.maxRows || DEFAULT_MAX_ROWS), 1);
-  // Optional country/device breakdowns add a third set of D1 writes. Keep the
-  // default total query footprint below the Free-plan per-invocation limit.
-  const maxRows = String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1"
-    ? Math.min(requestedMaxRows, 225)
-    : Math.min(requestedMaxRows, 350);
+  const requestedMaxRows = Math.max(Number(
+    options.maxRows ||
+    env.GSC_SYNC_MAX_ROWS ||
+    DEFAULT_MAX_ROWS
+  ), 1);
+  // D1 Free currently allows 50 queries per Worker invocation; each statement
+  // inside db.batch() counts individually. Keep the two 28-day snapshots plus
+  // optional breakdown snapshot within that budget by default.
+  const breakdownsEnabled = String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1";
+  const maxRows = breakdownsEnabled
+    ? Math.min(requestedMaxRows, Number(env.GSC_SYNC_BREAKDOWN_MAX_ROWS || DEFAULT_BREAKDOWN_MAX_ROWS))
+    : Math.min(requestedMaxRows, DEFAULT_MAX_ROWS);
 
   const currentEnd = dateDaysAgo(endOffset);
   const currentStart = dateDaysAgo(endOffset + span - 1);
