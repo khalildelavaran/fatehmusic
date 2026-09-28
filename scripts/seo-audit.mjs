@@ -84,13 +84,9 @@ function normalizeRedirectSource(value) {
   return raw.endsWith("/") && route !== "/" ? route + "/" : route;
 }
 
-function readRedirects() {
-  // Astro copies public/_redirects into the deployed dist. Keep the root
-  // fallback for projects/environments that still place the rules there.
-  const files = [path.join(ROOT, "public", "_redirects"), path.join(ROOT, "_redirects")];
-  const file = files.find((item) => fs.existsSync(item));
+function readRedirectFile(file) {
   const map = new Map();
-  if (!file) return map;
+  if (!fs.existsSync(file)) return map;
   for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
@@ -99,10 +95,52 @@ function readRedirects() {
     const from = normalizeRedirectSource(parts[0]);
     const to = normalizeRoute(parts[1]);
     if (!from || !to) continue;
-    if (map.has(from)) error("DUPLICATE_REDIRECT", "duplicate redirect source: " + from);
+    if (map.has(from)) error("DUPLICATE_REDIRECT", "duplicate redirect source in " + file + ": " + from);
     map.set(from, { to, status: parts[2] || "301" });
   }
   return map;
+}
+
+function validateRedirectFileParity(primary, secondary, primaryLabel = "public/_redirects", secondaryLabel = "_redirects") {
+  const keys = new Set([...primary.keys(), ...secondary.keys()]);
+  for (const from of keys) {
+    const left = primary.get(from);
+    const right = secondary.get(from);
+    if (!left || !right) {
+      error(
+        "REDIRECT_FILE_PARITY",
+        "redirect source exists only in " + (left ? primaryLabel : secondaryLabel) + ": " + from
+      );
+      continue;
+    }
+    if (left.to !== right.to || String(left.status) !== String(right.status)) {
+      error(
+        "REDIRECT_FILE_PARITY",
+        "redirect differs between " + primaryLabel + " and " + secondaryLabel + ": " +
+        from + " -> " + left.to + " " + left.status + " vs " + right.to + " " + right.status
+      );
+    }
+  }
+}
+
+function readRedirects() {
+  // Astro copies public/_redirects into the deployed dist. Keep the root
+  // fallback for projects/environments that still place the rules there.
+  const publicFile = path.join(ROOT, "public", "_redirects");
+  const rootFile = path.join(ROOT, "_redirects");
+  const publicExists = fs.existsSync(publicFile);
+  const rootExists = fs.existsSync(rootFile);
+
+  if (publicExists && rootExists) {
+    const publicMap = readRedirectFile(publicFile);
+    const rootMap = readRedirectFile(rootFile);
+    validateRedirectFileParity(publicMap, rootMap);
+    return publicMap;
+  }
+
+  if (publicExists) return readRedirectFile(publicFile);
+  if (rootExists) return readRedirectFile(rootFile);
+  return new Map();
 }
 
 function validateRedirects(redirects) {
@@ -616,5 +654,6 @@ export {
   validateSchema,
   collectSitemapUrls,
   readRedirects,
+  validateRedirectFileParity,
   validateCanonicalRedirectCoverage
 };
