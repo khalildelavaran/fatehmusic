@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
+import { buildKnowledgeGraph, validateKnowledgeGraph, findRelatedEntities } from "./knowledge-graph.js";
 import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
 describe("SEO knowledge graph", () => {
@@ -40,6 +40,29 @@ describe("SEO knowledge graph", () => {
     expect(graph.nodes.some((node) =>
       node.id === instructorEntityId("https://fatehmusic.ir/instructors/ali-music")
     )).toBe(true);
+  });
+
+  it("traverses related entities through the canonical edge API", () => {
+    const graph = buildKnowledgeGraph({
+      siteUrl: "https://fatehmusic.ir",
+      courses: [{
+        id: 1,
+        slug: "guitar-course",
+        title: "گیتار",
+        instructor: 7
+      }],
+      instructors: [{
+        id: 7,
+        slug: "ali",
+        name: "علی"
+      }]
+    });
+    const personId = "https://fatehmusic.ir/instructors/ali#person";
+    const related = findRelatedEntities(graph, personId, { relations: ["teaches"], direction: "out" });
+
+    expect(related).toHaveLength(1);
+    expect(related[0].entity.name).toBe("گیتار");
+    expect(related[0].confidence).toBe(1);
   });
 
   it("deduplicates edges and validates broken references", () => {
