@@ -103,17 +103,35 @@ export async function finishRun(
     .run();
 }
 
-export async function insertScoredCandidates(db: D1Database, candidates: ScoredCandidate[], runId: number): Promise<number> {
-  if (candidates.length === 0) return 0;
+export async function insertScoredCandidates(
+  db: D1Database,
+  candidates: ScoredCandidate[],
+  runId: number
+): Promise<{ inserted: number; newlyApproved: number }> {
+  if (candidates.length === 0) return { inserted: 0, newlyApproved: 0 };
   const autoApproveThreshold = 55;
-  const targetStatus = (c: ScoredCandidate) => c.scoreTotal >= autoApproveThreshold ? "approved" : "candidate";
 
-  // One conditional UPSERT per candidate. Existing candidate/approved/used
-  // topics stay untouched; only a previously rejected topic is revived.
-  // This halves the batch size compared with separate UPDATE + INSERT calls.
+  // Snapshot existing states before the UPSERT so run history can distinguish
+  // newly-approved topics from topics that were already approved/used.
+  const existingStatuses = new Map<string, string>();
+  const uniqueKeys = [...new Set(candidates.map((candidate) => candidate.normalizedKey))];
+  for (let offset = 0; offset < uniqueKeys.length; offset += 50) {
+    const chunk = uniqueKeys.slice(offset, offset + 50);
+    const placeholders = chunk.map(() => "?").join(",");
+    const rows = await db.prepare(
+      "SELECT normalized_key, status FROM content_topics WHERE normalized_key IN (" + placeholders + ")"
+    ).bind(...chunk).all<{ normalized_key: string; status: string }>();
+    for (const row of rows.results || []) {
+      existingStatuses.set(row.normalized_key, row.status);
+    }
+  }
+
+  // One conditional UPSERT per candidate. Existing approved/used topics keep
+  // their lifecycle state; rejected/candidate topics may be refreshed.
   const statements = candidates.map((c) => {
-    const status = targetStatus(c);
-    const sql = "INSERT INTO content_topics " +
+    const status = c.scoreTotal >= autoApproveThreshold ? "approved" : "candidate";
+    return db.prepare(
+      "INSERT INTO content_topics " +
       "(title, normalized_key, instrument_key, related_course_slug, related_course_title, category, " +
       "audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, run_id) " +
       "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) " +
@@ -125,8 +143,8 @@ export async function insertScoredCandidates(db: D1Database, candidates: ScoredC
       "status=CASE WHEN content_topics.status IN ('approved', 'used') THEN content_topics.status ELSE excluded.status END, " +
       "source=excluded.source, run_id=excluded.run_id, updated_at=datetime('now'), " +
       "used_by_post_id=CASE WHEN content_topics.status='used' THEN content_topics.used_by_post_id ELSE NULL END, " +
-      "used_at=CASE WHEN content_topics.status='used' THEN content_topics.used_at ELSE NULL END";
-    return db.prepare(sql).bind(
+      "used_at=CASE WHEN content_topics.status='used' THEN content_topics.used_at ELSE NULL END"
+    ).bind(
       c.title,
       c.normalizedKey,
       c.instrumentKey,
@@ -147,9 +165,20 @@ export async function insertScoredCandidates(db: D1Database, candidates: ScoredC
   });
 
   const results = await db.batch(statements);
-  return results.reduce((sum, result) => sum + (Number(result.meta?.changes || 0) > 0 ? 1 : 0), 0);
+  const inserted = results.reduce((sum, result) =>
+    sum + (Number(result.meta?.changes || 0) > 0 ? 1 : 0), 0
+  );
+
+  const newlyApproved = candidates.reduce((sum, candidate) => {
+    const previousStatus = existingStatuses.get(candidate.normalizedKey);
+    const isNewApproval = candidate.scoreTotal >= autoApproveThreshold &&
+      previousStatus !== "approved" &&
+      previousStatus !== "used";
+    return sum + (isNewApproval ? 1 : 0);
+  }, 0);
+
+  return { inserted, newlyApproved };
 }
- 
 export async function getRunApprovedCount(db: D1Database, runId: number): Promise<number> {
   const row = await db.prepare(
     "SELECT COUNT(*) AS count FROM content_topics WHERE run_id = ? AND status = 'approved'"
