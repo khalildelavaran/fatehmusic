@@ -2,7 +2,6 @@
 import "../styles/global.css";
 import "../styles/reveal.css";
 import { buildSEO } from "../seo/index.js";
-import SeoInternalLinks from "../components/SeoInternalLinks.astro";
 
 export interface Props {
   title?: string;
@@ -168,10 +167,6 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
   </head>
   <body>
     <slot />
-
-  {!isPrivateAppRoute && !linkCandidates?.length && (
-    <SeoInternalLinks items={seo.geo.internalLinks} />
-  )}
 
     <script src="../scripts/reveal.js"></script>
     <script src="../scripts/analytics.js"></script>
