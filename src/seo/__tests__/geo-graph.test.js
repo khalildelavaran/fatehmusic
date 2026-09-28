@@ -62,6 +62,37 @@ describe("GEO entity graph", () => {
         expect(profile.mainEntity["@id"]).toBe("https://fatehmusic.ir/instructors/ali/#person");
     });
 
+    it("compiles Knowledge Graph teaching edges into Schema.org relationships", () => {
+        const graph = buildSchemaGraph([
+            {
+                "@id": "https://fatehmusic.ir/#organization",
+                "@type": "Organization"
+            },
+            {
+                "@id": "https://fatehmusic.ir/courses/guitar/#course",
+                "@type": "Course",
+                name: "گیتار"
+            },
+            {
+                "@id": "https://fatehmusic.ir/instructors/ali/#person",
+                "@type": "Person",
+                name: "علی"
+            }
+        ], {
+            knowledgeGraph: {
+                edges: [{
+                    from: "https://fatehmusic.ir/instructors/ali/#person",
+                    relation: "teaches",
+                    to: "https://fatehmusic.ir/courses/guitar/#course",
+                    confidence: 1
+                }]
+            }
+        });
+
+        const person = graph["@graph"].find((node) => node["@id"].endsWith("#person"));
+        expect(person.teaches).toEqual([{ "@id": "https://fatehmusic.ir/courses/guitar/#course" }]);
+    });
+
     it("returns one graph with duplicate entities removed", () => {
         const graph = buildSchemaGraph([
             { "@id": "https://fatehmusic.ir/#organization", "@type": "Organization", logo: "x" },
