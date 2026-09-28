@@ -60,6 +60,29 @@
 - تفکیک `POSITIVE`, `NEGATIVE`, `NEUTRAL`, `INSUFFICIENT_DATA`
 - این خروجی causal attribution آماری ادعا نمی‌کند.
 
+### 9. Evidence-aware decision guardrails
+- priority اکنون علاوه بر scoring دارای یک decisionGuard است.
+- پوشش ناقص یا freshness پایین GSC/market می‌تواند سقف امتیاز تصمیم را کاهش دهد.
+- شواهد مستقل بر اساس خانواده منبع شمارش می‌شوند؛ GSC Signal و GSC Ownership یک منبع مستقل محسوب می‌شوند.
+- reason codeهای guard برای auditability داخل scoreBreakdown.decisionGuard نگهداری می‌شوند.
+
+### 10. Position-aware CTR Intelligence
+- CTR با benchmark همان bucket رتبه مقایسه می‌شود.
+- benchmark فقط با sample کافی وارد تصمیم می‌شود.
+- ctrGap، ctrRatioToBenchmark و اندازه نمونه برای auditability نگه‌داری می‌شوند.
+- در صورت ناکافی بودن benchmark، fallback قبلی حفظ می‌شود.
+
+### 11. GSC Query Intent Evidence
+- intent Queryهای واقعی GSC به‌صورت impression-weighted استخراج می‌شود.
+- intent واقعی جستجو با searchIntent محتوای پیشنهادی مقایسه می‌شود.
+- توافق intent confidence را افزایش و conflict قوی confidence را کاهش می‌دهد.
+- mixed intent به‌عنوان ambiguity سیگنال داده می‌شود.
+
+### 12. Coverage & freshness hardening
+- سقف ingestion استاندارد GSC افزایش یافته و truncation همچنان صریح ثبت می‌شود.
+- Query Ownership از محدودیت نمایشی داشبورد جدا شده و برای long-tail ظرفیت بیشتری دارد.
+- freshness داده market در evidence و priority لحاظ می‌شود.
+
 ## Decision model
 
 Opportunity scoring اکنون می‌تواند هم‌زمان از این شواهد استفاده کند:
