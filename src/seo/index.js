@@ -84,6 +84,7 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const webPageSchema = buildWebPageSchema({ url: canonicalUrl, title: metadata.title, description: metadata.description, image: resolvedImage, keywords: metadata.keywords, topics: topicsResolved, extraSchema, site, lastModified });
     const schemaGraph = buildSchemaGraph([
         buildOrganizationSchema(site),
+        buildGeoAuthorityEntity(site),
         buildWebsiteSchema(site),
         webPageSchema,
         buildLocalPlaceSchema(site),
@@ -95,4 +96,4 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
 }
 
 export { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildCourseStyleSchemas, buildGuitarStyleSchema, buildPersonSchema,
-    buildProfilePageSchema, buildArticleSchema, buildVideoSchema, buildBreadcrumbSchema, buildItemListSchema, buildFaqSchema, buildAboutPageSchema, buildContactPageSchema, buildLocalPlaceSchema, buildWebPageSchema, resolveTopics, topicSlugs, classifyIntent, getFreshness, buildInternalLinkPlan, buildLinkGraph, buildAnswerBlocks, answersFromFaq, buildSiteLinkCandidates, buildArticleLinkCandidates, buildContentClusterReport, buildArticleProfiles, buildArticleClusterLinks, findContentGaps, buildContentStrategy, buildUnifiedContentOpportunities, enrichOpportunitiesWithSearchConsole, buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, detectTemporalCannibalization, scoreOpportunity, scoreOpportunities, classifyOpportunityAction, buildSEOIntelligence, auditPage, isPrivateRoute };
+    buildProfilePageSchema, buildArticleSchema, buildVideoSchema, buildBreadcrumbSchema, buildItemListSchema, buildFaqSchema, buildAboutPageSchema, buildContactPageSchema, buildLocalPlaceSchema, buildWebPageSchema, buildGeoAuthorityEntity, resolveTopics, topicSlugs, classifyIntent, getFreshness, buildInternalLinkPlan, buildLinkGraph, buildAnswerBlocks, answersFromFaq, buildSiteLinkCandidates, buildArticleLinkCandidates, buildContentClusterReport, buildArticleProfiles, buildArticleClusterLinks, findContentGaps, buildContentStrategy, buildUnifiedContentOpportunities, enrichOpportunitiesWithSearchConsole, buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, detectTemporalCannibalization, scoreOpportunity, scoreOpportunities, classifyOpportunityAction, buildSEOIntelligence, auditPage, isPrivateRoute };
