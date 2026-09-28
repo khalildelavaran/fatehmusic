@@ -12,6 +12,9 @@ describe("SEO action outcome classifier", () => {
     expect(result.ctrLift).toBeCloseTo(0.03);
     expect(result.positionImprovement).toBe(2);
     expect(result.confidence).toBeGreaterThan(70);
+    expect(result.ctrStatisticallyStrong).toBe(true);
+    expect(result.ctrZScore).toBeGreaterThan(1.96);
+    expect(result.evidenceType).toBe("DESCRIPTIVE_BEFORE_AFTER");
   });
 
   it("reports insufficient data when no non-overlapping baseline exists", () => {
