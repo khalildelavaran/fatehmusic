@@ -121,6 +121,25 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     }
   }
   const marketSignals = normalizeMarketSignals(options.marketSignals);
+  const marketAgeDays = resolveAgeDays(
+    options.marketDataQuality?.fetchedAt ||
+    options.marketDataQuality?.finishedAt ||
+    null
+  );
+  const marketFreshness = marketAgeDays == null
+    ? "UNKNOWN"
+    : marketAgeDays <= 8
+      ? "FRESH"
+      : marketAgeDays <= 16
+        ? "AGING"
+        : "STALE";
+  const marketDataQuality = Object.freeze({
+    configured: marketSignals.size > 0,
+    signalCount: marketSignals.size,
+    ageDays: marketAgeDays,
+    freshness: marketFreshness
+  });
+
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
     const page = normalizeUrl(item.url || item.targetEntity?.url || "");
     const marketSignal = resolveMarketSignal(item, marketSignals);
@@ -129,7 +148,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       cannibalization: conflictByPage.get(page) || null,
       temporalCannibalization: temporalByPage.get(page) || null,
       marketSignal,
-      gscDataQuality
+      gscDataQuality,
+      marketDataQuality
     });
   });
   const scored = scoreOpportunities(enriched);
@@ -144,6 +164,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     queryOwnership: Object.freeze(queryOwnership),
     queryClusters: Object.freeze(index.queryClusters || []),
     dataQuality: gscDataQuality,
+    marketDataQuality,
     summary: Object.freeze({
       connected: scoringRows.length > 0,
       signalRows: scoringRows.length,
@@ -166,7 +187,10 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       queryClusterCount: index.queryClusters?.length || 0,
       gscCompleteness: gscDataQuality.completeness,
       gscFreshness: gscDataQuality.freshness,
-      gscAgeDays: gscDataQuality.ageDays
+      gscAgeDays: gscDataQuality.ageDays,
+      marketFreshness: marketDataQuality.freshness,
+      marketAgeDays: marketDataQuality.ageDays,
+      marketSignalCount: marketDataQuality.signalCount
     })
   });
 }
@@ -234,7 +258,7 @@ function resolveMarketSignal(item, signals) {
 
     // Require the market keyword itself to be substantially represented in the
     // page/query concept, not merely one generic token in a large title.
-    if (keywordCoverage < 0.5 || targetCoverage < 0.5 || similarity < 0.5) continue;
+    if (keywordCoverage < 0.6 || targetCoverage < 0.5 || similarity < 0.55) continue;
 
     const volume = Number(signal.estimatedVolume) || 0;
     const score =
