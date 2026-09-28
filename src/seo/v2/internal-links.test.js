@@ -67,4 +67,38 @@ describe("semantic internal links", () => {
       expect(count).toBeLessThanOrEqual(1);
     }
   });
+
+  it("applies saturation penalty as inbound demand accumulates", () => {
+    const sharedTargetPages = [
+      {
+        url: "https://fatehmusic.ir/blog/source-a",
+        title: "آموزش گیتار A",
+        type: "Article",
+        topics: ["guitar"],
+        priority: 20
+      },
+      {
+        url: "https://fatehmusic.ir/blog/source-b",
+        title: "آموزش گیتار B",
+        type: "Article",
+        topics: ["guitar"],
+        priority: 19
+      },
+      {
+        url: "https://fatehmusic.ir/courses/guitar-course",
+        title: "کلاس آموزش گیتار",
+        type: "Course",
+        topics: ["guitar"],
+        priority: 10
+      }
+    ];
+    const graph = buildLinkGraph(sharedTargetPages, { limit: 1, maxInboundLinks: 2 });
+    const targetLinks = graph
+      .flatMap((page) => page.links)
+      .filter((link) => link.url.endsWith("/courses/guitar-course"));
+
+    expect(targetLinks.length).toBe(2);
+    expect(Math.max(...targetLinks.map((link) => link.saturationPenalty))).toBeGreaterThan(0);
+  });
+
 });
