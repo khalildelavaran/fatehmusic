@@ -49,4 +49,12 @@ describe("opportunity scoring", () => {
   it("keeps new-content opportunities when no search signal exists", () => {
     expect(classifyOpportunityAction({ action: "NEW_CONTENT", searchSignal: { available: false } })).toBe("NEW_CONTENT");
   });
+
+  it("does not convert a new article into optimization because a related page has demand", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      targetEntity: { type: "Course", url: "https://fatehmusic.ir/courses/guitar-course" },
+      searchSignal: { available: true, impressions: 5000, ctr: 0.02, position: 6 }
+    })).toBe("NEW_CONTENT");
+  });
 });
