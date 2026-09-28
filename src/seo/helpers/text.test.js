@@ -15,4 +15,9 @@ describe("canonical semantic text layer", () => {
   it("returns stable token sequences", () => {
     expect(semanticTokens("کلاس گیتار در شوشتر")).toEqual(["کلاس", "گیتار", "در", "شوشتر"]);
   });
+
+  it("strips punctuation without merging Persian word boundaries", () => {
+    expect(semanticTokens("آموزشِ گیتار، در شوشتر!")).toEqual(["آموزش", "گیتار", "در", "شوشتر"]);
+    expect(containsSemanticPhrase("کلاس گیتار، برای مبتدیان", "گیتار برای")).toBe(true);
+  });
 });
