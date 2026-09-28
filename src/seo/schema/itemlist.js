@@ -24,6 +24,7 @@ export function buildItemListSchema({
             "@type": "ListItem",
             position: index + 1,
             name: item.name,
+            url: item.url,
             item: {
                 "@id": item.id || item.url,
                 url: item.url,
