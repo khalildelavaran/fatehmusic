@@ -16,8 +16,24 @@ function isShushtarTopic(topic) { return topic?.slug === "shushtar" || containsS
 function localTopicName(topic) { return isShushtarTopic(topic) ? "آموزش موسیقی" : (topic?.name || "آموزش موسیقی"); }
 function hasLocalSignal(value) { return containsSemanticPhrase(value || "", "شوشتر"); }
 function resolveTopicFromTitle(title, fallback = null) {
-  const normalized = normalize(title);
-  const specific = TOPICS.filter((topic) => !SCOPE_ONLY_TOPICS.has(topic.slug) && topic.slug !== "music-education").map((topic) => ({ topic, score: (topic.aliases || []).reduce((sum, alias) => normalized.includes(normalize(alias)) ? sum + normalize(alias).length : sum, 0) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || b.topic.name.length - a.topic.name.length || a.topic.name.localeCompare(b.topic.name, "fa"));
+  const specific = TOPICS
+    .filter((topic) => !SCOPE_ONLY_TOPICS.has(topic.slug) && topic.slug !== "music-education")
+    .map((topic) => ({
+      topic,
+      score: (topic.aliases || []).reduce(
+        (sum, alias) => containsSemanticPhrase(title || "", alias)
+          ? sum + semanticTokens(alias).length * 10
+          : sum,
+        0
+      )
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) =>
+      b.score - a.score ||
+      b.topic.name.length - a.topic.name.length ||
+      a.topic.name.localeCompare(b.topic.name, "fa")
+    );
+
   if (specific[0]) return specific[0].topic;
   if (hasLocalSignal(title)) return findTopic("shushtar");
   return findTopic(fallback) || findTopic("music-education");
@@ -27,8 +43,25 @@ function topicForCourse(course) {
   const instrument = normalize(course.instrument || "");
   const byInstrument = TOPICS.find((topic) => normalize(topic.slug) === instrument);
   if (byInstrument) return byInstrument;
-  const normalized = normalize([course.slug, course.title, course.description].filter(Boolean).join(" | "));
-  return TOPICS.map((topic) => ({ topic, score: [topic.name, ...(topic.aliases || [])].filter(Boolean).reduce((sum, alias) => normalized.includes(normalize(alias)) ? sum + normalize(alias).length : sum, 0) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
+
+  const haystack = [course.slug, course.title, course.description]
+    .filter(Boolean)
+    .join(" | ");
+
+  return TOPICS
+    .map((topic) => ({
+      topic,
+      score: [topic.name, ...(topic.aliases || [])]
+        .filter(Boolean)
+        .reduce(
+          (sum, alias) => containsSemanticPhrase(haystack, alias)
+            ? sum + semanticTokens(alias).length * 10
+            : sum,
+          0
+        )
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.topic.name.localeCompare(b.topic.name, "fa"))[0]?.topic || null;
 }
 function resolveCandidateTopic(candidate, course) {
   const explicitTopic = findTopic(candidate.topic || candidate.topicSlug || candidate.topicId);
@@ -39,20 +72,24 @@ function resolveCandidateTopic(candidate, course) {
 }
 function normalizeBaseUrl(siteUrl) { return String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, ""); }
 function findCourseFromTitle(title, courses = []) {
-  const normalizedTitle = normalize(title);
-  const exact = courses.filter((course) => course?.slug && course?.title && normalizedTitle.includes(normalize(course.title)));
+  const exact = courses.filter(
+    (course) => course?.slug &&
+      course?.title &&
+      containsSemanticPhrase(title || "", course.title)
+  );
   if (exact.length === 1) return exact[0];
-  if (exact.length > 1) return exact.sort((a, b) => normalize(b.title).length - normalize(a.title).length || String(a.slug).localeCompare(String(b.slug)))[0];
+  if (exact.length > 1) {
+    return exact.sort(
+      (a, b) =>
+        semanticTokens(b.title).length - semanticTokens(a.title).length ||
+        String(a.slug).localeCompare(String(b.slug))
+    )[0];
+  }
   return null;
 }
 function containsTokenSequence(title, phrase) {
-  const haystack = normalize(title).split(" ").filter(Boolean);
-  const needle = normalize(phrase).replace(/^آموزش\s+/, "").split(" ").filter(Boolean);
-  if (!needle.length || needle.length > haystack.length) return false;
-  for (let i = 0; i <= haystack.length - needle.length; i += 1) {
-    if (needle.every((token, offset) => haystack[i + offset] === token)) return true;
-  }
-  return false;
+  const normalizedPhrase = normalize(phrase).replace(/^آموزش\s+/, "").trim();
+  return Boolean(normalizedPhrase) && containsSemanticPhrase(title || "", normalizedPhrase);
 }
 function findComparisonCourses(candidate, courses = []) {
   const candidateSlug = candidate?.relatedCourseSlug || null;
@@ -71,11 +108,24 @@ function findCourseForTopic(topic, courses = [], title = "") {
   if (!topic || isShushtarTopic(topic) || topic.slug === "music-education") return null;
   const fromTitle = findCourseFromTitle(title, courses);
   if (fromTitle) return fromTitle;
-  const aliases = [topic.name, ...(topic.aliases || [])].map(normalize).filter((value) => value.length >= 3).sort((a, b) => b.length - a.length);
+  const aliases = [topic.name, ...(topic.aliases || [])]
+    .map(normalize)
+    .filter((value) => semanticTokens(value).length > 0)
+    .sort((a, b) => semanticTokens(b).length - semanticTokens(a).length || b.length - a.length);
+
   const ranked = courses.map((course) => {
-    const haystack = normalize([course?.slug, course?.title, course?.instrument, course?.description].filter(Boolean).join(" | ") );
-    const exact = aliases.find((alias) => haystack === alias || haystack.split(" ").includes(alias));
-    const score = exact ? 1000 + exact.length : aliases.reduce((sum, alias) => sum + (haystack.includes(alias) ? alias.length : 0), 0);
+    const haystack = [course?.slug, course?.title, course?.instrument, course?.description]
+      .filter(Boolean)
+      .join(" | ");
+
+    const exact = aliases.find((alias) => containsSemanticPhrase(haystack, alias));
+    const score = exact
+      ? 1000 + semanticTokens(exact).length * 10
+      : aliases.reduce(
+          (sum, alias) => sum + (containsSemanticPhrase(haystack, alias) ? semanticTokens(alias).length * 10 : 0),
+          0
+        );
+
     return { course, score };
   }).filter((item) => item.score > 0);
   if (ranked.length === 0) return null;
