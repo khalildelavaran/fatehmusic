@@ -46,4 +46,25 @@ describe("SEO diagnostics engine", () => {
     expect(result.issues.some((item) => item.id === "title")).toBe(true);
     expect(result.issues.some((item) => item.id === "knowledge-graph")).toBe(true);
   });
+
+
+  it("counts overlapping GEO checks in both content and AI-readiness categories", () => {
+    const result = runDiagnostics({
+      audits: [{
+        checks: [
+          { id: "schema", status: "pass", points: 10 },
+          { id: "answer-blocks", status: "pass", points: 5 },
+          { id: "answer-sources", status: "pass", points: 5 },
+          { id: "entity-graph", status: "pass", points: 5 }
+        ],
+        errors: [],
+        warnings: []
+      }],
+      graphValidation: { valid: true, errors: [] }
+    });
+
+    expect(result.categories.aiReadiness.available).toBe(true);
+    expect(result.categories.aiReadiness.coverage).toBeGreaterThan(0);
+    expect(result.categories.schema.score).toBe(100);
+  });
 });
