@@ -65,7 +65,8 @@ export function buildCourseSchema(course, { site }) {
         ])],
         teaches: course.slug === "guitar-course"
             ? ["گیتار پاپ", "گیتار کلاسیک", "گیتار فلامنکو"]
-            : undefined,
+            : (course.title || course.instrument),
+        instructor: instructorRefs.length ? instructorRefs : undefined,
         provider: { "@id": `${site.url}/#organization` },
         mainEntityOfPage: { "@id": `${String(course.url).replace(/\/$/, "")}/#webpage` },
         educationalLevel: course.level.join("، "),
