@@ -3,7 +3,9 @@
  * Builders should only emit types registered here.
  */
 
-const DEFINITIONS = Object.freeze({
+export const SCHEMA_REGISTRY_VERSION = "5.1";
+
+const DEFINITIONS = Object.freeze(Object.fromEntries(Object.entries({
   Thing: { parent: null, category: "Core" },
   Intangible: { parent: "Thing", category: "Core" },
   StructuredValue: { parent: "Intangible", category: "Core" },
@@ -43,7 +45,12 @@ const DEFINITIONS = Object.freeze({
   City: { parent: "AdministrativeArea", category: "Location" },
   GeoCoordinates: { parent: "StructuredValue", category: "Location" },
   OpeningHoursSpecification: { parent: "StructuredValue", category: "Location" }
-});
+}).map(([type, definition]) => [type, Object.freeze({
+  ...definition,
+  type,
+  version: SCHEMA_REGISTRY_VERSION,
+  namespace: "https://schema.org"
+})])));
 
 export const SCHEMA_REGISTRY = DEFINITIONS;
 
@@ -75,6 +82,7 @@ export function validateSchemaTypes(nodes = []) {
 
 export function schemaRegistryStatistics() {
   return Object.freeze({
+    version: SCHEMA_REGISTRY_VERSION,
     typeCount: Object.keys(DEFINITIONS).length,
     categories: Object.freeze([...new Set(Object.values(DEFINITIONS).map((item) => item.category))].sort())
   });
