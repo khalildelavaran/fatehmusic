@@ -221,7 +221,9 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
 /** Strict variant for endpoints such as sitemaps where a database outage must not be mistaken for valid empty content. */ 
 export async function getPublishedPostsStrict(): Promise<BlogPost[]> {
   const db = env.DB;
-  if (!db) return fallbackBlogPosts;
+  if (!db) {
+    throw new Error("D1 binding 'DB' is required for strict published-content reads");
+  }
 
   const result = await db
     .prepare("SELECT * FROM blog_posts WHERE status = 'published' ORDER BY COALESCE(published_at, created_at) DESC")
