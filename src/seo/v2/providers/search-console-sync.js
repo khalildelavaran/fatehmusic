@@ -113,11 +113,14 @@ async function storeRows(
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
     const chunk = rows.slice(offset, offset + BATCH_SIZE);
     const statements = chunk.map((row) =>
+      const conflictTarget = tableName === "gsc_search_signals_staging"
+        ? "site_url, query, page, country, device, search_appearance, start_date, end_date, snapshot_label"
+        : "site_url, query, page, country, device, search_appearance, start_date, end_date";
       db.prepare(
         "INSERT INTO " + tableName + " " +
         "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ", ?) " +
-        "ON CONFLICT(site_url, query, page, country, device, search_appearance, start_date, end_date) DO UPDATE SET " +
+        "ON CONFLICT(" + conflictTarget + ") DO UPDATE SET " +
         "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
         "position=excluded.position, synced_at=excluded.synced_at, snapshot_label=excluded.snapshot_label"
       ).bind(
