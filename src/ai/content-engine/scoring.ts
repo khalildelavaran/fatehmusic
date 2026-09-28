@@ -83,7 +83,7 @@ function buildReasoning(candidate: TopicCandidate, breakdown: ScoreBreakdown, ke
   } else if (!keywordSignal.available) {
     parts.push("سیگنال تقاضای مشاهده‌شده در Search Console در دسترس نیست (امتیاز خنثی لحاظ شد)");
   }
-  if (breakdown.freshnessPenalty < 0) parts.push("همین ساز اخیراً استفاده شده (امتیاز کاهش یافت)");
+  if (breakdown.freshnessPenalty < 0) parts.push("این دوره اخیراً در صف تولید استفاده شده (امتیاز کاهش یافت)");
   return parts.join("؛ ") + ".";
 }
 
