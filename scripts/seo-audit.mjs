@@ -272,7 +272,7 @@ function validateHtmlFiles() {
     const anchors = allMatches(/<a\b[^>]+href=["']([^"'#]+)["']/gi, html);
 
     if (!title) error("TITLE_MISSING", route + ": title missing");
-    if (title.trim().length < 20 || title.trim().length > 60) warn("TITLE_LENGTH", route + ": title length is outside 20-65 characters");
+    if (title.trim().length < 20 || title.trim().length > 60) warn("TITLE_LENGTH", route + ": title length is outside 20-60 characters");
     if (descriptions.length !== 1 || !descriptions[0]) {
       error("META_DESCRIPTION", route + ": expected exactly one non-empty meta description");
     } else if (descriptions[0].trim().length < 80 || descriptions[0].trim().length > 160) {
