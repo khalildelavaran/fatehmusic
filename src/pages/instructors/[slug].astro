@@ -79,9 +79,9 @@ const internalLinkCount = teacherCourses.length + 1;
 const courseDisplayMap = instructorCourseDisplay as Record<string, Record<string, string>>;
 const courseDisplay = courseDisplayMap[teacher.slug] || {};
 
-const specialty = teacher.position.replace(/^مدرس\s*/u, "");
-const instructorTitle = `${teacher.name} | مدرس ${specialty} در آموزشگاه موسیقی فاتح شوشتر`;
-const instructorDescription = `${teacher.name}، مدرس ${specialty} در آموزشگاه موسیقی فاتح شوشتر. آشنایی با تخصص، دوره‌های آموزشی، روش تدریس و مسیر ثبت‌نام.`;
+const specialty = teacher.position.trim();
+const instructorTitle = `${teacher.name} | ${specialty} در شوشتر`;
+const instructorDescription = `${teacher.name}، ${specialty} در آموزشگاه موسیقی فاتح شوشتر. آشنایی با تخصص، دوره‌های آموزشی، روش تدریس و مسیر ثبت‌نام.`;
 ---
 
 <MainLayout
