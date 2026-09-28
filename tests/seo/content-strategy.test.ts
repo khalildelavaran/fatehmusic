@@ -4,6 +4,41 @@ import { buildUnifiedContentOpportunities } from "../../src/seo/v2/content-strat
 import { toDedupKey } from "../../src/ai/content-engine/normalize";
 
 describe("comparison content strategy", () => {
+  it("keeps distinct comparison topics as separate opportunities", () => {
+    const makeCandidate = (title: string, slugA: string, slugB: string) => ({
+      title,
+      normalizedKey: toDedupKey(title),
+      instrumentKey: slugA.replace("-course", ""),
+      relatedCourseSlug: slugA,
+      relatedCourseTitle: "آموزش " + slugA.replace("-course", ""),
+      category: "سازهای زهی",
+      audience: "",
+      level: "",
+      modifierType: "comparison" as const,
+      intent: "commercial" as const,
+      source: "test",
+      scoreTotal: 70,
+      scoreBreakdown: {
+        businessFit: 28, contentGap: 10, localRelevance: 5,
+        intentQuality: 10, keywordSignal: 15, freshnessPenalty: 0
+      },
+      reasoning: "test"
+    });
+
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      siteUrl: "https://fatehmusic.ir",
+      topicCandidates: [
+        makeCandidate("تفاوت تار و سه‌تار در چیست؟ کدام را انتخاب کنیم", "tar-course", "setar-course"),
+        makeCandidate("ویولن یا کمانچه؛ مقایسه‌ای برای انتخاب ساز مناسب شما", "violin-course", "kamancheh-course")
+      ]
+    });
+
+    const comparisons = result.opportunities.filter((item) => item.modifierType === "comparison");
+    expect(comparisons).toHaveLength(2);
+    expect(new Set(comparisons.map((item) => item.suggestedSlug)).size).toBe(2);
+  });
+
   it("keeps comparison topics multi-course instead of attaching them to one course", () => {
     const title = "تفاوت تار و سه‌تار در چیست؟ کدام را انتخاب کنیم";
     const result = buildUnifiedContentOpportunities({
