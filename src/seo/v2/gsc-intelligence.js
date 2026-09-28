@@ -1,6 +1,6 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
-import { detectTemporalCannibalization } from "./gsc-temporal.js";
+import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } from "./gsc-temporal.js";
 import { semanticTokens } from "../helpers/text.js";
 import { queryTokens } from "../helpers/query.js";
 
@@ -62,7 +62,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   });
   const conflicts = detectSearchCannibalization(scoringRows, options);
   const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, options);
-  const temporal = detectTemporalCannibalization(temporalAnalysisRows(rows), options);
+  const temporalRows = temporalAnalysisRows(rows);
+  const temporal = detectTemporalCannibalization(temporalRows, options);
+  const semanticTemporal = detectSemanticTemporalCannibalization(temporalRows, options);
   const conflictByPage = new Map();
   const severityRank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
   for (const conflict of [...conflicts, ...semanticConflicts.map((conflict) => ({
@@ -90,9 +92,12 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     }
   }
   const temporalByPage = new Map();
-  for (const transition of temporal) {
+  for (const transition of [...temporal, ...semanticTemporal]) {
     const payload = {
+      mode: transition.mode || "EXACT_QUERY",
       query: transition.query,
+      queryVariants: transition.queryVariants || undefined,
+      clusterKey: transition.clusterKey || null,
       fromPeriod: transition.fromPeriod,
       toPeriod: transition.toPeriod,
       previousOwner: transition.previousOwner,
@@ -131,6 +136,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     cannibalization: Object.freeze(conflicts),
     semanticCannibalization: Object.freeze(semanticConflicts),
     temporalCannibalization: Object.freeze(temporal),
+    semanticTemporalCannibalization: Object.freeze(semanticTemporal),
     queryOwnership: Object.freeze(queryOwnership),
     queryClusters: Object.freeze(index.queryClusters || []),
     dataQuality: gscDataQuality,
@@ -148,6 +154,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       newContentCount: scored.filter((item) => item.action === "NEW_CONTENT").length,
       temporalCannibalizationCount: temporal.length,
       temporalActionableCount: temporal.filter((item) => item.actionable).length,
+      semanticTemporalCannibalizationCount: semanticTemporal.length,
+      semanticTemporalActionableCount: semanticTemporal.filter((item) => item.actionable).length,
       semanticCannibalizationCount: semanticConflicts.length,
       semanticCannibalizationActionableCount: semanticConflicts.filter((item) => item.actionable).length,
       queryOwnershipCount: queryOwnership.length,
