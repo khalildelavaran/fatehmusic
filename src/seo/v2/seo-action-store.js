@@ -101,49 +101,40 @@ export async function syncPublishedSeoActionMeasurements(db, {
   if (!db || !windowStart || !windowEnd) return { measured: 0 };
 
   const site = String(siteUrl).replace(/\/$/, "");
-  const rows = await db.prepare(
-    "SELECT a.id, a.target_url, a.target_post_id, " +
-    "COALESCE(SUM(g.impressions), 0) AS impressions, COALESCE(SUM(g.clicks), 0) AS clicks, " +
-    "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN COALESCE(SUM(g.clicks), 0) / SUM(g.impressions) ELSE 0 END AS ctr, " +
-    "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN SUM(g.impressions * g.position) / SUM(g.impressions) ELSE NULL END AS position " +
-    "FROM seo_action_log a LEFT JOIN gsc_search_signals_v2 g " +
-    "ON g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = 'current' AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
+  // Measure every published action that existed by the end of the reporting
+  // window. One INSERT...SELECT keeps the daily GSC job within D1's query
+  // budget and still records a zero-demand window as a real measurement.
+  const result = await db.prepare(
+    "INSERT INTO seo_action_measurements " +
+    "(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
+    "SELECT a.id, ?, ?, ?, " +
+    "COALESCE(SUM(g.impressions), 0), COALESCE(SUM(g.clicks), 0), " +
+    "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN COALESCE(SUM(g.clicks), 0) / SUM(g.impressions) ELSE 0 END, " +
+    "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN SUM(g.impressions * g.position) / SUM(g.impressions) ELSE NULL END, " +
+    "'google-search-console' " +
+    "FROM seo_action_log a " +
+    "LEFT JOIN gsc_search_signals_v2 g ON " +
+    "g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = 'current' " +
+    "AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
-    "WHERE a.status = 'published' AND a.target_url IS NOT NULL GROUP BY a.id, a.target_url, a.target_post_id"
-  ).bind(site, windowStart, windowEnd).all();
+    "WHERE a.status = 'published' AND a.target_url IS NOT NULL " +
+    "AND (a.published_at IS NULL OR date(a.published_at) <= ?) " +
+    "GROUP BY a.id, a.target_url " +
+    "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET " +
+    "measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, " +
+    "ctr=excluded.ctr, position=excluded.position"
+  ).bind(
+    measuredAt,
+    windowStart,
+    windowEnd,
+    site,
+    windowStart,
+    windowEnd,
+    windowEnd
+  ).run();
 
-  const measurementRows = rows.results || [];
-  let measured = 0;
-
-  for (let offset = 0; offset < measurementRows.length; offset += 50) {
-    const chunk = measurementRows.slice(offset, offset + 50);
-    const statements = chunk.map((row) => {
-      const impressions = Math.max(0, Number(row.impressions) || 0);
-      const clicks = Math.max(0, Number(row.clicks) || 0);
-      // A measured zero-demand window is still a measurement.
-      return db.prepare(
-        "INSERT INTO seo_action_measurements (action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console') " +
-        "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, ctr=excluded.ctr, position=excluded.position"
-      ).bind(
-        row.id,
-        measuredAt,
-        windowStart,
-        windowEnd,
-        impressions,
-        clicks,
-        Number(row.ctr) || 0,
-        row.position == null ? null : Number(row.position)
-      );
-    });
-
-    if (statements.length) await db.batch(statements);
-    measured += chunk.length;
-  }
-
-  return { measured };
+  return { measured: Number(result.meta?.changes || 0) };
 }
-
 /** @param {D1Database} db @param {{limit?:number}} [options] */
 export async function listSeoActions(db, { limit = 20 } = {}) {
   if (!db) return [];
