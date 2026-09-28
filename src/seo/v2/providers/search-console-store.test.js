@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getRecentSearchConsoleRows } from "./search-console-store.js";
+import { getRecentSearchConsoleRows, getGscPagePerformance } from "./search-console-store.js";
 
 describe("Search Console snapshot store", () => {
   it("reads only current and previous canonical snapshots", async () => {
@@ -40,5 +40,48 @@ describe("Search Console snapshot store", () => {
     expect(sql).toContain("snapshot_label IN ('current', 'previous')");
     expect(rows[0].snapshotLabel).toBe("current");
     expect(rows[0].impressions).toBe(300);
+  });
+});
+
+
+describe("GSC page performance", () => {
+  it("does not treat an invalid position as a zero-ranked page", async () => {
+    const db = {
+      prepare(statement) {
+        return {
+          bind() {
+            return {
+              async all() {
+                if (statement.includes("gsc_search_signals_v2")) {
+                  return {
+                    results: [
+                      {
+                        page: "https://fatehmusic.ir/blog/test",
+                        clicks: 10,
+                        impressions: 1000,
+                        position: "invalid",
+                        snapshotLabel: "current"
+                      },
+                      {
+                        page: "https://fatehmusic.ir/blog/test",
+                        clicks: 2,
+                        impressions: 100,
+                        position: 8,
+                        snapshotLabel: "current"
+                      }
+                    ]
+                  };
+                }
+                return { results: [] };
+              }
+            };
+          }
+        };
+      }
+    };
+
+    const [page] = await getGscPagePerformance(db);
+
+    expect(page.position).toBe(8);
   });
 });
