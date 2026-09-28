@@ -91,12 +91,13 @@ export async function markSeoActionUnpublished(db, {
   return Number(result.meta?.changes || 0);
 }
 
-/** @param {D1Database} db @param {{siteUrl?:string,windowStart?:string,windowEnd?:string,measuredAt?:string}} [options] */
+/** @param {D1Database} db @param {{siteUrl?:string,windowStart?:string,windowEnd?:string,measuredAt?:string,snapshotLabel?:string}} [options] */
 export async function syncPublishedSeoActionMeasurements(db, {
   siteUrl = "https://fatehmusic.ir",
   windowStart,
   windowEnd,
-  measuredAt = new Date().toISOString()
+  measuredAt = new Date().toISOString(),
+  snapshotLabel = "current"
 } = {}) {
   if (!db || !windowStart || !windowEnd) return { measured: 0 };
 
@@ -114,7 +115,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
     "'google-search-console' " +
     "FROM seo_action_log a " +
     "LEFT JOIN gsc_search_signals_v2 g ON " +
-    "g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = 'current' " +
+    "g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = ? " +
     "AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
     "WHERE a.status = 'published' AND a.target_url IS NOT NULL " +
@@ -130,6 +131,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
     site,
     windowStart,
     windowEnd,
+    snapshotLabel,
     windowEnd
   ).run();
 
