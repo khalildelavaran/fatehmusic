@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS content_topics (
   score_breakdown       TEXT,
   reasoning             TEXT,
 
-  status                TEXT NOT NULL DEFAULT 'candidate', -- candidate | approved | rejected | used
+  status                TEXT NOT NULL DEFAULT 'candidate', -- candidate | approved | generating | drafted | rejected | used
   source                TEXT NOT NULL DEFAULT 'seed_generator',
 
   used_by_post_id       INTEGER,
