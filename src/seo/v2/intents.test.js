@@ -9,6 +9,17 @@ describe("intent phrase matching", () => {
     }).primary).toBe("informational");
   });
 
+  it("reports confidence from the separation between top intents", () => {
+    const result = classifyIntent({
+      path: "/register",
+      title: "ثبت نام کلاس گیتار شوشتر",
+      entityType: "Course"
+    });
+
+    expect(result.confidence).toBeGreaterThanOrEqual(0.55);
+    expect(result.confidence).toBeLessThanOrEqual(0.99);
+  });
+
   it("does not trigger a term from a larger token", () => {
     const result = classifyIntent({
       title: "گیتاریست‌های جوان",
