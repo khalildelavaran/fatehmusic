@@ -1,7 +1,6 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } from "./gsc-temporal.js";
-import { semanticTokens } from "../helpers/text.js";
 import { queryTokens } from "../helpers/query.js";
 
 export function currentScoringRows(rows = []) {
