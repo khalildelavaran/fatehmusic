@@ -95,10 +95,15 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
   }, { clicks: 0, impressions: 0, weightedPosition: 0, positionImpressions: 0 });
   const ctr = total.impressions ? total.clicks / total.impressions : 0;
   const benchmarkWeight = rows.reduce((sum, row) => {
-    const benchmark = ctrBenchmarks[positionBucket(row?.position)];
+    const benchmark = ctrBenchmarks[positionBucket(row?.position)]?.ctr;
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     return Number.isFinite(benchmark) && impressions > 0 ? sum + impressions : sum;
   }, 0);
+  const benchmarkBuckets = new Set(
+    rows.map((row) => positionBucket(row?.position)).filter(Boolean)
+  );
+  const benchmarkSampleImpressions = [...benchmarkBuckets]
+    .reduce((sum, bucket) => sum + Math.max(0, Number(ctrBenchmarks[bucket]?.impressions) || 0), 0);
   const weightedBenchmark = benchmarkWeight > 0
     ? rows.reduce((sum, row) => {
         const benchmark = ctrBenchmarks[positionBucket(row?.position)]?.ctr;
@@ -115,7 +120,8 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
     clicks: total.clicks,
     ctr,
     ctrBenchmark: weightedBenchmark,
-    ctrBenchmarkImpressions: benchmarkWeight,
+    ctrBenchmarkImpressions: benchmarkSampleImpressions,
+    ctrBenchmarkCoverageImpressions: benchmarkWeight,
     ctrGap,
     ctrRatioToBenchmark,
     position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
