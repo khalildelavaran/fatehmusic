@@ -504,7 +504,7 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     if (topic.topicRowId) {
       statements.push(
         env.DB.prepare(
-          "UPDATE content_topics SET status='used', used_at=datetime('now'), used_by_post_id=last_insert_rowid(), updated_at=datetime('now') WHERE id=? AND status='generating'"
+          "UPDATE content_topics SET status='drafted', used_at=NULL, used_by_post_id=last_insert_rowid(), updated_at=datetime('now') WHERE id=? AND status='generating'"
         ).bind(topic.topicRowId)
       );
     }
