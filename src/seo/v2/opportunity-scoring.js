@@ -162,24 +162,47 @@ function crossSourceAgreement(item = {}) {
 
 function evidenceStrength(item = {}) {
   const score = decisionConfidenceScore(item);
-  const sources = new Set();
-  if (item.searchSignal?.available) sources.add("GSC");
-  if (item.searchOwnership?.matchType === "EXACT") sources.add("GSC-OWNERSHIP");
-  if (item.marketSignal?.available) sources.add("MARKET");
-  if (Number.isFinite(Number(item.intentConfidence)) && Number(item.intentConfidence) > 0) sources.add("INTENT");
-  if (item.gapDetected) sources.add("CONTENT-GAP");
-  if (item.cannibalization?.severity) sources.add("CANNIBALIZATION");
+  const sourceFamilies = new Set();
+  const evidenceSignals = new Set();
+
+  if (item.searchSignal?.available) {
+    sourceFamilies.add("GSC");
+    evidenceSignals.add("GSC_SIGNAL");
+  }
+  if (item.searchOwnership?.matchType === "EXACT") {
+    sourceFamilies.add("GSC");
+    evidenceSignals.add("GSC_OWNERSHIP");
+  }
+  if (item.marketSignal?.available) {
+    sourceFamilies.add("MARKET");
+    evidenceSignals.add("MARKET_SIGNAL");
+  }
+  if (Number.isFinite(Number(item.intentConfidence)) && Number(item.intentConfidence) > 0) {
+    sourceFamilies.add("INTENT");
+    evidenceSignals.add("INTENT_CONFIDENCE");
+  }
+  if (item.gapDetected) {
+    sourceFamilies.add("CONTENT-GAP");
+    evidenceSignals.add("CONTENT_GAP");
+  }
+  if (item.cannibalization?.severity) {
+    sourceFamilies.add("CANNIBALIZATION");
+    evidenceSignals.add("CANNIBALIZATION");
+  }
+
   const quality =
     score >= 85 ? "STRONG" :
     score >= 65 ? "MODERATE" :
     score >= 45 ? "WEAK" :
     "INSUFFICIENT";
+
   return Object.freeze({
     score,
     quality,
-    sourceCount: sources.size,
-    sources: Object.freeze([...sources]),
-    independentMarketAndGsc: sources.has("MARKET") && sources.has("GSC")
+    sourceCount: sourceFamilies.size,
+    sources: Object.freeze([...sourceFamilies]),
+    evidenceSignals: Object.freeze([...evidenceSignals]),
+    independentMarketAndGsc: sourceFamilies.has("MARKET") && sourceFamilies.has("GSC")
   });
 }
 
