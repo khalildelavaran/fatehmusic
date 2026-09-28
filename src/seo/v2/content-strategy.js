@@ -204,9 +204,72 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
   });
 }
 function mergeOpportunity(candidate, gap, siteUrl) {
-  const topic = findTopic(candidate.topic); if (!topic) return null; const baseUrl = normalizeBaseUrl(siteUrl); const course = candidate.course || gap.course || null; if (candidate.course && gap.course && candidate.course.slug !== gap.course.slug) return null;
-  const searchIntents = mergeIntents(candidate.searchIntents || [candidate.searchIntent], gap.searchIntents || [gap.searchIntent]); const isLocal = Boolean(candidate.isLocal || gap.isLocal || gap.scope === "shushtar" || searchIntents.includes("local") || isShushtarTopic(topic)); const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
-  return Object.freeze({ ...candidate, source: "topic-engine+gap", priority: Math.min(100, Math.round(Math.max(candidate.priority, gap.priority) + Math.min(10, Math.abs(candidate.priority - gap.priority) * 0.15))), gapDetected: true, gapPriority: gap.priority, gapArticleCount: gap.articleCount, existingArticleSlugs: [...new Set([...(candidate.existingArticleSlugs || []), ...(gap.existingArticleSlugs || [])])], action: gap.articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT", searchIntent: choosePrimaryIntent(searchIntents), searchIntents, isLocal, scope: gap.scope || candidate.scope || canonicalScope(topic, isLocal), queryAngles: mergeQueryAngles(topic, searchIntents, course), suggestedSlug: suggestedArticleSlug({ topic: topic.slug, scope: gap.scope, isLocal, modifierType: isLocal ? "local_shushtar" : intent, searchIntent: intent, course, articleCount, existingArticleSlugs: gap.articleSlugs || [] }), targetEntity, course: makeCourseRef(course, baseUrl), courseSlug: candidate.courseSlug || gap.courseSlug || course?.slug || null, audience: candidate.audience || gap.audience || "", level: candidate.level || gap.level || "", rationale: candidate.rationale || gap.rationale });
+  const topic = findTopic(candidate.topic);
+  if (!topic) return null;
+
+  const baseUrl = normalizeBaseUrl(siteUrl);
+  const course = candidate.course || gap.course || null;
+  if (candidate.course && gap.course && candidate.course.slug !== gap.course.slug) return null;
+
+  const searchIntents = mergeIntents(
+    candidate.searchIntents || [candidate.searchIntent],
+    gap.searchIntents || [gap.searchIntent]
+  );
+  const primaryIntent = choosePrimaryIntent(searchIntents);
+  const isLocal = Boolean(
+    candidate.isLocal ||
+    gap.isLocal ||
+    gap.scope === "shushtar" ||
+    searchIntents.includes("local") ||
+    isShushtarTopic(topic)
+  );
+  const articleCount = Math.max(Number(candidate.articleCount) || 0, Number(gap.articleCount) || 0);
+  const existingArticleSlugs = [...new Set([
+    ...(candidate.existingArticleSlugs || []),
+    ...(gap.existingArticleSlugs || [])
+  ])];
+  const action = articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT";
+  const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
+
+  return Object.freeze({
+    ...candidate,
+    source: "topic-engine+gap",
+    priority: Math.min(
+      100,
+      Math.round(
+        Math.max(candidate.priority, gap.priority) +
+        Math.min(10, Math.abs(candidate.priority - gap.priority) * 0.15)
+      )
+    ),
+    gapDetected: true,
+    gapPriority: gap.priority,
+    gapArticleCount: gap.articleCount,
+    existingArticleSlugs,
+    action,
+    searchIntent: primaryIntent,
+    searchIntents,
+    isLocal,
+    scope: gap.scope || candidate.scope || canonicalScope(topic, isLocal),
+    queryAngles: mergeQueryAngles(topic, searchIntents, course),
+    suggestedSlug: suggestedArticleSlug({
+      topic: topic.slug,
+      scope: gap.scope,
+      isLocal,
+      modifierType: isLocal ? "local_shushtar" : primaryIntent,
+      searchIntent: primaryIntent,
+      course,
+      audience: candidate.audience || gap.audience || "",
+      level: candidate.level || gap.level || "",
+      articleCount,
+      existingArticleSlugs
+    }),
+    targetEntity,
+    course: makeCourseRef(course, baseUrl),
+    courseSlug: candidate.courseSlug || gap.courseSlug || course?.slug || null,
+    audience: candidate.audience || gap.audience || "",
+    level: candidate.level || gap.level || "",
+    rationale: candidate.rationale || gap.rationale
+  });
 }
 function mergeCompatibleOpportunities(items, siteUrl) {
   const groups = new Map(); const baseUrl = normalizeBaseUrl(siteUrl);
