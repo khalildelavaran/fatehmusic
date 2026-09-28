@@ -139,6 +139,28 @@ describe("GSC signal resolver", () => {
     expect(conflicts[0].semanticSimilarity).toBeGreaterThanOrEqual(0.55);
   });
 
+
+  it("excludes brand-navigation rows from page-level scoring signals", () => {
+    const index = buildGscSignalIndex([
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/about", clicks: 0, impressions: 1000, ctr: 0, position: 4 },
+      { query: "درباره آموزشگاه", page: "https://fatehmusic.ir/about", clicks: 2, impressions: 20, ctr: 0.1, position: 5 }
+    ]);
+    expect(index.byPage.get("https://fatehmusic.ir/about").impressions).toBe(1020);
+    expect(index.byPageNonBrand.get("https://fatehmusic.ir/about").impressions).toBe(20);
+
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "OPTIMIZE_EXISTING",
+        title: "درباره آموزشگاه موسیقی",
+        topicName: "آموزشگاه",
+        targetEntity: { url: "https://fatehmusic.ir/about" }
+      }
+    ], index);
+
+    expect(result[0].searchSignal.impressions).toBe(20);
+    expect(result[0].searchSignal.ctr).toBe(0.1);
+  });
+
   it("keeps brand navigation out of topic demand matching", () => {
     expect(isBrandNavigationQuery("fatehmusic.ir")).toBe(true);
     const index = buildGscSignalIndex([
