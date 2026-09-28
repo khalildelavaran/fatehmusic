@@ -34,6 +34,7 @@ export function classifyOpportunityAction(item = {}) {
   if (
     item.action === "NEW_CONTENT" &&
     item.searchOwnership?.available &&
+    item.searchOwnership?.matchType === "EXACT" &&
     Number(item.searchOwnership.impressions || 0) >= 5 &&
     Number(item.searchOwnership.topShare || 0) >= 0.7
   ) {
