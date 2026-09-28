@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getExistingTitleIndex, getRunApprovedCount } from "../../../src/ai/content-engine/db";
+import { getExistingTitleIndex, getRunApprovedCount, markTopicUsed, releaseDraftedTopic } from "../../../src/ai/content-engine/db";
 
 describe("content intelligence title index", () => {
   it("does not let rejected topics permanently block a title", async () => {
@@ -55,5 +55,48 @@ describe("content intelligence discovery run counts", () => {
     } as unknown as D1Database;
 
     await expect(getRunApprovedCount(db, 42)).resolves.toBe(3);
+  });
+});
+
+
+describe("content intelligence draft lifecycle", () => {
+  it("promotes a drafted topic only when its linked post is published", async () => {
+    const statements: string[] = [];
+    const db = {
+      prepare(sql: string) {
+        statements.push(sql);
+        return {
+          bind: (...args: unknown[]) => {
+            expect(args).toEqual([77]);
+            return {
+              run: async () => ({ meta: { changes: 1 } })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await expect(markTopicUsed(db, 77)).resolves.toBe(1);
+    expect(statements[0]).toContain("status='used'");
+    expect(statements[0]).toContain("status='drafted'");
+  });
+
+  it("releases a drafted topic back to approved when its draft is removed", async () => {
+    const db = {
+      prepare(sql: string) {
+        expect(sql).toContain("status='approved'");
+        expect(sql).toContain("status='drafted'");
+        return {
+          bind: (...args: unknown[]) => {
+            expect(args).toEqual([88]);
+            return {
+              run: async () => ({ meta: { changes: 1 } })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await expect(releaseDraftedTopic(db, 88)).resolves.toBe(1);
   });
 });
