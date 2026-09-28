@@ -4,8 +4,8 @@ import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 // Store many rows in one prepared multi-row INSERT so GSC can ingest a
  // materially larger snapshot without multiplying SQL statement count.
 const DEFAULT_PAGE_SIZE = 1000;
-const DEFAULT_MAX_ROWS = 2000;
-const MAX_STANDARD_ROWS = 2400;
+const DEFAULT_MAX_ROWS = 2500;
+const MAX_STANDARD_ROWS = 5000;
 const DEFAULT_BREAKDOWN_MAX_ROWS = 600;
 const MAX_BREAKDOWN_ROWS = 800;
 const BATCH_SIZE = 200;
@@ -317,8 +317,8 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
     env.GSC_SYNC_MAX_ROWS ||
     DEFAULT_MAX_ROWS
   ), 1);
-  // Keep standard query/page snapshots materially larger than before while
-  // protecting the Worker/D1 invocation budget. Breakdown rows are intentionally
+  // Keep standard query/page snapshots materially larger while retaining the
+  // existing 200-row D1 insert batches. Breakdown rows remain intentionally
   // smaller because they are supplemental evidence, not the primary ownership dataset.
   const breakdownsEnabled = String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1";
   const maxRows = Math.min(requestedMaxRows, MAX_STANDARD_ROWS);
