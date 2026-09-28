@@ -24,6 +24,7 @@ describe("SEO diagnostics engine", () => {
     expect(result.weightedScore).toBeGreaterThan(0);
     expect(result.evidenceCoverage).toBeGreaterThan(0);
     expect(result.categories.metadata.available).toBe(true);
+    expect(result.categories.metadata.score).toBe(100);
     expect(result.statistics.pagesAnalyzed).toBe(1);
   });
 
