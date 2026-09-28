@@ -34,8 +34,13 @@ export class HybridKeywordProvider implements KeywordProvider {
   private cache = new Map<string, KeywordSignal>();
 
   private getAhrefsLookupLimit(): number {
-    const value = Number(this.env.AHREFS_MAX_KEYWORDS_PER_RUN ?? 200);
-    return Math.max(25, Math.min(Number.isFinite(value) ? value : 200, 500));
+    const value = Number(this.env.AHREFS_MAX_KEYWORDS_PER_RUN ?? 10);
+    return Math.max(1, Math.min(Number.isFinite(value) ? value : 10, 50));
+  }
+
+  private getAhrefsTitleLimit(): number {
+    const value = Number(this.env.AHREFS_MAX_TITLES_PER_RUN ?? 20);
+    return Math.max(1, Math.min(Number.isFinite(value) ? value : 20, 40));
   }
 
   constructor(db: D1Database, env: Record<string, unknown> = {}) {
@@ -71,9 +76,23 @@ export class HybridKeywordProvider implements KeywordProvider {
     const pending = unique.filter((title) => !this.cache.has(cacheKey(title)));
     const config = getAhrefsConfig(this.env);
 
-    if (config.enabled && pending.length) {
+    // Only enrich a bounded set of the most search-relevant titles per run.
+    // The remaining candidates keep their first-party GSC signal and can be
+    // enriched by Ahrefs on a later run, avoiding a D1 query burst on Free.
+    const ahrefsPending = pending
+      .map((title) => ({
+        title,
+        gsc: gscByTitle.get(cacheKey(title))
+      }))
+      .sort((a, b) =>
+        Number(b.gsc?.searchImpressions || 0) - Number(a.gsc?.searchImpressions || 0)
+      )
+      .slice(0, this.getAhrefsTitleLimit())
+      .map((item) => item.title);
+
+    if (config.enabled && ahrefsPending.length) {
       const keywordCandidates = new Map<string, string[]>();
-      for (const title of pending) {
+      for (const title of ahrefsPending) {
         const gsc = gscByTitle.get(cacheKey(title));
         const candidates = [...new Set([
           title,
@@ -128,7 +147,7 @@ export class HybridKeywordProvider implements KeywordProvider {
         }
       }
 
-      for (const title of pending) {
+      for (const title of ahrefsPending) {
         const candidates = keywordCandidates.get(cacheKey(title)) || [title];
         const scored = candidates
           .map((keyword) => ({ keyword, signal: ahrefsMap.get(keyword) }))
