@@ -71,6 +71,7 @@ function aggregate(rows = []) {
     clicks: total.clicks,
     ctr: total.impressions ? total.clicks / total.impressions : 0,
     position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
+    matchedQueries: [...new Set(rows.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
     source: "google-search-console"
   };
 }
@@ -191,7 +192,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
       .slice(0, 10);
     const candidates = [...pageSignals, aggregate(querySignals)];
-    const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null };
+    const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null, matchedQueries: [] };
     return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none", searchAction: classifySearchOpportunity(best) });
   });
 }
