@@ -44,7 +44,18 @@ export function classifyIntent({ path = "", title = "", keywords = [], entityTyp
 
     if (!intents.length) intents.push({ intent: "informational", score: 20, reason: ["default"] });
 
-    return Object.freeze({ primary: intents[0].intent, intents });
+    const topScore = Number(intents[0]?.score || 0);
+    const secondScore = Number(intents[1]?.score || 0);
+    const scoreGap = Math.max(0, topScore - secondScore);
+    const confidence = intents.length === 1
+        ? Math.min(1, Math.max(0.35, topScore / 100))
+        : Math.min(0.99, Math.max(0.35, 0.55 + scoreGap / 100));
+
+    return Object.freeze({
+        primary: intents[0].intent,
+        confidence: Number(confidence.toFixed(3)),
+        intents
+    });
 }
 
 function add(map, intent, weight, reason) {
