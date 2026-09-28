@@ -4,6 +4,7 @@
  */
 
 import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
+import { resolveTopics } from "./topics.js";
 
 function absoluteUrl(path, siteUrl) {
   return String(path || "").startsWith("http")
@@ -56,11 +57,30 @@ export function buildKnowledgeGraph({
   const websiteId = base + "/#website";
   const locationId = base + "/locations/shushtar#localbusiness";
 
+  const ensureTopicNode = (topic) => {
+    if (!topic?.slug) return null;
+    const topicId = base + "/#topic-" + topic.slug;
+    addNode({
+      id: topicId,
+      type: "Topic",
+      schemaType: "Thing",
+      name: topic.name || topic.slug,
+      properties: Object.freeze({ slug: topic.slug, aliases: topic.aliases || [] })
+    });
+    return topicId;
+  };
+
+  const resolveEntityTopics = (title, keywords = []) =>
+    resolveTopics({ title, keywords, path: "" })
+      .filter((topic) => topic.slug !== "shushtar" || title?.includes("شوشتر"));
+
   addNode({ id: organizationId, type: "Organization", name: "آموزشگاه موسیقی فاتح", url: base, topics: ["music-education", "shushtar"] });
   addNode({ id: websiteId, type: "WebSite", name: "آموزشگاه موسیقی فاتح", url: base });
   addNode({ id: locationId, type: "LocalBusiness", name: "آموزشگاه موسیقی فاتح شوشتر", url: absoluteUrl("/locations/shushtar", base), topics: ["shushtar"] });
   addEdge(websiteId, "publisher", organizationId);
   addEdge(organizationId, "location", locationId);
+  const organizationTopics = resolveEntityTopics("آموزشگاه موسیقی فاتح شوشتر", ["آموزش موسیقی", "شوشتر"]);
+  for (const topic of organizationTopics) addEdge(organizationId, "about", ensureTopicNode(topic));
 
   for (const instructor of instructors || []) {
     if (!instructor?.slug || !instructor?.name) continue;
@@ -86,6 +106,9 @@ export function buildKnowledgeGraph({
       topics: [course.instrument, course.category].filter(Boolean)
     });
     addEdge(courseId, "provider", organizationId);
+    for (const topic of resolveEntityTopics(course.title, [course.instrument, course.category])) {
+      addEdge(courseId, "about", ensureTopicNode(topic));
+    }
 
     const instructorIds = Array.isArray(course.instructors)
       ? course.instructors
@@ -110,6 +133,9 @@ export function buildKnowledgeGraph({
       topics: [post.topic, post.related_course_slug].filter(Boolean)
     });
     addEdge(articleId, "publisher", organizationId);
+    for (const topic of resolveEntityTopics(post.title, [post.topic])) {
+      addEdge(articleId, "about", ensureTopicNode(topic));
+    }
     if (post.related_course_slug) {
       addEdge(articleId, "about", courseEntityId(absoluteUrl("/courses/" + post.related_course_slug, base)), 0.95);
     }
