@@ -117,6 +117,28 @@ export function auditPage({
     if (primaryIntent) pass("intent", `primary intent: ${primaryIntent}`, 5);
     else warn("intent", "primary intent unresolved", 0);
 
+    if ("answerBlockCount" in context) {
+        if (Number(context.answerBlockCount) > 0) pass("answer-blocks", "GEO answer blocks are available", 5);
+        else warn("answer-blocks", "no GEO answer blocks supplied", 0);
+    }
+
+    if ("answerBlockSourceCount" in context) {
+        const answerCount = Math.max(0, Number(context.answerBlockCount) || 0);
+        const sourceCount = Math.max(0, Number(context.answerBlockSourceCount) || 0);
+        if (answerCount > 0 && sourceCount >= answerCount) {
+            pass("answer-sources", "GEO answer blocks have source references", 5);
+        } else {
+            warn("answer-sources", "GEO answer blocks lack complete source references", 2);
+        }
+    }
+
+    if (context.knowledgeGraphStats && typeof context.knowledgeGraphStats === "object") {
+        const nodeCount = Math.max(0, Number(context.knowledgeGraphStats.nodeCount) || 0);
+        const edgeCount = Math.max(0, Number(context.knowledgeGraphStats.edgeCount) || 0);
+        if (nodeCount > 0 && edgeCount > 0) pass("entity-graph", "semantic Entity Graph is connected", 5);
+        else warn("entity-graph", "semantic Entity Graph has insufficient relationships", 0);
+    }
+
     if (freshness?.status === "fresh") pass("freshness", "content freshness is healthy", 5);
     else if (freshness?.status === "aging") warn("freshness", "content is aging", 2);
     else if (freshness?.status === "stale") warn("freshness", "content is stale", 0);
