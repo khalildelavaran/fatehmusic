@@ -9,7 +9,7 @@
 // fresh on every request so it always matches what's actually published.
 
 import type { APIRoute } from "astro";
-import { getPublishedPosts } from "../server/blog";
+import { getPublishedPostsStrict } from "../server/blog";
 import { site } from "../data/site.js";
 
 function escapeXml(value: string): string {
@@ -30,7 +30,19 @@ function toLastmod(value?: string | null): string | null {
 }
 
 export const GET: APIRoute = async () => {
-  const posts = await getPublishedPosts();
+  let posts;
+  try {
+    posts = await getPublishedPostsStrict();
+  } catch (error) {
+    console.error("[sitemap-blog] failed to load published posts:", error);
+    return new Response("Sitemap temporarily unavailable", {
+      status: 503,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store"
+      }
+    });
+  }
 
   const urls = posts
     .map((post) => {
