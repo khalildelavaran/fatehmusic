@@ -125,4 +125,19 @@ describe("content strategy deduplication", () => {
     expect(result.opportunities[0].topic).toBe("vocal");
     expect(result.opportunities[0].targetEntity.type).toBe("Course");
   });
+
+  it("does not resolve a course from a substring inside an unrelated word", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses: [{ slug: "tar-course", title: "آموزش تار", instrument: "tar" }],
+      topicCandidates: [{
+        title: "پایدارسازی برنامه تمرینی هنرجو",
+        intent: "informational",
+        modifierType: "practice_tips",
+        scoreTotal: 80
+      }]
+    });
+    expect(result.opportunities[0].topic).not.toBe("tar");
+    expect(result.opportunities[0].course).toBeNull();
+  });
+
 });
