@@ -2,7 +2,7 @@ const AHREFS_BASE = "https://api.ahrefs.com/v3";
 const DEFAULT_COUNTRY = "IR";
 const DEFAULT_TARGET = "https://fatehmusic.ir";
 
-import { normalizeSemanticText } from "../helpers/text.js";
+import { normalizeSemanticText } from "../../helpers/text.js";
 const KEYWORD_BATCH_SIZE = 25;
 
 function normalizeTarget(value) {
