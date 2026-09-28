@@ -297,8 +297,24 @@ describe("GSC signal resolver", () => {
     expect(result[0].semanticQueryCluster?.ownerStatus).toBe("STABLE");
   });
 
-});
 
+  it("selects the strongest semantic cluster across matched queries", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 20 },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 10 },
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 120 },
+      { query: "کلاس گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 }
+    ]);
+
+    const result = resolveOpportunitySearchSignals([
+      { title: "آموزش گیتار شوشتر و ثبت‌نام کلاس", topicName: "گیتار", topic: "guitar", action: "NEW_CONTENT" }
+    ], index);
+
+    expect(result[0].semanticQueryCluster?.impressions).toBe(200);
+    expect(result[0].semanticQueryCluster?.queryCount).toBe(2);
+  });
+
+});
 
   it("does not treat related-only query matches as ownership", () => {
     const index = buildGscSignalIndex([
