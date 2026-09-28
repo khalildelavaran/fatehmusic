@@ -153,8 +153,8 @@ function relevantQueryRows(index, item) {
 function classifySearchOpportunity(signal) {
   if (!signal?.available) return "CREATE_OR_MONITOR";
   const position = Number(signal.position);
-  const ctr = Number(signal.ctr) || 0;
-  if (Number.isFinite(position) && position <= 10 && ctr < 0.03) return "OPTIMIZE";
+  const ctr = Math.min(1, Math.max(0, Number(signal.ctr) || 0));
+  if (Number.isFinite(position) && position > 0 && position <= 10 && ctr < 0.03) return "OPTIMIZE";
   if (Number.isFinite(position) && position > 10 && position <= 30) return "EXPAND";
   return "MONITOR";
 }
