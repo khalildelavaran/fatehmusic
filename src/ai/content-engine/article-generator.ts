@@ -13,6 +13,8 @@
 
 import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
+import { courseContent } from "../../data/course-content.js";
+import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
@@ -254,30 +256,58 @@ function validateGeneratedArticle(article: { content?: string; excerpt?: string;
   return null;
 }
 
+function courseMatchesArticleTitle(title: string): any[] {
+  const normalizedTitle = String(title || "").normalize("NFKC").toLocaleLowerCase("fa");
+  return (courses as Array<any>)
+    .filter((course) => course?.active && course?.slug && course?.title)
+    .filter((course) => {
+      const name = String(course.title).replace(/^آموزش\s+/u, "").replace(/^دوره\s+/u, "").normalize("NFKC").toLocaleLowerCase("fa");
+      return name && normalizedTitle.includes(name);
+    })
+    .sort((a, b) => String(b.title).length - String(a.title).length);
+}
+
+function appendCourseBrief(lines: string[], course: any, label = "دوره") {
+  if (!course) return;
+  const teacherNames = (course.instructors || [])
+    .map((id: number) => (instructors as Array<any>).find((teacher) => teacher.id === id)?.name)
+    .filter(Boolean);
+  lines.push(`اطلاعات رسمی ${label}: ${course.title}`);
+  lines.push(`- سطح‌ها: ${(course.level || []).join("، ") || "در داده رسمی مشخص نشده"}`);
+  lines.push(`- گروه سنی: ${(course.ageGroup || []).join("، ") || "در داده رسمی مشخص نشده"}`);
+  lines.push(`- دسته‌بندی: ${course.category || "در داده رسمی مشخص نشده"}`);
+  lines.push(`- نوع کلاس: ${course.classType || "در داده رسمی مشخص نشده"}`);
+  lines.push(`- مدت: ${course.duration || "در داده رسمی مشخص نشده"}`);
+  if (teacherNames.length) lines.push(`- مدرس/مدرس‌ها: ${teacherNames.join("، ")}`);
+  if (course.content?.description) lines.push(`- توضیح رسمی دوره: ${course.content.description}`);
+  if (course.seo?.keywords?.length) lines.push(`- کلیدواژه‌های رسمی دوره: ${course.seo.keywords.join("، ")}`);
+
+  const editorial = courseContent[course.slug] || buildFallbackCourseContent(course);
+  if (editorial) {
+    if (editorial.overview?.length) lines.push(`- نکات محتوایی مجاز: ${editorial.overview.slice(0, 2).join(" ")}`);
+    if (editorial.learningPath?.length) lines.push(`- مسیر یادگیری: ${editorial.learningPath.slice(0, 4).map((item: any) => item.stage + ": " + item.description).join(" | ")}`);
+    if (editorial.curriculum?.length) lines.push(`- سرفصل‌ها: ${editorial.curriculum.slice(0, 6).map((item: any) => item.title + ": " + item.description).join(" | ")}`);
+    if (editorial.commonMistakes?.length) lines.push(`- اشتباهات رایج: ${editorial.commonMistakes.slice(0, 4).map((item: any) => item.mistake + " → " + item.fix).join(" | ")}`);
+    if (editorial.faqAdditions?.length) lines.push(`- پرسش‌های متداول مرتبط: ${editorial.faqAdditions.slice(0, 4).map((item: any) => item.question + " → " + item.answer).join(" | ")}`);
+  }
+}
+
 function buildBrief(topic: SelectedTopic): string {
   const lines = [`عنوان مقاله (ثابت، تغییر نده): «${topic.title}»`];
+  const matchedCourses = courseMatchesArticleTitle(topic.title);
+  const primaryCourse = topic.relatedCourseSlug
+    ? (courses as Array<any>).find((item) => item.slug === topic.relatedCourseSlug)
+    : null;
 
-  if (topic.relatedCourseSlug) {
-    const course = (courses as Array<any>).find((item) => item.slug === topic.relatedCourseSlug);
-    lines.push(`این مقاله باید به دوره‌ی «${topic.relatedCourseTitle || course?.title || topic.relatedCourseSlug}» در آموزشگاه موسیقی فاتح در شوشتر مرتبط باشد.`);
-
-    if (course) {
-      const teacherNames = (course.instructors || [])
-        .map((id: number) => (instructors as Array<any>).find((teacher) => teacher.id === id)?.name)
-        .filter(Boolean);
-
-      lines.push("فکت‌های رسمی که مجاز به استفاده از آن‌ها هستی:");
-      lines.push(`- عنوان دوره: ${course.title}`);
-      lines.push(`- سطح‌ها: ${(course.level || []).join("، ") || "در داده رسمی مشخص نشده"}`);
-      lines.push(`- گروه سنی: ${(course.ageGroup || []).join("، ") || "در داده رسمی مشخص نشده"}`);
-      lines.push(`- دسته‌بندی: ${course.category || "در داده رسمی مشخص نشده"}`);
-      lines.push(`- نوع کلاس: ${course.classType || "در داده رسمی مشخص نشده"}`);
-      lines.push(`- مدت: ${course.duration || "در داده رسمی مشخص نشده"}`);
-      if (teacherNames.length) lines.push(`- مدرس/مدرس‌ها: ${teacherNames.join("، ")}`);
-      if (course.content?.description) lines.push(`- توضیح رسمی دوره: ${course.content.description}`);
-      if (course.seo?.keywords?.length) lines.push(`- کلیدواژه‌های رسمی دوره: ${course.seo.keywords.join("، ")}`);
-      lines.push("فقط همین اطلاعات مدرسه را به‌عنوان فکت اختصاصی آموزشگاه استفاده کن؛ درباره سابقه، تعداد هنرجو، قیمت، زمان کلاس یا دستاوردهایی که اینجا داده نشده‌اند چیزی نساز.");
-    }
+  if (matchedCourses.length >= 2) {
+    lines.push("این مقاله یک موضوع مقایسه‌ای است و باید هر دو دوره را با وزن متوازن و بدون تبدیل یکی به مرجع مطلق بررسی کند.");
+    appendCourseBrief(lines, matchedCourses[0], "اول");
+    appendCourseBrief(lines, matchedCourses[1], "دوم");
+    lines.push("هر ادعای اختصاصی را فقط به دوره‌ای نسبت بده که در فکت‌های بالا آمده است؛ قیمت، زمان‌بندی، آمار، افتخارات یا ویژگی دیگری را حدس نزن.");
+  } else if (primaryCourse) {
+    lines.push(`این مقاله باید به دوره‌ی «${topic.relatedCourseTitle || primaryCourse.title || topic.relatedCourseSlug}» در آموزشگاه موسیقی فاتح در شوشتر مرتبط باشد.`);
+    appendCourseBrief(lines, primaryCourse);
+    lines.push("فقط همین اطلاعات مدرسه را به‌عنوان فکت اختصاصی آموزشگاه استفاده کن؛ درباره سابقه، تعداد هنرجو، قیمت، زمان کلاس یا دستاوردهایی که اینجا داده نشده‌اند چیزی نساز.");
   } else {
     lines.push("این مقاله موضوعی عمومی درباره‌ی آموزش موسیقی است. درباره آموزشگاه فقط اطلاعاتی را ذکر کن که در همین بریف آمده و از ساختن فکت اختصاصی درباره مدرس، قیمت، زمان یا آمار خودداری کن.");
   }
@@ -286,7 +316,6 @@ function buildBrief(topic: SelectedTopic): string {
   lines.push("عنوان، موضوع و فکت‌های رسمی بالا را مبنا قرار بده و submit_article را با فیلدهای کامل صدا بزن.");
   return lines.join("\n");
 }
-
 export async function runDailyArticleGeneration(env: ArticleEnv): Promise<GenerateResult> {
   console.log("runDailyArticleGeneration: starting");
 
