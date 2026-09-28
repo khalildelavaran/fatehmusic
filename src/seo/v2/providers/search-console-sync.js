@@ -357,7 +357,8 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
         await syncPublishedSeoActionMeasurements(env.DB, {
           siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
           windowStart: previousStart,
-          windowEnd: previousEnd
+          windowEnd: previousEnd,
+          snapshotLabel: "previous"
         });
       }
     } catch (error) {
