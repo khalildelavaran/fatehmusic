@@ -36,16 +36,25 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const conflicts = detectSearchCannibalization(scoringRows, options);
   const temporal = detectTemporalCannibalization(temporalAnalysisRows(rows), options);
   const conflictByPage = new Map();
+  const severityRank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
   for (const conflict of conflicts) {
     for (const page of conflict.pages) {
-      conflictByPage.set(page.page, {
+      const signal = {
         query: conflict.query,
         severity: conflict.severity,
         confidence: conflict.confidence,
         semanticSimilarity: conflict.semanticSimilarity,
         semanticEvidence: conflict.semanticEvidence,
         actionable: conflict.actionable
-      });
+      };
+      const key = normalizeUrl(page.page);
+      const existing = conflictByPage.get(key);
+      if (!existing ||
+          (severityRank[signal.severity] || 0) > (severityRank[existing.severity] || 0) ||
+          ((severityRank[signal.severity] || 0) === (severityRank[existing.severity] || 0) &&
+            Number(signal.confidence || 0) > Number(existing.confidence || 0))) {
+        conflictByPage.set(key, signal);
+      }
     }
   }
   const temporalByPage = new Map();
