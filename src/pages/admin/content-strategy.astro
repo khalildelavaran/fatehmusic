@@ -53,6 +53,7 @@ const intelligence = buildSEOIntelligence({
   topicCandidates: activeTopicCandidates,
   gscRows,
   marketSignals,
+  marketKeywordRows: Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : [],
   siteUrl: site.url
 });
 
@@ -265,6 +266,16 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <div class:list={["strategy-data-freshness", ahrefsStale && "is-stale"]}>
               آخرین Snapshot Ahrefs: {ahrefsMetrics?.snapshotDate || "داده‌ای ثبت نشده"}
               {ahrefsAgeDays === null ? " · سن داده نامشخص" : ` · ${ahrefsAgeDays} روز قبل`}
+            </div>
+          )}
+          {ahrefsConfig.enabled && intelligence.marketOpportunities.length > 0 && (
+            <div class="strategy-ahrefs-list">
+              <strong>فرصت‌های بازار کشف‌شده</strong>
+              {intelligence.marketOpportunities.slice(0, 8).map((item) => (
+                <span>
+                  <code>{item.keyword}</code> · حجم {Number(item.volume || 0).toLocaleString("fa-IR")} · سختی {item.difficulty == null ? "-" : Number(item.difficulty).toFixed(0)} · رتبه {item.bestPosition == null ? "-" : Number(item.bestPosition).toFixed(1)} · {item.classification}
+                </span>
+              ))}
             </div>
           )}
           {ahrefsConfig.enabled && Array.isArray(ahrefsCompetitors?.payload) && ahrefsCompetitors.payload.length > 0 && (
