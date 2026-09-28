@@ -36,3 +36,45 @@
 /courses/shushtari-vocal-course/ /courses/shushtari-vocal-course 301
 /gallery/ /gallery 301
 /register/ /register 301
+
+# ------------------------------------------------------------------
+# Canonicalize remaining public trailing-slash route variants.
+# Astro emits trailingSlash: never, so these variants converge to one URL.
+# ------------------------------------------------------------------
+/about/ /about 301
+/contact/ /contact 301
+/courses/ /courses 301
+/instructors/ /instructors 301
+/locations/shushtar/ /locations/shushtar 301
+/courses/guitar-course/ /courses/guitar-course 301
+/courses/violin-course/ /courses/violin-course 301
+/courses/kamancheh-course/ /courses/kamancheh-course 301
+/courses/piano-course/ /courses/piano-course 301
+/courses/keyboard-course/ /courses/keyboard-course 301
+/courses/tar-course/ /courses/tar-course 301
+/courses/setar-course/ /courses/setar-course 301
+/courses/santur-course/ /courses/santur-course 301
+/courses/daf-course/ /courses/daf-course 301
+/courses/tonbak-course/ /courses/tonbak-course 301
+/courses/zarb-tempo-course/ /courses/zarb-tempo-course 301
+/courses/ney-anban-course/ /courses/ney-anban-course 301
+/courses/ney-course/ /courses/ney-course 301
+/courses/children-music-course/ /courses/children-music-course 301
+/courses/hangdrum-course/ /courses/hangdrum-course 301
+/courses/traditional-vocal-course/ /courses/traditional-vocal-course 301
+/courses/bakhtiari-vocal-course/ /courses/bakhtiari-vocal-course 301
+/courses/pop-vocal-course/ /courses/pop-vocal-course 301
+/courses/solfege-course/ /courses/solfege-course 301
+/courses/rhythm-reading-course/ /courses/rhythm-reading-course 301
+/courses/music-theory-course/ /courses/music-theory-course 301
+/instructors/khalil-delavaran/ /instructors/khalil-delavaran 301
+/instructors/mohammadali-zafarani/ /instructors/mohammadali-zafarani 301
+/instructors/vahid-bahman/ /instructors/vahid-bahman 301
+/instructors/behnam-iravani/ /instructors/behnam-iravani 301
+/instructors/mojtaba-nejadsafari/ /instructors/mojtaba-nejadsafari 301
+/instructors/alireza-eydi-nejad/ /instructors/alireza-eydi-nejad 301
+/instructors/farnaz-kadkhoda-moradi/ /instructors/farnaz-kadkhoda-moradi 301
+/instructors/narges-fateh/ /instructors/narges-fateh 301
+/instructors/mohsen-naghib/ /instructors/mohsen-naghib 301
+/instructors/majid-jafarizade/ /instructors/majid-jafarizade 301
+/instructors/reza-bashir/ /instructors/reza-bashir 301
