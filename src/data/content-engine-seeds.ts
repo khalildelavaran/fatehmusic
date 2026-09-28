@@ -48,10 +48,12 @@ export const MODIFIER_TEMPLATES: Record<ModifierType, string[]> = {
     "برای یادگیری {name} در شوشتر به چه نکاتی توجه کنیم؟"
   ],
   age_specific: [
-    // Index 0: کودک, 1: نوجوان, 2: بزرگسال -- picked by audience in candidates.ts
-    "{name} برای کودکان؛ از چه سنی شروع کنیم",
-    "یادگیری {name} در نوجوانی؛ فرصتی که نباید از دست داد",
-    "شروع {name} در بزرگسالی؛ هرگز دیر نیست"
+    // Index mapping is handled explicitly in candidates.ts because the
+    // children's course data contains two real age ranges.
+    "{name} برای کودکان ۳ تا ۷ سال؛ از کجا شروع کنیم",
+    "{name} برای کودکان ۷ تا ۱۲ سال؛ مسیر مناسب شروع چیست",
+    "یادگیری {name} در نوجوانی؛ نکات مهم شروع",
+    "شروع {name} در بزرگسالی؛ نکات مهم برای مبتدی‌ها"
   ],
   benefits: [
     "فواید یادگیری {name} برای رشد ذهنی و تمرکز",
