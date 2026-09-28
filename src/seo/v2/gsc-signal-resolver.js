@@ -406,9 +406,16 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       .slice(0, 10);
     const relevantQuerySignal = aggregate(querySignals);
     const ownership = buildQueryOwnership(querySignals, item);
-    const semanticQueryCluster = querySignals.length && index.queryClusterByQuery
-      ? index.queryClusterByQuery.get(normalizeText(querySignals[0]?.query)) || null
-      : null;
+    const semanticQueryClusters = index.queryClusterByQuery
+      ? [...new Map(
+          querySignals
+            .map((row) => index.queryClusterByQuery.get(normalizeText(row?.query)))
+            .filter(Boolean)
+            .map((cluster) => [cluster.key, cluster])
+        ).values()]
+      : [];
+    const semanticQueryCluster = semanticQueryClusters
+      .sort((a, b) => b.impressions - a.impressions || b.topShare - a.topShare || a.key.localeCompare(b.key))[0] || null;
     const candidates = [relevantQuerySignal, ...pageSignals];
     const best = candidates.find((signal) => signal?.available) || {
       available: false,
