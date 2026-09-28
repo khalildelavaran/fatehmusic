@@ -3,17 +3,18 @@ import { COMPARISON_PAIRS } from "../../data/content-engine-seeds.ts";
 // Unified Content Intelligence: intent is metadata on a canonical content asset.
 import { TOPICS } from "./topics.js";
 import { classifyIntent } from "./intents.js";
+import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "../helpers/text.js";
 
 const INTENT_PRIORITY = Object.freeze({ transactional: 100, local: 92, commercial: 84, informational: 70, navigational: 58 });
 const INTENT_SUFFIX = Object.freeze({ informational: "راهنمای جامع", commercial: "راهنمای انتخاب", transactional: "هزینه و ثبت‌نام", local: "در شوشتر", navigational: "معرفی و مسیر دسترسی" });
 const INTENTS = Object.freeze(["informational", "commercial", "transactional", "local", "navigational"]);
 const COMPATIBLE_INTENTS = Object.freeze({ local: new Set(["local", "commercial", "transactional"]), commercial: new Set(["local", "commercial", "transactional"]), transactional: new Set(["local", "commercial", "transactional"]), informational: new Set(["informational"]), navigational: new Set(["navigational"]) });
 const SCOPE_ONLY_TOPICS = new Set(["shushtar"]);
-function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").replace(/[\s\-_]+/g, " ").trim().toLowerCase(); }
+function normalize(value) { return normalizeSemanticText(value); }
 function findTopic(slug) { return TOPICS.find((topic) => topic.slug === slug) || null; }
-function isShushtarTopic(topic) { return topic?.slug === "shushtar" || normalize(topic?.name).includes("شوشتر"); }
+function isShushtarTopic(topic) { return topic?.slug === "shushtar" || containsSemanticPhrase(topic?.name || "", "شوشتر"); }
 function localTopicName(topic) { return isShushtarTopic(topic) ? "آموزش موسیقی" : (topic?.name || "آموزش موسیقی"); }
-function hasLocalSignal(value) { return normalize(value).includes("شوشتر"); }
+function hasLocalSignal(value) { return containsSemanticPhrase(value || "", "شوشتر"); }
 function resolveTopicFromTitle(title, fallback = null) {
   const normalized = normalize(title);
   const specific = TOPICS.filter((topic) => !SCOPE_ONLY_TOPICS.has(topic.slug) && topic.slug !== "music-education").map((topic) => ({ topic, score: (topic.aliases || []).reduce((sum, alias) => normalized.includes(normalize(alias)) ? sum + normalize(alias).length : sum, 0) })).filter((item) => item.score > 0).sort((a, b) => b.score - a.score || b.topic.name.length - a.topic.name.length || a.topic.name.localeCompare(b.topic.name, "fa"));
