@@ -77,6 +77,11 @@
 - intent واقعی جستجو با searchIntent محتوای پیشنهادی مقایسه می‌شود.
 - توافق intent confidence را افزایش و conflict قوی confidence را کاهش می‌دهد.
 - mixed intent به‌عنوان ambiguity سیگنال داده می‌شود.
+### 13. Competitive keyword gap intelligence
+- competitor keyword gaps از دادهٔ واقعی رقیب استخراج می‌شوند و keywordهای موجود در target GSC/organic set حذف می‌شوند.
+- gapScore فقط بر اساس volume، difficulty و تعداد competitor domains موجود محاسبه می‌شود و دادهٔ مصنوعی تولید نمی‌کند.
+- competitor evidence به‌صورت source family مستقل وارد evidenceStrength می‌شود.
+- freshness رقابتی نیز می‌تواند decisionGuard را محدود کند.
 
 ### 12. Coverage & freshness hardening
 - سقف ingestion استاندارد GSC افزایش یافته و truncation همچنان صریح ثبت می‌شود.
