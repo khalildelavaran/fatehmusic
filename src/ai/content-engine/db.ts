@@ -146,6 +146,14 @@ export async function insertScoredCandidates(db: D1Database, candidates: ScoredC
   const results = await db.batch(statements);
   return results.reduce((sum, result) => sum + (Number(result.meta?.changes || 0) > 0 ? 1 : 0), 0);
 }
+ 
+export async function getRunApprovedCount(db: D1Database, runId: number): Promise<number> {
+  const row = await db.prepare(
+    "SELECT COUNT(*) AS count FROM content_topics WHERE run_id = ? AND status = 'approved'"
+  ).bind(runId).first<{ count: number }>();
+  return Number(row?.count || 0);
+}
+
 export interface TopicListFilters {
   status?: TopicStatus;
   limit?: number;
