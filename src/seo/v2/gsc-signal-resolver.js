@@ -67,6 +67,7 @@ function scoreRow(row) {
 export function buildGscSignalIndex(rows = []) {
   const pageRows = new Map();
   const queryRows = new Map();
+  const queryTokenRows = new Map();
   const opportunities = [];
   for (const row of rows) {
     const page = normalizeUrl(row.page);
@@ -82,12 +83,21 @@ export function buildGscSignalIndex(rows = []) {
       dataState: row.dataState || row.data_state || null
     };
     if (page) pageRows.set(page, [...(pageRows.get(page) || []), item]);
-    if (query) queryRows.set(query, [...(queryRows.get(query) || []), item]);
+    if (query) {
+      queryRows.set(query, [...(queryRows.get(query) || []), item]);
+      const tokenized = tokens(query);
+      for (const token of tokenized) {
+        const bucket = queryTokenRows.get(token) || [];
+        bucket.push(item);
+        queryTokenRows.set(token, bucket);
+      }
+    }
     opportunities.push(Object.freeze({ ...item, opportunitySignalScore: scoreRow(item) }));
   }
   return Object.freeze({
     byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
     byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
+    queryTokenRows: new Map([...queryTokenRows].map(([key, values]) => [key, Object.freeze(values)])),
     opportunities: Object.freeze(opportunities.sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore))
   });
 }
@@ -105,6 +115,23 @@ function queryMatches(item, query) {
   return exact === 1 || overlap >= 0.25;
 }
 
+function relevantQueryRows(index, item) {
+  const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
+  const candidateTokens = tokens(haystack);
+  if (!candidateTokens.size || !index.queryTokenRows) return [];
+  const seen = new Set();
+  const rows = [];
+  for (const token of candidateTokens) {
+    for (const row of index.queryTokenRows.get(token) || []) {
+      const key = normalizeText(row.query);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
 function classifySearchOpportunity(signal) {
   if (!signal?.available) return "CREATE_OR_MONITOR";
   const position = Number(signal.position);
@@ -118,7 +145,10 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
   if (!index) return opportunities;
   return opportunities.map((item) => {
     const pageSignals = getCandidatePages(item).map((page) => index.byPage.get(page)).filter(Boolean);
-    const querySignals = index.opportunities.filter((row) => queryMatches(item, row.query)).slice(0, 10);
+    const querySignals = relevantQueryRows(index, item)
+      .filter((row) => queryMatches(item, row.query))
+      .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
+      .slice(0, 10);
     const candidates = [...pageSignals, aggregate(querySignals)];
     const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null };
     return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none", searchAction: classifySearchOpportunity(best) });
