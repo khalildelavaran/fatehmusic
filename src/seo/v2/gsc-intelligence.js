@@ -181,7 +181,7 @@ function resolveMarketSignal(item, signals) {
     const volume = Number(signal.estimatedVolume) || 0;
     const score = similarity * 100 + Math.min(25, Math.log10(Math.max(1, volume)) * 5);
     if (!best || score > best.score) {
-      best = { score, signal, keyword };
+      best = { score, similarity, signal, keyword };
     }
   }
 
@@ -191,6 +191,6 @@ function resolveMarketSignal(item, signals) {
     ...best.signal,
     matchedKeyword: best.keyword,
     matchType: "SEMANTIC",
-    semanticSimilarity: Number((best.score / 100).toFixed(3))
+    semanticSimilarity: Number(best.similarity.toFixed(3))
   });
 }
