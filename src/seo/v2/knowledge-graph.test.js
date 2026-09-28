@@ -1,0 +1,59 @@
+import { describe, expect, it } from "vitest";
+import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
+import { courseEntityId, instructorEntityId } from "../geo/entity.js";
+
+describe("SEO knowledge graph", () => {
+  it("builds connected organization, course, instructor and article nodes", () => {
+    const graph = buildKnowledgeGraph({
+      siteUrl: "https://fatehmusic.ir",
+      courses: [{
+        id: 1,
+        slug: "guitar-course",
+        title: "آموزش گیتار",
+        instrument: "guitar",
+        instructor: 7
+      }],
+      instructors: [{
+        id: 7,
+        slug: "ali-music",
+        name: "علی",
+        professional: { roles: ["مدرس گیتار"] }
+      }],
+      posts: [{
+        slug: "guitar-guide",
+        title: "راهنمای گیتار",
+        topic: "گیتار",
+        related_course_slug: "guitar-course"
+      }]
+    });
+
+    expect(graph.nodes.map((node) => node.type)).toEqual(
+      expect.arrayContaining(["Organization", "WebSite", "LocalBusiness", "Course", "Person", "Article"])
+    );
+    expect(graph.edges.some((edge) => edge.relation === "teaches")).toBe(true);
+    expect(graph.edges.some((edge) => edge.relation === "about")).toBe(true);
+    expect(validateKnowledgeGraph(graph).valid).toBe(true);
+    expect(graph.statistics.orphanNodeCount).toBe(0);
+    expect(graph.nodes.some((node) =>
+      node.id === courseEntityId("https://fatehmusic.ir/courses/guitar-course")
+    )).toBe(true);
+    expect(graph.nodes.some((node) =>
+      node.id === instructorEntityId("https://fatehmusic.ir/instructors/ali-music")
+    )).toBe(true);
+  });
+
+  it("deduplicates edges and validates broken references", () => {
+    const graph = buildKnowledgeGraph({ siteUrl: "https://fatehmusic.ir" });
+    const broken = {
+      ...graph,
+      edges: [...graph.edges, {
+        from: "https://fatehmusic.ir/missing",
+        relation: "about",
+        to: "https://fatehmusic.ir/#organization",
+        confidence: 1
+      }]
+    };
+
+    expect(validateKnowledgeGraph(broken).valid).toBe(false);
+  });
+});
