@@ -6,6 +6,9 @@
 import { SCHEMA_TYPES } from "../config/constants.js";
 import { absoluteUrl } from "../helpers/url.js";
 
+/**
+ * @param {{site:{url:string},url:string,name:string,description:string,items?:Array<{image:string,title:string,subtitle?:string}>}} params
+ */
 export function buildImageGallerySchema({ site, url, name, description, items = [] } = {}) {
     const galleryUrl = absoluteUrl(url, site.url);
     const webpageId = galleryUrl.replace(/\/$/, "") + "/#webpage";
