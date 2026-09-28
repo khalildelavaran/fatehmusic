@@ -102,6 +102,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const cannibalization = detectSearchCannibalization(currentGscRows, { pageSemantics: pages });
   const temporalCannibalization = search.temporalCannibalization || detectTemporalCannibalization(gscRows);
   const opportunities = search.opportunities;
+  const decisionConfidenceAverage = opportunities.length
+    ? Math.round(opportunities.reduce((sum, item) => sum + Number(item.decisionConfidence || 0), 0) / opportunities.length)
+    : 0;
 
   return Object.freeze({
     cluster,
@@ -128,7 +131,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       cannibalizationCount: cannibalization.length,
       temporalCannibalizationCount: temporalCannibalization.length,
       temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length,
-      queryOwnershipCount: search.queryOwnership?.length || 0
+      queryOwnershipCount: search.queryOwnership?.length || 0,
+      decisionConfidenceAverage
     })
   });
 }
