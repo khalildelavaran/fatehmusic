@@ -78,3 +78,6 @@
 /instructors/mohsen-naghib/ /instructors/mohsen-naghib 301
 /instructors/majid-jafarizade/ /instructors/majid-jafarizade 301
 /instructors/reza-bashir/ /instructors/reza-bashir 301
+
+# Dynamic blog routes use one placeholder rule so every trailing-slash article URL converges.
+/blog/:slug/ /blog/:slug 301
