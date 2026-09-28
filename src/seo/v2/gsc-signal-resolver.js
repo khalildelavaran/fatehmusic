@@ -70,7 +70,11 @@ function buildCtrBenchmarks(rows = []) {
     Object.fromEntries(
       [...buckets.entries()].map(([bucket, value]) => [
         bucket,
-        value.impressions > 0 ? value.clicks / value.impressions : null
+        {
+          ctr: value.impressions > 0 ? value.clicks / value.impressions : null,
+          impressions: value.impressions,
+          clicks: value.clicks
+        }
       ])
     )
   );
@@ -97,7 +101,7 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
   }, 0);
   const weightedBenchmark = benchmarkWeight > 0
     ? rows.reduce((sum, row) => {
-        const benchmark = ctrBenchmarks[positionBucket(row?.position)];
+        const benchmark = ctrBenchmarks[positionBucket(row?.position)]?.ctr;
         const impressions = Math.max(0, Number(row?.impressions) || 0);
         return Number.isFinite(benchmark) && impressions > 0 ? sum + benchmark * impressions : sum;
       }, 0) / benchmarkWeight
@@ -111,6 +115,7 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
     clicks: total.clicks,
     ctr,
     ctrBenchmark: weightedBenchmark,
+    ctrBenchmarkImpressions: benchmarkWeight,
     ctrGap,
     ctrRatioToBenchmark,
     position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
