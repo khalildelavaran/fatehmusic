@@ -13,6 +13,20 @@ describe("GSC signal resolver", () => {
     expect(index.byQuery.get("کلاس گیتار شوشتر").impressions).toBe(1500);
   });
 
+  it("indexes query tokens while preserving the same matching result", () => {
+    const index = buildGscSignalIndex([
+      ...rows,
+      { query: "آموزش پیانو", page: "https://fatehmusic.ir/blog/piano", clicks: 1, impressions: 300, ctr: 0.003, position: 18 }
+    ]);
+    expect(index.queryTokenRows.get("گیتار")?.length).toBe(2);
+
+    const result = resolveOpportunitySearchSignals([
+      { title: "کلاس گیتار در شوشتر", topicName: "گیتار", topic: "guitar", searchIntent: "local", suggestedSlug: "guitar-local" }
+    ], index);
+    expect(result[0].searchSignalSource).toBe("google-search-console");
+    expect(result[0].searchSignal.impressions).toBeGreaterThan(0);
+  });
+
   it("resolves a search signal for a matching opportunity", () => {
     const result = resolveOpportunitySearchSignals([
       { title: "کلاس گیتار در شوشتر", topicName: "گیتار", topic: "guitar", searchIntent: "local", suggestedSlug: "guitar-local" }
