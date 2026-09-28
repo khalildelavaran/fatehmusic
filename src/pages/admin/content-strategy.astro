@@ -13,7 +13,7 @@ import { buildSEOIntelligence, buildGscSignalIndex, resolveSite } from "../../se
 import { listTopics } from "../../ai/content-engine/db";
 import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
 import { listSeoActions } from "../../seo/v2/seo-action-store.js";
-import { getAhrefsConfig, getLatestAhrefsMarketSnapshot } from "../../seo/v2/providers/ahrefs.js";
+import { buildAhrefsKeywordSignalMap, getAhrefsConfig, getLatestAhrefsMarketSnapshot } from "../../seo/v2/providers/ahrefs.js";
 import { getSearchConsoleConfig } from "../../seo/v2/providers/search-console-config.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
@@ -42,11 +42,15 @@ const currentGscRows = (gscRows as Array<Record<string, unknown>>).filter((row) 
   String(row.snapshotLabel || row.snapshot_label || "") === "current"
 );
 const currentGscIndex = buildGscSignalIndex(currentGscRows);
+const marketSignals = buildAhrefsKeywordSignalMap(
+  Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : []
+);
 const intelligence = buildSEOIntelligence({
   posts,
   courses,
   topicCandidates: activeTopicCandidates,
   gscRows,
+  marketSignals,
   siteUrl: site.url
 });
 
