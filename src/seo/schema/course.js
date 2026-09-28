@@ -55,6 +55,7 @@ export function buildCourseSchema(course, { site }) {
         url: course.url,
         name: course.title,
         description: course.description,
+        inLanguage: "fa-IR",
         image: course.image,
         keywords: [...new Set([
             ...courseTopics,
