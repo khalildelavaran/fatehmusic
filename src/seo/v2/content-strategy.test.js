@@ -82,6 +82,41 @@ describe("content strategy deduplication", () => {
     expect(result.opportunities[0].suggestedSlug).toBe("هزینه-کلاس-آواز-در-شوشتر");
   });
 
+  it("uses the canonical Course entity ID from the schema graph", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      topicCandidates: [{
+        title: "هزینه کلاس گیتار در شوشتر",
+        intent: "transactional",
+        modifierType: "local_shushtar",
+        relatedCourseSlug: "guitar-course",
+        scoreTotal: 90
+      }],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.opportunities[0].targetEntity.id).toBe(
+      "https://fatehmusic.ir/courses/guitar-course/#course"
+    );
+  });
+
+  it("uses the canonical LocalBusiness entity for local opportunities", () => {
+    const result = buildUnifiedContentOpportunities({
+      topicCandidates: [{
+        title: "آموزش موسیقی در شوشتر",
+        intent: "local",
+        modifierType: "local_shushtar",
+        scoreTotal: 70
+      }],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.opportunities[0].targetEntity.type).toBe("LocalBusiness");
+    expect(result.opportunities[0].targetEntity.id).toBe(
+      "https://fatehmusic.ir/locations/shushtar#localbusiness"
+    );
+  });
+
   it("does not resolve a local vocal title to the generic shushtar topic", () => {
     const result = buildUnifiedContentOpportunities({
       courses,
