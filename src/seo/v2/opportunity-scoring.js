@@ -40,6 +40,9 @@ function decisionConfidenceScore(item = {}) {
     score += 3;
   }
 
+  if (item.gscDataQuality?.truncated) score -= 10;
+  if (item.gscDataQuality?.completeness != null && item.gscDataQuality.completeness < 0.8) score -= 5;
+
   if (item.cannibalization?.severity === "HIGH") score -= 10;
   else if (item.cannibalization?.severity === "MEDIUM") score -= 5;
 
