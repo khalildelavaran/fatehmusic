@@ -148,6 +148,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       knowledgeGraphEdgeCount: knowledgeGraph.statistics.edgeCount,
       knowledgeGraphValid: knowledgeGraphValidation.valid,
       gscCompleteness: search.dataQuality?.completeness || 0,
+      gscFreshness: search.dataQuality?.freshness || "UNKNOWN",
+      gscAgeDays: search.dataQuality?.ageDays ?? null,
       marketOpportunityCount: marketOpportunities.length
     })
   });
