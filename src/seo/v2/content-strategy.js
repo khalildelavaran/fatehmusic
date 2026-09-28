@@ -306,6 +306,7 @@ function mergeCompatibleOpportunities(items, siteUrl) {
   }
   return [...groups.values()];
 }
+/** @param {{gaps?: object[], topicCandidates?: object[], courses?: object[], siteUrl?: string}} options */
 export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl } = {}) {
   const candidateItems = topicCandidates.map((candidate) => candidate?.title ? buildCandidateBrief(candidate, courses, siteUrl) : null).filter(Boolean); const mergedCandidates = mergeCompatibleOpportunities(candidateItems, siteUrl); const mergedByKey = new Map(mergedCandidates.map((item) => [canonicalAssetKey(item), item])); const unmatchedGaps = [];
   for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl)) { const key = canonicalAssetKey(gap); const candidate = mergedByKey.get(key); if (candidate) { const candidateIntents = candidate.searchIntents || [candidate.searchIntent]; const gapIntents = gap.searchIntents || [gap.searchIntent]; const compatible = candidateIntents.every((a) => gapIntents.some((b) => areIntentsCompatible(a, b))); if (compatible && (!candidate.courseSlug || !gap.courseSlug || candidate.courseSlug === gap.courseSlug)) { mergedByKey.set(key, mergeOpportunity(candidate, gap, siteUrl)); continue; } } unmatchedGaps.push(gap); }
