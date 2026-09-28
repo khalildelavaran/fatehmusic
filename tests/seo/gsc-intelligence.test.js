@@ -134,7 +134,7 @@ describe("GSC query intent evidence", () => {
   });
 
   it("penalizes a strong GSC intent conflict with the proposed content intent", () => {
-    const result = enrichOpportunitiesWithSearchConsole([
+    const conflicting = enrichOpportunitiesWithSearchConsole([
       {
         title: "راهنمای گیتار",
         topicName: "گیتار",
@@ -154,9 +154,28 @@ describe("GSC query intent evidence", () => {
       }
     ]);
 
-    expect(result.opportunities[0].decisionConfidence).toBeLessThan(
-      80 + 20
-    );
+    const aligned = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "راهنمای گیتار",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "transactional",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [
+      {
+        query: "هزینه کلاس گیتار",
+        page: "https://fatehmusic.ir/courses/guitar",
+        impressions: 100,
+        clicks: 5,
+        position: 7,
+        snapshotLabel: "current"
+      }
+    ]);
+
+    expect(conflicting.opportunities[0].decisionConfidence)
+      .toBeLessThan(aligned.opportunities[0].decisionConfidence);
   });
 
   it("marks mixed query intent as ambiguous", () => {
