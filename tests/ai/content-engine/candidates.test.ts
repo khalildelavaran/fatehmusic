@@ -55,6 +55,18 @@ describe("generateCandidates", () => {
     expect(offending).toHaveLength(0);
   });
 
+  it("does not attach false age labels to general modifier templates", () => {
+    const falselySegmented = candidates.filter(
+      (c) => c.modifierType !== "age_specific" && c.modifierType !== "parent_guide" && c.audience !== ""
+    );
+    expect(falselySegmented).toHaveLength(0);
+  });
+
+  it("keeps parent-guide candidates general rather than inventing an audience-specific identity", () => {
+    const parentGuides = candidates.filter((c) => c.modifierType === "parent_guide");
+    expect(parentGuides.every((c) => c.audience === "")).toBe(true);
+  });
+
   it("includes at least one evergreen/general candidate not tied to a course", () => {
     expect(candidates.some((c) => c.modifierType === "evergreen_general" && c.relatedCourseSlug === null)).toBe(true);
   });
