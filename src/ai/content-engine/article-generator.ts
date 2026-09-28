@@ -314,8 +314,6 @@ function validateGeneratedArticle(
       return "خلاصه مقاله با Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
     }
   }
-    return "meta_title با عنوان Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
-  }
 
   const absoluteInternalUrls = rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || [];
   const relativeMarkdownUrls = [...rawContent.matchAll(/\]\((\/(?!\/)[^\s)]+)\)/g)].map((match) => match[1]);
