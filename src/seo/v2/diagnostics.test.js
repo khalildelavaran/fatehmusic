@@ -28,6 +28,26 @@ describe("SEO diagnostics engine", () => {
     expect(result.statistics.pagesAnalyzed).toBe(1);
   });
 
+  it("requires meaningful evidence coverage for the quality gate", () => {
+    const result = runDiagnostics({
+      audits: [{
+        score: 100,
+        coverageScore: 10,
+        checks: [
+          { id: "title", status: "pass", points: 10 }
+        ],
+        errors: [],
+        warnings: []
+      }],
+      graphValidation: { valid: true, errors: [] }
+    });
+
+    expect(result.weightedScore).toBe(100);
+    expect(result.evidenceCoverage).toBeLessThan(75);
+    expect(result.qualityAdjustedScore).toBeLessThan(result.weightedScore);
+    expect(result.qualityGate).toBe(false);
+  });
+
   it("surfaces failed checks as actionable issues", () => {
     const result = runDiagnostics({
       audits: [{
