@@ -106,15 +106,21 @@ export async function finishRun(
 export async function insertScoredCandidates(
   db: D1Database,
   candidates: ScoredCandidate[],
-  runId: number
+  runId: number,
+  limit = 20
 ): Promise<{ inserted: number; newlyApproved: number }> {
   if (candidates.length === 0) return { inserted: 0, newlyApproved: 0 };
   const autoApproveThreshold = 55;
+  // Keep the default discovery write footprint safe for Workers Free. The
+  // scored queue is intentionally larger than the persisted queue, so future
+  // runs can reconsider the rest as search signals change.
+  const persistLimit = Math.max(1, Math.min(Number(limit) || 20, 40));
+  const persistableCandidates = candidates.slice(0, persistLimit);
 
   // Snapshot existing states before the UPSERT so run history can distinguish
   // newly-approved topics from topics that were already approved/used.
   const existingStatuses = new Map<string, string>();
-  const uniqueKeys = [...new Set(candidates.map((candidate) => candidate.normalizedKey))];
+  const uniqueKeys = [...new Set(persistableCandidates.map((candidate) => candidate.normalizedKey))];
   for (let offset = 0; offset < uniqueKeys.length; offset += 50) {
     const chunk = uniqueKeys.slice(offset, offset + 50);
     const placeholders = chunk.map(() => "?").join(",");
@@ -128,7 +134,7 @@ export async function insertScoredCandidates(
 
   // One conditional UPSERT per candidate. Existing approved/used topics keep
   // their lifecycle state; rejected/candidate topics may be refreshed.
-  const statements = candidates.map((c) => {
+  const statements = persistableCandidates.map((c) => {
     const status = c.scoreTotal >= autoApproveThreshold ? "approved" : "candidate";
     return db.prepare(
       "INSERT INTO content_topics " +
@@ -169,7 +175,7 @@ export async function insertScoredCandidates(
     sum + (Number(result.meta?.changes || 0) > 0 ? 1 : 0), 0
   );
 
-  const newlyApproved = candidates.reduce((sum, candidate) => {
+  const newlyApproved = persistableCandidates.reduce((sum, candidate) => {
     const previousStatus = existingStatuses.get(candidate.normalizedKey);
     const isNewApproval = candidate.scoreTotal >= autoApproveThreshold &&
       previousStatus !== "approved" &&
