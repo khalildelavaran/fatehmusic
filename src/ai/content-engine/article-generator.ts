@@ -272,7 +272,7 @@ function validateGeneratedArticle(
     rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || []
   )].map((url) => url.replace(/[.,،؛:]+$/u, ""));
   for (const url of internalUrls) {
-    const canonicalInternalUrl = url.replace(/^http:\\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir");
+    const canonicalInternalUrl = url.replace(/^http:\/\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir");
     if (!allowedLinks.has(canonicalInternalUrl)) return "مقاله شامل لینک داخلی خارج از whitelist است: " + url;
   }
 
