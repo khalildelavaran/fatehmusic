@@ -72,6 +72,16 @@ describe("opportunity scoring", () => {
     })).toBe("MERGE_CONTENT");
   });
 
+  it("does not count multiple GSC signals as independent sources", () => {
+    const evidence = evidenceStrength({
+      searchSignal: { available: true, impressions: 300, position: 6 },
+      searchOwnership: { matchType: "EXACT", ownerStatus: "STABLE" }
+    });
+
+    expect(evidence.sourceCount).toBe(1);
+    expect(evidence.sources).toEqual(["GSC"]);
+  });
+
   it("exposes evidence strength separately from priority", () => {
     const evidence = evidenceStrength({
       searchSignal: { available: true, impressions: 300, position: 6, matchedQueries: ["آموزش گیتار"] },
