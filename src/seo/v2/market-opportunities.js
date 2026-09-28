@@ -3,7 +3,7 @@
  * No keyword, volume or difficulty is invented here.
  */
 
-import { isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
+import { isBrandNavigationQuery, normalizeQuery } from "../helpers/query.js";
 import { semanticTokens } from "../helpers/text.js";
 
 function clamp(value, min = 0, max = 100) {
@@ -48,11 +48,11 @@ function classifyMarketOpportunity(position, gscImpressions) {
 }
 
 function gscExactSignal(keyword, rows = []) {
-  const key = normalizeText(keyword);
+  const key = normalizeQuery(keyword);
   if (!key) return null;
   const exact = rows.filter((row) => {
     if (isBrandNavigationQuery(row?.query)) return false;
-    return normalizeText(row?.query) === key;
+    return normalizeQuery(row?.query) === key;
   });
   if (!exact.length) return null;
 
@@ -104,7 +104,7 @@ export function buildMarketOpportunityReport({
 
   for (const row of rows) {
     const keyword = String(row?.keyword || "").trim();
-    const key = normalizeText(keyword);
+    const key = normalizeQuery(keyword);
     const volume = Math.max(0, Number(row?.volume_monthly ?? row?.volume) || 0);
     const difficulty = Number(row?.keyword_difficulty ?? row?.difficulty);
     const position = Number(row?.best_position);
