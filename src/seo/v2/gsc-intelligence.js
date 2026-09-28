@@ -124,6 +124,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const competitorGaps = Array.isArray(options.competitorGaps) ? options.competitorGaps : [];
   const competitorGapSignals = normalizeMarketSignals(competitorGaps.map((item) => ({
     ...item,
+    available: true,
     keyword: item.keyword,
     source: "competitor-gap"
   })));
@@ -145,6 +146,25 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     ageDays: marketAgeDays,
     freshness: marketFreshness
   });
+  const competitorFetchedAt = competitorGaps
+    .map((item) => item?.fetchedAt || item?.fetched_at || null)
+    .filter(Boolean)
+    .sort()
+    .at(-1) || null;
+  const competitorAgeDays = resolveAgeDays(competitorFetchedAt);
+  const competitorFreshness = competitorAgeDays == null
+    ? "UNKNOWN"
+    : competitorAgeDays <= 8
+      ? "FRESH"
+      : competitorAgeDays <= 16
+        ? "AGING"
+        : "STALE";
+  const competitorDataQuality = Object.freeze({
+    configured: competitorGaps.length > 0,
+    signalCount: competitorGaps.length,
+    ageDays: competitorAgeDays,
+    freshness: competitorFreshness
+  });
 
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
     const page = normalizeUrl(item.url || item.targetEntity?.url || "");
@@ -157,7 +177,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       marketSignal,
       competitorGap,
       gscDataQuality,
-      marketDataQuality
+      marketDataQuality,
+      competitorDataQuality
     });
   });
   const scored = scoreOpportunities(enriched);
@@ -173,6 +194,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     queryClusters: Object.freeze(index.queryClusters || []),
     dataQuality: gscDataQuality,
     marketDataQuality,
+    competitorDataQuality,
     summary: Object.freeze({
       connected: scoringRows.length > 0,
       signalRows: scoringRows.length,
@@ -200,7 +222,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       marketAgeDays: marketDataQuality.ageDays,
       marketSignalCount: marketDataQuality.signalCount,
       competitorGapCount: competitorGaps.length,
-      competitorGapBackedCount: scored.filter((item) => item.competitorGap?.available).length
+      competitorGapBackedCount: scored.filter((item) => item.competitorGap?.available).length,
+      competitorFreshness: competitorDataQuality.freshness,
+      competitorAgeDays: competitorDataQuality.ageDays
     })
   });
 }
