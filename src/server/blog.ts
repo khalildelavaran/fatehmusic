@@ -202,7 +202,7 @@ export const fallbackBlogPosts: BlogPost[] = [
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   const db = env.DB;
 
-  if (!db) return fallbackBlogPosts;
+  if (!db) return import.meta.env.DEV ? fallbackBlogPosts : [];
 
   try {
     const result = await db
@@ -235,7 +235,9 @@ export async function getPublishedPostsStrict(): Promise<BlogPost[]> {
 export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
   const db = env.DB;
 
-  if (!db) return fallbackBlogPosts.find((post) => post.slug === slug) ?? null;
+  if (!db) return import.meta.env.DEV
+    ? fallbackBlogPosts.find((post) => post.slug === slug) ?? null
+    : null;
 
   try {
     const post = await db
