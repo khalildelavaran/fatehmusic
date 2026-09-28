@@ -160,12 +160,33 @@ function validateSchema(route, scripts) {
     error("JSONLD_WEBPAGE_MISSING", route + ": WebPage entity missing");
   }
 
+  const expectedUrl = SITE_ORIGIN + (route === "/" ? "" : route);
+  const webpage = nodes.find((node) => schemaTypes(node).includes("WebPage"));
+  if (webpage) {
+    const pageUrl = String(webpage.url || "").replace(/\/$/, "");
+    if (pageUrl !== expectedUrl.replace(/\/$/, "")) {
+      error("JSONLD_WEBPAGE_URL_MISMATCH", route + ": WebPage url does not match rendered route");
+    }
+    if (webpage["@id"] !== expectedUrl.replace(/\/$/, "") + "#webpage") {
+      error("JSONLD_WEBPAGE_ID_MISMATCH", route + ": WebPage @id does not match canonical page identity");
+    }
+  }
+
   for (const node of nodes) {
     const type = schemaTypes(node);
     if (type.includes("Article")) {
       if (!node.author) error("ARTICLE_AUTHOR_MISSING", route + ": Article author missing");
       for (const field of ["headline", "datePublished", "dateModified", "publisher", "mainEntityOfPage"]) {
         if (!node[field]) error("ARTICLE_FIELD_MISSING", route + ": Article " + field + " missing");
+      }
+      if (node.url && String(node.url).replace(/\/$/, "") !== expectedUrl.replace(/\/$/, "")) {
+        error("ARTICLE_URL_MISMATCH", route + ": Article url does not match rendered route");
+      }
+      if (node.mainEntityOfPage?.["@id"] && node.mainEntityOfPage["@id"] !== expectedUrl.replace(/\/$/, "") + "#webpage") {
+        error("ARTICLE_MAINENTITY_MISMATCH", route + ": Article mainEntityOfPage does not point to this page");
+      }
+      if (node.publisher?.["@id"] && node.publisher["@id"] !== SITE_ORIGIN.replace(/\/$/, "") + "#organization") {
+        error("ARTICLE_PUBLISHER_MISMATCH", route + ": Article publisher does not point to the site organization");
       }
     }
     if (type.includes("WebPage")) {
