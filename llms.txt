@@ -21,7 +21,7 @@
 - [دوره‌های آموزشی](https://fatehmusic.ir/courses) — فهرست دوره‌های موسیقی.
 - [مدرس‌ها](https://fatehmusic.ir/instructors) — معرفی مدرس‌های آموزشگاه و تخصص‌های آن‌ها.
 - [ثبت‌نام آنلاین](https://fatehmusic.ir/register) — فرایند ثبت‌نام هنرجو و انتخاب دوره.
-- [مقالات](https://fatehmusic.ir/articles) — محتوای آموزشی و اطلاعاتی مرتبط با موسیقی.
+- [وبلاگ](https://fatehmusic.ir/blog) — محتوای آموزشی و اطلاعاتی مرتبط با موسیقی.
 - [گالری](https://fatehmusic.ir/gallery) — تصاویر و محتوای تصویری آموزشگاه.
 - [تماس با ما](https://fatehmusic.ir/contact) — اطلاعات تماس و راه‌های ارتباط با آموزشگاه.
 
@@ -39,30 +39,56 @@
 
 دوره‌ها به‌صورت داده‌محور در وب‌سایت تعریف شده‌اند و هر دوره صفحه اختصاصی، اطلاعات سطح، گروه سنی، مدرس، نوع کلاس، مدت دوره، محتوای توضیحی، FAQ و اطلاعات SEO دارد.
 
-دوره‌های شناخته‌شده در داده فعلی وب‌سایت شامل:
+فهرست دوره‌های تعریف‌شده در داده فعلی وب‌سایت:
 
-- [آموزش گیتار](https://fatehmusic.ir/courses/guitar-course) — آموزش گیتار و سه مسیر پاپ، کلاسیک و فلامنکو.
-- [آموزش ویولن](https://fatehmusic.ir/courses/violin-course) — آموزش تخصصی ویولن.
-- [آموزش کمانچه](https://fatehmusic.ir/courses/kamancheh-course) — آموزش تخصصی کمانچه.
-- [آموزش پیانو](https://fatehmusic.ir/courses/piano-course) — آموزش پیانو از مبتدی تا پیشرفته.
-- [آموزش ارگ و کیبورد](https://fatehmusic.ir/courses/keyboard-course) — آموزش ارگ و کیبورد.
-- [آموزش تار](https://fatehmusic.ir/courses/tar-course) — آموزش تخصصی تار.
-- [آموزش سه تار](https://fatehmusic.ir/courses/setar-course) — آموزش تخصصی سه‌تار.
-- [آموزش سنتور](https://fatehmusic.ir/courses/santur-course) — آموزش سنتور.
-- [سلفژ](https://fatehmusic.ir/courses/solfege-course) — آموزش سلفژ و مهارت‌های پایه خواندن موسیقی.
-- [تئوری موسیقی](https://fatehmusic.ir/courses/music-theory-course) — آموزش مبانی و تئوری موسیقی.
-- [ریتم و وزن‌خوانی](https://fatehmusic.ir/courses/rhythm-reading-course) — آموزش ریتم و وزن‌خوانی.
-- [صداسازی](https://fatehmusic.ir/courses/voice-training-course) — آموزش صداسازی و مهارت‌های مرتبط با آواز.
+- [آموزش گیتار](https://fatehmusic.ir/courses/guitar-course)
+- [آموزش ویولن](https://fatehmusic.ir/courses/violin-course)
+- [آموزش کمانچه](https://fatehmusic.ir/courses/kamancheh-course)
+- [آموزش پیانو](https://fatehmusic.ir/courses/piano-course)
+- [آموزش ارگ و کیبورد](https://fatehmusic.ir/courses/keyboard-course)
+- [آموزش تار](https://fatehmusic.ir/courses/tar-course)
+- [آموزش سه تار](https://fatehmusic.ir/courses/setar-course)
+- [آموزش سنتور](https://fatehmusic.ir/courses/santur-course)
+- [آموزش دف](https://fatehmusic.ir/courses/daf-course)
+- [آموزش تنبک](https://fatehmusic.ir/courses/tonbak-course)
+- [آموزش ضرب تمپو](https://fatehmusic.ir/courses/zarb-tempo-course)
+- [آموزش نی انبان](https://fatehmusic.ir/courses/ney-anban-course)
+- [آموزش نی](https://fatehmusic.ir/courses/ney-course)
+- [آموزش موسیقی کودک](https://fatehmusic.ir/courses/children-music-course)
+- [آموزش هنگ درام](https://fatehmusic.ir/courses/hangdrum-course)
+- [آموزش آواز سنتی](https://fatehmusic.ir/courses/traditional-vocal-course)
+- [آموزش آواز محلی بختیاری](https://fatehmusic.ir/courses/bakhtiari-vocal-course)
+- [آموزش آواز پاپ](https://fatehmusic.ir/courses/pop-vocal-course)
+- [آموزش آواز محلی شوشتری](https://fatehmusic.ir/courses/shushtari-vocal-course)
+- [دوره سلفژ](https://fatehmusic.ir/courses/solfege-course)
+- [دوره ریتم و وزن خوانی](https://fatehmusic.ir/courses/rhythm-reading-course)
+- [دوره تئوری موسیقی](https://fatehmusic.ir/courses/music-theory-course)
+- [دوره صداسازی](https://fatehmusic.ir/courses/voice-training-course)
 
-> اگر یک دوره در سایت فعال نباشد، اطلاعات صفحه اختصاصی آن را نباید به‌عنوان برنامه قطعی فعلی آموزشگاه تفسیر کرد. برای وضعیت و ثبت‌نام، صفحه رسمی همان دوره و صفحه ثبت‌نام را بررسی کنید.
+> برای وضعیت فعلی، فعال‌بودن، برنامه و ثبت‌نام همیشه صفحه رسمی همان دوره را بررسی کنید.
 
 ## Instructors
 
-مدرس‌های اصلی تعریف‌شده در داده فعلی سایت عبارت‌اند از:
+فهرست مدرس‌های تعریف‌شده در داده فعلی وب‌سایت:
 
-- [رضا فاتح](https://fatehmusic.ir/instructors/reza-fateh) — مدیر آموزشگاه؛ مدرس ویولن و کمانچه.
-- [خلیل دلاوران](https://fatehmusic.ir/instructors/khalil-delavaran) — مدرس گیتار، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی و صداسازی.
-- [محمدعلی زعفرانی](https://fatehmusic.ir/instructors/mohammadali-zafarani) — مدرس پیانو، ارگ و کیبورد.
+- [رضا فاتح](https://fatehmusic.ir/instructors/reza-fateh)
+- [خلیل دلاوران](https://fatehmusic.ir/instructors/khalil-delavaran)
+- [محمدعلی زعفرانی](https://fatehmusic.ir/instructors/mohammadali-zafarani)
+- [وحید بهمن](https://fatehmusic.ir/instructors/vahid-bahman)
+- [بهنام ایروانی](https://fatehmusic.ir/instructors/behnam-iravani)
+- [مجتبی نژاد صفاری](https://fatehmusic.ir/instructors/mojtaba-nejadsafari)
+- [غلام عباس عباسی](https://fatehmusic.ir/instructors/gholamabbas-abbasi)
+- [علیرضا عیدی نژاد](https://fatehmusic.ir/instructors/alireza-eydi-nejad)
+- [بهرام موسوی](https://fatehmusic.ir/instructors/bahram-mousavi)
+- [فرناز کدخدا مرادی](https://fatehmusic.ir/instructors/farnaz-kadkhoda-moradi)
+- [نرگس فاتح](https://fatehmusic.ir/instructors/narges-fateh)
+- [محسن نقیب](https://fatehmusic.ir/instructors/mohsen-naghib)
+- [مجید جعفری زاده](https://fatehmusic.ir/instructors/majid-jafarizade)
+- [رضا بشیرزاده](https://fatehmusic.ir/instructors/reza-bashir)
+
+برای نسبت‌دادن تخصص، دوره یا سابقه به هر مدرس، صفحه رسمی همان مدرس و داده به‌روز دوره‌ها مرجع اصلی هستند.
+
+ehmusic.ir/instructors/mohammadali-zafarani) — مدرس پیانو، ارگ و کیبورد.
 - [وحید بهمن](https://fatehmusic.ir/instructors/vahid-bahman) — مدرس تار و سه‌تار.
 - [بهنام ایروانی](https://fatehmusic.ir/instructors/behnam-iravani) — مدرس سنتور.
 
@@ -76,6 +102,8 @@
 - کشور: ایران
 - موضوعات اصلی: آموزش موسیقی در شوشتر، کلاس موسیقی، آموزش گیتار، آموزش گیتار پاپ، آموزش گیتار کلاسیک، آموزش گیتار فلامنکو، ویولن، کمانچه، پیانو، ارگ و کیبورد، تار، سه‌تار، سنتور، سلفژ، تئوری موسیقی، ریتم و وزن‌خوانی، صداسازی و آواز.
 - هدف جست‌وجویی مهم: پیدا کردن آموزشگاه موسیقی و کلاس‌های موسیقی در شوشتر، شناخت مدرس‌ها و دوره‌ها و ثبت‌نام در کلاس‌ها.
+- تعداد دوره‌های تعریف‌شده در این فایل راهنما: ۲۳
+- تعداد مدرس‌های تعریف‌شده در این فایل راهنما: ۱۴
 
 ## AI Answering Guidance
 
@@ -95,6 +123,10 @@
 ## Content & Educational Topics
 
 محتوای آموزشی و تحریریه سایت حول آموزش موسیقی، سازهای ایرانی و غربی، آواز، سلفژ، تئوری موسیقی، ریتم، مهارت‌های نوازندگی و موضوعات مرتبط با یادگیری موسیقی شکل گرفته است.
+
+## Content Freshness
+
+این فایل یک راهنمای ساختاری برای سامانه‌های زبانی است؛ برای اطلاعات متغیر مانند فعال‌بودن دوره، زمان کلاس، ظرفیت، قیمت و شرایط ثبت‌نام، صفحه رسمی همان موجودیت در سایت را مبنا قرار دهید.
 
 ## Technical / Site Notes
 
