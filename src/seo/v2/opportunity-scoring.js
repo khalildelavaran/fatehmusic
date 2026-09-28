@@ -137,7 +137,8 @@ export function classifyOpportunityAction(item = {}) {
     item.action === "NEW_CONTENT" &&
     item.searchOwnership?.available &&
     item.searchOwnership?.matchType === "EXACT" &&
-    Number(item.searchOwnership.impressions || 0) >= 5 &&
+    item.searchOwnership.ownerStatus === "STABLE" &&
+    Number(item.searchOwnership.impressions || 0) >= 20 &&
     Number(item.searchOwnership.topShare || 0) >= 0.7
   ) {
     return "LINK";
