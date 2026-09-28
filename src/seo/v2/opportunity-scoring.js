@@ -39,6 +39,34 @@ function decisionConfidenceScore(item = {}) {
   return Math.round(clamp(score));
 }
 
+function marketSignalScore(signal = {}) {
+  if (!signal?.available) return null;
+
+  const volume = Math.max(0, Number(signal.estimatedVolume) || 0);
+  const difficulty = Number(signal.difficulty);
+  const trafficPotential = Math.max(0, Number(signal.trafficPotential) || 0);
+
+  let score = 0;
+  if (volume >= 1000) score += 30;
+  else if (volume >= 500) score += 25;
+  else if (volume >= 100) score += 20;
+  else if (volume >= 20) score += 12;
+  else if (volume > 0) score += 5;
+
+  if (Number.isFinite(difficulty)) {
+    if (difficulty <= 20) score += 25;
+    else if (difficulty <= 40) score += 18;
+    else if (difficulty <= 60) score += 10;
+    else if (difficulty <= 80) score += 4;
+  }
+
+  if (trafficPotential >= 1000) score += 15;
+  else if (trafficPotential >= 500) score += 10;
+  else if (trafficPotential > 0) score += 5;
+
+  return clamp(score);
+}
+
 function searchSignalScore(signal = {}) {
   if (!signal?.available) return 0;
   const impressions = Math.max(0, Number(signal.impressions) || 0);
@@ -106,10 +134,19 @@ export function classifyOpportunityAction(item = {}) {
 export function scoreOpportunity(item = {}) {
   const base = clamp(item.priority);
   const signal = searchSignalScore(item.searchSignal);
+  const market = marketSignalScore(item.marketSignal);
   const competitionPenalty = item.cannibalization?.severity === "HIGH" ? 0 : item.cannibalization?.severity === "MEDIUM" ? 3 : 0;
   const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
-  const score = clamp(Math.round(base * 0.55 + signal * 0.45 - competitionPenalty + temporalBonus));
-  const decisionConfidence = decisionConfidenceScore(item);
+
+  const weightedBase = base * 0.55;
+  const weightedSearch = signal * 0.45;
+  const weightedMarket = market == null ? 0 : market * 0.20;
+  const weightTotal = market == null ? 1 : 1.2;
+  const score = clamp(Math.round((weightedBase + weightedSearch + weightedMarket) / weightTotal - competitionPenalty + temporalBonus));
+  const decisionConfidence = decisionConfidenceScore({
+    ...item,
+    marketSignal: market == null ? undefined : item.marketSignal
+  });
   return Object.freeze({
     ...item,
     action: classifyOpportunityAction(item),
@@ -120,6 +157,7 @@ export function scoreOpportunity(item = {}) {
       searchSignal: signal,
       competitionPenalty,
       temporalBonus,
+      marketSignal: market,
       decisionConfidence
     })
   });
