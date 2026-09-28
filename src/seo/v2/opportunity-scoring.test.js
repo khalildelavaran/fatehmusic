@@ -115,6 +115,25 @@ describe("opportunity scoring", () => {
     })).toBe("NEW_CONTENT");
   });
 
+  it("caps priority when competitor evidence is stale", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 100,
+      competitorGap: {
+        available: true,
+        gapScore: 90,
+        competitorCount: 3
+      },
+      competitorDataQuality: {
+        freshness: "STALE",
+        ageDays: 30
+      }
+    });
+
+    expect(result.priority).toBeLessThanOrEqual(86);
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("COMPETITOR_STALE");
+  });
+
   it("caps priority when GSC coverage is partial", () => {
     const result = scoreOpportunity({
       action: "OPTIMIZE_EXISTING",
