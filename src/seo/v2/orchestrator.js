@@ -143,7 +143,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       index: gscIndex,
       cannibalization: freeze(cannibalization),
       temporalCannibalization: freeze(temporalCannibalization),
-      queryOwnership: freeze(search.queryOwnership)
+      queryOwnership: freeze(search.queryOwnership),
+      queryClusters: freeze(search.queryClusters || [])
     }),
     links: Object.freeze({ graph: freeze(semanticLinks) }),
     knowledgeGraph,
@@ -164,6 +165,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       temporalCannibalizationCount: temporalCannibalization.length,
       temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length,
       queryOwnershipCount: search.queryOwnership?.length || 0,
+      queryClusterCount: search.queryClusters?.length || 0,
       decisionConfidenceAverage,
       knowledgeGraphNodeCount: knowledgeGraph.statistics.nodeCount,
       knowledgeGraphEdgeCount: knowledgeGraph.statistics.edgeCount,
