@@ -217,57 +217,72 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
   const previousStart = dateDaysAgo(endOffset + span + span - 1);
 
   const windows = [];
-
-  for (const [label, startDate, endDate] of [
-    ["current", currentStart, currentEnd],
-    ["previous", previousStart, previousEnd]
-  ]) {
-    windows.push({
-      label,
-      ...(await syncSearchConsoleToD1({
+  const syncWindow = async (label, startDate, endDate, dimensions, snapshotLabel) => {
+    try {
+      const result = await syncSearchConsoleToD1({
         db: env.DB,
         env,
         startDate,
         endDate,
-        dimensions: ["query", "page"],
+        dimensions,
         pageSize,
         maxRows,
         dataState: "final",
-        snapshotLabel: label
-      }))
-    });
-  }
+        snapshotLabel
+      });
+      return { label, ...result };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`GSC ${label} sync failed:`, message);
+      return { label, status: "failed", error: message };
+    }
+  };
+
+  windows.push(await syncWindow(
+    "current",
+    currentStart,
+    currentEnd,
+    ["query", "page"],
+    "current"
+  ));
+
+  windows.push(await syncWindow(
+    "previous",
+    previousStart,
+    previousEnd,
+    ["query", "page"],
+    "previous"
+  ));
 
   if (String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1") {
-    windows.push({
-      label: "breakdowns-current",
-      ...(await syncSearchConsoleToD1({
-        db: env.DB,
-        env,
-        startDate: currentStart,
-        endDate: currentEnd,
-        dimensions: ["query", "page", "country", "device"],
-        pageSize,
-        maxRows,
-        dataState: "final",
-        snapshotLabel: "breakdowns-current"
-      }))
-    });
+    windows.push(await syncWindow(
+      "breakdowns-current",
+      currentStart,
+      currentEnd,
+      ["query", "page", "country", "device"],
+      "breakdowns-current"
+    ));
   }
 
-  try {
-    const { syncPublishedSeoActionMeasurements } = await import("../seo-action-store.js");
-    await syncPublishedSeoActionMeasurements(env.DB, {
-      siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
-      windowStart: currentStart,
-      windowEnd: currentEnd
-    });
-  } catch (error) {
-    console.error("GSC action measurement sync failed:", error);
+  const currentResult = windows.find((item) => item.label === "current");
+  if (currentResult?.status === "success") {
+    try {
+      const { syncPublishedSeoActionMeasurements } = await import("../seo-action-store.js");
+      await syncPublishedSeoActionMeasurements(env.DB, {
+        siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
+        windowStart: currentStart,
+        windowEnd: currentEnd
+      });
+    } catch (error) {
+      console.error("GSC action measurement sync failed:", error);
+    }
   }
 
+  const failedWindows = windows.filter((item) => item.status === "failed");
   return {
-    status: "success",
+    status: currentResult?.status === "success"
+      ? (failedWindows.length ? "partial" : "success")
+      : "failed",
     windows,
     currentWindow: { startDate: currentStart, endDate: currentEnd },
     previousWindow: { startDate: previousStart, endDate: previousEnd }
