@@ -106,7 +106,7 @@ async function checkPublicPage(url) {
   }
 
   const contentType = response.headers.get("content-type") || "";
-  if (!/text\\/html/i.test(contentType)) {
+  if (!contentType.toLowerCase().includes("text/html")) {
     fail("PUBLIC_CONTENT_TYPE", url + ": expected text/html, received " + contentType);
   }
 
