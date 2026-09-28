@@ -84,6 +84,46 @@ describe("SEO/GEO Engine v2", () => {
     expect(audit.errors).toHaveLength(0);
   });
 
+  it("boosts links supported by explicit knowledge-graph relationships", () => {
+    const links = buildInternalLinkPlan({
+      currentUrl: "https://fatehmusic.ir/instructors/ali",
+      currentTopics: ["guitar"],
+      currentType: "Instructor",
+      candidates: [
+        {
+          url: "https://fatehmusic.ir/courses/guitar-course",
+          title: "آموزش گیتار",
+          type: "Course",
+          topics: ["guitar"]
+        },
+        {
+          url: "https://fatehmusic.ir/courses/piano-course",
+          title: "آموزش پیانو",
+          type: "Course",
+          topics: ["piano"]
+        }
+      ],
+      semanticGraph: {
+        nodes: [
+          { id: "https://fatehmusic.ir/instructors/ali#person", url: "https://fatehmusic.ir/instructors/ali" },
+          { id: "https://fatehmusic.ir/courses/guitar-course#course", url: "https://fatehmusic.ir/courses/guitar-course" },
+          { id: "https://fatehmusic.ir/courses/piano-course#course", url: "https://fatehmusic.ir/courses/piano-course" }
+        ],
+        edges: [
+          {
+            from: "https://fatehmusic.ir/instructors/ali#person",
+            relation: "teaches",
+            to: "https://fatehmusic.ir/courses/guitar-course#course",
+            confidence: 1
+          }
+        ]
+      }
+    });
+
+    expect(links[0].url).toContain("/courses/guitar-course");
+    expect(links[0].relationEvidence).toContain("teaches");
+  });
+
   it("builds automatic internal-link recommendations when no custom links are supplied", () => {
     const result = buildSEO({
       path: "/blog/guitar-guide",
