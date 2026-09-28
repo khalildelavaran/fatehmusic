@@ -4,18 +4,9 @@ function normalizeUrl(value) {
   return String(value || "").replace(/#.*$/, "").replace(/\/$/, "").trim().toLowerCase();
 }
 
-function normalizeText(value) {
-  return String(value || "")
-    .normalize("NFKC")
-    .replace(/[\u200c\u200f\u200e]/g, "")
-    .replace(/[يى]/g, "ی")
-    .replace(/[ك]/g, "ک")
-    .replace(/[أإٱ]/g, "ا")
-    .replace(/[ۀة]/g, "ه")
-    .replace(/ـ/g, "")
-    .trim()
-    .toLowerCase();
-}
+import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
+
+function normalizeText(value) { return normalizeSemanticText(value); }
 
 const MIN_OWNERSHIP_QUERY_TOKENS = 1;
 const MIN_OWNERSHIP_QUERY_WORDS = 2;
