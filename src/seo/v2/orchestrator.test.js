@@ -183,4 +183,26 @@ describe("buildSEOIntelligence", () => {
     expect(result.opportunities[0].marketSignal.estimatedVolume).toBe(200);
     expect(result.opportunities[0].scoreBreakdown.marketSignal).not.toBeNull();
   });
+
+  it("exposes semantic cannibalization through the unified intelligence surface", () => {
+    const result = buildSEOIntelligence({
+      posts: [
+        { slug: "guitar-guide", title: "آموزش گیتار", topic: "گیتار", excerpt: "راهنمای گیتار" }
+      ],
+      courses: [
+        { slug: "guitar-course", title: "کلاس گیتار", instrument: "guitar" }
+      ],
+      gscRows: [
+        { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 60 },
+        { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 40 },
+        { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 40 },
+        { query: "کلاس گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 60 }
+      ],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.gsc.semanticCannibalization).toHaveLength(1);
+    expect(result.summary.semanticCannibalizationCount).toBe(1);
+  });
+
 });
