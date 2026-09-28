@@ -98,6 +98,8 @@ export function buildMarketSignalMap(opportunities = []) {
       marketScore: Math.max(0, Number(item?.marketScore) || 0),
       classification: item?.classification || null,
       action: item?.action || null,
+      intents: item?.intents || null,
+      serpFeatures: item?.serpFeatures || null,
       source: "ahrefs",
       matchedKeyword: item?.keyword,
       matchType: "EXACT"
@@ -156,6 +158,8 @@ export function buildMarketOpportunityReport({
       topic: semanticTopicHint(keyword),
       gscSignal,
       marketScore,
+      intents: row?.intents || null,
+      serpFeatures: row?.serp_features || row?.serpFeatures || null,
       source: "ahrefs"
     }));
   }
