@@ -260,7 +260,8 @@ function buildQueryOwnership(querySignals = [], item = {}) {
     .map(([page, impressions]) => ({
       page,
       impressions,
-      share: totalImpressions ? impressions / totalImpressions : 0
+      share: totalImpressions ? impressions / totalImpressions : 0,
+      shareInterval95: wilsonInterval(impressions, totalImpressions)
     }))
     .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
     .slice(0, 5);
