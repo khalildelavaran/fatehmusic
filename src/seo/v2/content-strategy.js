@@ -1,4 +1,5 @@
 import { courseEntityId } from "../geo/entity.js";
+import { COMPARISON_PAIRS } from "../../data/content-engine-seeds.ts";
 // Unified Content Intelligence: intent is metadata on a canonical content asset.
 import { TOPICS } from "./topics.js";
 
@@ -41,6 +42,28 @@ function findCourseFromTitle(title, courses = []) {
   if (exact.length === 1) return exact[0];
   if (exact.length > 1) return exact.sort((a, b) => normalize(b.title).length - normalize(a.title).length || String(a.slug).localeCompare(String(b.slug)))[0];
   return null;
+}
+function containsTokenSequence(title, phrase) {
+  const haystack = normalize(title).split(" ").filter(Boolean);
+  const needle = normalize(phrase).replace(/^آموزش\s+/, "").split(" ").filter(Boolean);
+  if (!needle.length || needle.length > haystack.length) return false;
+  for (let i = 0; i <= haystack.length - needle.length; i += 1) {
+    if (needle.every((token, offset) => haystack[i + offset] === token)) return true;
+  }
+  return false;
+}
+function findComparisonCourses(candidate, courses = []) {
+  const candidateSlug = candidate?.relatedCourseSlug || null;
+  const pair = COMPARISON_PAIRS.find(([a, b]) => candidateSlug === a || candidateSlug === b);
+  if (pair) {
+    const pairCourses = pair
+      .map((slug) => courses.find((course) => course?.slug === slug))
+      .filter(Boolean);
+    if (pairCourses.length === 2) return pairCourses;
+  }
+  return courses
+    .filter((course) => course?.slug && course?.title && containsTokenSequence(candidate?.title || "", course.title))
+    .slice(0, 2);
 }
 function findCourseForTopic(topic, courses = [], title = "") {
   if (!topic || isShushtarTopic(topic) || topic.slug === "music-education") return null;
@@ -181,7 +204,7 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const baseUrl = normalizeBaseUrl(siteUrl);
   const normalizedTitle = normalize(candidate.title);
   const comparisonCourses = candidate.modifierType === "comparison"
-    ? courses.filter((course) => course?.slug && course?.title && normalizedTitle.includes(normalize(course.title).replace("آموزش ", ""))).slice(0, 2)
+    ? findComparisonCourses(candidate, courses)
     : [];
   const isComparison = comparisonCourses.length === 2;
   const titleCourse = isComparison ? null : findCourseFromTitle(candidate.title, courses);
