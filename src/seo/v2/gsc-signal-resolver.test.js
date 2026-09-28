@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, buildQueryOwnershipMap, buildSemanticQueryClusters, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
 
 describe("GSC signal resolver", () => {
   const rows = [
@@ -263,6 +263,40 @@ describe("GSC signal resolver", () => {
     ], index);
     expect(result[0].searchSignal.impressions).toBe(50);
   });
+
+  it("builds semantic query clusters from equivalent generic-word variants", () => {
+    const clusters = buildSemanticQueryClusters([
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
+      { query: "کلاس گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 30 },
+      { query: "گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 100 },
+      { query: "هزینه گیتار", page: "https://fatehmusic.ir/blog/guitar-price", impressions: 20 }
+    ]);
+
+    const guitarCluster = clusters.find((cluster) =>
+      cluster.queries.some((query) => query.displayQuery === "آموزش گیتار شوشتر")
+    );
+
+    expect(guitarCluster).toBeDefined();
+    expect(guitarCluster.queryCount).toBe(2);
+    expect(guitarCluster.impressions).toBe(110);
+    expect(guitarCluster.topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(guitarCluster.ownerStatus).toBe("STABLE");
+    expect(clusters.some((cluster) => cluster.queries.some((query) => query.displayQuery === "گیتار"))).toBe(false);
+  });
+
+  it("surfaces the semantic cluster alongside an opportunity search signal", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
+      { query: "کلاس گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 30 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      { title: "آموزش گیتار در شوشتر", topicName: "گیتار", topic: "guitar", action: "NEW_CONTENT" }
+    ], index);
+
+    expect(result[0].semanticQueryCluster?.queryCount).toBe(2);
+    expect(result[0].semanticQueryCluster?.ownerStatus).toBe("STABLE");
+  });
+
 });
 
 
