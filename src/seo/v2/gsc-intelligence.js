@@ -126,6 +126,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     cannibalization: Object.freeze(conflicts),
     temporalCannibalization: Object.freeze(temporal),
     queryOwnership: Object.freeze(queryOwnership),
+    queryClusters: Object.freeze(index.queryClusters || []),
     dataQuality: gscDataQuality,
     summary: Object.freeze({
       connected: scoringRows.length > 0,
@@ -142,6 +143,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       temporalCannibalizationCount: temporal.length,
       temporalActionableCount: temporal.filter((item) => item.actionable).length,
       queryOwnershipCount: queryOwnership.length,
+      queryClusterCount: index.queryClusters?.length || 0,
       gscCompleteness: gscDataQuality.completeness,
       gscFreshness: gscDataQuality.freshness,
       gscAgeDays: gscDataQuality.ageDays
