@@ -109,25 +109,53 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, ma
         const candidates = allEdges.get(normalizeUrl(page.url)) || [];
         const selected = [];
 
-        for (const link of candidates) {
-            if (selected.length >= normalizedLimit) break;
-            const target = normalizeUrl(link.url);
-            const pairKey = normalizeUrl(page.url) + "=>" + target;
-            if (assignedPairs.has(pairKey)) continue;
+        // Select links iteratively so the current global inbound count actually
+        // influences the next choice. This turns saturation from a report-only
+        // field into a real allocation penalty.
+        while (selected.length < normalizedLimit) {
+            let best = null;
 
-            const inboundBefore = inboundCounts.get(target) || 0;
-            if (normalizedInboundCap > 0 && inboundBefore >= normalizedInboundCap) continue;
+            for (const link of candidates) {
+                const target = normalizeUrl(link.url);
+                const pairKey = normalizeUrl(page.url) + "=>" + target;
+                if (assignedPairs.has(pairKey)) continue;
+
+                const inboundBefore = inboundCounts.get(target) || 0;
+                if (normalizedInboundCap > 0 && inboundBefore >= normalizedInboundCap) continue;
+
+                const saturationPenalty = Math.min(20, inboundBefore * 2);
+                const orphanBoost = inboundBefore === 0 ? 10 : 0;
+                const effectiveScore = link.score - saturationPenalty + orphanBoost;
+
+                if (
+                    !best ||
+                    effectiveScore > best.effectiveScore ||
+                    (effectiveScore === best.effectiveScore && String(link.title).localeCompare(String(best.link.title), "fa") < 0)
+                ) {
+                    best = {
+                        link,
+                        target,
+                        pairKey,
+                        inboundBefore,
+                        saturationPenalty,
+                        orphanBoost,
+                        effectiveScore
+                    };
+                }
+            }
+
+            if (!best) break;
 
             selected.push({
-                ...link,
-                finalScore: link.score + (inboundBefore === 0 ? 10 : 0),
-                inboundLinksBeforePlan: inboundBefore,
-                inboundLinksAfterPlan: inboundBefore + 1,
-                saturationPenalty: 0,
-                orphanBoost: inboundBefore === 0 ? 10 : 0
+                ...best.link,
+                finalScore: best.effectiveScore,
+                inboundLinksBeforePlan: best.inboundBefore,
+                inboundLinksAfterPlan: best.inboundBefore + 1,
+                saturationPenalty: best.saturationPenalty,
+                orphanBoost: best.orphanBoost
             });
-            inboundCounts.set(target, inboundBefore + 1);
-            assignedPairs.add(pairKey);
+            inboundCounts.set(best.target, best.inboundBefore + 1);
+            assignedPairs.add(best.pairKey);
         }
 
         selectedBySource.set(normalizeUrl(page.url), selected);
