@@ -473,6 +473,7 @@ function buildDecisionTrace(item, action, evidence) {
   }
 
   if (item.gapDetected) reasonCodes.push("CONTENT_GAP");
+  if (item.competitorGap?.available) reasonCodes.push("COMPETITOR_GAP_PRESENT");
   if (item.marketSignal?.available) reasonCodes.push("MARKET_SIGNAL_PRESENT");
   if (evidence.independentMarketAndGsc) reasonCodes.push("CROSS_SOURCE_EVIDENCE");
 
