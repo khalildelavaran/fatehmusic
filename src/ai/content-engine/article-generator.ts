@@ -21,7 +21,6 @@ import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { NEAR_DUPLICATE_THRESHOLD } from "./dedup";
 import { callClaudeArticle } from "./providers/anthropic";
-import { createSeoAction } from "../../seo/v2/seo-action-store.js";
 import type { ContentTopicRow } from "./types";
 
 interface ArticleEnv {
@@ -483,6 +482,24 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       );
     }
 
+    // The SEO action is part of the same D1 transaction as the draft. If the
+    // action cannot be registered, the draft is rolled back instead of leaving
+    // an orphaned piece of content outside the closed loop.
+    statements.push(
+      env.DB.prepare(
+        "INSERT INTO seo_action_log " +
+        "(action_type, target_url, target_slug, target_title, target_post_id, related_course_slug, recommendation_score, status, source) " +
+        "VALUES ('CONTENT_DRAFT', ?, ?, ?, (SELECT id FROM blog_posts WHERE slug = ? LIMIT 1), ?, ?, 'pending_review', 'content-engine')"
+      ).bind(
+        "https://fatehmusic.ir/blog/" + slug,
+        slug,
+        topic.title,
+        slug,
+        topic.relatedCourseSlug,
+        topic.scoreTotal
+      )
+    );
+
     let insertedId: number;
     try {
       const results = await env.DB.batch(statements);
@@ -493,17 +510,6 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       const detail = err instanceof Error ? err.message : String(err);
       return { success: false, message: `ذخیره مقاله یا مصرف Topic شکست خورد: ${detail}` };
     }
-
-    await createSeoAction(env.DB, {
-      actionType: "CONTENT_DRAFT",
-      targetUrl: "https://fatehmusic.ir/blog/" + slug,
-      targetSlug: slug,
-      targetTitle: topic.title,
-      targetPostId: insertedId,
-      relatedCourseSlug: topic.relatedCourseSlug,
-      recommendationScore: topic.scoreTotal,
-      source: "content-engine"
-    }).catch((err) => console.error("runDailyArticleGeneration: failed to register SEO action:", err));
 
     console.log(`runDailyArticleGeneration: created draft "${topic.title}" (${slug})`);
     return { success: true, message: `پیش‌نویس «${topic.title}» با Claude ساخته شد.`, slug };
