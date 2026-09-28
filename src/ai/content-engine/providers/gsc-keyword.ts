@@ -16,8 +16,17 @@ function normalize(value: string): string {
 
 const GENERIC_QUERY_TERMS = new Set(["آموزش", "موسیقی", "کلاس", "دوره", "شوشتر", "فاتح", "یادگیری", "مدرس"]);
 
+const GENERIC_TOKENS = new Set([
+  "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای", "و",
+  "یا", "با", "را", "این", "یک", "چه", "چگونه", "چطور", "شوشتر"
+]);
+
 function tokens(value: string): Set<string> {
-  return new Set(normalize(value).split(/\s+/).filter((token) => token.length >= 2));
+  return new Set(
+    normalize(value)
+      .split(/\s+/)
+      .filter((token) => token.length >= 2 && !GENERIC_TOKENS.has(token))
+  );
 }
 
 function overlap(a: Set<string>, b: Set<string>): number {
