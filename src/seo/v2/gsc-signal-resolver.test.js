@@ -374,6 +374,18 @@ describe("GSC query ownership map", () => {
     expect(map[0].signalQuality).toBe("TRACE");
   });
 
+  it("requires a meaningful sample before declaring a stable owner", () => {
+    const emerging = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 19 }
+    ]);
+    const stable = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 20 }
+    ]);
+
+    expect(emerging[0].ownerStatus).toBe("EMERGING");
+    expect(stable[0].ownerStatus).toBe("STABLE");
+  });
+
   it("marks materially split query ownership when no page dominates", () => {
     const map = buildQueryOwnershipMap([
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 55 },
