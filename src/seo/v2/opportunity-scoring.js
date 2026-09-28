@@ -33,6 +33,20 @@ function decisionConfidenceEvidence(item = {}) {
 
   if (item.marketSignal?.available) {
     points.push(["market signal present", 10]);
+    const marketIntents = item.marketSignal.intents && typeof item.marketSignal.intents === "object"
+      ? (
+          Array.isArray(item.marketSignal.intents)
+            ? item.marketSignal.intents.map((value) => String(value).toLowerCase())
+            : Object.entries(item.marketSignal.intents)
+                .filter(([, value]) => Boolean(value))
+                .map(([key]) => String(key).toLowerCase())
+        )
+      : [];
+    const normalizedIntent = String(item.searchIntent || item.intent || "").toLowerCase();
+    if (normalizedIntent && marketIntents.includes(normalizedIntent)) {
+      points.push(["market and content intent agreement", 4]);
+    }
+
     if (Number(item.marketSignal.estimatedVolume) > 0) points.push(["market volume available", 5]);
     if (Number.isFinite(Number(item.marketSignal.difficulty))) points.push(["market difficulty available", 3]);
     if (item.marketSignal.matchType === "EXACT") points.push(["exact market keyword match", 5]);
