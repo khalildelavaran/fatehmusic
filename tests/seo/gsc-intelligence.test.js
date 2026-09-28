@@ -121,6 +121,21 @@ describe("GSC query ownership exposure", () => {
     expect(result.opportunities[0].marketSignal?.matchedKeyword).toBe("کلاس گیتار شوشتر");
   });
 
+  it("reduces completeness when the current GSC snapshot is truncated", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      { title: "آموزش گیتار شوشتر", action: "NEW_CONTENT", priority: 70 }
+    ], [
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 10, snapshotLabel: "current" }
+    ], {
+      gscDataQuality: { truncated: true }
+    });
+
+    expect(result.dataQuality.truncated).toBe(true);
+    expect(result.dataQuality.completeness).toBe(0.7);
+    expect(result.summary.gscCompleteness).toBe(0.7);
+    expect(result.opportunities[0].gscDataQuality.completeness).toBe(0.7);
+  });
+
   it("accepts ownership filtering options without affecting search scoring", () => {
     const result = enrichOpportunitiesWithSearchConsole([], [
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2, snapshotLabel: "current" },
