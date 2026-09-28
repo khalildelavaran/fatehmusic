@@ -62,7 +62,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const index = buildGscSignalIndex(scoringRows);
   const queryOwnership = buildQueryOwnershipMap(scoringRows, {
     minImpressions: Number(options.minOwnershipImpressions) > 0 ? Number(options.minOwnershipImpressions) : 1,
-    limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 50
+    limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 500
   });
   const conflicts = detectSearchCannibalization(scoringRows, options);
   const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, options);
