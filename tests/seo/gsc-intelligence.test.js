@@ -79,3 +79,28 @@ describe("GSC snapshot isolation", () => {
   });
 
 });
+
+
+describe("GSC query ownership exposure", () => {
+  it("exposes site-wide ownership from current scoring rows", () => {
+    const result = enrichOpportunitiesWithSearchConsole([], [
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80, snapshotLabel: "current" },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 20, snapshotLabel: "current" },
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/", impressions: 5000, snapshotLabel: "current" }
+    ]);
+
+    expect(result.queryOwnership).toHaveLength(1);
+    expect(result.queryOwnership[0].topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(result.queryOwnership[0].topShare).toBe(0.8);
+    expect(result.summary.queryOwnershipCount).toBe(1);
+  });
+
+  it("accepts ownership filtering options without affecting search scoring", () => {
+    const result = enrichOpportunitiesWithSearchConsole([], [
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2, snapshotLabel: "current" },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 20, snapshotLabel: "current" }
+    ], { minOwnershipImpressions: 10, maxOwnershipQueries: 5 });
+
+    expect(result.queryOwnership[0].impressions).toBe(20);
+  });
+});
