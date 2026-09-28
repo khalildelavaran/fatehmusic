@@ -74,7 +74,9 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const topicsResolved = resolveTopics({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics });
     const intent = classifyIntent({ path, title: metadata.title, keywords: metadata.keywords, entityType });
     const freshness = getFreshness(lastModified);
-    const candidates = linkCandidates ?? [...buildSiteLinkCandidates(site), ...buildArticleLinkCandidates(articlePosts, site.url)];
+    const candidates = linkCandidates?.length
+        ? linkCandidates
+        : [...buildSiteLinkCandidates(site), ...buildArticleLinkCandidates(articlePosts, site.url)];
     const links = buildInternalLinkPlan({ currentUrl: canonicalUrl, currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }), currentType: entityType, candidates });
     const answers = buildAnswerBlocks(answerBlocks);
     const clusterReport = articlePosts.length ? buildContentClusterReport(articlePosts, { courses, siteUrl: site.url }) : null;
