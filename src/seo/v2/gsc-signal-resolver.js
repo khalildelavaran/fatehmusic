@@ -194,7 +194,8 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       .filter((row) => queryMatches(item, row.query))
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
       .slice(0, 10);
-    const candidates = [...pageSignals, aggregate(querySignals)];
+    const relevantQuerySignal = aggregate(querySignals);
+    const candidates = [relevantQuerySignal, ...pageSignals];
     const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null, matchedQueries: [] };
     return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none", searchAction: classifySearchOpportunity(best) });
   });
