@@ -31,6 +31,8 @@
 - مقالات آموزشی: https://fatehmusic.ir/blog
 - تماس و موقعیت: https://fatehmusic.ir/contact
 - ثبت‌نام: https://fatehmusic.ir/register
+- گالری: https://fatehmusic.ir/gallery
+- صفحه محلی آموزشگاه در شوشتر: https://fatehmusic.ir/locations/shushtar
 
 ## Courses
 
@@ -62,6 +64,7 @@
 - Business type: آموزشگاه موسیقی / مؤسسه آموزشی موسیقی
 - Location: شوشتر، خوزستان، ایران
 - صفحه رسمی اطلاعات تماس و موقعیت: https://fatehmusic.ir/contact
+- صفحه اختصاصی موقعیت محلی: https://fatehmusic.ir/locations/shushtar
 
 ## Entity Relationships
 

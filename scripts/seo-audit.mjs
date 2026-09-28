@@ -167,7 +167,7 @@ function validateSchema(route, scripts) {
     if (pageUrl !== expectedUrl.replace(/\/$/, "")) {
       error("JSONLD_WEBPAGE_URL_MISMATCH", route + ": WebPage url does not match rendered route");
     }
-    if (webpage["@id"] !== expectedUrl.replace(/\/$/, "") + "#webpage") {
+    if (webpage["@id"] !== expectedUrl.replace(/\/$/, "") + "/#webpage") {
       error("JSONLD_WEBPAGE_ID_MISMATCH", route + ": WebPage @id does not match canonical page identity");
     }
   }

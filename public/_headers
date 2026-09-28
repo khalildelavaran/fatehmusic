@@ -1,0 +1,12 @@
+# Static-asset headers (SSR responses should get the same via a Cloudflare
+# Transform Rule or src/worker.ts — see the SEO audit report).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(self)
+
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+
+/llms.txt
+  Content-Type: text/plain; charset=utf-8

@@ -115,11 +115,11 @@ async function storeRows(
     throw new Error("GSC_SNAPSHOT_LABEL_INVALID");
   }
   let rowsStored = 0;
+  const conflictTarget = conflictTargetForTable(tableName);
 
   for (let offset = 0; offset < rows.length; offset += BATCH_SIZE) {
     const chunk = rows.slice(offset, offset + BATCH_SIZE);
     const statements = chunk.map((row) =>
-      const conflictTarget = conflictTargetForTable(tableName);
       db.prepare(
         "INSERT INTO " + tableName + " " +
         "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +

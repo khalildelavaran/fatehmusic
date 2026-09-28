@@ -1,28 +1,51 @@
 # ============================================
-# Robots.txt
-# Fateh Music Academy
+# Robots.txt — Fateh Music Academy
 # https://fatehmusic.ir
 # ============================================
 
-# Public content is crawlable by default.
+# Default: all public content is crawlable; private/app areas are not.
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /admin/
 Disallow: /student/
+Disallow: /instructor/
 Disallow: /dashboard/
+Disallow: /login
 Disallow: /.git/
 
-# AI crawlers: public content is allowed; application/private routes remain blocked.
+# --- AI search & answer engines (retrieval / citation) — ALLOWED ---
+# These bots fetch pages to answer users' questions and cite the source.
 User-agent: OAI-SearchBot
-User-agent: GPTBot
-User-agent: ClaudeBot
+User-agent: ChatGPT-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
 Allow: /
 Disallow: /api/
 Disallow: /admin/
 Disallow: /student/
+Disallow: /instructor/
 Disallow: /dashboard/
+Disallow: /login
 Disallow: /.git/
 
+# --- AI training / model-improvement crawlers — ALLOWED for public content ---
+# Google-Extended and Applebot-Extended control use for AI training only;
+# they do not affect Google Search or Apple search ranking.
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /student/
+Disallow: /instructor/
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /.git/
+
+# sitemap-index.xml already includes sitemap-blog.xml (customSitemaps).
 Sitemap: https://fatehmusic.ir/sitemap-index.xml
-Sitemap: https://fatehmusic.ir/sitemap-blog.xml

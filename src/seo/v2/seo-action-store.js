@@ -55,7 +55,7 @@ export async function markSeoActionPublished(db, {
     targetPostId,
     targetSlug,
     previousTargetSlug || ""
-  ).first<{ id: number }>();
+  ).first();
 
   if (!row?.id) return 0;
 

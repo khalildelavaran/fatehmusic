@@ -21,10 +21,13 @@ export default defineConfig({
       customSitemaps: ["https://fatehmusic.ir/sitemap-blog.xml"],
       filter: (page) => {
         const pathname = new URL(page).pathname.replace(/\/$/, "") || "/";
-        return ![
-          "/login",
-          "/404"
-        ].includes(pathname);
+        // Private application areas must never be advertised to crawlers.
+        const PRIVATE_PREFIXES = ["/admin", "/student", "/instructor/", "/api", "/dashboard"];
+        const PRIVATE_EXACT = ["/login", "/404", "/instructor", "/certificate/verify"];
+        if (PRIVATE_EXACT.includes(pathname)) return false;
+        return !PRIVATE_PREFIXES.some((prefix) =>
+          prefix.endsWith("/") ? pathname.startsWith(prefix) : pathname === prefix || pathname.startsWith(prefix + "/")
+        );
       }
     })
   ],

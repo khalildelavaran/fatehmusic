@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { truncate } from "../../../src/seo/helpers/text.js";
+import { truncate } from "../../src/seo/helpers/text.js";
 
 describe("truncate", () => {
   it("never exceeds maxLength, including the ellipsis", () => {
