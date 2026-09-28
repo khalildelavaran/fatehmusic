@@ -84,6 +84,28 @@ function semanticTopicHint(keyword) {
 
   return specific?.slug || "music-education";
 }
+export function buildMarketSignalMap(opportunities = []) {
+  const map = new Map();
+  for (const item of opportunities || []) {
+    const keyword = normalizeQuery(item?.keyword);
+    if (!keyword) continue;
+    map.set(keyword, Object.freeze({
+      available: true,
+      estimatedVolume: Math.max(0, Number(item?.volume) || 0),
+      difficulty: Number.isFinite(Number(item?.difficulty)) ? Number(item.difficulty) : null,
+      bestPosition: Number.isFinite(Number(item?.bestPosition)) && Number(item.bestPosition) > 0 ? Number(item.bestPosition) : null,
+      bestPositionUrl: item?.bestPositionUrl || null,
+      marketScore: Math.max(0, Number(item?.marketScore) || 0),
+      classification: item?.classification || null,
+      action: item?.action || null,
+      source: "ahrefs",
+      matchedKeyword: item?.keyword,
+      matchType: "EXACT"
+    }));
+  }
+  return map;
+}
+
 export function buildMarketOpportunityReport({
   keywordRows = [],
   gscRows = [],
