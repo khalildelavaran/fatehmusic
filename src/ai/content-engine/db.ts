@@ -35,7 +35,6 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
       audience: row.audience as "" | "کودک" | "نوجوان" | "بزرگسال",
       level: row.level as "" | "مبتدی" | "متوسط" | "پیشرفته",
       modifierType: row.modifier_type,
-      intent: "informational",
       source: "stored"
     }))
   );
