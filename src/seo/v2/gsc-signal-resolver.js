@@ -52,15 +52,6 @@ function tokens(value) {
   );
 }
 
-function phraseIncludes(source, phrase) {
-  const haystack = normalizeText(source).split(/\s+/).filter(Boolean);
-  const needle = normalizeText(phrase).split(/\s+/).filter(Boolean);
-  if (!haystack.length || !needle.length || needle.length > haystack.length) return false;
-  for (let i = 0; i <= haystack.length - needle.length; i += 1) {
-    if (needle.every((token, offset) => haystack[i + offset] === token)) return true;
-  }
-  return false;
-}
 
 function querySignalQuality(impressions) {
   if (impressions >= 100) return "HIGH";
