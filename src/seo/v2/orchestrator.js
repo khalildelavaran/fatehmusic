@@ -112,7 +112,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       signalRowCount: search.signalRowCount,
       index: gscIndex,
       cannibalization: freeze(cannibalization),
-      temporalCannibalization: freeze(temporalCannibalization)
+      temporalCannibalization: freeze(temporalCannibalization),
+      queryOwnership: freeze(search.queryOwnership)
     }),
     links: Object.freeze({ graph: freeze(buildLinkGraph(pageNodes)) }),
     opportunities: freeze(opportunities),
@@ -127,7 +128,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       searchBackedCount: opportunities.filter((item) => item.searchSignal?.available).length,
       cannibalizationCount: cannibalization.length,
       temporalCannibalizationCount: temporalCannibalization.length,
-      temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length
+      temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length,
+      queryOwnershipCount: search.queryOwnership?.length || 0
     })
   });
 }
