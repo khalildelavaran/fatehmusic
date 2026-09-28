@@ -10,6 +10,19 @@ function daysAgo(days, now = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
+function canonicalPage(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    url.hash = "";
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString();
+  } catch {
+    return raw.replace(/\/$/, "");
+  }
+}
+
 export async function getRecentSearchConsoleRows(db, siteUrl = DEFAULT_SITE_URL, { days = 60, maxRows = 100000 } = {}) {
   if (!db) return [];
   const result = await db.prepare(
@@ -20,7 +33,7 @@ export async function getRecentSearchConsoleRows(db, siteUrl = DEFAULT_SITE_URL,
   ).bind(site(siteUrl), daysAgo(days), Math.max(1, Math.min(maxRows, 100000))).all();
   return (result.results || []).map((row) => ({
     query: row.query || null,
-    page: row.page || null,
+    page: canonicalPage(row.page),
     clicks: Number(row.clicks) || 0,
     impressions: Number(row.impressions) || 0,
     ctr: Number(row.ctr) || 0,
