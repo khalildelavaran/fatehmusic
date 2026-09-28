@@ -351,6 +351,27 @@ describe("GSC query ownership map", () => {
     expect(map).toHaveLength(1);
     expect(map[0].displayQuery).toBe("آموزش گیتار");
     expect(map[0].impressions).toBe(25);
+    expect(map[0].ownerStatus).toBe("STABLE");
+    expect(map[0].signalQuality).toBe("MEDIUM");
+  });
+
+  it("marks low-volume ownership as emerging instead of stable", () => {
+    const map = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2 }
+    ]);
+
+    expect(map[0].ownerStatus).toBe("EMERGING");
+    expect(map[0].signalQuality).toBe("TRACE");
+  });
+
+  it("marks materially split query ownership when no page dominates", () => {
+    const map = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 55 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 45 }
+    ]);
+
+    expect(map[0].ownerStatus).toBe("SPLIT");
+    expect(map[0].signalQuality).toBe("HIGH");
   });
 
   it("builds page shares for substantive non-brand queries", () => {
