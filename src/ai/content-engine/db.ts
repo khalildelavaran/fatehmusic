@@ -179,6 +179,7 @@ export async function insertScoredCandidates(
     const previousStatus = existingStatuses.get(candidate.normalizedKey);
     const isNewApproval = candidate.scoreTotal >= autoApproveThreshold &&
       previousStatus !== "approved" &&
+      previousStatus !== "drafted" &&
       previousStatus !== "used";
     return sum + (isNewApproval ? 1 : 0);
   }, 0);
