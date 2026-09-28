@@ -121,6 +121,11 @@ async function checkPublicPage(url) {
     fail("PUBLIC_CONTENT_TYPE", url + ": expected text/html, received " + contentType);
   }
 
+  const xRobots = response.headers.get("x-robots-tag") || "";
+  if (/noindex/i.test(xRobots)) {
+    fail("PUBLIC_X_ROBOTS_NOINDEX", url + ": X-Robots-Tag contains noindex");
+  }
+
   const canonical = canonicalFromHtml(body);
   if (!canonical) {
     fail("PUBLIC_CANONICAL_MISSING", url + ": canonical link missing");
