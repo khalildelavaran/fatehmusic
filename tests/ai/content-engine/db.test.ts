@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getExistingTitleIndex, getRunApprovedCount, markTopicUsed, releaseDraftedTopic } from "../../../src/ai/content-engine/db";
+import { getExistingTitleIndex, getRunApprovedCount, markTopicPublished, markTopicDraftPost, releaseTopicForDeletedPost } from "../../../src/ai/content-engine/db";
 
 describe("content intelligence title index", () => {
   it("does not let rejected topics permanently block a title", async () => {
@@ -76,7 +76,7 @@ describe("content intelligence draft lifecycle", () => {
       }
     } as unknown as D1Database;
 
-    await expect(markTopicUsed(db, 77)).resolves.toBe(1);
+    await expect(markTopicPublished(db, 77)).resolves.toBe(1);
     expect(statements[0]).toContain("status='used'");
     expect(statements[0]).toContain("status='drafted'");
   });
@@ -97,6 +97,26 @@ describe("content intelligence draft lifecycle", () => {
       }
     } as unknown as D1Database;
 
-    await expect(releaseDraftedTopic(db, 88)).resolves.toBe(1);
+    await expect(releaseTopicForDeletedPost(db, 88)).resolves.toBe(1);
+  });
+});
+
+
+describe("content intelligence post transitions", () => {
+  it("moves a published topic back to drafted when its post is edited to draft", async () => {
+    const db = {
+      prepare(sql: string) {
+        expect(sql).toContain("status='drafted'");
+        expect(sql).toContain("status='used'");
+        return {
+          bind: (...args: unknown[]) => {
+            expect(args).toEqual([99]);
+            return { run: async () => ({ meta: { changes: 1 } }) };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await expect(markTopicDraftPost(db, 99)).resolves.toBe(1);
   });
 });
