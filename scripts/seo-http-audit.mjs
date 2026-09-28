@@ -12,16 +12,23 @@ function warn(code, message) { warnings.push({ code, message }); }
 
 async function fetchText(url, options = {}) {
   try {
-    const response = await fetch(url, {
-      redirect: "manual",
-      headers: {
-        "user-agent": "FatehMusic-SEO-Audit/1.0",
-        accept: "text/html,application/xml,text/plain;q=0.9,*/*;q=0.8"
-      },
-      ...options
-    });
-    const body = await response.text();
-    return { response, body };
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), Number(process.env.SEO_HTTP_TIMEOUT_MS || 15000));
+    try {
+      const response = await fetch(url, {
+        redirect: "manual",
+        headers: {
+          "user-agent": "FatehMusic-SEO-Audit/1.0",
+          accept: "text/html,application/xml,text/plain;q=0.9,*/*;q=0.8"
+        },
+        signal: controller.signal,
+        ...options
+      });
+      const body = await response.text();
+      return { response, body };
+    } finally {
+      clearTimeout(timeout);
+    }
   } catch (error) {
     fail("HTTP_FETCH", url + ": " + String(error));
     return null;
@@ -164,6 +171,11 @@ async function checkPublicPage(url) {
   const schema = jsonLdIsValidGraph(body);
   if (!schema.ok) {
     fail("PUBLIC_JSONLD", url + ": " + schema.reason);
+  }
+
+  const xRobotsTag = response.headers.get("x-robots-tag") || "";
+  if (/noindex/i.test(xRobotsTag)) {
+    fail("PUBLIC_X_ROBOTS_NOINDEX", url + ": X-Robots-Tag contains noindex");
   }
 
   if (/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(body)) {
