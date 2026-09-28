@@ -77,11 +77,21 @@ function gscExactSignal(keyword, rows = []) {
     const weight = Math.max(0, Number(row?.impressions) || 0);
     return Number.isFinite(position) && weight > 0 ? sum + position * weight : sum;
   }, 0);
+  const bestPage = [...new Map(
+    exact
+      .filter((row) => row?.page)
+      .map((row) => [
+        String(row.page),
+        Math.max(0, Number(row?.impressions) || 0)
+      ])
+  ).entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || null;
   return {
     impressions,
     clicks,
     ctr: impressions ? clicks / impressions : 0,
-    position: impressions ? weightedPosition / impressions : null
+    position: impressions ? weightedPosition / impressions : null,
+    bestPage
   };
 }
 
@@ -172,7 +182,9 @@ export function buildMarketOpportunityReport({
       bestPositionSource: Number.isFinite(ahrefsPosition) && ahrefsPosition > 0
         ? "ahrefs"
         : (gscSignal?.position != null ? "gsc" : null),
-      bestPositionUrl: row?.best_position_url || null,
+      bestPositionUrl: (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0)
+        ? (row?.best_position_url || null)
+        : (gscSignal?.bestPage || null),
       classification,
       action,
       topic: semanticTopicHint(keyword),
