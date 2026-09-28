@@ -37,6 +37,18 @@ function decisionConfidenceEvidence(item = {}) {
     points.push(["intent confidence", Math.round(Math.min(10, intentConfidence * 10))]);
   }
 
+  if (item.semanticQueryCluster?.impressions > 0) {
+    points.push(["semantic GSC query cluster", 5]);
+    if (Number(item.semanticQueryCluster.queryCount) >= 2) {
+      points.push(["multiple query variants in cluster", 3]);
+    }
+    if (item.semanticQueryCluster.ownerStatus === "STABLE") {
+      points.push(["stable semantic cluster owner", 3]);
+    } else if (item.semanticQueryCluster.ownerStatus === "SPLIT") {
+      points.push(["split semantic cluster ownership", -4]);
+    }
+  }
+
   if (ownership?.matchType === "EXACT") {
     points.push(["exact GSC query ownership", 12]);
     if (ownership.ownerStatus === "STABLE") points.push(["stable query owner", 10]);
