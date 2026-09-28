@@ -23,6 +23,45 @@ describe("buildSEOIntelligence", () => {
     expect(Array.isArray(result.opportunities)).toBe(true);
   });
 
+  it("exposes market opportunities and the explicit knowledge graph", () => {
+    const result = buildSEOIntelligence({
+      posts: [{
+        slug: "guitar-guide",
+        title: "راهنمای گیتار",
+        topic: "گیتار",
+        related_course_slug: "guitar-course"
+      }],
+      courses: [{
+        id: 1,
+        slug: "guitar-course",
+        title: "آموزش گیتار",
+        instrument: "guitar",
+        instructor: 7
+      }],
+      instructors: [{
+        id: 7,
+        slug: "ali",
+        name: "علی",
+        professional: { roles: ["مدرس گیتار"] }
+      }],
+      marketKeywordRows: [{
+        keyword: "آموزش گیتار شوشتر",
+        volume_monthly: 250,
+        keyword_difficulty: 30,
+        best_position: 16,
+        best_position_url: "https://fatehmusic.ir/courses/guitar-course"
+      }],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.marketOpportunities).toHaveLength(1);
+    expect(result.marketOpportunities[0].classification).toBe("STRIKING_DISTANCE");
+    expect(result.knowledgeGraph.statistics.nodeCount).toBeGreaterThanOrEqual(6);
+    expect(result.knowledgeGraph.statistics.edgeCount).toBeGreaterThanOrEqual(5);
+    expect(result.knowledgeGraphValidation.valid).toBe(true);
+  });
+
   it("rejects a stale broad local candidate that points at a specific course", () => {
     const result = buildSEOIntelligence({
       posts: [],
