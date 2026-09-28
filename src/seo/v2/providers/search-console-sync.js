@@ -227,7 +227,10 @@ export async function syncSearchConsoleToD1({
         "INSERT INTO gsc_search_signals_v2 " +
         "(site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, snapshot_label) " +
         "SELECT site_url, query, page, country, device, search_appearance, start_date, end_date, data_state, clicks, impressions, ctr, position, source, synced_at, ? " +
-        "FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=?"
+        "FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=? " +
+        "ON CONFLICT(site_url, query, page, country, device, search_appearance, start_date, end_date) DO UPDATE SET " +
+        "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
+        "position=excluded.position, source=excluded.source, synced_at=excluded.synced_at, snapshot_label=excluded.snapshot_label"
       ).bind(snapshotLabel, normalizeSiteUrl(env.GSC_SITE_URL), stagingLabel),
       db.prepare(
         "DELETE FROM gsc_search_signals_staging WHERE site_url=? AND snapshot_label=?"
