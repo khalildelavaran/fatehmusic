@@ -28,8 +28,14 @@ export function classifySeoActionMeasurement(latest, previous) {
 
   const latestImpressions = Math.max(0, Number(latest.impressions) || 0);
   const previousImpressions = Math.max(0, Number(previous.impressions) || 0);
-  const latestClicks = Math.max(0, Number(latest.clicks) || Math.round(latestImpressions * Math.max(0, Number(latest.ctr) || 0)));
-  const previousClicks = Math.max(0, Number(previous.clicks) || Math.round(previousImpressions * Math.max(0, Number(previous.ctr) || 0)));
+  const latestClicksValue = Number(latest.clicks);
+  const previousClicksValue = Number(previous.clicks);
+  const latestClicks = Number.isFinite(latestClicksValue)
+    ? Math.max(0, latestClicksValue)
+    : Math.round(latestImpressions * Math.max(0, Number(latest.ctr) || 0));
+  const previousClicks = Number.isFinite(previousClicksValue)
+    ? Math.max(0, previousClicksValue)
+    : Math.round(previousImpressions * Math.max(0, Number(previous.ctr) || 0));
   const latestCtr = Number(latest.ctr);
   const previousCtr = Number(previous.ctr);
   const latestPosition = Number(latest.position);
