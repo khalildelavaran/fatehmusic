@@ -5,7 +5,7 @@
  * --------------------------------------------------------
  */
 
-import { clean, stripZwnj } from "../helpers/text.js";
+import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 
 const RULES = [
     { intent: "transactional", weight: 70, tokens: ["ثبت نام", "ثبت‌نام", "قیمت", "هزینه", "رزرو", "خرید"] },
@@ -15,9 +15,7 @@ const RULES = [
     { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "فاتح"] }
 ];
 
-function normalize(value) {
-    return stripZwnj(clean(value)).replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").toLowerCase();
-}
+function normalize(value) { return normalizeSemanticText(value); }
 
 /**
  * @param {{path?:string,title?:string,keywords?:string[],entityType?:string}} input
@@ -28,7 +26,7 @@ export function classifyIntent({ path = "", title = "", keywords = [], entityTyp
     const scores = new Map();
 
     for (const rule of RULES) {
-        const matches = rule.tokens.filter((token) => corpus.includes(normalize(token)));
+        const matches = rule.tokens.filter((token) => containsSemanticPhrase(corpus, token));
         if (matches.length) scores.set(rule.intent, { score: rule.weight + matches.length * 10, reason: matches });
     }
 
