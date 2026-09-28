@@ -19,6 +19,7 @@ describe("buildSEOIntelligence", () => {
     expect(result.gsc.queryOwnership).toHaveLength(1);
     expect(result.gsc.queryOwnership[0].displayQuery).toBe("کلاس گیتار در شوشتر");
     expect(result.summary.queryOwnershipCount).toBe(1);
+    expect(result.summary.decisionConfidenceAverage).toBeGreaterThan(0);
     expect(Array.isArray(result.opportunities)).toBe(true);
   });
 
