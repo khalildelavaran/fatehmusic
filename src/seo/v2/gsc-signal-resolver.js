@@ -250,6 +250,48 @@ function buildQueryOwnership(querySignals = [], item = {}) {
   });
 }
 
+export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 50 } = {}) {
+  const queryPages = new Map();
+
+  for (const row of rows) {
+    const query = normalizeText(row?.query);
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    const page = normalizeUrl(row?.page);
+    if (!query || !page || impressions < minImpressions || isBrandNavigationQuery(query)) continue;
+    if (tokens(query).size < MIN_OWNERSHIP_QUERY_TOKENS) continue;
+
+    const pages = queryPages.get(query) || new Map();
+    pages.set(page, (pages.get(page) || 0) + impressions);
+    queryPages.set(query, pages);
+  }
+
+  return Object.freeze(
+    [...queryPages.entries()]
+      .map(([query, pages]) => {
+        const totalImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
+        const rankedPages = [...pages.entries()]
+          .map(([page, impressions]) => ({
+            page,
+            impressions,
+            share: totalImpressions ? impressions / totalImpressions : 0
+          }))
+          .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
+          .slice(0, 5);
+
+        return Object.freeze({
+          query,
+          impressions: totalImpressions,
+          pageCount: pages.size,
+          topPage: rankedPages[0]?.page || null,
+          topShare: rankedPages[0]?.share || 0,
+          pages: Object.freeze(rankedPages)
+        });
+      })
+      .sort((a, b) => b.impressions - a.impressions || a.query.localeCompare(b.query))
+      .slice(0, Math.max(1, limit))
+  );
+}
+
 function classifySearchOpportunity(signal) {
   if (!signal?.available) return "CREATE_OR_MONITOR";
   const position = Number(signal.position);
