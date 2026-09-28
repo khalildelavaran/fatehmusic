@@ -74,7 +74,7 @@ export async function getRecentlyUsedCourses(db: D1Database, withinDays = 21): P
       "JOIN blog_posts p ON p.id = t.used_by_post_id " +
       "WHERE t.status = 'used' AND t.used_at >= ? AND p.status = 'published'"
     ).bind(cutoff).all<{ slug: string | null }>(),
-    db.prepare("SELECT DISTINCT related_course_slug AS slug FROM blog_posts WHERE status = 'published' AND created_at >= ?")
+    db.prepare("SELECT DISTINCT related_course_slug AS slug FROM blog_posts WHERE status = 'published' AND published_at IS NOT NULL AND published_at >= ?")
       .bind(cutoff).all<{ slug: string | null }>()
   ]);
   const out = new Set<string>();
