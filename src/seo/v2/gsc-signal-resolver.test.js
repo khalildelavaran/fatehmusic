@@ -353,6 +353,18 @@ describe("GSC signal resolver", () => {
     expect(["STRONG", "MODERATE", "WEAK"]).toContain(ownership.ownerDominanceEvidence);
   });
 
+
+  it("keeps local and global query clusters separate", () => {
+    const clusters = buildSemanticQueryClusters([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 60 },
+      { query: "کلاس گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 40 }
+    ]);
+
+    expect(clusters).toHaveLength(2);
+    expect(clusters.some((cluster) => cluster.key.startsWith("scope:local"))).toBe(true);
+    expect(clusters.some((cluster) => cluster.key.startsWith("scope:global"))).toBe(true);
+  });
+
 });
 
   it("does not treat related-only query matches as ownership", () => {
