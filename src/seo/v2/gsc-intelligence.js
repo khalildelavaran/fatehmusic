@@ -1,6 +1,7 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
+import { semanticTokens } from "../helpers/text.js";
 
 export function currentScoringRows(rows = []) {
   const current = rows.filter((row) => String(row?.snapshotLabel || row?.snapshot_label || "") === "current");
@@ -147,8 +148,49 @@ function resolveMarketSignal(item, signals) {
 
   for (const value of candidates) {
     const exact = signals.get(normalizeText(value));
-    if (exact?.available) return exact;
+    if (exact?.available) {
+      return Object.freeze({
+        ...exact,
+        matchedKeyword: String(value),
+        matchType: "EXACT"
+      });
+    }
   }
 
-  return null;
+  const targetTokens = new Set(
+    semanticTokens([item.title, item.topicName, item.topic, ...(item.searchSignal?.matchedQueries || [])]
+      .filter(Boolean)
+      .join(" "))
+  );
+
+  if (targetTokens.size < 1) return null;
+
+  let best = null;
+  for (const [keyword, signal] of signals) {
+    if (!signal?.available) continue;
+    const keywordTokens = new Set(semanticTokens(keyword));
+    if (!keywordTokens.size) continue;
+
+    let shared = 0;
+    for (const token of keywordTokens) if (targetTokens.has(token)) shared += 1;
+    const union = new Set([...keywordTokens, ...targetTokens]).size;
+    const similarity = union ? shared / union : 0;
+
+    if (similarity < 0.5) continue;
+
+    const volume = Number(signal.estimatedVolume) || 0;
+    const score = similarity * 100 + Math.min(25, Math.log10(Math.max(1, volume)) * 5);
+    if (!best || score > best.score) {
+      best = { score, signal, keyword };
+    }
+  }
+
+  if (!best) return null;
+
+  return Object.freeze({
+    ...best.signal,
+    matchedKeyword: best.keyword,
+    matchType: "SEMANTIC",
+    semanticSimilarity: Number((best.score / 100).toFixed(3))
+  });
 }
