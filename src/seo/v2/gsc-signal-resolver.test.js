@@ -336,6 +336,23 @@ describe("GSC signal resolver", () => {
     expect(conflicts[0].semanticEvidence).toBe(true);
   });
 
+
+  it("exposes statistical uncertainty for CTR and query ownership", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 8, impressions: 10 }
+    ]);
+    const signal = index.byQueryNonBrand.get("آموزش گیتار");
+    const ownership = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 8 }
+    ])[0];
+
+    expect(signal.ctrInterval95.lower).toBeGreaterThanOrEqual(0);
+    expect(signal.ctrInterval95.upper).toBeLessThanOrEqual(1);
+    expect(ownership.ownerShareInterval95.lower).toBeGreaterThanOrEqual(0);
+    expect(ownership.ownerShareInterval95.upper).toBeLessThanOrEqual(1);
+    expect(["STRONG", "MODERATE", "WEAK"]).toContain(ownership.ownerDominanceEvidence);
+  });
+
 });
 
   it("does not treat related-only query matches as ownership", () => {
