@@ -219,14 +219,14 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const topic = isComparison ? findTopic("music-education") : resolveCandidateTopic(candidate, explicitCourse);
   if (!topic) return null;
   const intent = candidate.intent || "informational";
+  const isLocal = !isComparison && (candidate.modifierType === "local_shushtar" || hasLocalSignal(candidate.title) || isShushtarTopic(topic));
+  const course = isComparison ? null : (explicitCourse || (topic.slug === "shushtar" ? null : findCourseForTopic(topic, courses, candidate.title)));
   const intentConfidence = classifyIntent({
     path: isComparison ? "/blog/comparison" : "/blog",
     title: candidate.title,
     keywords: [topic.name, course?.title || ""],
     entityType: "Article"
   }).confidence;
-  const isLocal = !isComparison && (candidate.modifierType === "local_shushtar" || hasLocalSignal(candidate.title) || isShushtarTopic(topic));
-  const course = isComparison ? null : (explicitCourse || (topic.slug === "shushtar" ? null : findCourseForTopic(topic, courses, candidate.title)));
   const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
   const recommendedLinks = isComparison
     ? Object.freeze([...new Set([
