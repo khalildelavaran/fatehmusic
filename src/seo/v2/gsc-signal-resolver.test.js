@@ -246,6 +246,7 @@ describe("GSC signal resolver", () => {
 
     expect(result[0].searchSignal.available).toBe(true);
     expect(result[0].searchOwnership.available).toBe(true);
+    expect(result[0].searchOwnership.matchType).toBe("EXACT");
     expect(result[0].searchOwnership.topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
     expect(result[0].searchOwnership.topShare).toBeCloseTo(100 / 120);
     expect(result[0].searchOwnership.matchedQueries).toEqual(["آموزش گیتار"]);
@@ -263,3 +264,42 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBe(50);
   });
 });
+
+
+  it("does not treat related-only query matches as ownership", () => {
+    const index = buildGscSignalIndex([
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 4, impressions: 100, ctr: 0.04, position: 6 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], index);
+
+    expect(result[0].searchOwnership.available).toBe(false);
+    expect(result[0].searchOwnership.matchType).toBe("RELATED");
+    expect(result[0].searchOwnership.relatedImpressions).toBe(100);
+    expect(result[0].searchOwnership.relatedQueries).toEqual(["کلاس گیتار"]);
+  });
+
+  it("uses exact query ownership even when related queries have more impressions", () => {
+    const index = buildGscSignalIndex([
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", clicks: 4, impressions: 500, ctr: 0.008, position: 15 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 4, impressions: 100, ctr: 0.04, position: 6 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], index);
+
+    expect(result[0].searchOwnership.matchType).toBe("EXACT");
+    expect(result[0].searchOwnership.impressions).toBe(100);
+    expect(result[0].searchOwnership.topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
+  });
