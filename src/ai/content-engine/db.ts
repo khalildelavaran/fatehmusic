@@ -30,7 +30,6 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
   const canonicalKeys = new Set<string>(
     topics.results.map((row) => canonicalAssetKey({
       title: row.title,
-      normalizedKey: row.normalized_key,
       instrumentKey: row.instrument_key,
       relatedCourseSlug: row.related_course_slug,
       audience: row.audience as "" | "کودک" | "نوجوان" | "بزرگسال",
