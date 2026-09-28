@@ -24,6 +24,12 @@ function decisionConfidenceEvidence(item = {}) {
     if (Array.isArray(signal.matchedQueries) && signal.matchedQueries.length > 0) {
       points.push(["matched query evidence", 5]);
     }
+    const benchmarkSample = Number(signal.ctrBenchmarkImpressions);
+    if (Number.isFinite(Number(signal.ctrBenchmark)) && Number(signal.ctrBenchmark) > 0 && benchmarkSample >= 50) {
+      points.push(["position-aware CTR benchmark", 4]);
+      if (benchmarkSample >= 500) points.push(["CTR benchmark sample >= 500 impressions", 3]);
+      else if (benchmarkSample >= 100) points.push(["CTR benchmark sample >= 100 impressions", 2]);
+    }
     if (signal.ctrInterval95?.lower != null && signal.ctrInterval95?.upper != null) {
       const width = Number(signal.ctrInterval95.upper) - Number(signal.ctrInterval95.lower);
       if (width <= 0.02) points.push(["narrow 95% CTR interval", 4]);
@@ -208,7 +214,8 @@ function marketSignalScore(signal = {}) {
 function isCtrUnderperforming(signal = {}) {
   const ctr = Math.max(0, Number(signal.ctr) || 0);
   const benchmark = Number(signal.ctrBenchmark);
-  if (Number.isFinite(benchmark) && benchmark > 0) {
+  const benchmarkSample = Number(signal.ctrBenchmarkImpressions);
+  if (Number.isFinite(benchmark) && benchmark > 0 && benchmarkSample >= 50) {
     const ratio = ctr / benchmark;
     return ratio < 0.65;
   }
@@ -221,6 +228,7 @@ function searchSignalScore(signal = {}) {
   const position = Number(signal.position);
   const ctr = Math.max(0, Number(signal.ctr) || 0);
   const benchmark = Number(signal.ctrBenchmark);
+  const benchmarkSample = Number(signal.ctrBenchmarkImpressions);
   let score = 0;
   if (impressions >= 2000) score += 35;
   else if (impressions >= 1000) score += 30;
@@ -232,7 +240,7 @@ function searchSignalScore(signal = {}) {
     else if (position > 10 && position <= 20) score += 25;
     else if (position > 20 && position <= 50) score += 10;
   }
-  if (Number.isFinite(benchmark) && benchmark > 0) {
+  if (Number.isFinite(benchmark) && benchmark > 0 && benchmarkSample >= 50) {
     const ratio = ctr / benchmark;
     if (ratio < 0.45) score += 25;
     else if (ratio < 0.65) score += 18;
