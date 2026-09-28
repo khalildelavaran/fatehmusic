@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildKnowledgeGraph, validateKnowledgeGraph, findRelatedEntities } from "./knowledge-graph.js";
+import { buildKnowledgeGraph, validateKnowledgeGraph, findRelatedEntities, findRelationPaths } from "./knowledge-graph.js";
 import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
 describe("SEO knowledge graph", () => {
@@ -63,6 +63,34 @@ describe("SEO knowledge graph", () => {
     expect(related).toHaveLength(1);
     expect(related[0].entity.name).toBe("گیتار");
     expect(related[0].confidence).toBe(1);
+  });
+
+  it("finds multi-hop semantic paths through shared topic entities", () => {
+    const graph = buildKnowledgeGraph({
+      siteUrl: "https://fatehmusic.ir",
+      courses: [{
+        id: 1,
+        slug: "guitar-course",
+        title: "آموزش گیتار"
+      }],
+      posts: [{
+        slug: "guitar-guide",
+        title: "راهنمای گیتار",
+        topic: "گیتار"
+      }]
+    });
+
+    const articleId = "https://fatehmusic.ir/blog/guitar-guide/#article";
+    const courseId = "https://fatehmusic.ir/courses/guitar-course/#course";
+    const paths = findRelationPaths(graph, articleId, courseId, {
+      maxDepth: 2,
+      relations: ["about"],
+      direction: "both"
+    });
+
+    expect(paths).toHaveLength(1);
+    expect(paths[0].depth).toBe(2);
+    expect(paths[0].confidence).toBe(1);
   });
 
   it("deduplicates edges and validates broken references", () => {
