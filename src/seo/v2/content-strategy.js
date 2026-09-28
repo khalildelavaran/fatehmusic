@@ -89,7 +89,7 @@ function slugToken(value) {
     ["کودک", "child"], ["نوجوان", "teen"], ["بزرگسال", "adult"],
     ["مبتدی", "beginner"], ["متوسط", "intermediate"], ["پیشرفته", "advanced"]
   ]);
-  return map.get(normalized) || normalized.replace(/[^a-z0-9\\u0600-\\u06ff]+/gu, "-").replace(/^-+|-+$/g, "");
+  return map.get(normalized) || normalized.replace(/[^a-z0-9\u0600-\u06ff]+/gu, "-").replace(/^-+|-+$/g, "");
 }
 function canonicalSlug(topic, isLocal = false, course = null, angle = "guide", audience = "", level = "") {
   const courseKey = course?.slug || null;
@@ -104,8 +104,8 @@ function suggestedArticleSlug(item) {
   }
   if (item.modifierType === "comparison") {
     return "comparison-" + String(item.title || item.normalizedKey || "")
-      .replace(/[^\\w\\u0600-\\u06ff\\s-]/gu, " ")
-      .trim().replace(/\\s+/g, "-").slice(0, 80);
+      .replace(/[^\w\u0600-\u06ff\s-]/gu, " ")
+      .trim().replace(/\s+/g, "-").slice(0, 80);
   }
   return canonicalSlug(
     findTopic(item.topic) || { slug: item.topic },
