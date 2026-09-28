@@ -253,6 +253,67 @@ function queryRelevanceScore(item, query) {
   return score;
 }
 
+function buildGscQueryIntentEvidence(rows = []) {
+  const byQuery = new Map();
+  for (const row of rows) {
+    const query = normalizeText(row?.query);
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    if (!query || impressions <= 0) continue;
+    const current = byQuery.get(query) || { query, impressions: 0 };
+    current.impressions += impressions;
+    byQuery.set(query, current);
+  }
+
+  const distribution = new Map();
+  let totalImpressions = 0;
+  const queryEvidence = [];
+
+  for (const item of byQuery.values()) {
+    const result = classifyIntent({ title: item.query });
+    const primary = result.primary;
+    const weight = item.impressions;
+    distribution.set(primary, (distribution.get(primary) || 0) + weight);
+    totalImpressions += weight;
+    queryEvidence.push({
+      query: item.query,
+      impressions: weight,
+      primary,
+      confidence: result.confidence
+    });
+  }
+
+  if (!totalImpressions) return null;
+
+  const ranked = [...distribution.entries()]
+    .map(([intent, impressions]) => ({
+      intent,
+      impressions,
+      share: impressions / totalImpressions
+    }))
+    .sort((a, b) => b.impressions - a.impressions || a.intent.localeCompare(b.intent));
+
+  const top = ranked[0] || null;
+  const second = ranked[1] || null;
+  const margin = top && second ? top.share - second.share : top?.share || 0;
+
+  return Object.freeze({
+    primary: top?.intent || null,
+    primaryShare: top ? Number(top.share.toFixed(3)) : 0,
+    margin: Number(margin.toFixed(3)),
+    confidence: Number(Math.min(0.99, Math.max(0.35, (top?.share || 0) + margin * 0.5)).toFixed(3)),
+    sampleImpressions: totalImpressions,
+    queryCount: queryEvidence.length,
+    distribution: Object.freeze(Object.fromEntries(
+      ranked.map((item) => [item.intent, Number(item.share.toFixed(3))])
+    )),
+    queries: Object.freeze(
+      queryEvidence
+        .sort((a, b) => b.impressions - a.impressions || a.query.localeCompare(b.query))
+        .slice(0, 12)
+    )
+  });
+}
+
 function relevantQueryRows(index, item) {
   const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
   const candidateTokens = tokens(haystack);
@@ -548,6 +609,10 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       })
       .slice(0, 20);
     const relevantQuerySignal = aggregate(querySignals, index.ctrBenchmarks || {});
+    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows);
+    if (queryIntentEvidence) {
+      relevantQuerySignal.queryIntentEvidence = queryIntentEvidence;
+    }
     const ownership = buildQueryOwnership(matchedQueryRows, item);
     const semanticQueryClusters = index.queryClusterByQuery
       ? [...new Map(
