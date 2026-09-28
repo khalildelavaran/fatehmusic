@@ -303,3 +303,22 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchOwnership.impressions).toBe(100);
     expect(result[0].searchOwnership.topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
   });
+
+
+  it("does not treat a single non-generic word as query ownership", () => {
+    const index = buildGscSignalIndex([
+      { query: "گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 4, impressions: 100, ctr: 0.04, position: 6 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], index);
+
+    expect(result[0].searchOwnership.available).toBe(false);
+    expect(result[0].searchOwnership.matchType).toBe("RELATED");
+    expect(result[0].searchOwnership.relatedImpressions).toBe(0);
+  });
