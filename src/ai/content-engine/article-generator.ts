@@ -184,6 +184,7 @@ const SYSTEM_PROMPT = `تو یک نویسنده‌ی محتوای حرفه‌ا�
 - پاراگراف آخر رو به یک «جمع‌بندی» فرمولیک که کل متن رو خلاصه می‌کنه تبدیل نکن؛ به‌جاش با یک نکته‌ی عملی، یک دعوت طبیعی، یا یک فکر باز تمومش کن.
 - از این کلیشه‌های رایج متن‌های تولیدشده با هوش مصنوعی در فارسی به‌طور خاص پرهیز کن: «در دنیای امروز»، «در این راستا»، «شایان ذکر است»، «نقش بسزایی ایفا می‌کند»، «بدون شک/بی‌تردید» به‌عنوان شروع جمله، و استفاده‌ی مکرر از «همچنین» به‌عنوان تنها ابزار اتصال جمله‌ها.
 - به‌جای فعل‌ها و عبارات رسمی و پرطمطراق، فعل ساده و مستقیم رو ترجیح بده (مثلاً «کمک می‌کند» به‌جای «نقش بسزایی در ... ایفا می‌کند»).
+- لینک داخلی فقط از URLهای whitelist شده در بریف استفاده کن؛ URL جدید، slug حدسی یا مسیر ساختگی ایجاد نکن.
 
 محدودیت‌های محتوا:
 - حداقل ۵ و حداکثر ۸ پاراگراف، پاراگراف‌ها با دو خط جدید (\\n\\n) از هم جدا بشن.
@@ -317,8 +318,29 @@ function buildBrief(topic: SelectedTopic): string {
     lines.push("این مقاله موضوعی عمومی درباره‌ی آموزش موسیقی است. درباره آموزشگاه فقط اطلاعاتی را ذکر کن که در همین بریف آمده و از ساختن فکت اختصاصی درباره مدرس، قیمت، زمان یا آمار خودداری کن.");
   }
 
+  const linkCourseSlugs = [...new Set([
+    ...matchedCourses.map((course) => course.slug),
+    ...(primaryCourse ? [primaryCourse.slug] : [])
+  ])];
+  const instructorSlugs = [...new Set([
+    ...matchedCourses,
+    ...(primaryCourse ? [primaryCourse] : [])
+  ].flatMap((course) =>
+    (course.instructors || [])
+      .map((id: number) => (instructors as Array<any>).find((teacher) => teacher.id === id)?.slug)
+      .filter(Boolean)
+  ))];
+  const allowedLinks = [
+    ...linkCourseSlugs.map((slug) => "https://fatehmusic.ir/courses/" + slug),
+    ...instructorSlugs.map((slug) => "https://fatehmusic.ir/instructors/" + slug),
+    "https://fatehmusic.ir/locations/shushtar",
+    "https://fatehmusic.ir/courses",
+    "https://fatehmusic.ir/blog",
+    "https://fatehmusic.ir/register"
+  ];
+  lines.push("لینک‌های داخلی مجاز: " + [...new Set(allowedLinks)].join(" | "));
   if (topic.excerpt) lines.push(`توضیح کوتاه موجود: ${topic.excerpt}`);
-  lines.push("عنوان، موضوع و فکت‌های رسمی بالا را مبنا قرار بده و submit_article را با فیلدهای کامل صدا بزن.");
+  lines.push("عنوان، موضوع، فکت‌های رسمی و whitelist لینک‌های بالا را مبنا قرار بده و submit_article را با فیلدهای کامل صدا بزن.");
   return lines.join("\n");
 }
 export async function runDailyArticleGeneration(env: ArticleEnv): Promise<GenerateResult> {
