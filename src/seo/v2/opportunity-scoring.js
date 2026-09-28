@@ -504,6 +504,7 @@ export function scoreOpportunity(item = {}) {
       evidenceStrengthScore: evidence.score,
       evidenceStrength: evidence.quality,
       evidenceSourceCount: evidence.sourceCount,
+      evidenceSignals: evidence.evidenceSignals,
       decisionGuard: guard,
       evidenceSources: evidence.sources,
       crossSourceAgreement: crossSourceAgreement(item),
