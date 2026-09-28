@@ -20,10 +20,12 @@ export function buildSchemaGraph(nodes = [], { knowledgeGraph = null } = {}) {
     const merged = mergeEntityNodes(nodes.filter(Boolean));
     const compiled = compileKnowledgeGraphEdges(merged, knowledgeGraph);
     const validation = validateSchemaTypes(compiled);
+    if (!validation.valid) {
+        throw new Error("SCHEMA_REGISTRY_VALIDATION_FAILED: " + validation.errors.join(" | "));
+    }
 
     return Object.freeze({
         "@context": "https://schema.org",
-        "@graph": compiled,
-        registryValidation: validation
+        "@graph": compiled
     });
 }
