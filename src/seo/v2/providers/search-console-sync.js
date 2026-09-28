@@ -41,12 +41,14 @@ export async function fetchAllSearchAnalytics(client, {
   if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
 
   const rows = [];
+  const safeMaxRows = Math.max(1, Number(maxRows) || DEFAULT_MAX_ROWS);
+  const safePageSize = Math.min(Math.max(1, Number(pageSize) || DEFAULT_PAGE_SIZE), 25000);
   let startRow = 0;
   let pages = 0;
   let truncated = false;
 
-  while (rows.length < maxRows) {
-    const rowLimit = Math.min(pageSize, maxRows - rows.length);
+  while (rows.length < safeMaxRows) {
+    const rowLimit = Math.min(safePageSize, safeMaxRows - rows.length);
     const result = await client.querySearchAnalytics({
       startDate,
       endDate,
@@ -67,7 +69,7 @@ export async function fetchAllSearchAnalytics(client, {
   // The Search Console API can return exactly maxRows without telling us
   // whether more rows exist. Probe one additional row when the cap is hit so
   // the caller can surface incomplete data instead of treating it as complete.
-  if (rows.length >= maxRows) {
+  if (rows.length >= safeMaxRows) {
     const probe = await client.querySearchAnalytics({
       startDate,
       endDate,
@@ -80,7 +82,7 @@ export async function fetchAllSearchAnalytics(client, {
     truncated = (probe.rows || []).length > 0;
   }
 
-  return { configured: true, rows: rows.slice(0, maxRows), pages, truncated };
+  return { configured: true, rows: rows.slice(0, safeMaxRows), pages, truncated };
 }
 
 const SNAPSHOT_LABELS = new Set([
