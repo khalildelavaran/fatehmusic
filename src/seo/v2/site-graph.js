@@ -35,6 +35,7 @@ export function buildSiteLinkCandidates(site) {
   candidates.push(
     { url: site.url, title: site.name, type: "Organization", topics: [...site.keywords, "شوشتر"], priority: 5, local: true },
     { url: absoluteUrl("/courses", site.url), title: "دوره‌های آموزش موسیقی", type: "CollectionPage", topics: ["آموزش موسیقی", "شوشتر"], priority: 15, local: true },
+    { url: absoluteUrl("/gallery", site.url), title: "گالری عکس آموزشگاه موسیقی فاتح", type: "ImageGallery", topics: ["گالری", "عکس کلاس موسیقی", "آموزش موسیقی", "شوشتر"], priority: 12, local: true },
     { url: absoluteUrl("/instructors", site.url), title: "مدرس‌های موسیقی", type: "CollectionPage", topics: ["مدرس موسیقی", "شوشتر"], priority: 15, local: true },
     { url: absoluteUrl("/about", site.url), title: "درباره آموزشگاه موسیقی فاتح", type: "AboutPage", topics: ["آموزش موسیقی", "شوشتر"], priority: 8, local: true },
     { url: absoluteUrl("/contact", site.url), title: "تماس با آموزشگاه موسیقی فاتح", type: "ContactPage", topics: ["شوشتر", "آدرس", "تماس"], priority: 8, local: true },
