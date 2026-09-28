@@ -11,6 +11,7 @@ import { buildLinkGraph } from "./internal-links.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
+import { buildMarketOpportunityReport } from "./market-opportunities.js";
 import { normalizeSemanticText } from "../helpers/text.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
@@ -64,14 +65,18 @@ function articleSemantics(posts = [], siteUrl = "") {
 
 /**
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
- * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], marketSignals?: object[]|Map|string, siteUrl?: string}} options
+ * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], marketSignals?: object[]|Map|string, marketKeywordRows?: object[], siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], marketSignals = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], marketSignals = [], marketKeywordRows = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages, marketSignals });
+  const marketOpportunities = buildMarketOpportunityReport({
+    keywordRows: marketKeywordRows,
+    gscRows: currentScoringRows(gscRows)
+  });
   const articleNodes = pages.map((page) => ({
     url: page.url,
     title: page.title,
@@ -121,6 +126,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     links: Object.freeze({ graph: freeze(buildLinkGraph(pageNodes)) }),
     knowledgeGraph,
     knowledgeGraphValidation,
+    marketOpportunities: freeze(marketOpportunities),
     opportunities: freeze(opportunities),
     summary: Object.freeze({
       opportunityCount: opportunities.length,
@@ -139,7 +145,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       decisionConfidenceAverage,
       knowledgeGraphNodeCount: knowledgeGraph.statistics.nodeCount,
       knowledgeGraphEdgeCount: knowledgeGraph.statistics.edgeCount,
-      knowledgeGraphValid: knowledgeGraphValidation.valid
+      knowledgeGraphValid: knowledgeGraphValidation.valid,
+      marketOpportunityCount: marketOpportunities.length
     })
   });
 }
