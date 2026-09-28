@@ -29,7 +29,7 @@ describe("Topical Authority graph", () => {
     const links = buildInternalLinkPlan({
       currentUrl: `${site.url}/locations/shushtar`,
       currentTopics: ["shushtar", "music-education"],
-      currentType: "Place",
+      currentType: "LocalBusiness",
       candidates
     });
 
