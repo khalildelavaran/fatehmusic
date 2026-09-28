@@ -165,8 +165,8 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
     )}
   </head>
   <body>
-    <SEOAnswerSummary blocks={seo.geo.answerBlocks} />
     <slot />
+    <SEOAnswerSummary blocks={seo.geo.answerBlocks} />
 
     <script src="../scripts/reveal.js"></script>
     <script src="../scripts/analytics.js"></script>
