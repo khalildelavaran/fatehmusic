@@ -35,7 +35,7 @@ describe("Search Console snapshot store", () => {
       }
     };
 
-    const rows = await getRecentSearchConsoleRows(db as never);
+    const rows = await getRecentSearchConsoleRows(db);
 
     expect(sql).toContain("snapshot_label IN ('current', 'previous')");
     expect(rows[0].snapshotLabel).toBe("current");
