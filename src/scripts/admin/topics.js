@@ -11,7 +11,7 @@ let currentFilter = "approved";
 
 const headers = () => ({ "Content-Type": "application/json" });
 
-const STATUS_LABELS = { candidate: "در انتظار بررسی", approved: "تأییدشده", generating: "در حال تولید", rejected: "ردشده", used: "استفاده‌شده" };
+const STATUS_LABELS = { candidate: "در انتظار بررسی", approved: "تأییدشده", generating: "در حال تولید", drafted: "پیش‌نویس ساخته‌شده", rejected: "ردشده", used: "منتشرشده" };
 const INTENT_LABELS = { informational: "آموزشی", commercial: "مقایسه‌ای", transactional: "تراکنشی", navigational: "برند" };
 
 function setGenerateStatus(text, isError = false) {
@@ -44,8 +44,8 @@ function renderTopics() {
     .map((topic) => {
       const courseOrCategory = topic.related_course_title || topic.category || "—";
       const actions = [];
-      if (topic.status !== "approved" && topic.status !== "generating" && topic.status !== "used") actions.push(`<button type="button" data-action="approved" data-id="${topic.id}">تأیید</button>`);
-      if (topic.status !== "rejected" && topic.status !== "generating" && topic.status !== "used") actions.push(`<button type="button" class="secondary" data-action="rejected" data-id="${topic.id}">رد</button>`);
+      if (topic.status !== "approved" && topic.status !== "generating" && topic.status !== "drafted" && topic.status !== "used") actions.push(`<button type="button" data-action="approved" data-id="${topic.id}">تأیید</button>`);
+      if (topic.status !== "rejected" && topic.status !== "generating" && topic.status !== "drafted" && topic.status !== "used") actions.push(`<button type="button" class="secondary" data-action="rejected" data-id="${topic.id}">رد</button>`);
       actions.push(`<button type="button" class="danger" data-delete="${topic.id}">حذف</button>`);
       return `
     <tr>
