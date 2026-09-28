@@ -175,6 +175,57 @@ function relevantQueryRows(index, item) {
   return rows;
 }
 
+function buildQueryOwnership(querySignals = []) {
+  const eligible = querySignals.filter((row) => {
+    const query = String(row?.query || "");
+    return !isBrandNavigationQuery(query) && tokens(query).size > 0 && Number(row?.impressions || 0) > 0;
+  });
+  if (!eligible.length) {
+    return Object.freeze({
+      available: false,
+      impressions: 0,
+      matchedQueries: [],
+      pages: [],
+      topPage: null,
+      topShare: 0,
+      source: "google-search-console"
+    });
+  }
+
+  const pageImpressions = new Map();
+  for (const row of eligible) {
+    const page = normalizeUrl(row?.page);
+    if (!page) continue;
+    pageImpressions.set(
+      page,
+      (pageImpressions.get(page) || 0) + Math.max(0, Number(row?.impressions) || 0)
+    );
+  }
+
+  const totalImpressions = eligible.reduce(
+    (sum, row) => sum + Math.max(0, Number(row?.impressions) || 0),
+    0
+  );
+  const pages = [...pageImpressions.entries()]
+    .map(([page, impressions]) => ({
+      page,
+      impressions,
+      share: totalImpressions ? impressions / totalImpressions : 0
+    }))
+    .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
+    .slice(0, 5);
+
+  return Object.freeze({
+    available: pages.length > 0,
+    impressions: totalImpressions,
+    matchedQueries: [...new Set(eligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
+    pages,
+    topPage: pages[0]?.page || null,
+    topShare: pages[0]?.share || 0,
+    source: "google-search-console"
+  });
+}
+
 function classifySearchOpportunity(signal) {
   if (!signal?.available) return "CREATE_OR_MONITOR";
   const position = Number(signal.position);
@@ -196,9 +247,24 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
       .slice(0, 10);
     const relevantQuerySignal = aggregate(querySignals);
+    const ownership = buildQueryOwnership(querySignals);
     const candidates = [relevantQuerySignal, ...pageSignals];
-    const best = candidates.find((signal) => signal?.available) || { available: false, impressions: 0, clicks: 0, ctr: 0, position: null, matchedQueries: [] };
-    return Object.freeze({ ...item, searchSignal: best, searchSignalSource: best.available ? "google-search-console" : "none", searchAction: classifySearchOpportunity(best) });
+    const best = candidates.find((signal) => signal?.available) || {
+      available: false,
+      impressions: 0,
+      clicks: 0,
+      ctr: 0,
+      position: null,
+      matchedQueries: [],
+      matchedPages: []
+    };
+    return Object.freeze({
+      ...item,
+      searchSignal: best,
+      searchOwnership: ownership,
+      searchSignalSource: best.available ? "google-search-console" : "none",
+      searchAction: classifySearchOpportunity(best)
+    });
   });
 }
 
