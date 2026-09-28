@@ -3,7 +3,7 @@ import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 // Conservative defaults for a Workers Free account. D1 counts each SQL
 // statement inside db.batch() toward the per-invocation query limit.
 const DEFAULT_PAGE_SIZE = 1000;
-const DEFAULT_MAX_ROWS = 500;
+const DEFAULT_MAX_ROWS = 450;
 const DEFAULT_BREAKDOWN_MAX_ROWS = 225;
 const BATCH_SIZE = 25;
 
