@@ -3,10 +3,11 @@
  * Deterministic topical clustering for published blog content.
  */
 import { TOPICS, resolveTopics } from "./topics.js";
+import { normalizeSemanticText } from "../helpers/text.js";
 import { classifyIntent } from "./intents.js";
 import { buildContentStrategy } from "./content-strategy.js";
 
-function normalize(value) { return String(value ?? "").replace(/[\u200c\u200f\u200e]/g, "").replace(/[يى]/g, "ی").replace(/[ك]/g, "ک").toLowerCase(); }
+function normalize(value) { return normalizeSemanticText(value); }
 function hasLocalSignal(...values) { return values.some((value) => normalize(value).includes("شوشتر")); }
 
 function findDeclaredTopic(value) {
