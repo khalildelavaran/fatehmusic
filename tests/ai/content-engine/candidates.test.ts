@@ -98,6 +98,9 @@ describe("age-specific topic generation", () => {
 });
 
 
+describe("candidate integrity", () => {
+  const candidates = generateCandidates();
+
   it("keeps course references limited to active courses", () => {
     const activeSlugs = new Set((courses as CourseLike[]).filter((course) => course.active).map((course) => course.slug));
     for (const candidate of candidates) {
@@ -114,3 +117,4 @@ describe("age-specific topic generation", () => {
       seen.add(candidate.normalizedKey);
     }
   });
+});
