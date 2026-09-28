@@ -217,6 +217,10 @@ async function main() {
   const index = await checkEndpoint(SITE_ORIGIN + "/sitemap-index.xml");
   const sitemapUrls = [];
   if (index?.response.status === 200) {
+    if (!/https?:\/\/[^\s<"]*\/sitemap-blog\.xml(?:\?|<|\s|$)/i.test(index.body)) {
+      fail("SITEMAP_INDEX_BLOG_MISSING", "sitemap-index.xml does not advertise sitemap-blog.xml");
+    }
+
     const locs = extractLocs(index.body);
     const childSitemaps = locs.filter((loc) => /\.xml$/i.test(loc));
     for (const sitemap of childSitemaps) {
