@@ -4,13 +4,15 @@ import { buildSiteLinkCandidates } from "../v2/site-graph.js";
 import { buildInternalLinkPlan } from "../v2/internal-links.js";
 
 describe("Topical Authority graph", () => {
-  it("creates a local Place entity tied to the canonical organization", () => {
+  it("creates a canonical LocalBusiness entity tied to the organization", () => {
     const site = resolveSite();
     const place = buildLocalPlaceSchema(site);
 
-    expect(place["@type"]).toBe("Place");
-    expect(place["@id"]).toContain("/locations/shushtar#place");
-    expect(place.containedInPlace["@id"]).toBe(`${site.url}/#organization`);
+    expect(place["@type"]).toBe("LocalBusiness");
+    expect(place["@id"]).toContain("/locations/shushtar#localbusiness");
+    expect(place.parentOrganization["@id"]).toBe(`${site.url}/#organization`);
+    expect(place.address["@type"]).toBe("PostalAddress");
+    expect(place.geo["@type"]).toBe("GeoCoordinates");
   });
 
   it("contains only canonical public destinations", () => {
