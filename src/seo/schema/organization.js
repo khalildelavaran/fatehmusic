@@ -9,8 +9,6 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
-import { instructorEntityId } from "../geo/entity.js";
-
 /**
  * @param {import("../resolvers/site.js").ResolvedSite} site
  * @returns {Object}
@@ -40,11 +38,6 @@ export function buildOrganizationSchema(site) {
         ? { "@type": "PropertyValue", propertyID: "Google Place ID", value: site.googlePlaceId }
         : undefined
     ].filter(Boolean),
-    founder: {
-      "@type": SCHEMA_TYPES.PERSON,
-      name: "خلیل دلاوران",
-      "@id": instructorEntityId(`${site.url}/instructors/khalil-delavaran`)
-    },
     knowsAbout: [
       "آموزش موسیقی",
       "آموزش گیتار",
