@@ -32,8 +32,7 @@ export async function fetchAllSearchAnalytics(client, {
   dimensions = ["query", "page"],
   pageSize = DEFAULT_PAGE_SIZE,
   maxRows = DEFAULT_MAX_ROWS,
-  dataState = "final",
-  snapshotLabel = "current"
+  dataState = "final"
 } = {}) {
   if (!client?.configured) return { configured: false, rows: [], pages: 0 };
   if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
