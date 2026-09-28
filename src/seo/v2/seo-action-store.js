@@ -107,7 +107,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
     "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN COALESCE(SUM(g.clicks), 0) / SUM(g.impressions) ELSE 0 END AS ctr, " +
     "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN SUM(g.impressions * g.position) / SUM(g.impressions) ELSE NULL END AS position " +
     "FROM seo_action_log a LEFT JOIN gsc_search_signals_v2 g " +
-    "ON g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
+    "ON g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = 'current' AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
     "WHERE a.status = 'published' AND a.target_url IS NOT NULL GROUP BY a.id, a.target_url, a.target_post_id"
   ).bind(site, windowStart, windowEnd).all();
