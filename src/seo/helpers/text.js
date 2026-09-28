@@ -138,7 +138,10 @@ export function normalizeSemanticText(text) {
  * @returns {string[]}
  */
 export function semanticTokens(text) {
-    return normalizeSemanticText(text).split(/\s+/).filter(Boolean);
+    return normalizeSemanticText(text)
+        .replace(/[\p{P}\p{S}]+/gu, " ")
+        .split(/\s+/)
+        .filter(Boolean);
 }
 
 /**
