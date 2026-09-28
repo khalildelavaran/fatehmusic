@@ -41,14 +41,6 @@ function positionScore(position) {
 
 function effectiveRankingPosition(ahrefsPosition, gscSignal) {
   if (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0) return ahrefsPosition;
-  if (Number.isFinite(Number(gscSignal?.position)) && Number(gscSignal.position) > 0) {
-    return Number(gscSignal.position);
-  }
-  return null;
-}
-
-function effectiveRankingPosition(ahrefsPosition, gscSignal) {
-  if (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0) return ahrefsPosition;
   const gscPosition = Number(gscSignal?.position);
   return Number.isFinite(gscPosition) && gscPosition > 0 ? gscPosition : null;
 }
