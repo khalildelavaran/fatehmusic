@@ -5,7 +5,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
-import { absoluteUrl } from "../helpers/url.js";
+import { absoluteUrl, webPageEntityId } from "../helpers/url.js";
 import { articleEntityId, courseEntityId } from "../geo/entity.js";
 
 /**
@@ -37,7 +37,7 @@ export function buildArticleSchema(post, { site, url, keywords = [], topics = []
         keywords,
         author: buildAuthor(post, site),
         publisher: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
+        mainEntityOfPage: { "@id": webPageEntityId(url) },
         isPartOf: { "@id": `${site.url}/#website` },
         mentions: topicRefs.length ? topicRefs : undefined
     };
