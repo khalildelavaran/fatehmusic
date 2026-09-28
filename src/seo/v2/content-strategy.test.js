@@ -12,7 +12,7 @@ describe("content strategy deduplication", () => {
     const result = buildContentStrategy([{ topic: "shushtar", missingIntents: ["local", "commercial", "transactional"], articleCount: 2, articleSlugs: ["music-education-local"] }]);
     expect(result.briefCount).toBe(1);
     expect(result.briefs[0].searchIntents).toEqual(["transactional", "local", "commercial"]);
-    expect(result.briefs[0].suggestedSlug).toBe("music-education-shushtar");
+    expect(result.briefs[0].suggestedSlug).toBe("music-education-local");
   });
 
   it("deduplicates equivalent topic-engine candidates instead of using intent as the URL identity", () => {
@@ -25,7 +25,7 @@ describe("content strategy deduplication", () => {
     });
     expect(result.opportunityCount).toBe(1);
     expect(result.opportunities[0].searchIntents).toEqual(["transactional", "local", "commercial"]);
-    expect(result.opportunities[0].suggestedSlug).toBe("music-education-shushtar");
+    expect(result.opportunities[0].suggestedSlug).toBe("آموزش-موسیقی-در-شوشتر");
   });
 
   it("does not map the broad music-education topic to a child-music course", () => {
@@ -79,7 +79,7 @@ describe("content strategy deduplication", () => {
     expect(result.opportunities[0].isLocal).toBe(true);
     expect(result.opportunities[0].targetEntity.type).toBe("Course");
     expect(result.opportunities[0].course.slug).toBe("traditional-vocal-course");
-    expect(result.opportunities[0].suggestedSlug).toBe("vocal-traditional-vocal-course-shushtar");
+    expect(result.opportunities[0].suggestedSlug).toBe("هزینه-کلاس-آواز-در-شوشتر");
   });
 
   it("does not resolve a local vocal title to the generic shushtar topic", () => {
