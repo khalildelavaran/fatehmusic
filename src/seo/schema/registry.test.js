@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSchemaTypeDefinition, isKnownSchemaType, schemaRegistryStatistics, validateSchemaTypes } from "./registry.js";
+import { SCHEMA_REGISTRY_VERSION, getSchemaTypeDefinition, isKnownSchemaType, schemaRegistryStatistics, validateSchemaTypes } from "./registry.js";
 
 describe("Schema Registry", () => {
   it("recognizes all core types used by the SEO engine", () => {
@@ -19,7 +19,9 @@ describe("Schema Registry", () => {
 
   it("exposes immutable registry statistics", () => {
     const stats = schemaRegistryStatistics();
+    expect(stats.version).toBe(SCHEMA_REGISTRY_VERSION);
     expect(stats.typeCount).toBeGreaterThan(20);
     expect(stats.categories).toContain("Education");
+    expect(getSchemaTypeDefinition("Course").namespace).toBe("https://schema.org");
   });
 });
