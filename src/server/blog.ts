@@ -209,9 +209,12 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
       .prepare("SELECT * FROM blog_posts WHERE status = 'published' ORDER BY COALESCE(published_at, created_at) DESC")
       .all<BlogPost>();
 
-    return result.results.length ? result.results : fallbackBlogPosts;
-  } catch {
-    return fallbackBlogPosts;
+    return result.results;
+  } catch (error) {
+    // Once a D1 binding exists, a database failure must not silently expose
+    // synthetic "published" content or place it into the sitemap.
+    console.error("[blog] failed to load published posts from D1:", error);
+    return [];
   }
 }
 
@@ -226,8 +229,9 @@ export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
       .bind(slug)
       .first<BlogPost>();
 
-    return post ?? fallbackBlogPosts.find((item) => item.slug === slug) ?? null;
-  } catch {
-    return fallbackBlogPosts.find((post) => post.slug === slug) ?? null;
+    return post ?? null;
+  } catch (error) {
+    console.error("[blog] failed to load published post from D1:", error);
+    return null;
   }
 }
