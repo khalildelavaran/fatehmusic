@@ -5,6 +5,7 @@
 
 import { articleEntityId, courseEntityId, instructorEntityId } from "../geo/entity.js";
 import { resolveTopics } from "./topics.js";
+import { containsSemanticPhrase } from "../helpers/text.js";
 
 function absoluteUrl(path, siteUrl) {
   return String(path || "").startsWith("http")
@@ -72,7 +73,7 @@ export function buildKnowledgeGraph({
 
   const resolveEntityTopics = (title, keywords = []) =>
     resolveTopics({ title, keywords, path: "" })
-      .filter((topic) => topic.slug !== "shushtar" || title?.includes("شوشتر"));
+      .filter((topic) => topic.slug !== "shushtar" || containsSemanticPhrase(title || "", "شوشتر"));
 
   addNode({ id: organizationId, type: "Organization", name: "آموزشگاه موسیقی فاتح", url: base, topics: ["music-education", "shushtar"] });
   addNode({ id: websiteId, type: "WebSite", name: "آموزشگاه موسیقی فاتح", url: base });
@@ -93,6 +94,9 @@ export function buildKnowledgeGraph({
       topics: instructor.professional?.roles || []
     });
     addEdge(instructorId, "worksFor", organizationId);
+    for (const topic of resolveEntityTopics(instructor.name, instructor.professional?.roles || [])) {
+      addEdge(instructorId, "knowsAbout", ensureTopicNode(topic), 0.8);
+    }
   }
 
   for (const course of courses || []) {
@@ -251,5 +255,70 @@ export function findRelatedEntities(graph, nodeId, {
     matches
       .sort((a, b) => b.confidence - a.confidence || a.relation.localeCompare(b.relation))
       .slice(0, Math.max(0, Number(limit) || 20))
+  );
+}
+
+
+export function findRelationPaths(graph, fromId, toId, {
+  maxDepth = 2,
+  relations = [],
+  direction = "both",
+  limit = 10
+} = {}) {
+  if (!graph?.nodes?.length || !fromId || !toId || fromId === toId) return [];
+
+  const relationSet = new Set((Array.isArray(relations) ? relations : [relations]).filter(Boolean));
+  const adjacency = new Map();
+
+  for (const edge of graph.edges || []) {
+    const add = (from, to, directionLabel) => {
+      const list = adjacency.get(from) || [];
+      list.push({ to, relation: edge.relation, direction: directionLabel, confidence: Number(edge.confidence) || 0 });
+      adjacency.set(from, list);
+    };
+
+    if (direction === "out" || direction === "both") add(edge.from, edge.to, "out");
+    if (direction === "in" || direction === "both") add(edge.to, edge.from, "in");
+  }
+
+  const queue = [{ id: fromId, path: [], visited: new Set([fromId]) }];
+  const results = [];
+
+  while (queue.length && results.length < Math.max(1, Number(limit) || 10)) {
+    const current = queue.shift();
+    if (current.path.length >= Math.max(1, Number(maxDepth) || 2)) continue;
+
+    for (const step of adjacency.get(current.id) || []) {
+      if (relationSet.size && !relationSet.has(step.relation)) continue;
+      if (current.visited.has(step.to)) continue;
+
+      const path = [...current.path, {
+        from: current.id,
+        to: step.to,
+        relation: step.relation,
+        direction: step.direction,
+        confidence: step.confidence
+      }];
+
+      if (step.to === toId) {
+        results.push(Object.freeze({
+          nodes: Object.freeze([fromId, ...path.map((item) => item.to)]),
+          edges: Object.freeze(path),
+          depth: path.length,
+          confidence: path.reduce((product, item) => product * Math.max(0, Math.min(1, item.confidence)), 1)
+        }));
+        continue;
+      }
+
+      queue.push({
+        id: step.to,
+        path,
+        visited: new Set([...current.visited, step.to])
+      });
+    }
+  }
+
+  return Object.freeze(
+    results.sort((a, b) => b.confidence - a.confidence || a.depth - b.depth).slice(0, Math.max(1, Number(limit) || 10))
   );
 }
