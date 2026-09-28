@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import "../styles/reveal.css";
 import { buildSEO } from "../seo/index.js";
+import SeoInternalLinks from "../components/SeoInternalLinks.astro";
 
 export interface Props {
   title?: string;
@@ -37,7 +38,7 @@ const {
   entityType = "",
   lastModified,
   answerBlocks = [],
-  linkCandidates = [],
+  linkCandidates,
   auditContext = {}
 } = Astro.props as Props;
 
@@ -167,6 +168,11 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
   </head>
   <body>
     <slot />
+
+  {!isPrivateAppRoute && linkCandidates?.length === 0 && (
+    <SeoInternalLinks items={seo.geo.internalLinks} />
+  )}
+
     <script src="../scripts/reveal.js"></script>
     <script src="../scripts/analytics.js"></script>
     <script src="../scripts/persian-digits.ts"></script>
