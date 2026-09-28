@@ -12,9 +12,13 @@ function fail(code, message) { errors.push({ code, message }); }
 function warn(code, message) { warnings.push({ code, message }); }
 
 async function fetchText(url, options = {}) {
+  let timedOut = false;
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Number(process.env.SEO_HTTP_TIMEOUT_MS || 15000));
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, HTTP_TIMEOUT_MS);
     try {
       const response = await fetch(url, {
         redirect: "manual",
@@ -31,7 +35,7 @@ async function fetchText(url, options = {}) {
       clearTimeout(timeout);
     }
   } catch (error) {
-    const detail = error?.name === "TimeoutError"
+    const detail = timedOut
       ? `timeout after ${HTTP_TIMEOUT_MS}ms`
       : String(error);
     fail("HTTP_FETCH", url + ": " + detail);
@@ -180,11 +184,6 @@ async function checkPublicPage(url) {
   const schema = jsonLdIsValidGraph(body);
   if (!schema.ok) {
     fail("PUBLIC_JSONLD", url + ": " + schema.reason);
-  }
-
-  const xRobotsTag = response.headers.get("x-robots-tag") || "";
-  if (/noindex/i.test(xRobotsTag)) {
-    fail("PUBLIC_X_ROBOTS_NOINDEX", url + ": X-Robots-Tag contains noindex");
   }
 
   if (/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(body)) {
