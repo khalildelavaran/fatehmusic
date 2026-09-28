@@ -34,6 +34,14 @@ const allPosts = await getPublishedPosts();
 const clusterEntry = buildArticleClusterLinks(allPosts, 4).find((item) => item.slug === post.slug);
 const relatedPosts = clusterEntry?.related ?? [];
 const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
+const comparisonCourses = findComparisonCourses(post.title)
+  .map((course) => resolveCourse(course, site))
+  .filter((course): course is NonNullable<typeof course> => Boolean(course));
+const relatedCoursesForSchema = [...new Map(
+  [relatedCourse, ...comparisonCourses]
+    .filter(Boolean)
+    .map((course) => [course.slug, course])
+).values()];
 const title = post.meta_title || `${post.title} | آموزشگاه موسیقی فاتح`;
 const description = post.meta_description || post.excerpt;
 const keywords = [
@@ -57,13 +65,14 @@ const breadcrumbSchema = buildBreadcrumbSchema([
   { name: "وبلاگ", path: "/blog" },
   { name: post.title, path: `/blog/${Astro.params.slug ?? ""}` }
 ], site);
-const courseSchema = relatedCourse ? buildCourseSchema(relatedCourse, { site }) : null;
-const relatedCourseInstructorSchemas = relatedCourse
-  ? relatedCourse.instructors
+const courseSchemas = relatedCoursesForSchema.map((course) => buildCourseSchema(course, { site }));
+const relatedCourseInstructorSchemas = [...new Map(
+  relatedCoursesForSchema
+    .flatMap((course) => course.instructors)
     .map((teacher) => resolveInstructor(teacher, site))
     .filter((teacher): teacher is NonNullable<typeof teacher> => Boolean(teacher))
-    .map((teacher) => buildPersonSchema(teacher, { site }))
-  : [];
+    .map((teacher) => [teacher.slug, buildPersonSchema(teacher, { site })])
+)].map(([, schema]) => schema);
 const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
 const internalLinkCandidates = [
@@ -78,7 +87,7 @@ const semanticInternalLinks = buildInternalLinkPlan({
   limit: 6
 });
 const internalLinkCount = 6 + relatedPosts.length;
-const schema: object[] = [articleSchema, courseSchema, ...relatedCourseInstructorSchemas, breadcrumbSchema].filter((item): item is object => item !== null);
+const schema: object[] = [articleSchema, ...courseSchemas, ...relatedCourseInstructorSchemas, breadcrumbSchema].filter((item): item is object => item !== null);
 
 function escapeHtml(value: string) {
   return value
@@ -242,6 +251,9 @@ const articleHtml = renderArticleContent(post.content);
         <a href="/">آموزشگاه موسیقی فاتح</a>
         <a href="/locations/shushtar">آموزش موسیقی در شوشتر</a>
         {relatedCourse && <a href={`/courses/${relatedCourse.slug}`}>دوره مرتبط: {relatedCourse.title}</a>}
+        {comparisonCourses.filter((course) => course.slug !== relatedCourse?.slug).map((course) => (
+          <a href={`/courses/${course.slug}`}>دوره مرتبط: {course.title}</a>
+        ))}
         <a href="/courses">همه دوره‌ها</a>
         <a href="/register">ثبت‌نام و مشاوره</a>
         <a href="/contact">تماس با آموزشگاه</a>
