@@ -15,8 +15,9 @@ import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { derivePlainName } from "./candidates";
-import { toDedupKey } from "./normalize";
+import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
+import { NEAR_DUPLICATE_THRESHOLD } from "./dedup";
 import { callClaudeArticle } from "./providers/anthropic";
 import { createSeoAction } from "../../seo/v2/seo-action-store.js";
 import type { ContentTopicRow } from "./types";
@@ -72,7 +73,10 @@ function stableIndex(size: number, offset = 0): number {
 
 function isExistingTitle(existing: Awaited<ReturnType<typeof getExistingTitleIndex>>, title: string): boolean {
   const normalized = toDedupKey(title);
-  return existing.normalizedKeys.has(normalized) || existing.titles.some((item) => toDedupKey(item) === normalized);
+  if (existing.normalizedKeys.has(normalized)) return true;
+  return existing.titles.some((item) =>
+    toDedupKey(item) === normalized || titleSimilarity(title, item) >= NEAR_DUPLICATE_THRESHOLD
+  );
 }
 
 function fallbackArticleTitles(course: CourseLike): string[] {
