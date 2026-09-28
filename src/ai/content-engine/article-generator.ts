@@ -563,8 +563,10 @@ export async function runDailyArticleGeneration(env: ArticleEnv, options: Genera
     if (topic.topicRowId) {
       statements.push(
         env.DB.prepare(
-          "UPDATE content_topics SET status='drafted', used_at=NULL, used_by_post_id=last_insert_rowid(), updated_at=datetime('now') WHERE id=? AND status='generating'"
-        ).bind(topic.topicRowId)
+          "UPDATE content_topics SET status='drafted', used_at=NULL, " +
+          "used_by_post_id=(SELECT id FROM blog_posts WHERE slug=? LIMIT 1), updated_at=datetime('now') " +
+          "WHERE id=? AND status='generating'"
+        ).bind(slug, topic.topicRowId)
       );
     }
 
