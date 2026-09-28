@@ -72,6 +72,24 @@ describe("opportunity scoring", () => {
     })).toBe("NEW_CONTENT");
   });
 
+  it("uses market demand and difficulty when Ahrefs data is available", () => {
+    const withoutMarket = scoreOpportunity({
+      title: "آموزش گیتار",
+      priority: 80,
+      searchSignal: { available: true, impressions: 100, ctr: 0.04, position: 9 }
+    });
+    const withMarket = scoreOpportunity({
+      title: "آموزش گیتار",
+      priority: 80,
+      searchSignal: { available: true, impressions: 100, ctr: 0.04, position: 9 },
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 }
+    });
+
+    expect(withMarket.priority).toBeGreaterThan(withoutMarket.priority);
+    expect(withMarket.scoreBreakdown.marketSignal).toBeGreaterThan(0);
+    expect(withMarket.decisionConfidence).toBeGreaterThan(withoutMarket.decisionConfidence);
+  });
+
   it("raises decision confidence when exact ownership is stable and well-supported", () => {
     const confidence = decisionConfidenceScore({
       searchSignal: {
