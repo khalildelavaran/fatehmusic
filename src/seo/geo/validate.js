@@ -15,6 +15,8 @@ export function validateEntityGraph(graph) {
     const nodes = Array.isArray(graph?.["@graph"]) ? graph["@graph"] : [];
     const errors = [];
     const ids = new Map();
+    const typeValidation = validateSchemaTypes(nodes);
+    errors.push(...typeValidation.errors);
 
     for (const node of nodes) {
         if (!node || typeof node !== "object") {
