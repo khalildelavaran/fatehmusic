@@ -30,9 +30,12 @@ export const POST: APIRoute = async ({ request }) => {
   const publishedAt = status === "published" ? new Date().toISOString() : null;
 
   if (post.id) {
-    const existing = await db.prepare("SELECT slug, title FROM blog_posts WHERE id=?").bind(post.id).first<{ slug: string; title: string }>();
-    await db.prepare(`UPDATE blog_posts SET slug=?, title=?, excerpt=?, content=?, topic=?, related_course_slug=?, related_course_title=?, status=?, meta_title=?, meta_description=?, updated_at=datetime('now'), published_at=COALESCE(published_at, ?) WHERE id=?`)
-      .bind(post.slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, publishedAt, post.id).run();
+    const existing = await db.prepare("SELECT slug, title, published_at FROM blog_posts WHERE id=?").bind(post.id).first<{ slug: string; title: string; published_at: string | null }>();
+    const nextPublishedAt = status === "published"
+      ? (existing?.published_at || publishedAt)
+      : null;
+    await db.prepare(`UPDATE blog_posts SET slug=?, title=?, excerpt=?, content=?, topic=?, related_course_slug=?, related_course_title=?, status=?, meta_title=?, meta_description=?, updated_at=datetime('now'), published_at=? WHERE id=?`)
+      .bind(post.slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, nextPublishedAt, post.id).run();
     if (status === "published") {
       await markSeoActionPublished(db, {
         targetPostId: Number(post.id),
