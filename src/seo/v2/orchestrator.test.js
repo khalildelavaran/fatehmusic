@@ -157,3 +157,31 @@ describe("buildSEOIntelligence", () => {
     expect(result.gsc.temporalCannibalization).toEqual([]);
   });
 });
+
+
+  it("feeds Ahrefs market data into the core opportunity score", () => {
+    const result = buildSEOIntelligence({
+      courses: [{ slug: "guitar", title: "آموزش گیتار", instrument: "guitar" }],
+      topicCandidates: [{
+        title: "آموزش گیتار",
+        intent: "commercial",
+        modifierType: "course",
+        relatedCourseSlug: "guitar",
+        scoreTotal: 80
+      }],
+      marketKeywordRows: [{
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 18
+      }],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.marketOpportunities).toHaveLength(1);
+    expect(result.opportunities).toHaveLength(1);
+    expect(result.opportunities[0].marketSignal.available).toBe(true);
+    expect(result.opportunities[0].marketSignal.estimatedVolume).toBe(200);
+    expect(result.opportunities[0].scoreBreakdown.marketSignal).not.toBeNull();
+  });
+});
