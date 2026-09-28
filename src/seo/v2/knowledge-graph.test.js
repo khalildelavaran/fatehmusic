@@ -42,6 +42,39 @@ describe("SEO knowledge graph", () => {
     )).toBe(true);
   });
 
+  it("surfaces unresolved course instructor references instead of silently dropping them", () => {
+    const graph = buildKnowledgeGraph({
+      siteUrl: "https://fatehmusic.ir",
+      courses: [{
+        id: 1,
+        slug: "guitar-course",
+        title: "آموزش گیتار",
+        instructor: 999
+      }],
+      instructors: []
+    });
+
+    expect(graph.missingReferences).toHaveLength(1);
+    expect(graph.statistics.missingReferenceCount).toBe(1);
+    expect(validateKnowledgeGraph(graph).valid).toBe(false);
+    expect(validateKnowledgeGraph(graph).errors.join(" ")).toContain("CourseInstructor:999");
+  });
+
+  it("surfaces unresolved article course references", () => {
+    const graph = buildKnowledgeGraph({
+      siteUrl: "https://fatehmusic.ir",
+      posts: [{
+        slug: "guitar-guide",
+        title: "راهنمای گیتار",
+        related_course_slug: "missing-course"
+      }]
+    });
+
+    expect(graph.missingReferences).toHaveLength(1);
+    expect(validateKnowledgeGraph(graph).valid).toBe(false);
+    expect(validateKnowledgeGraph(graph).errors.join(" ")).toContain("ArticleRelatedCourse:missing-course");
+  });
+
   it("traverses related entities through the canonical edge API", () => {
     const graph = buildKnowledgeGraph({
       siteUrl: "https://fatehmusic.ir",
