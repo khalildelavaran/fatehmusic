@@ -258,8 +258,14 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       matchedQueries: [],
       matchedPages: []
     };
+    const ownerPage = ownership.topPage;
+    const recommendedLinks = ownerPage && item.action === "LINK"
+      ? [ownerPage, ...(item.recommendedLinks || []).filter((url) => normalizeUrl(url) !== ownerPage)]
+      : item.recommendedLinks;
+
     return Object.freeze({
       ...item,
+      ...(recommendedLinks ? { recommendedLinks: Object.freeze(recommendedLinks.slice(0, 8)) } : {}),
       searchSignal: best,
       searchOwnership: ownership,
       searchSignalSource: best.available ? "google-search-console" : "none",
