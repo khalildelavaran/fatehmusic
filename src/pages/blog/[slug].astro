@@ -13,8 +13,12 @@ import {
   resolveSite,
   answersFromFaq,
   resolveTopics,
-  buildArticleClusterLinks
+  buildArticleClusterLinks,
+  buildArticleLinkCandidates,
+  buildInternalLinkPlan,
+  topicSlugs
 } from "../../seo/index.js";
+import SeoInternalLinks from "../../components/SeoInternalLinks.astro";
 import { getPublishedPost, getPublishedPosts } from "../../server/blog";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
@@ -60,6 +64,17 @@ const relatedCourseInstructorSchemas = relatedCourse
   : [];
 const answerBlocks = answersFromFaq([], canonicalUrl, `${canonicalUrl}#article`);
 const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
+const internalLinkCandidates = [
+  ...buildArticleLinkCandidates(allPosts, site.url),
+  ...buildSiteLinkCandidates(site)
+];
+const semanticInternalLinks = buildInternalLinkPlan({
+  currentUrl: canonicalUrl,
+  currentTopics: topicSlugs({ title: post.title, keywords, path: "/blog" }),
+  currentType: "Article",
+  candidates: internalLinkCandidates,
+  limit: 6
+});
 const internalLinkCount = 6 + relatedPosts.length;
 const schema: object[] = [articleSchema, courseSchema, ...relatedCourseInstructorSchemas, breadcrumbSchema].filter((item): item is object => item !== null);
 
@@ -217,7 +232,9 @@ const articleHtml = renderArticleContent(post.content);
         </section>
       )}
 
-      <footer class="article-links">
+        <SeoInternalLinks items={semanticInternalLinks} />
+
+    <footer class="article-links">
         <a href="/">آموزشگاه موسیقی فاتح</a>
         <a href="/locations/shushtar">آموزش موسیقی در شوشتر</a>
         {relatedCourse && <a href={`/courses/${relatedCourse.slug}`}>دوره مرتبط: {relatedCourse.title}</a>}
