@@ -97,6 +97,17 @@ describe("SEO/GEO Engine v2", () => {
     expect(result.geo.internalLinks.some((link) => link.url.includes("/courses/"))).toBe(true);
   });
 
+  it("uses Article Open Graph type for blog pages", () => {
+    const result = buildSEO({
+      path: "/blog/guitar-guide",
+      title: "راهنمای یادگیری گیتار",
+      description: "راهنمای عملی یادگیری گیتار برای شروع مسیر نوازندگی.",
+      entityType: "Article"
+    });
+
+    expect(result.openGraph["og:type"]).toBe("article");
+  });
+
   it("adds v2 semantic signals to buildSEO", () => {
     const result = buildSEO({
       path: "/courses/guitar-course",
