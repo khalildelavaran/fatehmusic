@@ -9,6 +9,7 @@ import "../../styles/admin/topics.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
+import { instructors } from "../../data/instructors.js";
 import { buildSEOIntelligence, buildGscSignalIndex, resolveSite } from "../../seo/index.js";
 import { listTopics } from "../../ai/content-engine/db";
 import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
@@ -48,6 +49,7 @@ const marketSignals = buildAhrefsKeywordSignalMap(
 const intelligence = buildSEOIntelligence({
   posts,
   courses,
+  instructors,
   topicCandidates: activeTopicCandidates,
   gscRows,
   marketSignals,
