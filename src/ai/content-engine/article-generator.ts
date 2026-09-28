@@ -215,7 +215,10 @@ function normalizeGeneratedText(value: string): string {
     .trim();
 }
 
-function validateGeneratedArticle(article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string }): string | null {
+function validateGeneratedArticle(
+  article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string },
+  allowedLinks: Set<string> = new Set()
+): string | null {
   const rawContent = normalizeGeneratedText(article.content || "");
   const content = rawContent.replace(/<[^>]+>/g, " ")
     .split("\n").join(" ")
@@ -259,7 +262,42 @@ function validateGeneratedArticle(article: { content?: string; excerpt?: string;
   if (!String(article.slug || "").trim()) return "slug تولید نشده است.";
   if (placeholderPattern.test(rawContent) || placeholderPattern.test(excerpt) || placeholderPattern.test(metaDescription)) return "متن شامل placeholder یا محتوای ساختگی است.";
   if (normalizedMetaTitle && normalizedExcerpt && normalizedMetaTitle === normalizedExcerpt) return "meta_title نباید دقیقاً برابر excerpt باشد.";
+
+  const internalUrls = [...new Set(
+    rawContent.match(/https:\/\/fatehmusic\\.ir[^\s)<>"]+/g) || []
+  )].map((url) => url.replace(/[.,،؛:]+$/u, ""));
+  for (const url of internalUrls) {
+    if (!allowedLinks.has(url)) return "مقاله شامل لینک داخلی خارج از whitelist است: " + url;
+  }
+
   return null;
+}
+
+function allowedInternalLinks(topic: SelectedTopic): Set<string> {
+  const matchedCourses = courseMatchesArticleTitle(topic.title);
+  const primaryCourse = topic.relatedCourseSlug
+    ? (courses as Array<any>).find((item) => item.slug === topic.relatedCourseSlug)
+    : null;
+  const linkCourseSlugs = [...new Set([
+    ...matchedCourses.map((course) => course.slug),
+    ...(primaryCourse ? [primaryCourse.slug] : [])
+  ])];
+  const instructorSlugs = [...new Set([
+    ...matchedCourses,
+    ...(primaryCourse ? [primaryCourse] : [])
+  ].flatMap((course) =>
+    (course.instructors || [])
+      .map((id: number) => (instructors as Array<any>).find((teacher) => teacher.id === id)?.slug)
+      .filter(Boolean)
+  ))];
+  return new Set([
+    ...linkCourseSlugs.map((slug) => "https://fatehmusic.ir/courses/" + slug),
+    ...instructorSlugs.map((slug) => "https://fatehmusic.ir/instructors/" + slug),
+    "https://fatehmusic.ir/locations/shushtar",
+    "https://fatehmusic.ir/courses",
+    "https://fatehmusic.ir/blog",
+    "https://fatehmusic.ir/register"
+  ]);
 }
 
 function courseMatchesArticleTitle(title: string): any[] {
@@ -384,7 +422,7 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     }
 
     const article = result.article;
-    const qualityError = validateGeneratedArticle(article);
+    const qualityError = validateGeneratedArticle(article, allowedInternalLinks(topic));
     if (qualityError) {
       await releaseClaim();
       return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
