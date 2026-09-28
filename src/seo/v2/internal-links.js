@@ -73,9 +73,15 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTopics = [], cur
 /**
  * Produce a compact graph used by templates or build-time tooling.
  */
-export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, maxInboundLinks = 12 } = {}) {
-    const inboundCounts = new Map();
-    for (const page of pages || []) {
+export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, maxInboundLinks = 12, maxOutboundLinks = limit } = {}) {
+    const normalizedLimit = Math.max(0, Number(maxOutboundLinks) || 0);
+    const normalizedInboundCap = Math.max(0, Number(maxInboundLinks) || 0);
+    const sourcePages = [...(pages || [])]
+        .filter((page) => page?.url)
+        .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0) || String(a.url).localeCompare(String(b.url)));
+
+    const allEdges = new Map();
+    for (const page of sourcePages) {
         const plan = buildInternalLinkPlan({
             currentUrl: page.url,
             currentTopics: page.topics,
@@ -84,38 +90,97 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, ma
             semanticGraph,
             limit: pages.length
         });
-        for (const link of plan) inboundCounts.set(normalizeUrl(link.url), (inboundCounts.get(normalizeUrl(link.url)) || 0) + 1);
+        allEdges.set(
+            normalizeUrl(page.url),
+            plan.map((link) => ({
+                ...link,
+                sourceUrl: page.url
+            }))
+        );
     }
 
-    return (pages || []).map((page) => ({
+    const inboundCounts = new Map();
+    const selectedBySource = new Map();
+    const assignedPairs = new Set();
+
+    // Allocate links globally rather than letting every page independently
+    // choose the same popular target. This makes maxInboundLinks a real cap.
+    for (const page of sourcePages) {
+        const candidates = allEdges.get(normalizeUrl(page.url)) || [];
+        const selected = [];
+
+        for (const link of candidates) {
+            if (selected.length >= normalizedLimit) break;
+            const target = normalizeUrl(link.url);
+            const pairKey = normalizeUrl(page.url) + "=>" + target;
+            if (assignedPairs.has(pairKey)) continue;
+
+            const inboundBefore = inboundCounts.get(target) || 0;
+            if (normalizedInboundCap > 0 && inboundBefore >= normalizedInboundCap) continue;
+
+            selected.push({
+                ...link,
+                finalScore: link.score + (inboundBefore === 0 ? 10 : 0),
+                inboundLinksBeforePlan: inboundBefore,
+                inboundLinksAfterPlan: inboundBefore + 1,
+                saturationPenalty: 0,
+                orphanBoost: inboundBefore === 0 ? 10 : 0
+            });
+            inboundCounts.set(target, inboundBefore + 1);
+            assignedPairs.add(pairKey);
+        }
+
+        selectedBySource.set(normalizeUrl(page.url), selected);
+    }
+
+    // Give still-orphaned targets one deterministic recovery link where a
+    // source has spare capacity. This prevents a strict inbound cap from
+    // turning useful pages into permanent orphans.
+    for (const targetPage of sourcePages) {
+        const target = normalizeUrl(targetPage.url);
+        if ((inboundCounts.get(target) || 0) > 0) continue;
+
+        let best = null;
+        for (const source of sourcePages) {
+            if (normalizeUrl(source.url) === target) continue;
+            const selected = selectedBySource.get(normalizeUrl(source.url)) || [];
+            if (selected.length >= normalizedLimit) continue;
+
+            const candidate = (allEdges.get(normalizeUrl(source.url)) || [])
+                .find((link) => normalizeUrl(link.url) === target && !assignedPairs.has(normalizeUrl(source.url) + "=>" + target));
+            if (!candidate) continue;
+
+            const score = candidate.score + 14 + Number(source.priority || 0) * 0.05;
+            if (!best || score > best.score || (score === best.score && String(source.url).localeCompare(String(best.source.url)) < 0)) {
+                best = { source, candidate, score };
+            }
+        }
+
+        if (!best) continue;
+
+        const sourceKey = normalizeUrl(best.source.url);
+        const selected = selectedBySource.get(sourceKey) || [];
+        selected.push({
+            ...best.candidate,
+            finalScore: best.score,
+            inboundLinksBeforePlan: 0,
+            inboundLinksAfterPlan: 1,
+            saturationPenalty: 0,
+            orphanBoost: 14
+        });
+        selectedBySource.set(sourceKey, selected);
+        inboundCounts.set(target, 1);
+        assignedPairs.add(sourceKey + "=>" + target);
+    }
+
+    return sourcePages.map((page) => ({
         url: page.url,
-        links: buildInternalLinkPlan({
-            currentUrl: page.url,
-            currentTopics: page.topics,
-            currentType: page.type,
-            candidates: pages,
-            semanticGraph,
-            limit: pages.length
-        })
-            .map((link) => {
-                const inbound = inboundCounts.get(normalizeUrl(link.url)) || 0;
-                const saturationPenalty = inbound > maxInboundLinks
-                    ? Math.min(15, inbound - maxInboundLinks)
-                    : 0;
-                const orphanBoost = inbound === 0 ? 10 : 0;
-                return {
-                    ...link,
-                    finalScore: link.score - saturationPenalty + orphanBoost,
-                    inboundLinksBeforePlan: inbound,
-                    saturationPenalty,
-                    orphanBoost
-                };
-            })
+        links: (selectedBySource.get(normalizeUrl(page.url)) || [])
             .sort((a, b) => b.finalScore - a.finalScore || String(a.title).localeCompare(String(b.title), "fa"))
-            .slice(0, Math.max(0, limit))
-            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, inboundLinksBeforePlan, saturationPenalty, orphanBoost }) => ({
+            .slice(0, normalizedLimit)
+            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics }) => ({
                 url, title, type, score, finalScore, topicalSimilarity, relationEvidence,
-                inboundLinksBeforePlan, saturationPenalty, orphanBoost
+                inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics
             }))
     }));
 }
