@@ -175,16 +175,32 @@ function relevantQueryRows(index, item) {
   return rows;
 }
 
-function buildQueryOwnership(querySignals = []) {
+function isExactQueryMatch(item, query) {
+  const haystack = normalizeText([
+    item?.title,
+    item?.topicName,
+    item?.topic,
+    item?.course?.title
+  ].filter(Boolean).join(" | "));
+  const normalizedQuery = normalizeText(query);
+  return Boolean(haystack && normalizedQuery && haystack.includes(normalizedQuery));
+}
+
+function buildQueryOwnership(querySignals = [], item = {}) {
   const eligible = querySignals.filter((row) => {
     const query = String(row?.query || "");
     return !isBrandNavigationQuery(query) && tokens(query).size > 0 && Number(row?.impressions || 0) > 0;
   });
-  if (!eligible.length) {
+  const exactEligible = eligible.filter((row) => isExactQueryMatch(item, row?.query));
+
+  if (!exactEligible.length) {
     return Object.freeze({
       available: false,
+      matchType: "RELATED",
       impressions: 0,
+      relatedImpressions: eligible.reduce((sum, row) => sum + Math.max(0, Number(row?.impressions) || 0), 0),
       matchedQueries: [],
+      relatedQueries: [...new Set(eligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
       pages: [],
       topPage: null,
       topShare: 0,
@@ -193,7 +209,7 @@ function buildQueryOwnership(querySignals = []) {
   }
 
   const pageImpressions = new Map();
-  for (const row of eligible) {
+  for (const row of exactEligible) {
     const page = normalizeUrl(row?.page);
     if (!page) continue;
     pageImpressions.set(
@@ -202,7 +218,7 @@ function buildQueryOwnership(querySignals = []) {
     );
   }
 
-  const totalImpressions = eligible.reduce(
+  const totalImpressions = exactEligible.reduce(
     (sum, row) => sum + Math.max(0, Number(row?.impressions) || 0),
     0
   );
@@ -217,8 +233,11 @@ function buildQueryOwnership(querySignals = []) {
 
   return Object.freeze({
     available: pages.length > 0,
+    matchType: "EXACT",
     impressions: totalImpressions,
-    matchedQueries: [...new Set(eligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
+    relatedImpressions: eligible.reduce((sum, row) => sum + Math.max(0, Number(row?.impressions) || 0), 0),
+    matchedQueries: [...new Set(exactEligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
+    relatedQueries: [...new Set(eligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
     pages,
     topPage: pages[0]?.page || null,
     topShare: pages[0]?.share || 0,
@@ -247,7 +266,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
       .slice(0, 10);
     const relevantQuerySignal = aggregate(querySignals);
-    const ownership = buildQueryOwnership(querySignals);
+    const ownership = buildQueryOwnership(querySignals, item);
     const candidates = [relevantQuerySignal, ...pageSignals];
     const best = candidates.find((signal) => signal?.available) || {
       available: false,
