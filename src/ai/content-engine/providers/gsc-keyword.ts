@@ -114,16 +114,20 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
       const weight = item.similarity;
       acc.impressions += item.row.impressions * weight;
       acc.clicks += item.row.clicks * weight;
-      acc.positionNumerator += item.row.impressions * item.row.position * weight;
+      const position = Number(item.row.position);
+      if (item.row.impressions > 0 && Number.isFinite(position) && position > 0) {
+        acc.positionNumerator += item.row.impressions * position * weight;
+        acc.positionImpressions += item.row.impressions * weight;
+      }
       return acc;
-    }, { impressions: 0, clicks: 0, positionNumerator: 0 });
+    }, { impressions: 0, clicks: 0, positionNumerator: 0, positionImpressions: 0 });
 
     return {
       available: weighted.impressions > 0,
       searchImpressions: weighted.impressions,
       searchClicks: weighted.clicks,
       searchCtr: weighted.impressions ? weighted.clicks / weighted.impressions : 0,
-      searchPosition: weighted.impressions ? weighted.positionNumerator / weighted.impressions : 0,
+      searchPosition: weighted.positionImpressions ? weighted.positionNumerator / weighted.positionImpressions : undefined,
       matchedQueries: matches.map((item) => item.row.query),
       source: "google-search-console"
     };
