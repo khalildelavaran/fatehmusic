@@ -75,6 +75,20 @@ describe("SEO knowledge graph", () => {
     expect(validateKnowledgeGraph(graph).errors.join(" ")).toContain("ArticleRelatedCourse:missing-course");
   });
 
+  it("rejects entities that lack required semantic relationships", () => {
+    const graph = {
+      nodes: [{ id: "https://fatehmusic.ir/courses/orphan", type: "Course", name: "گیتار" }],
+      edges: [],
+      statistics: { nodeCount: 1, edgeCount: 0, missingReferenceCount: 0 }
+    };
+
+    const validation = validateKnowledgeGraph(graph);
+    expect(validation.valid).toBe(false);
+    expect(validation.errors).toContain(
+      "Course is missing provider relation: https://fatehmusic.ir/courses/orphan"
+    );
+  });
+
   it("traverses related entities through the canonical edge API", () => {
     const graph = buildKnowledgeGraph({
       siteUrl: "https://fatehmusic.ir",
