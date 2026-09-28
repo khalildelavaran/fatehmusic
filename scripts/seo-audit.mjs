@@ -185,17 +185,21 @@ function validateSchema(route, scripts) {
 
   if (route === "/gallery") {
     const gallery = nodes.find((node) => schemaTypes(node).includes("ImageGallery"));
-    const imageObjects = nodes.filter((node) => schemaTypes(node).includes("ImageObject"));
+    const galleryMediaRefs = Array.isArray(gallery?.associatedMedia) ? gallery.associatedMedia : [];
+    const galleryImageIds = new Set(galleryMediaRefs.map((item) => item?.["@id"]).filter(Boolean));
+    const imageObjects = nodes.filter(
+      (node) => schemaTypes(node).includes("ImageObject") && galleryImageIds.has(node["@id"])
+    );
     if (!gallery) {
       error("IMAGE_GALLERY_MISSING", route + ": ImageGallery entity missing");
     } else if (webpage?.mainEntity?.["@id"] !== gallery["@id"]) {
       error("IMAGE_GALLERY_MAINENTITY_MISMATCH", route + ": WebPage mainEntity must reference the ImageGallery entity");
     }
-    if (imageObjects.length === 0) {
-      error("IMAGE_OBJECTS_MISSING", route + ": gallery has no ImageObject nodes");
+    if (galleryMediaRefs.length === 0) {
+      error("IMAGE_OBJECTS_MISSING", route + ": gallery has no associated image references");
     }
-    if (!Array.isArray(gallery?.associatedMedia) || gallery.associatedMedia.length !== imageObjects.length) {
-      error("IMAGE_GALLERY_MEDIA_MISMATCH", route + ": ImageGallery associatedMedia does not cover all ImageObject nodes");
+    if (galleryMediaRefs.length !== imageObjects.length) {
+      error("IMAGE_GALLERY_MEDIA_MISMATCH", route + ": ImageGallery associatedMedia does not resolve to matching ImageObject nodes");
     }
   }
 
