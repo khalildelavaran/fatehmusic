@@ -18,6 +18,7 @@ export default defineConfig({
 
   integrations: [
     sitemap({
+      customSitemaps: ["https://fatehmusic.ir/sitemap-blog.xml"],
       filter: (page) => {
         const pathname = new URL(page).pathname.replace(/\/$/, "") || "/";
         return ![
