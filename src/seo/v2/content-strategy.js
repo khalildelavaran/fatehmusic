@@ -109,8 +109,61 @@ function buildBrief(gap, courses = [], siteUrl) {
 }
 function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)); }
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
-  const baseUrl = normalizeBaseUrl(siteUrl); const titleCourse = findCourseFromTitle(candidate.title, courses); const explicitCourse = titleCourse || (candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : null); const topic = resolveCandidateTopic(candidate, explicitCourse); if (!topic) return null; const intent = candidate.intent || "informational"; const isLocal = candidate.modifierType === "local_shushtar" || hasLocalSignal(candidate.title) || isShushtarTopic(topic); const course = explicitCourse || (topic.slug === "shushtar" ? null : findCourseForTopic(topic, courses, candidate.title)); const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
-  return Object.freeze({ source: "topic-engine", action: "NEW_CONTENT", topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], isLocal, scope: canonicalScope(topic, isLocal), title: candidate.title, suggestedSlug: canonicalSlug(topic, isLocal, course), targetEntity, course: makeCourseRef(course, baseUrl), courseSlug: course?.slug || null, priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)), articleCount: 0, existingArticleSlugs: [], rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.", queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: candidate.modifierType || null, audience: candidate.audience || "", level: candidate.level || "", scoreBreakdown: candidate.scoreBreakdown || null, topicId: candidate.id ?? null, topicStatus: candidate.status || null });
+  const baseUrl = normalizeBaseUrl(siteUrl);
+  const normalizedTitle = normalize(candidate.title);
+  const comparisonCourses = candidate.modifierType === "comparison"
+    ? courses.filter((course) => course?.slug && course?.title && normalizedTitle.includes(normalize(course.title).replace("آموزش ", ""))).slice(0, 2)
+    : [];
+  const isComparison = comparisonCourses.length === 2;
+  const titleCourse = isComparison ? null : findCourseFromTitle(candidate.title, courses);
+  const explicitCourse = isComparison ? null : (titleCourse || (candidate.relatedCourseSlug ? courses.find((item) => item?.slug === candidate.relatedCourseSlug) || null : null));
+  const topic = isComparison ? findTopic("music-education") : resolveCandidateTopic(candidate, explicitCourse);
+  if (!topic) return null;
+  const intent = candidate.intent || "informational";
+  const isLocal = !isComparison && (candidate.modifierType === "local_shushtar" || hasLocalSignal(candidate.title) || isShushtarTopic(topic));
+  const course = isComparison ? null : (explicitCourse || (topic.slug === "shushtar" ? null : findCourseForTopic(topic, courses, candidate.title)));
+  const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
+  const recommendedLinks = isComparison
+    ? Object.freeze([...new Set([
+        ...comparisonCourses.map((item) => baseUrl + "/courses/" + item.slug),
+        ...buildRecommendedLinks(targetEntity, baseUrl)
+      ])])
+    : buildRecommendedLinks(targetEntity, baseUrl);
+  const queryAngles = isComparison
+    ? Object.freeze([
+        comparisonCourses[0].title + " یا " + comparisonCourses[1].title,
+        "تفاوت " + comparisonCourses[0].title + " و " + comparisonCourses[1].title,
+        ...buildQueryAngles(topic, intent, course)
+      ].slice(0, 6))
+    : buildQueryAngles(topic, intent, course);
+  return Object.freeze({
+    source: "topic-engine",
+    action: "NEW_CONTENT",
+    topic: topic.slug,
+    topicName: topic.name,
+    searchIntent: intent,
+    searchIntents: [intent],
+    isLocal,
+    scope: canonicalScope(topic, isLocal),
+    title: candidate.title,
+    suggestedSlug: isComparison ? "comparison-" + candidate.normalizedKey.replaceAll(" ", "-").slice(0, 80) : canonicalSlug(topic, isLocal, course),
+    targetEntity,
+    course: makeCourseRef(course, baseUrl),
+    comparisonCourses: comparisonCourses.map((item) => makeCourseRef(item, baseUrl)).filter(Boolean),
+    courseSlug: course?.slug || null,
+    priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)),
+    articleCount: 0,
+    existingArticleSlugs: [],
+    rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.",
+    queryAngles,
+    recommendedLinks,
+    modifierType: candidate.modifierType || null,
+    audience: candidate.audience || "",
+    level: candidate.level || "",
+    scoreBreakdown: candidate.scoreBreakdown || null,
+    topicId: candidate.id ?? null,
+    topicStatus: candidate.status || null
+  });
 }
 function mergeOpportunity(candidate, gap, siteUrl) {
   const topic = findTopic(candidate.topic); if (!topic) return null; const baseUrl = normalizeBaseUrl(siteUrl); const course = candidate.course || gap.course || null; if (candidate.course && gap.course && candidate.course.slug !== gap.course.slug) return null;
