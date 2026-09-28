@@ -1,0 +1,46 @@
+---
+export interface Props {
+  items: Array<{
+    url: string;
+    title: string;
+    type?: string;
+    score?: number;
+  }>;
+}
+
+const { items = [] } = Astro.props;
+const links = items.filter((item) => item?.url && item?.title).slice(0, 6);
+---
+
+{links.length > 0 && (
+  <section class="seo-internal-links" aria-labelledby="seo-related-links-title">
+    <div class="container">
+      <div class="seo-internal-links__head">
+        <span class="section-badge">مطالب و مسیرهای مرتبط</span>
+        <h2 id="seo-related-links-title">ادامه مسیر یادگیری</h2>
+      </div>
+      <nav aria-label="پیوندهای مرتبط">
+        <div class="seo-internal-links__grid">
+          {links.map((item) => (
+            <a href={item.url} class="seo-internal-links__item">
+              <span>{item.title}</span>
+              <small>مشاهده</small>
+            </a>
+          ))}
+        </div>
+      </nav>
+    </div>
+  </section>
+)}
+
+<style>
+.seo-internal-links{padding:48px 0 64px}
+.seo-internal-links__head{margin-bottom:18px}
+.seo-internal-links__head h2{margin:.35rem 0 0}
+.seo-internal-links__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.seo-internal-links__item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface);text-decoration:none;color:var(--text);transition:transform .2s ease,border-color .2s ease}
+.seo-internal-links__item:hover{transform:translateY(-1px);border-color:rgba(212,175,55,.45)}
+.seo-internal-links__item small{color:var(--text-secondary);white-space:nowrap}
+@media(max-width:900px){.seo-internal-links__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.seo-internal-links{padding:36px 0 48px}.seo-internal-links__grid{grid-template-columns:1fr}}
+</style>
