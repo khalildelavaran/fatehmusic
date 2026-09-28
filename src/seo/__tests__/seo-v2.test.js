@@ -148,6 +148,30 @@ describe("SEO/GEO Engine v2", () => {
     expect(result.openGraph["og:type"]).toBe("article");
   });
 
+  it("exposes diagnostics with separate quality and evidence coverage", () => {
+    const result = buildSEO({
+      path: "/courses/guitar-course",
+      title: "آموزش گیتار در شوشتر | آموزشگاه موسیقی فاتح",
+      description: "کلاس آموزش گیتار در شوشتر برای سطوح مختلف در آموزشگاه موسیقی فاتح.",
+      entityType: "Course",
+      auditContext: {
+        h1Count: 1,
+        wordCount: 600,
+        internalLinkCount: 5,
+        missingImageAlt: 0,
+        imageAudit: {
+          missingDimensions: 0,
+          genericAlt: 0,
+          heroPriority: true
+        }
+      }
+    });
+
+    expect(result.geo.diagnostics.weightedScore).toBeGreaterThan(0);
+    expect(result.geo.diagnostics.evidenceCoverage).toBeGreaterThan(0);
+    expect(result.geo.diagnostics.statistics.pagesAnalyzed).toBe(1);
+  });
+
   it("adds v2 semantic signals to buildSEO", () => {
     const result = buildSEO({
       path: "/courses/guitar-course",
