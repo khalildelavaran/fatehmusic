@@ -208,7 +208,7 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
     isLocal,
     scope: canonicalScope(topic, isLocal),
     title: candidate.title,
-    suggestedSlug: isComparison ? "comparison-" + candidate.normalizedKey.replaceAll(" ", "-").slice(0, 80) : suggestedArticleSlug({ topic: topic.slug, scope: canonicalScope(topic, isLocal), isLocal, modifierType: candidate.modifierType || intent, searchIntent: intent, course, audience: candidate.audience || "", level: candidate.level || "", articleCount: 0, existingArticleSlugs: [] }),
+    suggestedSlug: isComparison ? "comparison-" + slugifyArticleTitle(candidate.title).slice(0, 70).replace(/-+$/g, "") : suggestedArticleSlug({ topic: topic.slug, scope: canonicalScope(topic, isLocal), isLocal, modifierType: candidate.modifierType || intent, searchIntent: intent, course, audience: candidate.audience || "", level: candidate.level || "", articleCount: 0, existingArticleSlugs: [] }),
     targetEntity,
     course: makeCourseRef(course, baseUrl),
     comparisonCourses: comparisonCourses.map((item) => makeCourseRef(item, baseUrl)).filter(Boolean),
