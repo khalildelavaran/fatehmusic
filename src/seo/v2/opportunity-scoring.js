@@ -221,7 +221,8 @@ export function classifyOpportunityAction(item = {}) {
     item.searchOwnership?.matchType === "EXACT" &&
     item.searchOwnership.ownerStatus === "STABLE" &&
     Number(item.searchOwnership.impressions || 0) >= 20 &&
-    Number(item.searchOwnership.topShare || 0) >= 0.7
+    Number(item.searchOwnership.topShare || 0) >= 0.7 &&
+    item.searchOwnership.ownerDominanceEvidence !== "WEAK"
   ) {
     return "LINK";
   }
