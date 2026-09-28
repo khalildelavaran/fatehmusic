@@ -21,6 +21,6 @@ describe("Image gallery schema", () => {
     expect(graph[0]["@type"]).toBe("ImageGallery");
     expect(graph[0].associatedMedia).toHaveLength(2);
     expect(graph.slice(1).every((node) => node["@type"] === "ImageObject")).toBe(true);
-    expect(graph.slice(1).every((node) => node.mainEntityOfPage["@id"] === "https://fatehmusic.ir/gallery/#webpage")).toBe(true);
+    expect(graph.slice(1).every((node) => node.mainEntityOfPage["@id"] === "https://fatehmusic.ir/gallery#webpage")).toBe(true);
   });
 });
