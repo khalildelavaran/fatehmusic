@@ -20,4 +20,11 @@ describe("canonical semantic text layer", () => {
     expect(semanticTokens("آموزشِ گیتار، در شوشتر!")).toEqual(["آموزش", "گیتار", "در", "شوشتر"]);
     expect(containsSemanticPhrase("کلاس گیتار، برای مبتدیان", "گیتار برای")).toBe(true);
   });
+
+  it("normalizes conservative Persian plurals without unsafe stemming", () => {
+    expect(semanticTokens("سازهای ایرانی و گیتارها")).toEqual(["ساز", "ایرانی", "و", "گیتار"]);
+    expect(containsSemanticPhrase("کلاس سازهای ایرانی", "ساز ایرانی")).toBe(true);
+    expect(containsSemanticPhrase("تاریکی و تاریخ", "تار")).toBe(false);
+  });
+
 });
