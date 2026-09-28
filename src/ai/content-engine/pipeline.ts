@@ -19,15 +19,17 @@ export interface RunDiscoveryOptions {
 export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOptions = {}): Promise<DiscoveryRunSummary> {
   const keywordProvider = options.keywordProvider ?? (options.env?.AHREFS_API_KEY ? new HybridKeywordProvider(db, options.env) : new D1SearchConsoleKeywordProvider({ db }));
   const runId = await createRun(db);
+  let generated: ReturnType<typeof dedupWithinBatch> = [];
+  let afterDedup: typeof generated = [];
 
   try {
-    const generated = dedupWithinBatch(generateCandidates());
+    generated = dedupWithinBatch(generateCandidates());
     const [existingIndex, coverageByCourse, recentlyUsedCourses] = await Promise.all([
       getExistingTitleIndex(db),
       getCoverageByCourse(db),
       getRecentlyUsedCourses(db)
     ]);
-    const afterDedup = filterAgainstExisting(generated, existingIndex);
+    afterDedup = filterAgainstExisting(generated, existingIndex);
 
     let keywordSignals = new Map<string, Awaited<ReturnType<KeywordProvider["lookup"]>>>();
     const titles = afterDedup.map((candidate) => candidate.title);
@@ -92,15 +94,15 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
     const message = err instanceof Error ? err.message : String(err);
     await finishRun(db, runId, {
       status: "failed",
-      generated: generated?.length ?? 0,
-      afterDedup: afterDedup?.length ?? 0,
+      generated: generated.length,
+      afterDedup: afterDedup.length,
       approved: 0,
       error: message
     });
     return {
       runId,
-      candidatesGenerated: generated?.length ?? 0,
-      candidatesAfterDedup: afterDedup?.length ?? 0,
+      candidatesGenerated: generated.length,
+      candidatesAfterDedup: afterDedup.length,
       candidatesApproved: 0,
       status: "failed",
       errorMessage: message
