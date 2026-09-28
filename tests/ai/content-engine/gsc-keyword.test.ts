@@ -78,6 +78,31 @@ describe("D1SearchConsoleKeywordProvider", () => {
     expect(signal.searchPosition).toBe(8);
   });
 
+  it("does not treat tar as a substring match inside guitar", async () => {
+    const db = {
+      prepare() {
+        return {
+          bind() {
+            return {
+              all: async () => ({
+                results: [
+                  { query: "آموزش تار", clicks: 20, impressions: 400, position: 6 },
+                  { query: "آموزش گیتار", clicks: 4, impressions: 80, position: 9 }
+                ]
+              })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    const provider = new D1SearchConsoleKeywordProvider({ db });
+    const signal = await provider.lookup("آموزش گیتار در شوشتر");
+
+    expect(signal.matchedQueries).toContain("آموزش گیتار");
+    expect(signal.matchedQueries).not.toContain("آموزش تار");
+  });
+
   it("does not let a generic one-word query dominate a specific course topic", async () => {
     const db = {
       prepare() {
