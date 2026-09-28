@@ -19,6 +19,13 @@ function decisionConfidenceScore(item = {}) {
     if (Array.isArray(signal.matchedQueries) && signal.matchedQueries.length > 0) score += 5;
   }
 
+  if (item.marketSignal?.available) {
+    const hasVolume = Number(item.marketSignal.estimatedVolume) > 0;
+    const hasDifficulty = Number.isFinite(Number(item.marketSignal.difficulty));
+    score += hasVolume ? 6 : 2;
+    if (hasDifficulty) score += 4;
+  }
+
   if (ownership?.matchType === "EXACT") {
     score += 15;
     if (ownership.ownerStatus === "STABLE") score += 10;
