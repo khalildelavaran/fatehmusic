@@ -354,6 +354,37 @@ describe("GSC signal resolver", () => {
   });
 
 
+  it("computes ownership from all matching rows, not the compact 20-row signal window", () => {
+    const rows = [
+      ...Array.from({ length: 40 }, () => ({
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 3
+      })),
+      ...Array.from({ length: 10 }, () => ({
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 5
+      }))
+    ];
+
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], buildGscSignalIndex(rows));
+
+    expect(result[0].searchOwnership.ownerStatus).toBe("STABLE");
+    expect(result[0].searchOwnership.topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(result[0].searchOwnership.topShare).toBeCloseTo(120 / 170);
+    expect(result[0].searchOwnership.ownerShareInterval95).toBeTruthy();
+    expect(result[0].searchOwnership.ownerShareLower95).toBeGreaterThan(0.5);
+  });
+
+
   it("keeps local and global query clusters separate", () => {
     const clusters = buildSemanticQueryClusters([
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 60 },
