@@ -82,6 +82,17 @@ describe("opportunity scoring", () => {
     expect(evidence.sources).toEqual(["GSC"]);
   });
 
+  it("does not count GSC-derived cannibalization as an independent source", () => {
+    const evidence = evidenceStrength({
+      searchSignal: { available: true, impressions: 300, position: 6 },
+      cannibalization: { severity: "MEDIUM" },
+      temporalCannibalization: { actionable: true, severity: "HIGH" }
+    });
+
+    expect(evidence.sourceCount).toBe(1);
+    expect(evidence.sources).toEqual(["GSC"]);
+  });
+
   it("exposes evidence strength separately from priority", () => {
     const evidence = evidenceStrength({
       searchSignal: { available: true, impressions: 300, position: 6, matchedQueries: ["آموزش گیتار"] },
