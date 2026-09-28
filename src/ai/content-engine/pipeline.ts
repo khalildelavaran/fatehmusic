@@ -4,7 +4,7 @@ import { dedupWithinBatch, filterAgainstExisting } from "./dedup";
 import { scoreCandidates } from "./scoring";
 import {
   createRun, finishRun, getCoverageByCourse, getExistingTitleIndex,
-  getRecentlyUsedCourses, insertScoredCandidates
+  getRecentlyUsedCourses, insertScoredCandidates, getRunApprovedCount
 } from "./db";
 import { D1SearchConsoleKeywordProvider } from "./providers/gsc-keyword";
 import { HybridKeywordProvider } from "./providers/hybrid-keyword";
@@ -69,8 +69,11 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
       keywordSignals
     });
 
-    const approvedCount = scored.filter((c) => c.scoreTotal >= 55).length;
     await insertScoredCandidates(db, scored, runId);
+    // Report only rows actually approved by the persistence step. A scored
+    // candidate may already exist as candidate/approved/used and therefore be
+    // intentionally left untouched by the conditional UPSERT.
+    const approvedCount = await getRunApprovedCount(db, runId);
     await finishRun(db, runId, {
       status: "success",
       generated: generated.length,
@@ -89,15 +92,15 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
     const message = err instanceof Error ? err.message : String(err);
     await finishRun(db, runId, {
       status: "failed",
-      generated: 0,
-      afterDedup: 0,
+      generated: generated?.length ?? 0,
+      afterDedup: afterDedup?.length ?? 0,
       approved: 0,
       error: message
     });
     return {
       runId,
-      candidatesGenerated: 0,
-      candidatesAfterDedup: 0,
+      candidatesGenerated: generated?.length ?? 0,
+      candidatesAfterDedup: afterDedup?.length ?? 0,
       candidatesApproved: 0,
       status: "failed",
       errorMessage: message
