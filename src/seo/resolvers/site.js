@@ -185,7 +185,7 @@ function extractSocialHandle(url) {
     if (typeof url !== "string" || !url.trim()) return undefined;
     try {
         const parsed = new URL(url);
-        if (!/(?:^|\\.)x\\.com$/i.test(parsed.hostname) && !/(?:^|\\.)twitter\\.com$/i.test(parsed.hostname)) return undefined;
+        if (!/(?:^|\.)x\.com$/i.test(parsed.hostname) && !/(?:^|\.)twitter\.com$/i.test(parsed.hostname)) return undefined;
         const handle = parsed.pathname.split("/").filter(Boolean)[0];
         return handle ? `@${handle}` : undefined;
     } catch {
