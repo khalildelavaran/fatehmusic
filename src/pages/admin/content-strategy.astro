@@ -192,8 +192,8 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
           {intelligence.gsc.connected && <div class="strategy-gsc-grid">
-            <div><strong>Queryهای برتر</strong><div class="strategy-gsc-list">
-              {[...buildGscSignalIndex(currentGscRows).byQuery.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
+            <div><strong>Queryهای برتر غیر برندی</strong><div class="strategy-gsc-list">
+              {[...buildGscSignalIndex(currentGscRows).byQueryNonBrand.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
             </div></div>
             <div><strong>صفحات برتر غیر برندی</strong><div class="strategy-gsc-list">
               {[...buildGscSignalIndex(currentGscRows).byPageNonBrand.entries()].slice(0, 8).map(([page, signal]) => <span><code>{page.replace(site.url, "") || "/"}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · CTR {(signal.ctr * 100).toFixed(1)}%</span>)}
