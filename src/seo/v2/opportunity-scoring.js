@@ -2,6 +2,43 @@
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number(value) || 0));
 
+function decisionConfidenceScore(item = {}) {
+  let score = 45;
+  const signal = item.searchSignal;
+  const ownership = item.searchOwnership;
+
+  if (signal?.available) {
+    score += 15;
+    const impressions = Math.max(0, Number(signal.impressions) || 0);
+    if (impressions >= 300) score += 15;
+    else if (impressions >= 100) score += 12;
+    else if (impressions >= 20) score += 8;
+    else if (impressions >= 5) score += 4;
+
+    if (Number.isFinite(Number(signal.position))) score += 5;
+    if (Array.isArray(signal.matchedQueries) && signal.matchedQueries.length > 0) score += 5;
+  }
+
+  if (ownership?.matchType === "EXACT") {
+    score += 15;
+    if (ownership.ownerStatus === "STABLE") score += 10;
+    else if (ownership.ownerStatus === "SPLIT") score -= 8;
+    else if (ownership.ownerStatus === "EMERGING") score += 2;
+  } else if (ownership?.matchType === "RELATED") {
+    score += 3;
+  }
+
+  if (item.cannibalization?.severity === "HIGH") score -= 10;
+  else if (item.cannibalization?.severity === "MEDIUM") score -= 5;
+
+  if (item.temporalCannibalization?.actionable) {
+    score += item.temporalCannibalization.severity === "HIGH" ? 5 : 3;
+  }
+
+  if (item.gapDetected) score += 5;
+  return Math.round(clamp(score));
+}
+
 function searchSignalScore(signal = {}) {
   if (!signal?.available) return 0;
   const impressions = Math.max(0, Number(signal.impressions) || 0);
@@ -72,9 +109,25 @@ export function scoreOpportunity(item = {}) {
   const competitionPenalty = item.cannibalization?.severity === "HIGH" ? 0 : item.cannibalization?.severity === "MEDIUM" ? 3 : 0;
   const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
   const score = clamp(Math.round(base * 0.55 + signal * 0.45 - competitionPenalty + temporalBonus));
-  return Object.freeze({ ...item, action: classifyOpportunityAction(item), priority: score, scoreBreakdown: Object.freeze({ basePriority: base, searchSignal: signal, competitionPenalty, temporalBonus }) });
+  const decisionConfidence = decisionConfidenceScore(item);
+  return Object.freeze({
+    ...item,
+    action: classifyOpportunityAction(item),
+    priority: score,
+    decisionConfidence,
+    scoreBreakdown: Object.freeze({
+      basePriority: base,
+      searchSignal: signal,
+      competitionPenalty,
+      temporalBonus,
+      decisionConfidence
+    })
+  });
 }
 
 export function scoreOpportunities(items = []) {
   return items.map(scoreOpportunity).sort((a, b) => b.priority - a.priority || String(a.title || "").localeCompare(String(b.title || ""), "fa"));
 }
+
+
+export { decisionConfidenceScore };
