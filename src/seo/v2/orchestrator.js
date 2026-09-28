@@ -121,6 +121,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       mergeCount: opportunities.filter((item) => item.action === "MERGE_CONTENT").length,
       linkCount: opportunities.filter((item) => item.action === "LINK").length,
       searchBackedCount: opportunities.filter((item) => item.searchSignal?.available).length,
+      marketBackedCount: opportunities.filter((item) => item.marketSignal?.available).length,
       cannibalizationCount: cannibalization.length,
       temporalCannibalizationCount: temporalCannibalization.length,
       temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length,
