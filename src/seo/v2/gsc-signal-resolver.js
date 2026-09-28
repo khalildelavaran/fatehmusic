@@ -72,6 +72,7 @@ function aggregate(rows = []) {
     ctr: total.impressions ? total.clicks / total.impressions : 0,
     position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
     matchedQueries: [...new Set(rows.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
+    matchedPages: [...new Set(rows.map((row) => normalizeUrl(row?.page)).filter(Boolean))].slice(0, 10),
     source: "google-search-console"
   };
 }
