@@ -192,7 +192,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
-          {intelligence.gsc.connected && intelligence.queryOwnership.length > 0 && (
+          {intelligence.gsc.connected && intelligence.gsc.queryOwnership.length > 0 && (
             <div class="strategy-gsc-ownership">
               <div class="strategy-gsc-ownership-head">
                 <strong>نقشه مالکیت Query</strong>
@@ -202,7 +202,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                 <table class="strategy-gsc-ownership-table">
                   <thead><tr><th>Query</th><th>Impression</th><th>URL اصلی</th><th>سهم URL اصلی</th><th>تعداد URL</th></tr></thead>
                   <tbody>
-                    {intelligence.queryOwnership.slice(0, 12).map((item) => (
+                    {intelligence.gsc.queryOwnership.slice(0, 12).map((item) => (
                       <tr>
                         <td><code>{item.displayQuery || item.query}</code></td>
                         <td>{Math.round(item.impressions).toLocaleString("fa-IR")}</td>
