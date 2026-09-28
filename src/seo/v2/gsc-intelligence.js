@@ -2,9 +2,29 @@ import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 
+function currentScoringRows(rows = []) {
+  const current = rows.filter((row) => String(row?.snapshotLabel || row?.snapshot_label || "") === "current");
+  if (current.length) return current;
+
+  const datedRows = rows.filter((row) => row?.startDate || row?.start_date || row?.endDate || row?.end_date);
+  if (!datedRows.length) return rows;
+
+  const latestPeriod = datedRows
+    .map((row) => `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}`)
+    .sort()
+    .at(-1);
+
+  return datedRows.filter((row) =>
+    `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}` === latestPeriod
+  );
+}
+
 /** Enrich the unified content queue with real GSC signals when available. */
 export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
-  const index = buildGscSignalIndex(rows);
+  // Scoring uses only the current snapshot. The previous snapshot remains
+  // available to temporal analysis so historical ownership changes are not lost.
+  const scoringRows = currentScoringRows(rows);
+  const index = buildGscSignalIndex(scoringRows);
   const conflicts = detectSearchCannibalization(rows, options);
   const temporal = detectTemporalCannibalization(rows, options);
   const conflictByPage = new Map();
