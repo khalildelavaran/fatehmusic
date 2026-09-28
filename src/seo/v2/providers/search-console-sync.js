@@ -285,7 +285,7 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
   // Optional country/device breakdowns add a third set of D1 writes. Keep the
   // default total query footprint below the Free-plan per-invocation limit.
   const maxRows = String(env.GSC_SYNC_BREAKDOWNS || options.syncBreakdowns || "") === "1"
-    ? Math.min(requestedMaxRows, 250)
+    ? Math.min(requestedMaxRows, 225)
     : Math.min(requestedMaxRows, 350);
 
   const currentEnd = dateDaysAgo(endOffset);
