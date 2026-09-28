@@ -3,12 +3,12 @@
  * Deterministic topical clustering for published blog content.
  */
 import { TOPICS, resolveTopics } from "./topics.js";
-import { normalizeSemanticText } from "../helpers/text.js";
+import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 import { classifyIntent } from "./intents.js";
 import { buildContentStrategy } from "./content-strategy.js";
 
 function normalize(value) { return normalizeSemanticText(value); }
-function hasLocalSignal(...values) { return values.some((value) => normalize(value).includes("شوشتر")); }
+function hasLocalSignal(...values) { return values.some((value) => containsSemanticPhrase(value || "", "شوشتر")); }
 
 function findDeclaredTopic(value) {
   const normalized = normalize(value);
