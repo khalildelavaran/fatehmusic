@@ -56,6 +56,25 @@ describe("SEO/GEO Engine v2", () => {
     expect(links).toHaveLength(2);
   });
 
+  it("uses runtime course and instructor data in buildSEO", () => {
+    const result = buildSEO({
+      path: "/courses/runtime-guitar",
+      title: "آموزش گیتار",
+      description: "کلاس آموزش گیتار.",
+      courses: [{ slug: "runtime-guitar", title: "آموزش گیتار", instrument: "guitar" }],
+      instructors: [{
+        slug: "runtime-teacher",
+        name: "مدرس آزمایشی",
+        professional: { roles: ["گیتار"] }
+      }]
+    });
+
+    const courseLink = result.geo.internalLinks.find((item) => item.url.endsWith("/courses/runtime-guitar"));
+    const instructorLink = result.geo.internalLinks.find((item) => item.url.endsWith("/instructors/runtime-teacher"));
+    expect(courseLink).toBeTruthy();
+    expect(instructorLink).toBeTruthy();
+  });
+
   it("normalizes audit score using only available checks", () => {
     const audit = auditPage({
       metadata: {
