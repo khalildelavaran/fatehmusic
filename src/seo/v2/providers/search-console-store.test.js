@@ -85,3 +85,77 @@ describe("GSC page performance", () => {
     expect(page.position).toBe(8);
   });
 });
+
+
+describe("GSC page URL canonicalization", () => {
+  it("removes trailing slashes and fragments from stored page URLs", async () => {
+    const db = {
+      prepare(statement) {
+        return {
+          bind() {
+            return {
+              async all() {
+                return {
+                  results: [{
+                    query: "آموزش گیتار",
+                    page: "https://fatehmusic.ir/courses/guitar-course/#section",
+                    clicks: 1,
+                    impressions: 2,
+                    ctr: 0.5,
+                    position: 5,
+                    snapshotLabel: "current"
+                  }]
+                };
+              }
+            };
+          }
+        };
+      }
+    };
+
+    const rows = await getRecentSearchConsoleRows(db);
+    expect(rows[0].page).toBe("https://fatehmusic.ir/courses/guitar-course");
+  });
+
+  it("merges slash variants in page performance", async () => {
+    const db = {
+      prepare(statement) {
+        return {
+          bind() {
+            return {
+              async all() {
+                if (statement.includes("gsc_search_signals_v2")) {
+                  return {
+                    results: [
+                      {
+                        page: "https://fatehmusic.ir/courses/guitar-course/",
+                        clicks: 2,
+                        impressions: 20,
+                        position: 6,
+                        snapshotLabel: "current"
+                      },
+                      {
+                        page: "https://fatehmusic.ir/courses/guitar-course",
+                        clicks: 3,
+                        impressions: 10,
+                        position: 4,
+                        snapshotLabel: "current"
+                      }
+                    ]
+                  };
+                }
+                return { results: [] };
+              }
+            };
+          }
+        };
+      }
+    };
+
+    const [page] = await getGscPagePerformance(db, undefined, { days: 90 });
+    expect(page.page).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(page.clicks).toBe(5);
+    expect(page.impressions).toBe(30);
+    expect(page.position).toBeCloseTo((20 * 6 + 10 * 4) / 30);
+  });
+});
