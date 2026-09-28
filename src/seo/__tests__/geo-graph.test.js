@@ -57,7 +57,7 @@ describe("GEO entity graph", () => {
         const site = { url: "https://fatehmusic.ir" };
         const page = buildWebPageSchema({ url: "https://fatehmusic.ir/about/", title: "درباره", description: "درباره فاتح", site });
         const profile = buildProfilePageSchema({ url: "https://fatehmusic.ir/instructors/ali/", name: "علی" }, { site });
-        expect(page["@id"]).toBe("https://fatehmusic.ir/about/#webpage");
+        expect(page["@id"]).toBe("https://fatehmusic.ir/about#webpage");
         expect(profile["@id"]).toBe("https://fatehmusic.ir/instructors/ali/#profilepage");
         expect(profile.mainEntity["@id"]).toBe("https://fatehmusic.ir/instructors/ali/#person");
     });
