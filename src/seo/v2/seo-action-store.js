@@ -120,6 +120,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
     const statements = chunk.map((row) => {
       const impressions = Math.max(0, Number(row.impressions) || 0);
       const clicks = Math.max(0, Number(row.clicks) || 0);
+      // A measured zero-demand window is still a measurement.
       return db.prepare(
         "INSERT INTO seo_action_measurements (action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console') " +
