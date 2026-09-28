@@ -6,7 +6,7 @@ import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { listTopics, updateTopicStatus, deleteTopic } from "../../../ai/content-engine/db";
 import type { TopicStatus } from "../../../ai/content-engine/types";
 
-const VALID_STATUSES: TopicStatus[] = ["candidate", "approved", "generating", "rejected", "used"];
+const VALID_STATUSES: TopicStatus[] = ["candidate", "approved", "generating", "drafted", "rejected", "used"];
 
 async function requireAdmin(request: Request): Promise<Response | null> {
   return requireRole(request, env, [ROLES.ADMIN]);
