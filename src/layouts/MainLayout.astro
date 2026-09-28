@@ -64,6 +64,14 @@ const seo = buildSEO({
 const openGraph = seo.openGraph as Record<string, string>;
 const twitter = seo.twitter as Record<string, string>;
 
+// JSON-LD is rendered with set:html, so escape HTML-significant characters
+// inside the JSON string itself. This preserves valid JSON-LD while preventing
+// a title/description containing "</script>" from terminating the script tag.
+const safeSchemaJson = JSON.stringify(seo.schemaGraph)
+  .replace(/</g, "\\u003c")
+  .replace(/>/g, "\\u003e")
+  .replace(/&/g, "\\u0026");
+
 const pathname = Astro.url.pathname;
 const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?:\/|$)/.test(pathname);
 ---
@@ -114,7 +122,7 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
     {twitter["twitter:site"] && <meta name="twitter:site" content={twitter["twitter:site"]} />}
     {twitter["twitter:creator"] && <meta name="twitter:creator" content={twitter["twitter:creator"]} />}
 
-    <script is:inline type="application/ld+json" set:html={JSON.stringify(seo.schemaGraph)} />
+    <script is:inline type="application/ld+json" set:html={safeSchemaJson} />
 
     {!isPrivateAppRoute && (
       <>
