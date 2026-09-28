@@ -1,6 +1,8 @@
 const AHREFS_BASE = "https://api.ahrefs.com/v3";
 const DEFAULT_COUNTRY = "IR";
 const DEFAULT_TARGET = "https://fatehmusic.ir";
+
+import { normalizeSemanticText } from "../helpers/text.js";
 const KEYWORD_BATCH_SIZE = 25;
 
 function normalizeTarget(value) {
@@ -13,6 +15,40 @@ function normalizeCountry(value) {
 
 function today() {
   return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Convert an Ahrefs organic-keyword snapshot into the normalized map consumed
+ * by the SEO decision engine.
+ */
+export function buildAhrefsKeywordSignalMap(rows = []) {
+  const map = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const keyword = String(row?.keyword || "").trim();
+    const key = normalizeSemanticText(keyword);
+    if (!key) continue;
+
+    const signal = {
+      available: true,
+      estimatedVolume: row.volume_monthly == null
+        ? (row.volume == null ? undefined : Number(row.volume))
+        : Number(row.volume_monthly),
+      difficulty: row.keyword_difficulty == null
+        ? (row.difficulty == null ? undefined : Number(row.difficulty))
+        : Number(row.keyword_difficulty),
+      trafficPotential: row.traffic_potential == null ? undefined : Number(row.traffic_potential),
+      cpc: row.cpc == null ? undefined : Number(row.cpc),
+      source: "ahrefs"
+    };
+
+    const existing = map.get(key);
+    const existingVolume = Number(existing?.estimatedVolume) || 0;
+    const incomingVolume = Number(signal.estimatedVolume) || 0;
+    if (!existing || incomingVolume > existingVolume) {
+      map.set(key, signal);
+    }
+  }
+  return map;
 }
 
 /** @param {Record<string, any>} [env] */
