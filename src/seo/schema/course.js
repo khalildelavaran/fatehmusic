@@ -6,6 +6,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
+import { webPageEntityId } from "../helpers/url.js";
 import { buildCourseInstructorRefs, buildCourseRef } from "../geo/graph.js";
 import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
@@ -68,7 +69,7 @@ export function buildCourseSchema(course, { site }) {
             : (course.title || course.instrument),
         instructor: instructorRefs.length ? instructorRefs : undefined,
         provider: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${String(course.url).replace(/\/$/, "")}/#webpage` },
+        mainEntityOfPage: { "@id": webPageEntityId(course.url) },
         educationalLevel: course.level.join("، "),
         audience: course.ageGroup.length
             ? {
