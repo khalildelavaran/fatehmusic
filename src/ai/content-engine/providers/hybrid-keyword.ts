@@ -92,10 +92,17 @@ export class HybridKeywordProvider implements KeywordProvider {
         return key;
       });
 
-      let ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
-        country: config.country,
-        keywords: allKeywords
-      });
+      let ahrefsMap = new Map<string, KeywordSignal>();
+      try {
+        ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
+          country: config.country,
+          keywords: allKeywords
+        });
+      } catch (error) {
+        // A cache read failure should degrade to GSC/unavailable, not fail
+        // the entire topic discovery run.
+        console.warn("[hybrid-keyword] Ahrefs cache unavailable:", error);
+      }
 
       const missing = allKeywords.filter((keyword) => !ahrefsMap.has(keyword));
       if (missing.length) {
@@ -108,10 +115,14 @@ export class HybridKeywordProvider implements KeywordProvider {
             env: this.env,
             keywords: refreshable
           });
-          ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
-            country: config.country,
-            keywords: allKeywords
-          });
+          try {
+            ahrefsMap = await getCachedAhrefsKeywordSignals(this.db, {
+              country: config.country,
+              keywords: allKeywords
+            });
+          } catch (error) {
+            console.warn("[hybrid-keyword] Ahrefs cache refresh unavailable:", error);
+          }
         } catch {
           // Search Console remains the authoritative fallback.
         }
