@@ -29,6 +29,30 @@ describe("D1SearchConsoleKeywordProvider", () => {
     expect(signal.estimatedVolume).toBeUndefined();
     expect(signal.source).toBe("google-search-console");
   });
+  it("reads demand only from the current retained snapshot", async () => {
+    let sql = "";
+    const db = {
+      prepare(statement: string) {
+        sql = statement;
+        return {
+          bind() {
+            return {
+              all: async () => ({
+                results: [
+                  { query: "آموزش سنتور شوشتر", clicks: 4, impressions: 100, position: 9 }
+                ]
+              })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    const provider = new D1SearchConsoleKeywordProvider({ db });
+    await provider.lookup("آموزش سنتور در شوشتر");
+
+    expect(sql).toContain("snapshot_label = 'current'");
+  });
   it("does not let a generic one-word query dominate a specific course topic", async () => {
     const db = {
       prepare() {
