@@ -253,6 +253,24 @@ describe("opportunity scoring", () => {
     );
   });
 
+
+  it("rewards market and content intent agreement", () => {
+    const withoutAgreement = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "transactional",
+      priority: 70,
+      marketSignal: { available: true, estimatedVolume: 200, difficulty: 30, intents: { informational: true } }
+    });
+    const withAgreement = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "transactional",
+      priority: 70,
+      marketSignal: { available: true, estimatedVolume: 200, difficulty: 30, intents: { transactional: true } }
+    });
+
+    expect(withAgreement.decisionConfidence).toBeGreaterThan(withoutAgreement.decisionConfidence);
+  });
+
 });
 
   it("does not force link action from related-only ownership", () => {
