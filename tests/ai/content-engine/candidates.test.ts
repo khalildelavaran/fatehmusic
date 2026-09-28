@@ -96,3 +96,21 @@ describe("age-specific topic generation", () => {
     expect(candidates.map((candidate) => candidate.audience).sort()).toEqual(["۳ تا ۷ سال", "۷ تا ۱۲ سال"].sort());
   });
 });
+
+
+  it("keeps course references limited to active courses", () => {
+    const activeSlugs = new Set((courses as CourseLike[]).filter((course) => course.active).map((course) => course.slug));
+    for (const candidate of candidates) {
+      if (candidate.relatedCourseSlug) {
+        expect(activeSlugs.has(candidate.relatedCourseSlug), `inactive or unknown course: ${candidate.relatedCourseSlug}`).toBe(true);
+      }
+    }
+  });
+
+  it("does not generate duplicate normalized titles before persistence", () => {
+    const seen = new Set<string>();
+    for (const candidate of candidates) {
+      expect(seen.has(candidate.normalizedKey), `duplicate candidate title: ${candidate.title}`).toBe(false);
+      seen.add(candidate.normalizedKey);
+    }
+  });
