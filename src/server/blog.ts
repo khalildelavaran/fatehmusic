@@ -218,6 +218,18 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
   }
 }
 
+/** Strict variant for endpoints such as sitemaps where a database outage must not be mistaken for valid empty content. */ 
+export async function getPublishedPostsStrict(): Promise<BlogPost[]> {
+  const db = env.DB;
+  if (!db) return fallbackBlogPosts;
+
+  const result = await db
+    .prepare("SELECT * FROM blog_posts WHERE status = 'published' ORDER BY COALESCE(published_at, created_at) DESC")
+    .all<BlogPost>();
+
+  return result.results;
+}
+
 export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
   const db = env.DB;
 
