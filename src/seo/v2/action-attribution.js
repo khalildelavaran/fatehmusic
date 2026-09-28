@@ -64,10 +64,11 @@ export function classifySeoActionMeasurement(latest, previous) {
   if (ctrStatisticallyStrong) confidence += 12;
   confidence = Math.round(clamp(confidence));
 
+  const positionEvidenceStrong = latestImpressions >= 10 && previousImpressions >= 10;
   const positiveCtr = ctrLift != null && ctrLift >= 0.005 && ctrStatisticallyStrong && ctrZ > 0;
   const negativeCtr = ctrLift != null && ctrLift <= -0.005 && ctrStatisticallyStrong && ctrZ < 0;
-  const positivePosition = positionImprovement != null && positionImprovement >= 1;
-  const negativePosition = positionImprovement != null && positionImprovement <= -1;
+  const positivePosition = positionEvidenceStrong && positionImprovement != null && positionImprovement >= 1;
+  const negativePosition = positionEvidenceStrong && positionImprovement != null && positionImprovement <= -1;
   const positive = positiveCtr || positivePosition;
   const negative = negativeCtr || negativePosition;
 
@@ -77,8 +78,10 @@ export function classifySeoActionMeasurement(latest, previous) {
     ctrLift,
     ctrZScore: Number.isFinite(ctrZ) ? Number(ctrZ.toFixed(3)) : null,
     ctrStatisticallyStrong,
+    positionEvidenceStrong,
     positionImprovement,
     impressionGrowth,
+    sampleScore,
     evidenceType: "DESCRIPTIVE_BEFORE_AFTER"
   };
 }
