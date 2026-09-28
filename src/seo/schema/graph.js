@@ -24,8 +24,20 @@ export function buildSchemaGraph(nodes = [], { knowledgeGraph = null } = {}) {
         throw new Error("SCHEMA_REGISTRY_VALIDATION_FAILED: " + validation.errors.join(" | "));
     }
 
-    return Object.freeze({
+    return deepFreeze({
         "@context": "https://schema.org",
         "@graph": compiled
     });
+}
+
+
+function deepFreeze(value, seen = new Set()) {
+    if (!value || typeof value !== "object" || seen.has(value)) return value;
+    seen.add(value);
+
+    for (const child of Object.values(value)) {
+        deepFreeze(child, seen);
+    }
+
+    return Object.freeze(value);
 }
