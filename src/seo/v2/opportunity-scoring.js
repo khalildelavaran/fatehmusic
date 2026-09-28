@@ -24,6 +24,11 @@ function decisionConfidenceEvidence(item = {}) {
     if (Array.isArray(signal.matchedQueries) && signal.matchedQueries.length > 0) {
       points.push(["matched query evidence", 5]);
     }
+    if (signal.ctrInterval95?.lower != null && signal.ctrInterval95?.upper != null) {
+      const width = Number(signal.ctrInterval95.upper) - Number(signal.ctrInterval95.lower);
+      if (width <= 0.02) points.push(["narrow 95% CTR interval", 4]);
+      else if (width <= 0.05) points.push(["usable 95% CTR interval", 2]);
+    }
   }
 
   if (item.marketSignal?.available) {
@@ -71,6 +76,8 @@ function decisionConfidenceEvidence(item = {}) {
   if (ownership?.matchType === "EXACT") {
     points.push(["exact GSC query ownership", 12]);
     if (ownership.ownerStatus === "STABLE") points.push(["stable query owner", 10]);
+    if (ownership.ownerDominanceEvidence === "STRONG") points.push(["strong owner-share evidence", 4]);
+    else if (ownership.ownerDominanceEvidence === "WEAK") points.push(["weak owner-share evidence", -2]);
     else if (ownership.ownerStatus === "SPLIT") points.push(["split query ownership", -8]);
     else if (ownership.ownerStatus === "EMERGING") points.push(["emerging query ownership", -3]);
   } else if (ownership?.matchType === "RELATED") {
