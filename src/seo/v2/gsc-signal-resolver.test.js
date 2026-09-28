@@ -210,6 +210,27 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.ctr).toBe(0.1);
   });
 
+  it("maps an existing non-brand query owner for a new-content opportunity", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 4, impressions: 100, ctr: 0.04, position: 6 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/old-guitar", clicks: 1, impressions: 20, ctr: 0.05, position: 12 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], index);
+
+    expect(result[0].searchSignal.available).toBe(true);
+    expect(result[0].searchOwnership.available).toBe(true);
+    expect(result[0].searchOwnership.topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(result[0].searchOwnership.topShare).toBeCloseTo(100 / 120);
+    expect(result[0].searchOwnership.matchedQueries).toEqual(["آموزش گیتار"]);
+  });
+
   it("keeps brand navigation out of topic demand matching", () => {
     expect(isBrandNavigationQuery("fatehmusic.ir")).toBe(true);
     const index = buildGscSignalIndex([
