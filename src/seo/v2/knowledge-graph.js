@@ -201,6 +201,30 @@ export function validateKnowledgeGraph(graph) {
     }
   }
 
+  const outgoingRelations = new Map();
+  for (const edge of graphEdges) {
+    const key = edge.from;
+    const relations = outgoingRelations.get(key) || new Set();
+    relations.add(edge.relation);
+    outgoingRelations.set(key, relations);
+  }
+
+  for (const node of graphNodes) {
+    const relations = outgoingRelations.get(node.id) || new Set();
+    if (node.type === "Organization" && !relations.has("location")) {
+      errors.push("Organization is missing a location relation: " + node.id);
+    }
+    if (node.type === "Person" && !relations.has("worksFor")) {
+      errors.push("Person is missing worksFor relation: " + node.id);
+    }
+    if (node.type === "Course" && !relations.has("provider")) {
+      errors.push("Course is missing provider relation: " + node.id);
+    }
+    if (node.type === "Article" && !relations.has("publisher")) {
+      errors.push("Article is missing publisher relation: " + node.id);
+    }
+  }
+
   if (graph?.statistics) {
     if (Number(graph.statistics.nodeCount) !== graphNodes.length) {
       errors.push("Knowledge Graph nodeCount statistic is inconsistent");
