@@ -33,7 +33,7 @@ function semanticTopicSimilarity(left = [], right = []) {
     return shared / new Set([...a, ...b]).size;
 }
 
-export function buildInternalLinkPlan({ currentUrl = "", currentTopics = [], currentType = "", candidates = [], semanticGraph = null, limit = 6 } = {}) {
+export function buildInternalLinkPlan({ currentUrl = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, limit = 6 } = {}) {
     const currentTopicSet = normalizedTopicSet(currentTopics);
     const currentTitle = (candidates || []).find((candidate) => normalizeUrl(candidate?.url) === normalizeUrl(currentUrl))?.title || "";
     const currentContext = [currentTitle, ...(currentTopics || [])].filter(Boolean).join(" ");
