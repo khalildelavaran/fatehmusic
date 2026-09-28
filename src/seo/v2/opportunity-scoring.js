@@ -432,6 +432,18 @@ function buildDecisionTrace(item, action, evidence) {
     reasonCodes.push("STRIKING_DISTANCE");
   }
   if (item.internalLinkGap === true || item.linkGap === true) reasonCodes.push("INTERNAL_LINK_GAP");
+  const queryIntent = item.searchSignal?.queryIntentEvidence;
+  const targetIntent = String(item.searchIntent || item.intent || "").toLowerCase();
+  if (queryIntent?.primary) {
+    if (targetIntent && queryIntent.primary === targetIntent && Number(queryIntent.confidence || 0) >= 0.55) {
+      reasonCodes.push("GSC_QUERY_INTENT_AGREEMENT");
+    } else if (targetIntent && queryIntent.primary !== targetIntent && Number(queryIntent.confidence || 0) >= 0.70) {
+      reasonCodes.push("GSC_QUERY_INTENT_CONFLICT");
+    } else if (Number(queryIntent.primaryShare || 0) < 0.50 && Number(queryIntent.queryCount || 0) >= 2) {
+      reasonCodes.push("GSC_QUERY_INTENT_AMBIGUOUS");
+    }
+  }
+
   if (item.gapDetected) reasonCodes.push("CONTENT_GAP");
   if (item.marketSignal?.available) reasonCodes.push("MARKET_SIGNAL_PRESENT");
   if (evidence.independentMarketAndGsc) reasonCodes.push("CROSS_SOURCE_EVIDENCE");
