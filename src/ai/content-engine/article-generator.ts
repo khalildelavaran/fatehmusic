@@ -88,7 +88,7 @@ function fallbackArticleTitles(course: CourseLike): string[] {
   ];
 }
 
-async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
+async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic | null> {
   const [recentSlugs, existingIndex] = await Promise.all([
     getRecentlyUsedCourses(db, 10),
     getExistingTitleIndex(db)
@@ -125,8 +125,8 @@ async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic> {
   }
 
   const safeEvergreen = GENERAL_EVERGREEN_TOPICS.filter((topic) => !isExistingTitle(existingIndex, topic));
-  const topicPool = safeEvergreen.length > 0 ? safeEvergreen : GENERAL_EVERGREEN_TOPICS;
-  const topic = topicPool[stableIndex(topicPool.length, 43)];
+  if (!safeEvergreen.length) return null;
+  const topic = safeEvergreen[stableIndex(safeEvergreen.length, 43)];
   return {
     topicRowId: null,
     title: topic,
@@ -151,7 +151,9 @@ async function selectTopic(db: D1Database): Promise<SelectedTopic> {
       scoreTotal: queued.score_total
     };
   }
-  return pickFallbackTopic(db);
+  const fallback = await pickFallbackTopic(db);
+  if (!fallback) throw new Error("NO_SAFE_ARTICLE_TOPIC");
+  return fallback;
 }
 
 // Humanization guidance below is based on real research (Aug 2026) into
