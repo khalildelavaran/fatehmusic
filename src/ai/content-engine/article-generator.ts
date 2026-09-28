@@ -289,7 +289,31 @@ function validateGeneratedArticle(
   if (placeholderPattern.test(rawContent) || placeholderPattern.test(excerpt) || placeholderPattern.test(metaDescription)) return "متن شامل placeholder یا محتوای ساختگی است.";
   if (normalizedMetaTitle && normalizedExcerpt && normalizedMetaTitle === normalizedExcerpt) return "meta_title نباید دقیقاً برابر excerpt باشد.";
 
-  if (expectedTitle && titleSimilarity(expectedTitle, metaTitle) < 0.35) {
+  if (expectedTitle) {
+    const normalizedExpected = toDedupKey(expectedTitle);
+    const normalizedContent = toDedupKey(content);
+    const normalizedExcerptKey = toDedupKey(excerpt);
+    if (titleSimilarity(expectedTitle, metaTitle) < 0.35) {
+      return "meta_title با عنوان Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
+    }
+
+    // A valid-looking article can still drift away from the selected topic.
+    // Require meaningful lexical overlap with the fixed Topic in both the body
+    // and excerpt. For very short/generic titles the body check is relaxed.
+    const expectedTokens = normalizedExpected
+      .split(" ")
+      .filter((token) => token.length >= 3)
+      .slice(0, 8);
+    const contentHitCount = expectedTokens.filter((token) => normalizedContent.includes(token)).length;
+    const excerptHitCount = expectedTokens.filter((token) => normalizedExcerptKey.includes(token)).length;
+    const requiredHits = expectedTokens.length >= 4 ? 2 : 1;
+    if (contentHitCount < requiredHits) {
+      return "بدنه مقاله ارتباط کافی با Topic انتخاب‌شده ندارد.";
+    }
+    if (excerptHitCount < 1) {
+      return "خلاصه مقاله با Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
+    }
+  }
     return "meta_title با عنوان Topic انتخاب‌شده هم‌خوانی کافی ندارد.";
   }
 
