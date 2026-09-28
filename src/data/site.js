@@ -14,12 +14,16 @@ export const site = {
   alternateName: "Fateh Music Academy",
   shortName: "فاتح",
   legalName: "آموزشگاه موسیقی فاتح",
-
+  entityName:
+  "Fateh Music Academy Shushtar",
+  entityType:
+  "Music Education Academy",
+  foundedPlace:
+  "Shushtar, Khuzestan, Iran",
 
   // URLs
   url: "https://fatehmusic.ir",
   canonical: "https://fatehmusic.ir",
-
 
   // Branding
   logo: "/images/logo.webp",
