@@ -73,7 +73,7 @@ export function resolveTopics({ title = "", keywords = [], path = "", explicit =
     const resolved = TOPICS
         .map((topic) => {
             const explicitMatch = explicitSet.has(topic.slug) || explicitSet.has(normalize(topic.name));
-            const matches = topic.aliases.filter((alias) => corpus.includes(normalize(alias)));
+            const matches = topic.aliases.filter((alias) => containsSemanticPhrase(corpus, alias));
             const score = explicitMatch ? 100 : matches.length ? Math.min(95, 35 + matches.length * 20) : 0;
             return {
                 ...topic,
