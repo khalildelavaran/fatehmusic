@@ -1,5 +1,5 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
-import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 
 export function currentScoringRows(rows = []) {
@@ -33,6 +33,10 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   // available to temporal analysis so historical ownership changes are not lost.
   const scoringRows = currentScoringRows(rows);
   const index = buildGscSignalIndex(scoringRows);
+  const queryOwnership = buildQueryOwnershipMap(scoringRows, {
+    minImpressions: Number(options.minOwnershipImpressions) > 0 ? Number(options.minOwnershipImpressions) : 1,
+    limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 50
+  });
   const conflicts = detectSearchCannibalization(scoringRows, options);
   const temporal = detectTemporalCannibalization(temporalAnalysisRows(rows), options);
   const conflictByPage = new Map();
@@ -94,6 +98,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     connected: scoringRows.length > 0,
     cannibalization: Object.freeze(conflicts),
     temporalCannibalization: Object.freeze(temporal),
+    queryOwnership: Object.freeze(queryOwnership),
     summary: Object.freeze({
       connected: scoringRows.length > 0,
       signalRows: scoringRows.length,
@@ -106,7 +111,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       linkCount: scored.filter((item) => item.action === "LINK").length,
       newContentCount: scored.filter((item) => item.action === "NEW_CONTENT").length,
       temporalCannibalizationCount: temporal.length,
-      temporalActionableCount: temporal.filter((item) => item.actionable).length
+      temporalActionableCount: temporal.filter((item) => item.actionable).length,
+      queryOwnershipCount: queryOwnership.length
     })
   });
 }
