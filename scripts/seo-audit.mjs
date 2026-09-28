@@ -12,7 +12,7 @@ function webPageEntityId(url) {
   parsed.search = "";
   parsed.hash = "";
   parsed.pathname = parsed.pathname.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
-  return parsed.origin + parsed.pathname + (parsed.pathname === "/" ? "/" : "") + "#webpage";
+  return parsed.origin + (parsed.pathname === "/" ? "/" : parsed.pathname) + "#webpage";
 }
 const PRIVATE_PREFIXES = ["/admin", "/student", "/instructor", "/dashboard", "/api"];
 const SKIP_ROUTES = new Set(["/404"]);
