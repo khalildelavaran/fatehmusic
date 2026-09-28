@@ -219,6 +219,22 @@ describe("opportunity scoring", () => {
     expect(result.scoreBreakdown.decisionTrace.evidenceQuality).toBe("STRONG");
   });
 
+
+  it("does not link on a weak ownership sample even when raw share is high", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      searchSignal: { available: false },
+      searchOwnership: {
+        available: true,
+        matchType: "EXACT",
+        ownerStatus: "STABLE",
+        impressions: 20,
+        topShare: 0.8,
+        ownerDominanceEvidence: "WEAK"
+      }
+    })).toBe("NEW_CONTENT");
+  });
+
 });
 
   it("does not force link action from related-only ownership", () => {
