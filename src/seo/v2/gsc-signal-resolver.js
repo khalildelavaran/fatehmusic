@@ -104,12 +104,22 @@ export function buildGscSignalIndex(rows = []) {
     }
     opportunities.push(Object.freeze({ ...item, brandNavigation: isBrandNavigationQuery(query), opportunitySignalScore: scoreRow(item) }));
   }
+  const semanticQueryClusters = buildSemanticQueryClusters(rows, { minImpressions: 1, limit: 5000 });
+  const queryClusterByQuery = new Map();
+  for (const cluster of semanticQueryClusters) {
+    for (const query of cluster.queries) {
+      queryClusterByQuery.set(query.query, cluster);
+    }
+  }
+
   return Object.freeze({
     byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
     byPageNonBrand: new Map([...nonBrandPageRows].map(([key, values]) => [key, aggregate(values)])),
     byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
     byQueryNonBrand: new Map([...nonBrandQueryRows].map(([key, values]) => [key, aggregate(values)])),
     queryTokenRows: new Map([...queryTokenRows].map(([key, values]) => [key, Object.freeze(values)])),
+    queryClusters: semanticQueryClusters,
+    queryClusterByQuery: Object.freeze(queryClusterByQuery),
     opportunities: Object.freeze(opportunities.sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore))
   });
 }
@@ -289,6 +299,91 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
   );
 }
 
+
+function queryClusterKey(query) {
+  return [...queryTokens(query)].sort().join(" ");
+}
+
+export function buildSemanticQueryClusters(rows = [], { minImpressions = 1, limit = 50 } = {}) {
+  const clusters = new Map();
+  const displayQueries = new Map();
+
+  for (const row of rows) {
+    const query = normalizeText(row?.query);
+    const page = normalizeUrl(row?.page);
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    if (!query || !page || impressions <= 0 || !isOwnershipEligibleQuery(query)) continue;
+
+    const key = queryClusterKey(query);
+    if (!key) continue;
+
+    const cluster = clusters.get(key) || {
+      key,
+      queries: new Map(),
+      pages: new Map()
+    };
+
+    cluster.queries.set(query, (cluster.queries.get(query) || 0) + impressions);
+    cluster.pages.set(page, (cluster.pages.get(page) || 0) + impressions);
+    clusters.set(key, cluster);
+
+    const display = displayQueries.get(query);
+    const raw = String(row?.query || "").trim();
+    if (!display || impressions > display.impressions) {
+      displayQueries.set(query, { value: raw || query, impressions });
+    }
+  }
+
+  const result = [];
+  for (const [key, cluster] of clusters.entries()) {
+    const impressions = [...cluster.queries.values()].reduce((sum, value) => sum + value, 0);
+    if (impressions < Math.max(1, Number(minImpressions) || 1)) continue;
+
+    const queries = [...cluster.queries.entries()]
+      .map(([normalizedQuery, queryImpressions]) => ({
+        query: normalizedQuery,
+        displayQuery: displayQueries.get(normalizedQuery)?.value || normalizedQuery,
+        impressions: queryImpressions
+      }))
+      .sort((a, b) => b.impressions - a.impressions || a.query.localeCompare(b.query, "fa"))
+      .slice(0, 12);
+
+    const pages = [...cluster.pages.entries()]
+      .map(([page, pageImpressions]) => ({
+        page,
+        impressions: pageImpressions,
+        share: impressions ? pageImpressions / impressions : 0
+      }))
+      .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
+      .slice(0, 8);
+
+    result.push(Object.freeze({
+      key,
+      queries: Object.freeze(queries),
+      queryCount: cluster.queries.size,
+      impressions,
+      pageCount: cluster.pages.size,
+      topPage: pages[0]?.page || null,
+      topShare: pages[0]?.share || 0,
+      ownerStatus: !pages.length
+        ? "NO_OWNER"
+        : impressions < 20
+          ? "EMERGING"
+          : (pages[0]?.share || 0) >= 0.7
+            ? "STABLE"
+            : "SPLIT",
+      signalQuality: querySignalQuality(impressions),
+      pages: Object.freeze(pages)
+    }));
+  }
+
+  return Object.freeze(
+    result
+      .sort((a, b) => b.impressions - a.impressions || a.key.localeCompare(b.key))
+      .slice(0, Math.max(1, Number(limit) || 50))
+  );
+}
+
 function classifySearchOpportunity(signal) {
   if (!signal?.available) return "CREATE_OR_MONITOR";
   const position = Number(signal.position);
@@ -311,6 +406,9 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       .slice(0, 10);
     const relevantQuerySignal = aggregate(querySignals);
     const ownership = buildQueryOwnership(querySignals, item);
+    const semanticQueryCluster = querySignals.length && index.queryClusterByQuery
+      ? index.queryClusterByQuery.get(normalizeText(querySignals[0]?.query)) || null
+      : null;
     const candidates = [relevantQuerySignal, ...pageSignals];
     const best = candidates.find((signal) => signal?.available) || {
       available: false,
@@ -331,6 +429,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       ...(recommendedLinks ? { recommendedLinks: Object.freeze(recommendedLinks.slice(0, 8)) } : {}),
       searchSignal: best,
       searchOwnership: ownership,
+      semanticQueryCluster,
       searchSignalSource: best.available ? "google-search-console" : "none",
       searchAction: classifySearchOpportunity(best)
     });
