@@ -156,7 +156,6 @@ describe("buildSEOIntelligence", () => {
     expect(result.summary.searchBackedCount).toBe(0);
     expect(result.gsc.temporalCannibalization).toEqual([]);
   });
-});
 
 
   it("feeds Ahrefs market data into the core opportunity score", () => {
