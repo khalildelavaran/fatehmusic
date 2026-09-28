@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
 
 describe("GSC signal resolver", () => {
   const rows = [
@@ -337,5 +337,34 @@ describe("Persian query normalization", () => {
     ]);
 
     expect(index.byQuery.get("اموزش ضرب و تمپو").impressions).toBe(10);
+  });
+});
+
+
+describe("GSC query ownership map", () => {
+  it("builds page shares for substantive non-brand queries", () => {
+    const map = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 20 },
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/", impressions: 1000 }
+    ]);
+
+    expect(map).toHaveLength(1);
+    expect(map[0].query).toBe("اموزش گیتار");
+    expect(map[0].impressions).toBe(100);
+    expect(map[0].topPage).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(map[0].topShare).toBe(0.8);
+    expect(map[0].pageCount).toBe(2);
+  });
+
+  it("does not create ownership rows from generic or one-word queries", () => {
+    const map = buildQueryOwnershipMap([
+      { query: "آموزش", page: "https://fatehmusic.ir/", impressions: 100 },
+      { query: "گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 100 },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 10 }
+    ]);
+
+    expect(map).toHaveLength(1);
+    expect(map[0].query).toBe("کلاس گیتار");
   });
 });
