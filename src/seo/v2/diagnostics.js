@@ -33,7 +33,10 @@ const CHECK_MAX_POINTS = Object.freeze({
   "web-vitals-cls": 5,
   topics: 5,
   intent: 5,
-  freshness: 5
+  freshness: 5,
+  "answer-blocks": 5,
+  "answer-sources": 5,
+  "entity-graph": 5
 });
 
 const CATEGORY_RULES = Object.freeze({
@@ -46,11 +49,8 @@ const CATEGORY_RULES = Object.freeze({
   aiReadiness: new Set(["schema", "topics", "intent", "content-depth", "answer-blocks", "answer-sources", "entity-graph"])
 });
 
-function categoryForCheck(id) {
-  for (const category of CATEGORIES) {
-    if (CATEGORY_RULES[category].has(id)) return category;
-  }
-  return null;
+function categoriesForCheck(id) {
+  return CATEGORIES.filter((category) => CATEGORY_RULES[category].has(id));
 }
 
 function normalizeAudit(audit) {
@@ -82,19 +82,26 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
 
   for (const audit of normalizedAudits) {
     for (const check of audit.checks) {
-      const category = categoryForCheck(check.id);
-      if (!category) continue;
-      const bucket = categoryBuckets.get(category);
-      bucket.checks += 1;
-      bucket.covered += 1;
+      const categoriesForEvidence = categoriesForCheck(check.id);
+      if (!categoriesForEvidence.length) continue;
+
       const maxPoints = CHECK_MAX_POINTS[check.id] || Math.max(0, Number(check.points) || 0);
-      bucket.earnedPoints += Math.max(0, Number(check.points) || 0);
-      bucket.possiblePoints += maxPoints;
-      if (check.status === "fail") bucket.errors += 1;
-      if (check.status === "warn") bucket.warnings += 1;
+      const earnedPoints = Math.max(0, Number(check.points) || 0);
+
+      for (const category of categoriesForEvidence) {
+        const bucket = categoryBuckets.get(category);
+        bucket.checks += 1;
+        bucket.covered += 1;
+        bucket.earnedPoints += earnedPoints;
+        bucket.possiblePoints += maxPoints;
+        if (check.status === "fail") bucket.errors += 1;
+        if (check.status === "warn") bucket.warnings += 1;
+      }
+
       if (check.status !== "pass") {
         issues.push(Object.freeze({
-          category,
+          category: categoriesForEvidence[0],
+          categories: Object.freeze(categoriesForEvidence),
           severity: check.status === "fail" ? "ERROR" : "WARNING",
           id: check.id,
           message: check.label,
@@ -204,7 +211,10 @@ function recommendationForCheck(id) {
     "image-alt": "Add descriptive alt text to every meaningful image.",
     "image-alt-quality": "Replace generic alt text with descriptive context.",
     "image-dimensions": "Provide explicit image dimensions to reduce layout shift.",
-    "hero-image-priority": "Prioritize the primary visual asset for loading."
+    "hero-image-priority": "Prioritize the primary visual asset for loading.",
+    "answer-blocks": "Add concise answer blocks that directly resolve the page's intent.",
+    "answer-sources": "Attach source references to answer blocks where factual support is expected.",
+    "entity-graph": "Connect the page to canonical entities and meaningful semantic relationships."
   };
   return recommendations[id] || "Review and correct this diagnostic finding.";
 }
