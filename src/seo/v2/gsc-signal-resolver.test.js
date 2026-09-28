@@ -160,6 +160,16 @@ describe("GSC signal resolver", () => {
   });
 
 
+  it("excludes brand-navigation rows from query reporting signals", () => {
+    const index = buildGscSignalIndex([
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/about", clicks: 0, impressions: 1000, ctr: 0, position: 4 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 2, impressions: 20, ctr: 0.1, position: 5 }
+    ]);
+    expect(index.byQuery.has("fatehmusic.ir")).toBe(true);
+    expect(index.byQueryNonBrand.has("fatehmusic.ir")).toBe(false);
+    expect(index.byQueryNonBrand.get("آموزش گیتار").impressions).toBe(20);
+  });
+
   it("excludes brand-navigation rows from page-level scoring signals", () => {
     const index = buildGscSignalIndex([
       { query: "fatehmusic.ir", page: "https://fatehmusic.ir/about", clicks: 0, impressions: 1000, ctr: 0, position: 4 },
