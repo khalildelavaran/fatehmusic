@@ -46,8 +46,15 @@ export async function getLatestGscSyncRun(db, siteUrl = DEFAULT_SITE_URL) {
 
 export async function getGscPagePerformance(db, siteUrl = DEFAULT_SITE_URL, { days = 60, limit = 50 } = {}) {
   const rows = await getRecentSearchConsoleRows(db, siteUrl, { days, maxRows: 100000 });
+  const labeled = rows.filter((row) => {
+    const label = String(row.snapshotLabel || "");
+    return label === "current" || label === "previous";
+  });
+  const currentRows = labeled.some((row) => row.snapshotLabel === "current")
+    ? labeled.filter((row) => row.snapshotLabel === "current")
+    : rows;
   const map = new Map();
-  for (const row of rows) {
+  for (const row of currentRows) {
     if (!row.page) continue;
     const current = map.get(row.page) || { page: row.page, clicks: 0, impressions: 0, weightedPosition: 0 };
     current.clicks += row.clicks;
