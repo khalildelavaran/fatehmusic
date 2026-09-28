@@ -33,10 +33,10 @@ function semanticTopicSimilarity(left = [], right = []) {
     return shared / new Set([...a, ...b]).size;
 }
 
-export function buildInternalLinkPlan({ currentUrl = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, limit = 6 } = {}) {
+export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, limit = 6 } = {}) {
     const currentTopicSet = normalizedTopicSet(currentTopics);
-    const currentTitle = (candidates || []).find((candidate) => normalizeUrl(candidate?.url) === normalizeUrl(currentUrl))?.title || "";
-    const currentContext = [currentTitle, ...(currentTopics || [])].filter(Boolean).join(" ");
+    const resolvedCurrentTitle = currentTitle || (candidates || []).find((candidate) => normalizeUrl(candidate?.url) === normalizeUrl(currentUrl))?.title || "";
+    const currentContext = [resolvedCurrentTitle, ...(currentTopics || [])].filter(Boolean).join(" ");
     return (candidates || [])
         .filter((candidate) => candidate?.url && normalizeUrl(candidate.url) !== normalizeUrl(currentUrl))
         .map((candidate) => {
@@ -52,18 +52,31 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTopics = [], cur
 
             const relationEvidence = findRelationEvidence(currentUrl, candidate.url, semanticGraph);
             score += relationEvidence.score;
+            const reasonCodes = [];
+            if (sharedTopics.length) reasonCodes.push("SHARED_TOPIC");
+            if (topicalSimilarity >= 0.35) reasonCodes.push("SEMANTIC_SIMILARITY");
+            if (relationEvidence.score > 0) reasonCodes.push("ENTITY_RELATION");
+            if (
+                (currentType === "Course" && candidate.type === "Instructor") ||
+                (currentType === "Instructor" && candidate.type === "Course") ||
+                (currentType === "Article" && candidate.type === "Course") ||
+                (currentType === "Course" && candidate.type === "Article")
+            ) reasonCodes.push("ENTITY_COMPLEMENT");
             if (candidate.local) score += 8;
             if (currentType === "Course" && candidate.type === "Instructor") score += 22;
             if (currentType === "Instructor" && candidate.type === "Course") score += 22;
             if (currentType === "Course" && candidate.type === "Article") score += 14;
             if (currentType === "Article" && candidate.type === "Course") score += 18;
             if (candidate.type === "Course") score += 5;
+            const anchorHints = buildAnchorHints(candidate, sharedTopics, relationEvidence.relations);
             return {
                 ...candidate,
                 score,
                 sharedTopics,
                 topicalSimilarity: Number(topicalSimilarity.toFixed(3)),
-                relationEvidence: relationEvidence.relations
+                relationEvidence: relationEvidence.relations,
+                reasonCodes: Object.freeze([...new Set(reasonCodes)]),
+                anchorHints: Object.freeze(anchorHints)
             };
         })
         .sort((a, b) => b.score - a.score || String(a.title).localeCompare(String(b.title), "fa"))
@@ -206,11 +219,27 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, ma
         links: (selectedBySource.get(normalizeUrl(page.url)) || [])
             .sort((a, b) => b.finalScore - a.finalScore || String(a.title).localeCompare(String(b.title), "fa"))
             .slice(0, normalizedLimit)
-            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics }) => ({
-                url, title, type, score, finalScore, topicalSimilarity, relationEvidence,
+            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics }) => ({
+                url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints,
                 inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics
             }))
     }));
+}
+
+function buildAnchorHints(candidate, sharedTopics = [], relations = []) {
+    const hints = [];
+    if (candidate?.title) hints.push(String(candidate.title).trim());
+    for (const topic of sharedTopics || []) {
+        if (topic) hints.push(String(topic).trim());
+    }
+    for (const relation of relations || []) {
+        const relationText = String(relation || "").replace(/^reverse:/, "").replace(/^path:/, "").trim();
+        if (relationText === "teaches") hints.push("مدرس دوره");
+        else if (relationText === "about") hints.push("راهنمای مرتبط");
+        else if (relationText === "provider") hints.push("دوره آموزشگاه");
+        else if (relationText === "location") hints.push("کلاس در شوشتر");
+    }
+    return [...new Set(hints.filter(Boolean))].slice(0, 4);
 }
 
 function normalizeUrl(value) {
