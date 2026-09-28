@@ -284,14 +284,24 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
   }
 
   const currentResult = windows.find((item) => item.label === "current");
-  if (currentResult?.status === "success") {
+  const previousResult = windows.find((item) => item.label === "previous");
+  if (currentResult?.status === "success" || previousResult?.status === "success") {
     try {
       const { syncPublishedSeoActionMeasurements } = await import("../seo-action-store.js");
-      await syncPublishedSeoActionMeasurements(env.DB, {
-        siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
-        windowStart: currentStart,
-        windowEnd: currentEnd
-      });
+      if (currentResult?.status === "success") {
+        await syncPublishedSeoActionMeasurements(env.DB, {
+          siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
+          windowStart: currentStart,
+          windowEnd: currentEnd
+        });
+      }
+      if (previousResult?.status === "success") {
+        await syncPublishedSeoActionMeasurements(env.DB, {
+          siteUrl: normalizeSiteUrl(env.GSC_SITE_URL),
+          windowStart: previousStart,
+          windowEnd: previousEnd
+        });
+      }
     } catch (error) {
       console.error("GSC action measurement sync failed:", error);
     }
