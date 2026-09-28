@@ -1,0 +1,77 @@
+---
+interface AnswerBlock {
+  question: string;
+  answer: string;
+  sourceUrl?: string;
+  entityId?: string;
+  priority?: number;
+}
+
+interface Props {
+  blocks?: AnswerBlock[];
+}
+
+const { blocks = [] } = Astro.props as Props;
+const visibleBlocks = [...blocks]
+  .filter((item) => item?.question && item?.answer)
+  .sort((a, b) => Number(a.priority ?? 0) - Number(b.priority ?? 0))
+  .slice(0, 2);
+---
+
+{visibleBlocks.length > 0 && (
+  <section class="seo-answer-summary" aria-labelledby="seo-answer-summary-title">
+    <div class="container">
+      <div class="seo-answer-summary__inner">
+        <span class="seo-answer-summary__badge">پاسخ سریع</span>
+        <h2 id="seo-answer-summary-title">پاسخ کوتاه به پرسش‌های مهم</h2>
+        {visibleBlocks.map((block) => (
+          <article class="seo-answer-summary__item">
+            <h3>{block.question}</h3>
+            <p>{block.answer}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  .seo-answer-summary {
+    padding: 18px 0 8px;
+  }
+
+  .seo-answer-summary__inner {
+    border: 1px solid rgba(212, 175, 55, 0.22);
+    border-radius: 18px;
+    padding: 20px 22px;
+    background: rgba(15, 23, 42, 0.42);
+  }
+
+  .seo-answer-summary__badge {
+    display: inline-block;
+    margin-bottom: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .seo-answer-summary h2 {
+    margin: 0 0 14px;
+    font-size: 1.2rem;
+  }
+
+  .seo-answer-summary__item + .seo-answer-summary__item {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .seo-answer-summary h3 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+  }
+
+  .seo-answer-summary p {
+    margin: 0;
+    line-height: 1.9;
+  }
+</style>
