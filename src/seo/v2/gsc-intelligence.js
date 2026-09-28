@@ -185,7 +185,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       semanticCannibalizationActionableCount: semanticConflicts.filter((item) => item.actionable).length,
       queryOwnershipCount: queryOwnership.length,
       queryClusterCount: index.queryClusters?.length || 0,
-      gscCompleteness: gscDataQuality.completeness,
+      gscCompleteness: gscDataQuality.completeness == null ? 0 : gscDataQuality.completeness,
       gscFreshness: gscDataQuality.freshness,
       gscAgeDays: gscDataQuality.ageDays,
       marketFreshness: marketDataQuality.freshness,
