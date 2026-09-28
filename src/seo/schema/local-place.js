@@ -1,27 +1,39 @@
-/** Fateh Music Academy — local entity schema. */
-import { SCHEMA_TYPES } from "../config/constants.js";
+/** Fateh Music Academy — canonical local business entity schema. */
 import { absoluteUrl } from "../helpers/url.js";
 
+/**
+ * The Shushtar location is modeled as the concrete local business entity.
+ * Keep this node synchronized with the visible location/contact details.
+ */
 export function buildLocalPlaceSchema(site) {
-  const url = absoluteUrl("/locations/shushtar", site.url);
+  const url = absoluteUrl("/locations/shushtar", site.url).replace(/\/$/, "");
+
   return {
-    "@type": SCHEMA_TYPES.PLACE,
-    "@id": `${url}#place`,
+    "@type": "LocalBusiness",
+    "@id": url + "#localbusiness",
     name: "آموزشگاه موسیقی فاتح شوشتر",
     url,
-    description: "اطلاعات محلی درباره آموزش موسیقی و آموزشگاه موسیقی فاتح در شوشتر، خوزستان.",
+    description: "آموزشگاه موسیقی فاتح در شوشتر؛ ارائه دوره‌های آموزش ساز، آواز و دروس پایه موسیقی.",
+    image: site.image,
+    logo: { "@type": "ImageObject", url: site.logo },
+    telephone: site.telephone,
+    email: site.email,
+    priceRange: site.priceRange,
     address: {
-      "@type": SCHEMA_TYPES.POSTAL_ADDRESS,
+      "@type": "PostalAddress",
       ...site.address,
-      addressCountry: site.address.addressCountry || "IR"
+      addressCountry: site.address?.addressCountry || "IR"
     },
     geo: {
-      "@type": SCHEMA_TYPES.GEO_COORDINATES,
+      "@type": "GeoCoordinates",
       latitude: site.geo.latitude,
       longitude: site.geo.longitude
     },
     hasMap: site.mapUrl,
-    containedInPlace: { "@id": `${site.url}/#organization` },
-    mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
+    openingHoursSpecification: site.openingHoursSpecification,
+    sameAs: site.sameAs,
+    areaServed: site.areaServed,
+    parentOrganization: { "@id": site.url + "/#organization" },
+    mainEntityOfPage: { "@id": url + "#webpage" }
   };
 }
