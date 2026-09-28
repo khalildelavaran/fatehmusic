@@ -40,18 +40,21 @@ function aggregate(rows = []) {
   const total = rows.reduce((acc, row) => {
     const impressions = Math.max(0, Number(row.impressions) || 0);
     const clicks = Math.max(0, Number(row.clicks) || 0);
-    return {
-      clicks: acc.clicks + clicks,
-      impressions: acc.impressions + impressions,
-      weightedPosition: acc.weightedPosition + impressions * Math.max(0, Number(row.position) || 0)
-    };
-  }, { clicks: 0, impressions: 0, weightedPosition: 0 });
+    const position = Number(row.position);
+    if (impressions > 0 && Number.isFinite(position) && position > 0) {
+      acc.weightedPosition += impressions * position;
+      acc.positionImpressions += impressions;
+    }
+    acc.clicks += clicks;
+    acc.impressions += impressions;
+    return acc;
+  }, { clicks: 0, impressions: 0, weightedPosition: 0, positionImpressions: 0 });
   return {
     available: total.impressions > 0 || total.clicks > 0,
     impressions: total.impressions,
     clicks: total.clicks,
     ctr: total.impressions ? total.clicks / total.impressions : 0,
-    position: total.impressions ? total.weightedPosition / total.impressions : null,
+    position: total.positionImpressions ? total.weightedPosition / total.positionImpressions : null,
     source: "google-search-console"
   };
 }
