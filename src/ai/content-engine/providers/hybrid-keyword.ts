@@ -1,17 +1,11 @@
 import type { KeywordProvider, KeywordSignal } from "./keyword-provider";
 import { D1SearchConsoleKeywordProvider } from "./gsc-keyword";
 import { getCachedAhrefsKeywordSignals, syncAhrefsKeywordSignals, getAhrefsConfig } from "../../../seo/v2/providers/ahrefs.js";
+import { normalizeSemanticText } from "../../../seo/helpers/text.js";
 
 function cacheKey(value: string): string {
-  return String(value || "")
-    .normalize("NFKC")
-    .replace(/[يى]/g, "ی")
-    .replace(/[ك]/g, "ک")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLocaleLowerCase("fa");
+  return normalizeSemanticText(value);
 }
-
 function signalValue(signal: KeywordSignal | undefined): number {
   const volume = Number(signal?.estimatedVolume);
   const difficulty = Number(signal?.difficulty);
