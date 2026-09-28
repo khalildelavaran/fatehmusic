@@ -30,10 +30,25 @@ export function temporalAnalysisRows(rows = []) {
 
 /** Enrich the unified content queue with real GSC signals when available. */
 export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
+  const currentRows = currentScoringRows(rows);
+  const ageDays = resolveAgeDays(options.gscDataQuality?.finishedAt);
+  const freshness = ageDays == null
+    ? "UNKNOWN"
+    : ageDays <= 4
+      ? "FRESH"
+      : ageDays <= 8
+        ? "AGING"
+        : "STALE";
+  const completeness = options.gscDataQuality?.truncated
+    ? 0.7
+    : (currentRows.length ? 1 : 0);
+
   const gscDataQuality = Object.freeze({
     truncated: Boolean(options.gscDataQuality?.truncated),
-    rows: currentScoringRows(rows).length,
-    completeness: options.gscDataQuality?.truncated ? 0.7 : (currentScoringRows(rows).length ? 1 : 0)
+    rows: currentRows.length,
+    completeness,
+    ageDays,
+    freshness
   });
 
   // Scoring uses only the current snapshot. The previous snapshot remains
@@ -126,7 +141,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       temporalCannibalizationCount: temporal.length,
       temporalActionableCount: temporal.filter((item) => item.actionable).length,
       queryOwnershipCount: queryOwnership.length,
-      gscCompleteness: gscDataQuality.completeness
+      gscCompleteness: gscDataQuality.completeness,
+      gscFreshness: gscDataQuality.freshness,
+      gscAgeDays: gscDataQuality.ageDays
     })
   });
 }
@@ -202,4 +219,12 @@ function resolveMarketSignal(item, signals) {
     matchType: "SEMANTIC",
     semanticSimilarity: Number(best.similarity.toFixed(3))
   });
+}
+
+
+function resolveAgeDays(value) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 86400000));
 }
