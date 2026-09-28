@@ -3,7 +3,7 @@ import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from ".
 
 describe("canonical semantic text layer", () => {
   it("normalizes Persian spelling variants consistently", () => {
-    expect(normalizeSemanticText("آموزشِ گيتار‌ در شوشتر")).toBe("آموزشِ گیتار در شوشتر");
+    expect(normalizeSemanticText("آموزشِ گيتار‌ در شوشتر")).toBe("آموزش گیتار در شوشتر");
   });
 
   it("preserves token boundaries for phrase matching", () => {
@@ -25,6 +25,11 @@ describe("canonical semantic text layer", () => {
     expect(semanticTokens("سازهای ایرانی و گیتارها")).toEqual(["ساز", "ایرانی", "و", "گیتار"]);
     expect(containsSemanticPhrase("کلاس سازهای ایرانی", "ساز ایرانی")).toBe(true);
     expect(containsSemanticPhrase("تاریکی و تاریخ", "تار")).toBe(false);
+  });
+
+
+  it("normalizes Persian diacritics consistently", () => {
+    expect(normalizeSemanticText("موسیقیِ ایرانی")).toBe("موسیقی ایرانی");
   });
 
 });
