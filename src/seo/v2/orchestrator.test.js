@@ -131,6 +131,34 @@ describe("buildSEOIntelligence", () => {
     expect(result.links.graph.some((node) => node.url === "https://fatehmusic.ir/blog/guitar-guide")).toBe(true);
   });
 
+  it("propagates market freshness into the final opportunity guard", () => {
+    const result = buildSEOIntelligence({
+      courses: [{ slug: "guitar", title: "آموزش گیتار", instrument: "guitar" }],
+      topicCandidates: [{
+        title: "آموزش گیتار",
+        intent: "commercial",
+        modifierType: "course",
+        relatedCourseSlug: "guitar",
+        scoreTotal: 80
+      }],
+      marketSignals: [{
+        keyword: "آموزش گیتار",
+        available: true,
+        estimatedVolume: 500,
+        difficulty: 20
+      }],
+      marketDataQuality: {
+        fetchedAt: "2026-08-01T00:00:00.000Z"
+      },
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.summary.marketFreshness).toBe("STALE");
+    expect(result.opportunities[0].marketDataQuality.freshness).toBe("STALE");
+    expect(result.opportunities[0].scoreBreakdown.decisionGuard.reasons).toContain("MARKET_STALE");
+  });
+
   it("exposes temporal ownership changes", () => {
     const result = buildSEOIntelligence({
       posts: [],
