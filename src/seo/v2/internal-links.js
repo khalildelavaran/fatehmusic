@@ -1,3 +1,5 @@
+import { findRelatedEntities } from "./knowledge-graph.js";
+
 /**
  * --------------------------------------------------------
  * Fateh Music Academy — SEO/GEO Engine v2
@@ -66,15 +68,10 @@ function findRelationEvidence(currentUrl, candidateUrl, semanticGraph) {
     const candidate = semanticGraph.nodes.find((node) => normalizeUrl(node.url) === normalizeUrl(candidateUrl));
     if (!current?.id || !candidate?.id) return { score: 0, relations: [] };
 
-    const direct = semanticGraph.edges.filter(
-        (edge) => edge.from === current.id && edge.to === candidate.id
-    );
-    const reverse = semanticGraph.edges.filter(
-        (edge) => edge.from === candidate.id && edge.to === current.id
-    );
+    const related = findRelatedEntities(semanticGraph, current.id, { direction: "both", limit: 100 })
+      .filter((item) => item.entity?.id === candidate.id);
 
-    const relations = [...direct.map((edge) => edge.relation), ...reverse.map((edge) => "reverse:" + edge.relation)];
-    if (!relations.length) return { score: 0, relations: [] };
+    if (!related.length) return { score: 0, relations: [] };
 
     const weights = {
         teaches: 45,
@@ -85,12 +82,10 @@ function findRelationEvidence(currentUrl, candidateUrl, semanticGraph) {
         publisher: 12
     };
 
-    const score = Math.max(
-        ...[...direct, ...reverse].map((edge) => weights[edge.relation] || 10)
-    );
-
     return {
-        score,
-        relations: [...new Set(relations)]
+        score: Math.max(...related.map((item) => (weights[item.relation] || 10) * Math.max(0.5, item.confidence))),
+        relations: [...new Set(related.map((item) =>
+          item.direction === "out" ? item.relation : "reverse:" + item.relation
+        ))]
     };
 }
