@@ -10,6 +10,9 @@ function normalizeText(value) {
     .replace(/[\u200c\u200f\u200e]/g, "")
     .replace(/[يى]/g, "ی")
     .replace(/[ك]/g, "ک")
+    .replace(/[أإٱ]/g, "ا")
+    .replace(/[ۀة]/g, "ه")
+    .replace(/ـ/g, "")
     .trim()
     .toLowerCase();
 }
