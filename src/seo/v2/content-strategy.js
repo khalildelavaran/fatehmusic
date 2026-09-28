@@ -93,8 +93,21 @@ function canonicalSlug(topic, isLocal = false, course = null) {
 }
 function canonicalContentAngle(item) { if (item.modifierType === "local_shushtar" || item.scope === "shushtar") return "local_shushtar"; return item.modifierType || "coverage"; }
 function canonicalAssetKey(item) {
-  const topic = findTopic(item.topic); const local = Boolean(item.scope === "shushtar" || item.modifierType === "local_shushtar" || item.searchIntent === "local" || item.isLocal || isShushtarTopic(topic)); const courseKey = item.course?.slug || item.courseSlug || "general"; const audience = normalize(item.audience || ""); const level = normalize(item.level || "");
-  return [topic?.slug || item.topic, canonicalScope(topic, local), courseKey, canonicalContentAngle({ ...item, scope: local ? "shushtar" : item.scope }), audience, level].join("|");
+  const topic = findTopic(item.topic);
+  const local = Boolean(item.scope === "shushtar" || item.modifierType === "local_shushtar" || item.searchIntent === "local" || item.isLocal || isShushtarTopic(topic));
+  const audience = normalize(item.audience || "");
+  const level = normalize(item.level || "");
+  const angle = canonicalContentAngle({ ...item, scope: local ? "shushtar" : item.scope });
+
+  // Comparison articles are multi-course assets. Their identity must include
+  // the actual comparison title, otherwise every comparison with the same
+  // audience/level collapses into one queue item.
+  if (item.modifierType === "comparison" || angle === "comparison") {
+    return ["comparison-v1", normalize(item.title), audience, level].join("|");
+  }
+
+  const courseKey = item.course?.slug || item.courseSlug || "general";
+  return [topic?.slug || item.topic, canonicalScope(topic, local), courseKey, angle, audience, level].join("|");
 }
 export function areIntentsCompatible(a, b) { return Boolean(COMPATIBLE_INTENTS[a]?.has(b) && COMPATIBLE_INTENTS[b]?.has(a)); }
 function choosePrimaryIntent(intents = []) { return [...new Set(intents)].sort((a, b) => (INTENT_PRIORITY[b] ?? 0) - (INTENT_PRIORITY[a] ?? 0))[0] || "informational"; }
