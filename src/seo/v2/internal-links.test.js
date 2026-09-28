@@ -40,6 +40,22 @@ describe("semantic internal links", () => {
     expect(guitar.score).toBeGreaterThan(piano.score);
   });
 
+  it("returns concise anchor hints and explainable link reasons", () => {
+    const result = buildInternalLinkPlan({
+      currentUrl: pages[0].url,
+      currentTitle: pages[0].title,
+      currentTopics: pages[0].topics,
+      currentType: pages[0].type,
+      candidates: pages
+    });
+    const guitar = result.find((item) => item.url.endsWith("/guitar-course"));
+
+    expect(guitar.reasonCodes).toEqual(expect.arrayContaining(["SHARED_TOPIC", "SEMANTIC_SIMILARITY"]));
+    expect(guitar.anchorHints.length).toBeGreaterThan(0);
+    expect(guitar.anchorHints.length).toBeLessThanOrEqual(4);
+    expect(new Set(guitar.anchorHints).size).toBe(guitar.anchorHints.length);
+  });
+
   it("surfaces inbound saturation and orphan-target boosts", () => {
     const graph = buildLinkGraph(pages, { limit: 2, maxInboundLinks: 1 });
     for (const page of graph) {
