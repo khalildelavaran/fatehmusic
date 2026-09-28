@@ -258,8 +258,8 @@ function validateGeneratedArticle(
 
   const absoluteInternalUrls = rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || [];
   const relativeMarkdownUrls = [...rawContent.matchAll(/\]\((\/(?!\/)[^\s)]+)\)/g)].map((match) => match[1]);
-  const relativeHtmlUrls = [...rawContent.matchAll(/<a\\s+[^>]*href=["'](\\/(?!\/)[^"']+)["'][^>]*>/gi)].map((match) => match[1]);
-  const absoluteHtmlUrls = [...rawContent.matchAll(/<a\\s+[^>]*href=["'](https?:\\/\\/(?:www\\.)?fatehmusic\\.ir[^"']+)["'][^>]*>/gi)].map((match) => match[1]);
+  const relativeHtmlUrls = [...rawContent.matchAll(/<a\s+[^>]*href=["'](\/(?!\/)[^"']+)["'][^>]*>/gi)].map((match) => match[1]);
+  const absoluteHtmlUrls = [...rawContent.matchAll(/<a\s+[^>]*href=["'](https?:\/\/(?:www\.)?fatehmusic\.ir[^"']+)["'][^>]*>/gi)].map((match) => match[1]);
   const internalUrls = [...new Set([
     ...absoluteInternalUrls,
     ...relativeMarkdownUrls,
