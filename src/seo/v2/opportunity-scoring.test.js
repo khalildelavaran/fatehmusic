@@ -257,6 +257,46 @@ describe("opportunity scoring", () => {
   });
 
 
+  it("traces GSC query intent agreement and conflict", () => {
+    const aligned = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "transactional",
+      priority: 70,
+      searchSignal: {
+        available: true,
+        impressions: 100,
+        position: 7,
+        ctr: 0.04,
+        queryIntentEvidence: {
+          primary: "transactional",
+          primaryShare: 1,
+          confidence: 0.99,
+          queryCount: 1
+        }
+      }
+    });
+    const conflicting = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "informational",
+      priority: 70,
+      searchSignal: {
+        available: true,
+        impressions: 100,
+        position: 7,
+        ctr: 0.04,
+        queryIntentEvidence: {
+          primary: "transactional",
+          primaryShare: 1,
+          confidence: 0.99,
+          queryCount: 1
+        }
+      }
+    });
+
+    expect(aligned.scoreBreakdown.decisionTrace.reasonCodes).toContain("GSC_QUERY_INTENT_AGREEMENT");
+    expect(conflicting.scoreBreakdown.decisionTrace.reasonCodes).toContain("GSC_QUERY_INTENT_CONFLICT");
+  });
+
   it("exposes an auditable decision trace for the final action", () => {
     const result = scoreOpportunity({
       action: "NEW_CONTENT",
