@@ -46,6 +46,19 @@ describe("opportunity scoring", () => {
     expect(temporal.scoreBreakdown.temporalBonus).toBe(10);
   });
 
+  it("redirects a new-content opportunity to link reinforcement when GSC already has a dominant owner", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      searchSignal: { available: false },
+      searchOwnership: {
+        available: true,
+        impressions: 120,
+        topPage: "https://fatehmusic.ir/courses/guitar-course",
+        topShare: 100 / 120
+      }
+    })).toBe("LINK");
+  });
+
   it("keeps new-content opportunities when no search signal exists", () => {
     expect(classifyOpportunityAction({ action: "NEW_CONTENT", searchSignal: { available: false } })).toBe("NEW_CONTENT");
   });
