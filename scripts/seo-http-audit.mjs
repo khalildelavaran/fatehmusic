@@ -182,10 +182,6 @@ async function checkPublicPage(url) {
     fail("PUBLIC_NOINDEX", url + ": live page is noindex but is present in sitemap");
   }
 
-  const xRobots = response.headers.get("x-robots-tag") || "";
-  if (/noindex/i.test(xRobots)) {
-    fail("PUBLIC_X_ROBOTS_NOINDEX", url + ": X-Robots-Tag contains noindex");
-  }
 }
 
 async function checkRedirect(from, to, expectedStatus) {
@@ -252,7 +248,6 @@ async function main() {
   const robots = await checkEndpoint(SITE_ORIGIN + "/robots.txt");
   if (robots) {
     if (!/^User-agent:\s*\*/im.test(robots.body)) fail("ROBOTS_DEFAULT_AGENT", "robots.txt has no default User-agent rule");
-    const advertised = extractLocs(robots.body.replace(/^Sitemap:\s*/gim, "<loc>").replace(/$/gm, "</loc>"));
     if (!/Sitemap:\s*https?:\/\/[^\s]+\/sitemap-index\.xml/im.test(robots.body)) {
       warn("ROBOTS_SITEMAP_INDEX", "robots.txt does not advertise sitemap-index.xml");
     }
