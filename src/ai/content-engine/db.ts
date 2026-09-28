@@ -277,7 +277,7 @@ export async function markTopicDrafted(db: D1Database, id: number, postId: numbe
 
 export async function markTopicPublished(db: D1Database, postId: number): Promise<number> {
   const result = await db
-    .prepare("UPDATE content_topics SET status='used', used_at=COALESCE(used_at, datetime('now')), updated_at=datetime('now') WHERE used_by_post_id=? AND status='drafted'")
+    .prepare("UPDATE content_topics SET status='used', used_at=datetime('now'), updated_at=datetime('now') WHERE used_by_post_id=? AND status='drafted'")
     .bind(postId)
     .run();
   return Number(result.meta?.changes || 0);
