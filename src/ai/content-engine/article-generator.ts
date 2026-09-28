@@ -269,7 +269,7 @@ function validateGeneratedArticle(
   }
 
   const internalUrls = [...new Set(
-    rawContent.match(/https?:\\/\\/(?:www\\.)?fatehmusic\\.ir[^\\s)<>"]+/gi) || []
+    rawContent.match(/https?:\/\/(?:www\.)?fatehmusic\.ir[^\s)<>"]+/gi) || []
   )].map((url) => url.replace(/[.,،؛:]+$/u, ""));
   for (const url of internalUrls) {
     const canonicalInternalUrl = url.replace(/^http:\\//i, "https://").replace("https://www.fatehmusic.ir", "https://fatehmusic.ir");
