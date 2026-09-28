@@ -271,6 +271,18 @@ describe("opportunity scoring", () => {
     expect(withAgreement.decisionConfidence).toBeGreaterThan(withoutAgreement.decisionConfidence);
   });
 
+
+  it("exposes evidence strength as a non-probabilistic score", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 70,
+      searchSignal: { available: true, impressions: 100, position: 8, ctr: 0.02 }
+    });
+
+    expect(result.evidenceStrengthScore).toBe(result.decisionConfidence);
+    expect(result.scoreBreakdown.evidenceStrengthScore).toBe(result.decisionConfidence);
+  });
+
 });
 
   it("does not force link action from related-only ownership", () => {
