@@ -183,7 +183,7 @@ function evidenceStrength(item = {}) {
   });
 }
 
-function marketSignalScore(signal = {}) {
+function marketSignalScore(signal = {}, item = {}) {
   if (!signal?.available) return null;
 
   const volume = Math.max(0, Number(signal.estimatedVolume) || 0);
@@ -211,7 +211,7 @@ function marketSignalScore(signal = {}) {
   const ageDays = Number(signal.dataAgeDays ?? signal.ageDays);
   const freshness = String(
     signal.dataFreshness ||
-    arguments?.[0]?.marketDataQuality?.freshness ||
+    item.marketDataQuality?.freshness ||
     ""
   ).toUpperCase();
   if (freshness === "STALE" || (Number.isFinite(ageDays) && ageDays > 16)) {
@@ -376,7 +376,7 @@ function buildDecisionTrace(item, action, evidence) {
 export function scoreOpportunity(item = {}) {
   const base = clamp(item.priority);
   const signal = searchSignalScore(item.searchSignal);
-  const market = marketSignalScore(item.marketSignal);
+  const market = marketSignalScore(item.marketSignal, item);
   const competitionPenalty = item.cannibalization?.severity === "HIGH" ? 0 : item.cannibalization?.severity === "MEDIUM" ? 3 : 0;
   const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
 
