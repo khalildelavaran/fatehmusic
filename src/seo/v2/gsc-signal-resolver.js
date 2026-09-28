@@ -95,6 +95,7 @@ function scoreRow(row) {
 
 export function buildGscSignalIndex(rows = []) {
   const pageRows = new Map();
+  const nonBrandPageRows = new Map();
   const queryRows = new Map();
   const queryTokenRows = new Map();
   const opportunities = [];
@@ -116,6 +117,7 @@ export function buildGscSignalIndex(rows = []) {
       queryRows.set(query, [...(queryRows.get(query) || []), item]);
       const tokenized = tokens(query);
       if (isBrandNavigationQuery(query)) continue;
+      if (page) nonBrandPageRows.set(page, [...(nonBrandPageRows.get(page) || []), item]);
       for (const token of tokenized) {
         const bucket = queryTokenRows.get(token) || [];
         bucket.push(item);
@@ -126,6 +128,7 @@ export function buildGscSignalIndex(rows = []) {
   }
   return Object.freeze({
     byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
+    byPageNonBrand: new Map([...nonBrandPageRows].map(([key, values]) => [key, aggregate(values)])),
     byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
     queryTokenRows: new Map([...queryTokenRows].map(([key, values]) => [key, Object.freeze(values)])),
     opportunities: Object.freeze(opportunities.sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore))
@@ -181,7 +184,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
   return opportunities.map((item) => {
     const pageSignals = item.action === "NEW_CONTENT"
       ? []
-      : getCandidatePages(item).map((page) => index.byPage.get(page)).filter(Boolean);
+      : getCandidatePages(item).map((page) => index.byPageNonBrand?.get(page)).filter(Boolean);
     const querySignals = relevantQueryRows(index, item)
       .filter((row) => !isBrandNavigationQuery(row.query))
       .filter((row) => queryMatches(item, row.query))
