@@ -4,53 +4,12 @@ function normalizeUrl(value) {
   return String(value || "").replace(/#.*$/, "").replace(/\/$/, "").trim().toLowerCase();
 }
 
-import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
+import { containsSemanticPhrase } from "../helpers/text.js";
+import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
 
-function normalizeText(value) { return normalizeSemanticText(value); }
+function normalizeText(value) { return normalizeQuery(value); }
 
-const MIN_OWNERSHIP_QUERY_TOKENS = 1;
-const MIN_OWNERSHIP_QUERY_WORDS = 2;
-
-const GENERIC_QUERY_TOKENS = new Set([
-  "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
-  "و", "یا", "با", "را", "این", "یک", "چه", "چگونه", "چطور",
-  "شوشتر", "فاتح", "یادگیری", "مدرس"
-]);
-
-
-/**
- * Queries that identify the site itself rather than a substantive topic.
- * Keep them in the raw GSC index for reporting, but do not let them create
- * content-demand signals or topic opportunities for unrelated pages.
- */
-function isBrandNavigationQuery(query) {
-  const normalized = normalizeText(query);
-  if (!normalized) return false;
-  return normalized === "fatehmusic.ir" ||
-    normalized === "www.fatehmusic.ir" ||
-    normalized === "fateh music" ||
-    normalized === "fateh music academy" ||
-    normalized === "آموزشگاه موسیقی فاتح";
-}
-
-function isOwnershipEligibleQuery(query) {
-  const normalized = normalizeText(query);
-  const wordCount = normalized ? normalized.split(/\s+/).filter(Boolean).length : 0;
-  return Boolean(
-    normalized &&
-    !isBrandNavigationQuery(normalized) &&
-    wordCount >= MIN_OWNERSHIP_QUERY_WORDS &&
-    tokens(normalized).size >= MIN_OWNERSHIP_QUERY_TOKENS
-  );
-}
-
-function tokens(value) {
-  return new Set(
-    normalizeText(value)
-      .split(/\s+/)
-      .filter((token) => token.length >= 2 && !GENERIC_QUERY_TOKENS.has(token))
-  );
-}
+const tokens = queryTokens;
 
 
 function querySignalQuality(impressions) {
@@ -456,4 +415,4 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
     .sort((a, b) => b.pages[0].impressions - a.pages[0].impressions);
 }
 
-export { normalizeText, normalizeUrl, jaccard, pageSimilarity, isBrandNavigationQuery };
+export { normalizeText, normalizeUrl, jaccard, pageSimilarity, isBrandNavigationQuery, isOwnershipEligibleQuery };
