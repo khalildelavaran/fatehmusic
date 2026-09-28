@@ -27,4 +27,28 @@ describe("SEO action GSC measurement", () => {
     expect(sql).toContain("g.snapshot_label = ?");
     expect(args).toContain("previous");
   });
+
+  it("excludes branded queries from action measurement aggregation", async () => {
+    let sql = "";
+    const db = {
+      prepare(statement: string) {
+        sql = statement;
+        return {
+          bind() {
+            return { run: async () => ({ meta: { changes: 1 } }) };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await syncPublishedSeoActionMeasurements(db, {
+      siteUrl: "https://fatehmusic.ir",
+      windowStart: "2026-09-01",
+      windowEnd: "2026-09-28"
+    });
+
+    expect(sql).toContain("fatehmusic.ir");
+    expect(sql).toContain("NOT IN");
+  });
+
 });
