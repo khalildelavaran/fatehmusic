@@ -47,6 +47,12 @@ function effectiveRankingPosition(ahrefsPosition, gscSignal) {
   return null;
 }
 
+function effectiveRankingPosition(ahrefsPosition, gscSignal) {
+  if (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0) return ahrefsPosition;
+  const gscPosition = Number(gscSignal?.position);
+  return Number.isFinite(gscPosition) && gscPosition > 0 ? gscPosition : null;
+}
+
 function classifyMarketOpportunity(position, gscImpressions) {
   if (Number.isFinite(position) && position >= 11 && position <= 20) return "STRIKING_DISTANCE";
   if (Number.isFinite(position) && position >= 21 && position <= 50) return "CONTENT_EXPANSION";
