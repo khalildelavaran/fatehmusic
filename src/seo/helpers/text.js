@@ -141,6 +141,15 @@ export function semanticTokens(text) {
     return normalizeSemanticText(text)
         .replace(/[\p{P}\p{S}]+/gu, " ")
         .split(/\s+/)
+        .map((token) => {
+            // Conservative Persian plural normalization: only the productive
+            // suffixes "ها" / "های" are stripped, and only from sufficiently
+            // long tokens. This improves matching such as ساز / سازهای without
+            // turning short instrument/topic tokens into unsafe stems.
+            if (token.length >= 5 && token.endsWith("های")) return token.slice(0, -3);
+            if (token.length >= 4 && token.endsWith("ها")) return token.slice(0, -2);
+            return token;
+        })
         .filter(Boolean);
 }
 
