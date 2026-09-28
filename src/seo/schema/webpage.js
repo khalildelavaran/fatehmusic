@@ -42,7 +42,7 @@ export function buildWebPageSchema({
         dateModified: toIsoDate(lastModified),
         primaryImageOfPage: image
             ? {
-                  "@type": "ImageObject",
+                  "@type": SCHEMA_TYPES.IMAGE_OBJECT,
                   url: absoluteUrl(image, site.url),
                   caption: title
               }
@@ -66,7 +66,8 @@ function resolveMainEntity(extraSchema) {
         SCHEMA_TYPES.CONTACT_PAGE,
         "ItemList",
         SCHEMA_TYPES.PLACE,
-        "LocalBusiness"
+        SCHEMA_TYPES.LOCAL_EDUCATION_BUSINESS,
+        SCHEMA_TYPES.IMAGE_GALLERY
     ]);
 
     const node = extraSchema.find(
