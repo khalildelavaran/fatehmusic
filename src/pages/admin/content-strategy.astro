@@ -193,6 +193,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             </span>
             <span>{intelligence.gsc.signalRowCount} سیگنال</span>
             <span>{intelligence.summary.searchBackedCount} فرصت search-backed</span>
+            <span>{intelligence.summary.marketBackedCount} فرصت market-backed</span>
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
             <span>اطمینان تصمیم: {intelligence.summary.decisionConfidenceAverage}%</span>
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
@@ -303,6 +304,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                       <div><strong>Slug:</strong> <code>{item.suggestedSlug}</code></div>
                       {item.gapDetected && <div><strong>Gap Score:</strong> {item.gapPriority}</div>}
                       {item.searchSignal?.available && <div><strong>داده جستجو:</strong> {Math.round(Number(item.searchSignal.impressions || 0)).toLocaleString("fa-IR")} impression · CTR {(Number(item.searchSignal.ctr || 0) * 100).toFixed(1)}% · رتبه {item.searchSignal.position != null ? Number(item.searchSignal.position).toFixed(1) : "-"}</div>}
+                      {item.marketSignal?.available && <div><strong>داده بازار:</strong> حجم برآوردی {Number(item.marketSignal.estimatedVolume || 0).toLocaleString("fa-IR")} · سختی {item.marketSignal.difficulty == null ? "-" : Number(item.marketSignal.difficulty).toFixed(0)}</div>}
                     </div>
                     {item.decisionConfidence != null && <div><strong>اطمینان تصمیم:</strong> {item.decisionConfidence}%</div>}
                     {item.searchSignal?.available && item.searchSignal.matchedQueries?.length > 0 && (
