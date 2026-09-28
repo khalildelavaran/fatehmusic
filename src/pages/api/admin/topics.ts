@@ -64,6 +64,17 @@ export const DELETE: APIRoute = async ({ request }) => {
 
   const { id } = (await request.json()) as { id?: number };
   if (!id) return json({ success: false, message: "شناسه موضوع ارسال نشده است." }, 422);
+
+  const current = await db
+    .prepare("SELECT status FROM content_topics WHERE id = ?")
+    .bind(id)
+    .first<{ status: TopicStatus }>();
+
+  if (!current) return json({ success: false, message: "موضوع پیدا نشد." }, 404);
+  if (["generating", "drafted", "used"].includes(current.status)) {
+    return json({ success: false, message: "این موضوع به یک فرایند تولید/مقاله متصل است و قابل حذف نیست." }, 409);
+  }
+
   await deleteTopic(db, id);
   return json({ success: true });
 };
