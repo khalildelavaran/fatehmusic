@@ -274,13 +274,6 @@ export async function markTopicDrafted(db: D1Database, id: number, postId: numbe
     .run();
 }
 
-export async function markTopicDrafted(db: D1Database, id: number, postId: number): Promise<void> {
-  await db
-    .prepare("UPDATE content_topics SET status='drafted', used_at=NULL, used_by_post_id=?, updated_at=datetime('now') WHERE id=? AND status='generating'")
-    .bind(postId, id)
-    .run();
-}
-
 export async function markTopicUsed(db: D1Database, postId: number): Promise<number> {
   const result = await db
     .prepare("UPDATE content_topics SET status='used', used_at=COALESCE(used_at, datetime('now')), updated_at=datetime('now') WHERE used_by_post_id=? AND status='drafted'")
