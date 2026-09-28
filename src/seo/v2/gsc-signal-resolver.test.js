@@ -425,7 +425,6 @@ describe("GSC signal resolver", () => {
     expect(clusters.some((cluster) => cluster.key.startsWith("scope:global"))).toBe(true);
   });
 
-});
 
   it("does not treat related-only query matches as ownership", () => {
     const index = buildGscSignalIndex([
@@ -484,6 +483,8 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchOwnership.relatedImpressions).toBe(0);
   });
 
+
+});
 
 describe("Persian query normalization", () => {
   it("normalizes common Arabic and Persian spelling variants", () => {
