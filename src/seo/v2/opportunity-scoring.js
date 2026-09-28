@@ -37,10 +37,23 @@ export function classifyOpportunityAction(item = {}) {
   if (temporal?.severity === "MEDIUM" && temporal.actionable && item.internalLinkGap !== true && item.linkGap !== true) return "OPTIMIZE_EXISTING";
   if (item.internalLinkGap === true || item.linkGap === true) return "LINK";
 
+  // Query demand can exist before a dedicated article exists. When GSC
+  // already attributes the matching non-brand query to an existing URL, prefer
+  // reinforcing that owner with internal links instead of creating a competing
+  // article. This only applies when the ownership evidence has usable demand.
+  if (
+    item.action === "NEW_CONTENT" &&
+    item.searchOwnership?.available &&
+    Number(item.searchOwnership.impressions || 0) >= 5 &&
+    Number(item.searchOwnership.topShare || 0) >= 0.7
+  ) {
+    return "LINK";
+  }
+
   // Query demand can exist before a dedicated article exists. For a genuinely
-  // new content opportunity, use that demand as a scoring signal only; do not
-  // relabel the action as an optimization/expansion of a page that does not
-  // exist.
+  // new content opportunity without an established owner, use that demand as a
+  // scoring signal only; do not relabel the action as an optimization/
+  // expansion of a page that does not exist.
   const hasExistingContent = Number(item.articleCount || 0) > 0 ||
     (Array.isArray(item.existingArticleSlugs) && item.existingArticleSlugs.length > 0);
   if (item.action === "NEW_CONTENT" && !hasExistingContent) return "NEW_CONTENT";
