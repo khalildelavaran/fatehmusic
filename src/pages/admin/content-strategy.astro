@@ -209,6 +209,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>اطمینان تصمیم: {intelligence.summary.decisionConfidenceAverage}%</span>
             <span>پوشش داده GSC: {intelligence.summary.gscCoverageStatus === "PARTIAL" ? "جزئی (به سقف ردیف رسیده)" : intelligence.summary.gscCoverageStatus === "COMPLETE" ? "کامل" : "نامشخص"}</span>
             <span>تازگی GSC: {intelligence.summary.gscFreshness === "FRESH" ? "تازه" : intelligence.summary.gscFreshness === "AGING" ? "در حال کهنگی" : intelligence.summary.gscFreshness === "STALE" ? "قدیمی" : "نامشخص"}</span>
+            <span>تازگی Market: {intelligence.summary.marketFreshness === "FRESH" ? "تازه" : intelligence.summary.marketFreshness === "AGING" ? "در حال کهنگی" : intelligence.summary.marketFreshness === "STALE" ? "قدیمی" : "نامشخص"}</span>
             {latestGscSync && <span class:list={["strategy-data-age", (gscStale || Number(latestGscSync.truncated) === 1) && "is-stale"]}>آخرین sync: {latestGscSync.finishedAt || latestGscSync.startedAt} · {gscAgeDays === null ? "سن نامشخص" : `${gscAgeDays} روز پیش`}{Number(latestGscSync.truncated) === 1 ? " · داده به سقف ردیف رسیده است" : ""}</span>}
           </div>
           {intelligence.gsc.connected && intelligence.gsc.queryOwnership.length > 0 && (
@@ -326,8 +327,8 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                       {item.course && <div><strong>Course:</strong> {item.course.title}</div>}
                       <div><strong>Slug:</strong> <code>{item.suggestedSlug}</code></div>
                       {item.gapDetected && <div><strong>Gap Score:</strong> {item.gapPriority}</div>}
-                      {item.searchSignal?.available && <div><strong>داده جستجو:</strong> {Math.round(Number(item.searchSignal.impressions || 0)).toLocaleString("fa-IR")} impression · CTR {(Number(item.searchSignal.ctr || 0) * 100).toFixed(1)}% · رتبه {item.searchSignal.position != null ? Number(item.searchSignal.position).toFixed(1) : "-"}</div>}
-                      {item.marketSignal?.available && <div><strong>داده بازار:</strong> حجم برآوردی {Number(item.marketSignal.estimatedVolume || 0).toLocaleString("fa-IR")} · سختی {item.marketSignal.difficulty == null ? "-" : Number(item.marketSignal.difficulty).toFixed(0)}</div>}
+                      {item.searchSignal?.available && <div><strong>داده جستجو:</strong> {Math.round(Number(item.searchSignal.impressions || 0)).toLocaleString("fa-IR")} impression · CTR {(Number(item.searchSignal.ctr || 0) * 100).toFixed(1)}% · رتبه {item.searchSignal.position != null ? Number(item.searchSignal.position).toFixed(1) : "-"}{item.searchSignal.ctrBenchmark != null ? ` · benchmark CTR ${(Number(item.searchSignal.ctrBenchmark) * 100).toFixed(1)}%` : ""}</div>}
+                      {item.marketSignal?.available && <div><strong>داده بازار:</strong> حجم برآوردی {Number(item.marketSignal.estimatedVolume || 0).toLocaleString("fa-IR")} · سختی {item.marketSignal.difficulty == null ? "-" : Number(item.marketSignal.difficulty).toFixed(0)}{item.marketDataQuality?.freshness ? ` · ${item.marketDataQuality.freshness}` : ""}</div>}
                     </div>
                     {item.decisionConfidence != null && <div><strong>اطمینان تصمیم:</strong> {item.decisionConfidence}%</div>}
                     {item.searchSignal?.available && item.searchSignal.matchedQueries?.length > 0 && (
