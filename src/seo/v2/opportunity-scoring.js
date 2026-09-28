@@ -74,7 +74,6 @@ function decisionConfidenceScore(item = {}) {
   ));
 }
 
-export const decisionConfidenceEvidence = decisionConfidenceEvidence;
 function marketSignalScore(signal = {}) {
   if (!signal?.available) return null;
 
