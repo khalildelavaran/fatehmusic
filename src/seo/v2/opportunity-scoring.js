@@ -208,6 +208,18 @@ function marketSignalScore(signal = {}) {
   else if (trafficPotential >= 500) score += 10;
   else if (trafficPotential > 0) score += 5;
 
+  const ageDays = Number(signal.dataAgeDays ?? signal.ageDays);
+  const freshness = String(
+    signal.dataFreshness ||
+    arguments?.[0]?.marketDataQuality?.freshness ||
+    ""
+  ).toUpperCase();
+  if (freshness === "STALE" || (Number.isFinite(ageDays) && ageDays > 16)) {
+    score *= 0.5;
+  } else if (freshness === "AGING" || (Number.isFinite(ageDays) && ageDays > 8)) {
+    score *= 0.8;
+  }
+
   return clamp(score);
 }
 
