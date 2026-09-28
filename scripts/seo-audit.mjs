@@ -448,13 +448,16 @@ function validateSitemaps(pages, serverRoutePatterns = []) {
   }
 
   for (const [route, page] of pages) {
-    if (!route || route === "/" || route.startsWith("/blog/")) continue;
-    if (!sitemapData.urls.has(route) && !page.noindex) error("PAGE_MISSING_FROM_SITEMAP", route + ": not present in sitemap");
-    if (sitemapData.urls.has(route) && page.noindex) error("NOINDEX_IN_SITEMAP", route + ": noindex page is present in sitemap");
+    if (!route || route === "/") continue;
+    if (!sitemapData.urls.has(route) && !page.noindex) {
+      error("PAGE_MISSING_FROM_SITEMAP", route + ": not present in generated sitemap(s)");
+    }
+    if (sitemapData.urls.has(route) && page.noindex) {
+      error("NOINDEX_IN_SITEMAP", route + ": noindex page is present in sitemap");
+    }
   }
 
   for (const route of sitemapData.urls) {
-    if (route.startsWith("/blog/")) continue;
     if (!pages.has(route) &&
         !PRIVATE_PREFIXES.some((prefix) => route === prefix || route.startsWith(prefix + "/")) &&
         !isKnownServerRoute(route, serverRoutePatterns)) {
