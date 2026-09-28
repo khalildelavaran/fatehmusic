@@ -383,7 +383,7 @@ function buildBrief(topic: SelectedTopic): string {
   ];
   lines.push("لینک‌های داخلی مجاز: " + [...new Set(allowedLinks)].join(" | "));
   if (topic.excerpt) lines.push(`توضیح کوتاه موجود: ${topic.excerpt}`);
-  lines.push("عنوان، موضوع، فکت‌های رسمی و whitelist لینک‌های بالا را مبنا قرار بده و submit_article را با فیلدهای کامل صدا بزن.");
+  lines.push("عنوان، موضوع، فکت‌های رسمی و whitelist لینک‌های بالا را مبنا قرار بده. slug را تغییر نده؛ URL بر اساس همین عنوان توسط سیستم تعیین می‌شود.");
   return lines.join("\n");
 }
 export async function runDailyArticleGeneration(env: ArticleEnv): Promise<GenerateResult> {
@@ -433,8 +433,10 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
       return { success: false, message: "اعتبارسنجی کیفیت مقاله شکست خورد: " + qualityError };
     }
 
-    const modelSlug = slugify(article.slug || "");
-    const baseSlug = modelSlug || slugify(topic.title);
+    // The Topic title is the canonical editorial identity. Do not let the
+    // language model invent a divergent URL slug; only collision suffixes
+    // are added when an existing post already uses the deterministic slug.
+    const baseSlug = slugify(topic.title);
     if (!baseSlug) {
       await releaseClaim();
       return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
