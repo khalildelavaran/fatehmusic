@@ -6,6 +6,14 @@ import path from "node:path";
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, "dist");
 const SITE_ORIGIN = "https://fatehmusic.ir";
+
+function webPageEntityId(url) {
+  const parsed = new URL(url, SITE_ORIGIN);
+  parsed.search = "";
+  parsed.hash = "";
+  parsed.pathname = parsed.pathname.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
+  return parsed.origin + parsed.pathname + (parsed.pathname === "/" ? "/" : "") + "#webpage";
+}
 const PRIVATE_PREFIXES = ["/admin", "/student", "/instructor", "/dashboard", "/api"];
 const SKIP_ROUTES = new Set(["/404"]);
 const errors = [];
@@ -167,7 +175,7 @@ function validateSchema(route, scripts) {
     if (pageUrl !== expectedUrl.replace(/\/$/, "")) {
       error("JSONLD_WEBPAGE_URL_MISMATCH", route + ": WebPage url does not match rendered route");
     }
-    if (webpage["@id"] !== expectedUrl.replace(/\/$/, "") + "/#webpage") {
+    if (webpage["@id"] !== webPageEntityId(expectedUrl)) {
       error("JSONLD_WEBPAGE_ID_MISMATCH", route + ": WebPage @id does not match canonical page identity");
     }
   }
