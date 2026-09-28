@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, detectSearchCannibalization, resolveOpportunitySearchSignals, isBrandNavigationQuery, normalizeText } from "./gsc-signal-resolver.js";
 
 describe("GSC signal resolver", () => {
   const rows = [
@@ -322,3 +322,20 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchOwnership.matchType).toBe("RELATED");
     expect(result[0].searchOwnership.relatedImpressions).toBe(0);
   });
+
+
+describe("Persian query normalization", () => {
+  it("normalizes common Arabic and Persian spelling variants", () => {
+    expect(normalizeText("اموزش  كلاسِ موسیقی")).toBe("اموزش کلاسی موسیقی");
+    expect(normalizeText("أموزشگاه")).toBe("اموزشگاه");
+  });
+
+  it("groups آ/ا query variants into the same ownership key", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش ضرب و تمپو", page: "https://fatehmusic.ir/courses/zarb-tempo-course", clicks: 1, impressions: 5, ctr: 0.2, position: 10 },
+      { query: "اموزش ضرب و تمپو", page: "https://fatehmusic.ir/courses/zarb-tempo-course", clicks: 1, impressions: 5, ctr: 0.2, position: 10 }
+    ]);
+
+    expect(index.byQuery.get("اموزش ضرب و تمپو").impressions).toBe(10);
+  });
+});
