@@ -14,8 +14,18 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
+const GENERIC_QUERY_TOKENS = new Set([
+  "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
+  "و", "یا", "با", "را", "این", "یک", "چه", "چگونه", "چطور",
+  "شوشتر", "فاتح", "یادگیری", "مدرس"
+]);
+
 function tokens(value) {
-  return new Set(normalizeText(value).split(/\s+/).filter((token) => token.length >= 2));
+  return new Set(
+    normalizeText(value)
+      .split(/\s+/)
+      .filter((token) => token.length >= 2 && !GENERIC_QUERY_TOKENS.has(token))
+  );
 }
 
 function jaccard(a, b) {
