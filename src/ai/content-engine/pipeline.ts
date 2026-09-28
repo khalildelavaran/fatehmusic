@@ -71,11 +71,10 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
       keywordSignals
     });
 
-    await insertScoredCandidates(db, scored, runId);
-    // Report only rows actually approved by the persistence step. A scored
-    // candidate may already exist as candidate/approved/used and therefore be
-    // intentionally left untouched by the conditional UPSERT.
-    const approvedCount = scored.filter((candidate) => candidate.scoreTotal >= 55).length;
+    const persisted = await insertScoredCandidates(db, scored, runId);
+    // Count only approvals created by this discovery run. Existing approved or
+    // used topics are not counted again just because their score was refreshed.
+    const approvedCount = persisted.newlyApproved;
     await finishRun(db, runId, {
       status: "success",
       generated: generated.length,
