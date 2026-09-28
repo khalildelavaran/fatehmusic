@@ -97,7 +97,7 @@ async function storeRows(db, env, rows, startDate, endDate, snapshotLabel, now =
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'google-search-console', " + now + ", ?) " +
         "ON CONFLICT(site_url, query, page, country, device, search_appearance, start_date, end_date) DO UPDATE SET " +
         "data_state=excluded.data_state, clicks=excluded.clicks, impressions=excluded.impressions, ctr=excluded.ctr, " +
-        "position=excluded.position, synced_at=excluded.synced_at"
+        "position=excluded.position, synced_at=excluded.synced_at, snapshot_label=excluded.snapshot_label"
       ).bind(
         siteUrl,
         row.query,
@@ -131,7 +131,8 @@ export async function syncSearchConsoleToD1({
   dimensions = ["query", "page"],
   pageSize = DEFAULT_PAGE_SIZE,
   maxRows = DEFAULT_MAX_ROWS,
-  dataState = "final"
+  dataState = "final",
+  snapshotLabel = "current"
 } = {}) {
   if (!db) throw new Error("GSC_D1_REQUIRED");
   if (!startDate || !endDate) throw new Error("GSC_DATE_RANGE_REQUIRED");
