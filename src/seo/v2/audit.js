@@ -127,6 +127,7 @@ export function auditPage({
         "title", "description", "indexability", "canonical", "schema", "h1",
         "image-alt", "image-dimensions", "image-alt-quality", "hero-image-priority",
         "content-depth", "internal-links", "web-vitals-lcp", "web-vitals-inp",
+        "answer-blocks", "answer-sources", "entity-graph",
         "web-vitals-cls", "topics", "intent", "freshness"
     ]);
     const coverageChecks = checks.filter((item) => knownChecks.has(item.id));
@@ -140,7 +141,8 @@ export function auditPage({
             "hero-image-priority": 5,
             "web-vitals-lcp": 5,
             "web-vitals-inp": 5,
-            "web-vitals-cls": 5, "internal-links": 10, topics: 5, intent: 5, freshness: 5 }[item.id] || item.points;
+            "web-vitals-cls": 5, "internal-links": 10, topics: 5, intent: 5,
+            "answer-blocks": 5, "answer-sources": 5, "entity-graph": 5, freshness: 5 }[item.id] || item.points;
         return sum + max;
     }, 0);
     const score = theoreticalPoints ? Math.round((applicablePoints / theoreticalPoints) * 100) : 0;
