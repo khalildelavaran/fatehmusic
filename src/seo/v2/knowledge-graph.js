@@ -142,12 +142,46 @@ export function buildKnowledgeGraph({
 }
 
 export function validateKnowledgeGraph(graph) {
-  const nodes = new Set((graph?.nodes || []).map((node) => node.id).filter(Boolean));
+  const graphNodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+  const graphEdges = Array.isArray(graph?.edges) ? graph.edges : [];
   const errors = [];
-  for (const edge of graph?.edges || []) {
-    if (!nodes.has(edge.from)) errors.push("Missing edge source: " + edge.from);
-    if (!nodes.has(edge.to)) errors.push("Missing edge target: " + edge.to);
-    if (!edge.relation) errors.push("Edge relation is missing");
+  const ids = new Set();
+
+  for (const node of graphNodes) {
+    if (!node || typeof node !== "object") {
+      errors.push("Graph node is not an object");
+      continue;
+    }
+    if (!node.id) {
+      errors.push("Graph node is missing id");
+      continue;
+    }
+    if (!node.type) errors.push("Graph node is missing type: " + node.id);
+    if (ids.has(node.id)) errors.push("Duplicate graph node id: " + node.id);
+    ids.add(node.id);
   }
-  return Object.freeze({ valid: errors.length === 0, errors });
+
+  for (const edge of graphEdges) {
+    if (!ids.has(edge?.from)) errors.push("Missing edge source: " + edge?.from);
+    if (!ids.has(edge?.to)) errors.push("Missing edge target: " + edge?.to);
+    if (!edge?.relation) errors.push("Edge relation is missing");
+    const confidence = Number(edge?.confidence);
+    if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+      errors.push("Invalid edge confidence: " + edge?.relation);
+    }
+  }
+
+  if (graph?.statistics) {
+    if (Number(graph.statistics.nodeCount) !== graphNodes.length) {
+      errors.push("Knowledge Graph nodeCount statistic is inconsistent");
+    }
+    if (Number(graph.statistics.edgeCount) !== graphEdges.length) {
+      errors.push("Knowledge Graph edgeCount statistic is inconsistent");
+    }
+  }
+
+  return Object.freeze({
+    valid: errors.length === 0,
+    errors: Object.freeze(errors)
+  });
 }
