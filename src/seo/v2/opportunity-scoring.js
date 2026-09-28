@@ -312,7 +312,7 @@ export function classifyOpportunityAction(item = {}) {
   // expansion of a page that does not exist.
 
   if (signal.available) {
-    if (signal.position != null && signal.position <= 10 && signal.ctr < 0.03) return "OPTIMIZE_EXISTING";
+    if (signal.position != null && signal.position <= 10 && isCtrUnderperforming(signal)) return "OPTIMIZE_EXISTING";
     if (signal.position != null && signal.position > 10 && signal.position <= 30) return "EXPAND";
     return item.action || "OPTIMIZE_EXISTING";
   }
