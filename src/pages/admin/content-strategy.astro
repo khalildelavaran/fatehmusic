@@ -331,6 +331,8 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                       {item.marketSignal?.available && <div><strong>داده بازار:</strong> حجم برآوردی {Number(item.marketSignal.estimatedVolume || 0).toLocaleString("fa-IR")} · سختی {item.marketSignal.difficulty == null ? "-" : Number(item.marketSignal.difficulty).toFixed(0)}{item.marketDataQuality?.freshness ? ` · ${item.marketDataQuality.freshness}` : ""}</div>}
                     </div>
                     {item.decisionConfidence != null && <div><strong>اطمینان تصمیم:</strong> {item.decisionConfidence}%</div>}
+                    {item.scoreBreakdown?.decisionGuard?.guarded && <div><strong>Guard تصمیم:</strong> سقف {item.scoreBreakdown.decisionGuard.cap} · {item.scoreBreakdown.decisionGuard.reasons.join("، ")}</div>}
+                    {item.searchSignal?.queryIntentEvidence?.primary && <div><strong>Intent واقعی Query:</strong> {item.searchSignal.queryIntentEvidence.primary} · سهم {(Number(item.searchSignal.queryIntentEvidence.primaryShare || 0) * 100).toFixed(0)}% · confidence {(Number(item.searchSignal.queryIntentEvidence.confidence || 0) * 100).toFixed(0)}%</div>}
                     {item.searchSignal?.available && item.searchSignal.matchedQueries?.length > 0 && (
                       <div class="strategy-search-evidence">
                         <strong>Queryهای مؤثر</strong>
