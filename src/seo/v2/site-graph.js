@@ -25,7 +25,7 @@ export function buildSiteLinkCandidates(site) {
     candidates.push({
       url: absoluteUrl(`/instructors/${instructor.slug}`, site.url),
       title: instructor.name,
-      type: "Person",
+      type: "Instructor",
       topics: [...(instructor.professional?.roles || []), ...(instructor.seo?.keywords || []), "شوشتر"],
       priority: Number(instructor.priority || 20),
       local: true
