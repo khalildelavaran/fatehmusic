@@ -43,7 +43,7 @@ function filterStaleBroadCourseCandidates(candidates = [], courses = []) {
     // is stale and would otherwise turn a general opportunity into a child
     // course opportunity (the exact source of the duplicate queue entries).
     if (resolvedSubjects.length === 0) {
-      const explicitlyNamesCourse = courseTopic && title.includes(courseTopic);
+      const explicitlyNamesCourse = courseTopic && containsSemanticPhrase(title, courseTopic);
       const explicitlyNamesCourseTitle = courseName && containsSemanticPhrase(title, courseName);
       if (!explicitlyNamesCourse && !explicitlyNamesCourseTitle) return false;
     }
