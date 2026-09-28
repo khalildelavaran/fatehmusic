@@ -10,12 +10,12 @@ function daysAgo(days, now = new Date()) {
   return date.toISOString().slice(0, 10);
 }
 
-export async function getRecentSearchConsoleRows(db, siteUrl = DEFAULT_SITE_URL, { days = 90, maxRows = 100000 } = {}) {
+export async function getRecentSearchConsoleRows(db, siteUrl = DEFAULT_SITE_URL, { days = 60, maxRows = 100000 } = {}) {
   if (!db) return [];
   const result = await db.prepare(
-    "SELECT query, page, clicks, impressions, ctr, position, start_date AS startDate, end_date AS endDate, data_state AS dataState, country, device, search_appearance AS searchAppearance " +
+    "SELECT query, page, clicks, impressions, ctr, position, start_date AS startDate, end_date AS endDate, data_state AS dataState, country, device, search_appearance AS searchAppearance, snapshot_label AS snapshotLabel " +
     "FROM gsc_search_signals_v2 " +
-    "WHERE site_url = ? AND start_date >= ? AND country = '' AND device = '' AND search_appearance = '' " +
+    "WHERE site_url = ? AND start_date >= ? AND snapshot_label IN ('current', 'previous') AND country = '' AND device = '' AND search_appearance = '' " +
     "ORDER BY start_date DESC, impressions DESC LIMIT ?"
   ).bind(site(siteUrl), daysAgo(days), Math.max(1, Math.min(maxRows, 100000))).all();
   return (result.results || []).map((row) => ({
@@ -30,7 +30,8 @@ export async function getRecentSearchConsoleRows(db, siteUrl = DEFAULT_SITE_URL,
     dataState: row.dataState || null,
     country: row.country || "",
     device: row.device || "",
-    searchAppearance: row.searchAppearance || ""
+    searchAppearance: row.searchAppearance || "",
+    snapshotLabel: row.snapshotLabel || "legacy"
   }));
 }
 
@@ -43,7 +44,7 @@ export async function getLatestGscSyncRun(db, siteUrl = DEFAULT_SITE_URL) {
   return row || null;
 }
 
-export async function getGscPagePerformance(db, siteUrl = DEFAULT_SITE_URL, { days = 90, limit = 50 } = {}) {
+export async function getGscPagePerformance(db, siteUrl = DEFAULT_SITE_URL, { days = 60, limit = 50 } = {}) {
   const rows = await getRecentSearchConsoleRows(db, siteUrl, { days, maxRows: 100000 });
   const map = new Map();
   for (const row of rows) {
