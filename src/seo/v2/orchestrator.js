@@ -10,6 +10,7 @@ import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { buildLinkGraph } from "./internal-links.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
+import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
 import { normalizeSemanticText } from "../helpers/text.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
@@ -63,9 +64,9 @@ function articleSemantics(posts = [], siteUrl = "") {
 
 /**
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
- * @param {{posts?: object[], courses?: object[], topicCandidates?: object[], gscRows?: object[], marketSignals?: object[]|Map|string, siteUrl?: string}} options
+ * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], marketSignals?: object[]|Map|string, siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], marketSignals = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], marketSignals = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
@@ -98,6 +99,13 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const decisionConfidenceAverage = opportunities.length
     ? Math.round(opportunities.reduce((sum, item) => sum + Number(item.decisionConfidence || 0), 0) / opportunities.length)
     : 0;
+  const knowledgeGraph = buildKnowledgeGraph({
+    siteUrl,
+    courses,
+    instructors,
+    posts
+  });
+  const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
 
   return Object.freeze({
     cluster,
@@ -111,6 +119,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       queryOwnership: freeze(search.queryOwnership)
     }),
     links: Object.freeze({ graph: freeze(buildLinkGraph(pageNodes)) }),
+    knowledgeGraph,
+    knowledgeGraphValidation,
     opportunities: freeze(opportunities),
     summary: Object.freeze({
       opportunityCount: opportunities.length,
@@ -126,7 +136,10 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
       temporalCannibalizationCount: temporalCannibalization.length,
       temporalActionableCount: temporalCannibalization.filter((item) => item.actionable).length,
       queryOwnershipCount: search.queryOwnership?.length || 0,
-      decisionConfidenceAverage
+      decisionConfidenceAverage,
+      knowledgeGraphNodeCount: knowledgeGraph.statistics.nodeCount,
+      knowledgeGraphEdgeCount: knowledgeGraph.statistics.edgeCount,
+      knowledgeGraphValid: knowledgeGraphValidation.valid
     })
   });
 }
