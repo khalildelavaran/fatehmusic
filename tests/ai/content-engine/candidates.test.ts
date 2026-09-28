@@ -50,9 +50,10 @@ describe("generateCandidates", () => {
     expect(offending).toHaveLength(0);
   });
 
-  it("only assigns parent_guide to کودک/نوجوان audiences, never بزرگسال or general", () => {
-    const offending = candidates.filter((c) => c.modifierType === "parent_guide" && !["کودک", "نوجوان"].includes(c.audience));
-    expect(offending).toHaveLength(0);
+  it("keeps parent_guide candidates general when a course serves children or teens", () => {
+    const parentGuides = candidates.filter((c) => c.modifierType === "parent_guide");
+    expect(parentGuides.length).toBeGreaterThan(0);
+    expect(parentGuides.every((c) => c.audience === "")).toBe(true);
   });
 
   it("does not attach false age labels to general modifier templates", () => {
