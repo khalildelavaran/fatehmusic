@@ -78,8 +78,32 @@ describe("GSC snapshot isolation", () => {
     expect(result.temporalCannibalization[0].currentOwner.impressions).toBe(100);
   });
 
-});
 
+  it("rejects a weak semantic market match dominated by unrelated concepts", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "راهنمای کامل موسیقی کودک و آموزش گروهی",
+        topicName: "موسیقی کودک",
+        topic: "children-music",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [], {
+      marketSignals: [
+        {
+          keyword: "آموزش گیتار",
+          estimatedVolume: 900,
+          difficulty: 20,
+          available: true,
+          source: "ahrefs"
+        }
+      ]
+    });
+
+    expect(result.opportunities[0].marketSignal).toBeNull();
+  });
+
+});
 
 describe("GSC query ownership exposure", () => {
   it("exposes site-wide ownership from current scoring rows", () => {
