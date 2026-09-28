@@ -1,7 +1,7 @@
 import type { KeywordProvider, KeywordSignal } from "./keyword-provider";
 
 const DEFAULT_SITE_URL = "https://fatehmusic.ir";
-import { normalizeSemanticText } from "../../../seo/helpers/text.js";
+import { containsSemanticPhrase, normalizeSemanticText } from "../../../seo/helpers/text.js";
 
 function normalize(value: string): string {
   return normalizeSemanticText(value);
@@ -85,13 +85,12 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
     const target = tokens(title);
     if (!target.size) return { available: false, source: "google-search-console" };
 
-    const normalizedTitle = normalize(title);
     const matches = rows
       .map((row) => {
         const normalizedQuery = normalize(row.query);
         const queryTokens = tokens(row.query);
         const isGenericSingleTerm = queryTokens.size === 1 && [...queryTokens].every((token) => GENERIC_QUERY_TERMS.has(token));
-        const similarity = !isGenericSingleTerm && normalizedTitle.includes(normalizedQuery) && queryTokens.size >= 1
+        const similarity = !isGenericSingleTerm && containsSemanticPhrase(title, row.query) && queryTokens.size >= 1
           ? 1
           : overlap(target, queryTokens);
         return { row, similarity: similarity >= 0.34 ? similarity : 0 };
