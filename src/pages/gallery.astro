@@ -7,10 +7,11 @@ import Footer from "../components/Footer.astro";
 import PageHero from "../components/PageHero.astro";
 import Gallery from "../components/Gallery.astro";
 import CTA from "../components/CTA.astro";
+import { resolveSite } from "../seo/index.js";
 import { galleryItems } from "../data/gallery.js";
 import { buildImageGallerySchema } from "../seo/schema/image-gallery.js";
 
-const site = { url: "https://fatehmusic.ir" };
+const site = resolveSite();
 const galleryUrl = `${site.url}/gallery`;
 const imageGallerySchema = buildImageGallerySchema({
     site,
