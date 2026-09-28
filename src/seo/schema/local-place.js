@@ -21,6 +21,7 @@ export function buildLocalPlaceSchema(site) {
       longitude: site.geo.longitude
     },
     hasMap: site.mapUrl,
+    containedInPlace: { "@id": `${site.url}/#organization` },
     mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
   };
 }
