@@ -2,6 +2,7 @@
 
 const SITE_ORIGIN = (process.env.SEO_SITE_URL || "https://fatehmusic.ir").replace(/\/$/, "");
 const CONCURRENCY = Number(process.env.SEO_HTTP_CONCURRENCY || 6);
+const HTTP_TIMEOUT_MS = Math.max(1000, Number(process.env.SEO_HTTP_TIMEOUT_MS || 15000));
 
 const errors = [];
 const warnings = [];
@@ -30,7 +31,10 @@ async function fetchText(url, options = {}) {
       clearTimeout(timeout);
     }
   } catch (error) {
-    fail("HTTP_FETCH", url + ": " + String(error));
+    const detail = error?.name === "TimeoutError"
+      ? `timeout after ${HTTP_TIMEOUT_MS}ms`
+      : String(error);
+    fail("HTTP_FETCH", url + ": " + detail);
     return null;
   }
 }
