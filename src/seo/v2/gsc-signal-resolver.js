@@ -98,6 +98,7 @@ export function buildGscSignalIndex(rows = []) {
   const pageRows = new Map();
   const nonBrandPageRows = new Map();
   const queryRows = new Map();
+  const nonBrandQueryRows = new Map();
   const queryTokenRows = new Map();
   const opportunities = [];
   for (const row of rows) {
@@ -118,6 +119,7 @@ export function buildGscSignalIndex(rows = []) {
       queryRows.set(query, [...(queryRows.get(query) || []), item]);
       const tokenized = tokens(query);
       if (isBrandNavigationQuery(query)) continue;
+      nonBrandQueryRows.set(query, [...(nonBrandQueryRows.get(query) || []), item]);
       if (page) nonBrandPageRows.set(page, [...(nonBrandPageRows.get(page) || []), item]);
       for (const token of tokenized) {
         const bucket = queryTokenRows.get(token) || [];
@@ -131,6 +133,7 @@ export function buildGscSignalIndex(rows = []) {
     byPage: new Map([...pageRows].map(([key, values]) => [key, aggregate(values)])),
     byPageNonBrand: new Map([...nonBrandPageRows].map(([key, values]) => [key, aggregate(values)])),
     byQuery: new Map([...queryRows].map(([key, values]) => [key, aggregate(values)])),
+    byQueryNonBrand: new Map([...nonBrandQueryRows].map(([key, values]) => [key, aggregate(values)])),
     queryTokenRows: new Map([...queryTokenRows].map(([key, values]) => [key, Object.freeze(values)])),
     opportunities: Object.freeze(opportunities.sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore))
   });
