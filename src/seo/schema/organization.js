@@ -72,7 +72,7 @@ export function buildOrganizationSchema(site) {
     },
     hasMap: site.mapUrl,
     mainEntityOfPage: { "@id": `${site.url}/#webpage` },
-    location: { "@id": `${site.url}/locations/shushtar#place` },
+    location: { "@id": `${site.url}/locations/shushtar#localbusiness` },
     areaServed: site.areaServed,
     openingHoursSpecification: site.openingHoursSpecification,
     sameAs: site.sameAs
