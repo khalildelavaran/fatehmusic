@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyOpportunityAction, scoreOpportunity } from "./opportunity-scoring.js";
+import { classifyOpportunityAction, scoreOpportunity, decisionConfidenceScore } from "./opportunity-scoring.js";
 
 describe("opportunity scoring", () => {
   it("prioritizes CTR optimization for a strong-ranking page", () => {
@@ -70,6 +70,40 @@ describe("opportunity scoring", () => {
       targetEntity: { type: "Course", url: "https://fatehmusic.ir/courses/guitar-course" },
       searchSignal: { available: true, impressions: 5000, ctr: 0.02, position: 6 }
     })).toBe("NEW_CONTENT");
+  });
+
+  it("raises decision confidence when exact ownership is stable and well-supported", () => {
+    const confidence = decisionConfidenceScore({
+      searchSignal: {
+        available: true,
+        impressions: 300,
+        position: 6,
+        matchedQueries: ["آموزش گیتار"]
+      },
+      searchOwnership: {
+        matchType: "EXACT",
+        ownerStatus: "STABLE"
+      }
+    });
+
+    expect(confidence).toBeGreaterThanOrEqual(90);
+  });
+
+  it("does not overstate confidence for trace-level related evidence", () => {
+    const confidence = decisionConfidenceScore({
+      searchSignal: {
+        available: true,
+        impressions: 1,
+        position: 20,
+        matchedQueries: ["کلاس گیتار"]
+      },
+      searchOwnership: {
+        matchType: "RELATED",
+        ownerStatus: "EMERGING"
+      }
+    });
+
+    expect(confidence).toBeLessThan(75);
   });
 });
 
