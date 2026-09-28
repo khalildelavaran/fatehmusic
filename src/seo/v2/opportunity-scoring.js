@@ -49,6 +49,20 @@ function decisionConfidenceEvidence(item = {}) {
 
     if (Number(item.marketSignal.estimatedVolume) > 0) points.push(["market volume available", 5]);
     if (Number.isFinite(Number(item.marketSignal.difficulty))) points.push(["market difficulty available", 3]);
+
+    const marketAgeDays = Number(item.marketDataQuality?.ageDays);
+    const marketFreshness = String(
+      item.marketDataQuality?.freshness ||
+      item.marketSignal.dataFreshness ||
+      ""
+    ).toUpperCase();
+    if (marketFreshness === "FRESH" || (Number.isFinite(marketAgeDays) && marketAgeDays <= 8)) {
+      points.push(["fresh market data", 3]);
+    } else if (marketFreshness === "AGING" || (Number.isFinite(marketAgeDays) && marketAgeDays <= 16)) {
+      points.push(["aging market data", -3]);
+    } else if (marketFreshness === "STALE" || (Number.isFinite(marketAgeDays) && marketAgeDays > 16)) {
+      points.push(["stale market data", -8]);
+    }
     if (item.marketSignal.matchType === "EXACT") points.push(["exact market keyword match", 5]);
     else if (item.marketSignal.matchType === "SEMANTIC") points.push(["semantic market keyword match", 2]);
   }
