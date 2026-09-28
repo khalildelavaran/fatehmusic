@@ -28,6 +28,10 @@ export function classifyOpportunityAction(item = {}) {
   const signal = item.searchSignal || {};
   const competition = item.cannibalization?.severity || item.competition?.severity || "NONE";
   const temporal = item.temporalCannibalization || null;
+  const hasExistingTarget = Number(item.articleCount) > 0 || Boolean(item.existingArticleSlugs?.length);
+  // Search demand can justify creating a new article, but it cannot turn a
+  // non-existent article into an "optimize existing" task.
+  if (item.action === "NEW_CONTENT" && !hasExistingTarget) return "NEW_CONTENT";
   if (competition === "HIGH") return "MERGE_CONTENT";
   if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
   if (temporal?.severity === "MEDIUM" && temporal.actionable && item.internalLinkGap !== true && item.linkGap !== true) return "OPTIMIZE_EXISTING";
