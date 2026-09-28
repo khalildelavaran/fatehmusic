@@ -17,7 +17,8 @@ function normalizeText(value) {
     .toLowerCase();
 }
 
-const MIN_OWNERSHIP_QUERY_TOKENS = 2;
+const MIN_OWNERSHIP_QUERY_TOKENS = 1;
+const MIN_OWNERSHIP_QUERY_WORDS = 2;
 
 const GENERIC_QUERY_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
@@ -39,6 +40,17 @@ function isBrandNavigationQuery(query) {
     normalized === "fateh music" ||
     normalized === "fateh music academy" ||
     normalized === "آموزشگاه موسیقی فاتح";
+}
+
+function isOwnershipEligibleQuery(query) {
+  const normalized = normalizeText(query);
+  const wordCount = normalized ? normalized.split(/\s+/).filter(Boolean).length : 0;
+  return Boolean(
+    normalized &&
+    !isBrandNavigationQuery(normalized) &&
+    wordCount >= MIN_OWNERSHIP_QUERY_WORDS &&
+    tokens(normalized).size >= MIN_OWNERSHIP_QUERY_TOKENS
+  );
 }
 
 function tokens(value) {
@@ -194,7 +206,7 @@ function isExactQueryMatch(item, query) {
 function buildQueryOwnership(querySignals = [], item = {}) {
   const eligible = querySignals.filter((row) => {
     const query = String(row?.query || "");
-    return !isBrandNavigationQuery(query) && tokens(query).size >= MIN_OWNERSHIP_QUERY_TOKENS && Number(row?.impressions || 0) > 0;
+    return isOwnershipEligibleQuery(query) && Number(row?.impressions || 0) > 0;
   });
   const exactEligible = eligible.filter((row) => isExactQueryMatch(item, row?.query));
 
@@ -261,7 +273,7 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     const page = normalizeUrl(row?.page);
     if (!query || !page || impressions < minImpressions || isBrandNavigationQuery(query)) continue;
-    if (tokens(query).size < MIN_OWNERSHIP_QUERY_TOKENS) continue;
+    if (!isOwnershipEligibleQuery(query)) continue;
 
     const pages = queryPages.get(query) || new Map();
     pages.set(page, (pages.get(page) || 0) + impressions);
