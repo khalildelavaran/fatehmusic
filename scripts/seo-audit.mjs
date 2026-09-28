@@ -272,11 +272,11 @@ function validateHtmlFiles() {
     const anchors = allMatches(/<a\b[^>]+href=["']([^"'#]+)["']/gi, html);
 
     if (!title) error("TITLE_MISSING", route + ": title missing");
-    if (title.trim().length < 20 || title.trim().length > 65) warn("TITLE_LENGTH", route + ": title length is outside 20-65 characters");
+    if (title.trim().length < 20 || title.trim().length > 60) warn("TITLE_LENGTH", route + ": title length is outside 20-65 characters");
     if (descriptions.length !== 1 || !descriptions[0]) {
       error("META_DESCRIPTION", route + ": expected exactly one non-empty meta description");
-    } else if (descriptions[0].trim().length < 80 || descriptions[0].trim().length > 170) {
-      warn("META_DESCRIPTION_LENGTH", route + ": meta description length is outside 80-170 characters");
+    } else if (descriptions[0].trim().length < 80 || descriptions[0].trim().length > 160) {
+      warn("META_DESCRIPTION_LENGTH", route + ": meta description length is outside 80-160 characters");
     }
     if (canonicals.length !== 1) error("CANONICAL_COUNT", route + ": expected exactly one canonical");
     if (h1s.length !== 1) error("H1_COUNT", route + ": expected exactly one H1, found " + h1s.length);
