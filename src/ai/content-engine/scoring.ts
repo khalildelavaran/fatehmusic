@@ -54,7 +54,7 @@ function scoreKeywordSignal(signal: KeywordSignal): number {
   if (impressions <= 0) return 7;
 
   let score = impressions >= 2000 ? 7 : impressions >= 1000 ? 6 : impressions >= 300 ? 5 : impressions >= 100 ? 4 : 2;
-  if (Number.isFinite(position)) {
+  if (Number.isFinite(position) && position > 0) {
     if (position <= 5) score += 4;
     else if (position <= 10) score += 3;
     else if (position <= 20) score += 2;
