@@ -50,4 +50,32 @@ describe("GSC snapshot isolation", () => {
     expect(opportunity.searchSignal.impressions).toBe(100);
     expect(opportunity.searchSignal.position).toBe(8);
   });
+
+  it("excludes country/device breakdown snapshots from temporal analysis", () => {
+    const input = [
+      ...rows,
+      {
+        ...rows[0],
+        impressions: 100,
+        clicks: 4,
+        snapshotLabel: "breakdowns-current",
+        country: "ir",
+        device: "MOBILE"
+      },
+      {
+        ...rows[1],
+        impressions: 900,
+        clicks: 9,
+        snapshotLabel: "breakdowns-current",
+        country: "ir",
+        device: "DESKTOP"
+      }
+    ];
+
+    const result = enrichOpportunitiesWithSearchConsole([], input);
+    expect(result.temporalCannibalization).toHaveLength(1);
+    expect(result.temporalCannibalization[0].previousOwner.impressions).toBe(900);
+    expect(result.temporalCannibalization[0].currentOwner.impressions).toBe(100);
+  });
+
 });
