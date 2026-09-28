@@ -23,6 +23,7 @@ import {
     buildFaqSchema
 } from "../seo/index.js";
 import { instructors } from "../data/instructors.js";
+import { aboutFaqs } from "../data/about-faq.js";
 
 const title = "درباره آموزشگاه موسیقی فاتح در شوشتر | اساتید و روش آموزش";
 const description =
@@ -38,7 +39,7 @@ const instructorSchemas = instructors
     })
     .filter((item): item is object => item !== null);
 
-const faqSchema = buildFaqSchema(AboutFAQ.faqs, {
+const faqSchema = buildFaqSchema(aboutFaqs, {
     site,
     url: `${site.url}/about`,
     name: "سوالات متداول درباره آموزشگاه موسیقی فاتح"
