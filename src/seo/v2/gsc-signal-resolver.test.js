@@ -374,6 +374,22 @@ describe("GSC query ownership map", () => {
     expect(map[0].signalQuality).toBe("HIGH");
   });
 
+  it("does not treat a substring as an exact query phrase", () => {
+    const index = buildGscSignalIndex([
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 50 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "کلاس گیتاری برای مبتدیان",
+        topicName: "گیتار"
+      }
+    ], index);
+
+    expect(result[0].searchOwnership.matchType).toBe("RELATED");
+    expect(result[0].searchOwnership.available).toBe(false);
+  });
+
   it("builds page shares for substantive non-brand queries", () => {
     const map = buildQueryOwnershipMap([
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
