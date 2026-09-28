@@ -121,6 +121,11 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         ...extraSchema
     ], { knowledgeGraph });
     const audit = auditPage({ metadata, url: canonicalUrl, canonical: canonicalUrl, schemaGraph, indexable: !effectiveNoindex, topicSlugs: topicsResolved.map((topic) => topic.slug), primaryIntent: intent.primary, freshness, ...auditContext });
+    const diagnostics = runDiagnostics({
+        audits: [audit],
+        graphValidation: knowledgeGraphValidation,
+        knowledgeGraph
+    });
     return Object.freeze({
         metadata,
         canonical: canonicalUrl,
