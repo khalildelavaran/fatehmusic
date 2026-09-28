@@ -2,7 +2,7 @@
  * Temporal cannibalization analysis built on top of the existing GSC resolver.
  * Detects changes in query ownership across dated Search Console windows.
  */
-import { normalizeText, normalizeUrl } from "./gsc-signal-resolver.js";
+import { normalizeText, normalizeUrl, isOwnershipEligibleQuery } from "./gsc-signal-resolver.js";
 
 function numeric(value) {
   return Math.max(0, Number(value) || 0);
@@ -43,7 +43,7 @@ export function detectTemporalCannibalization(rows = [], {
   for (const row of rows) {
     const query = normalizeText(row.query);
     const period = periodKey(row);
-    if (!query || !period || numeric(row.impressions) < minImpressions) continue;
+    if (!query || !period || !isOwnershipEligibleQuery(query) || numeric(row.impressions) < minImpressions) continue;
     const periods = queryPeriods.get(query) || new Map();
     const bucket = periods.get(period) || [];
     bucket.push(row);
