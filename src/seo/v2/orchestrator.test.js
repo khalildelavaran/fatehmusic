@@ -73,6 +73,21 @@ describe("buildSEOIntelligence", () => {
     expect(gaps.every((gap) => gap.courseSlug === "kamancheh-course")).toBe(true);
   });
 
+  it("builds the link graph from canonical site pages as well as articles", () => {
+    const result = buildSEOIntelligence({
+      posts: [{ slug: "guitar-guide", title: "آموزش گیتار", topic: "گیتار", excerpt: "راهنمای گیتار" }],
+      courses: [],
+      topicCandidates: [],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.links.graph.some((node) => node.url === "https://fatehmusic.ir/courses")).toBe(true);
+    expect(result.links.graph.some((node) => node.url === "https://fatehmusic.ir/gallery")).toBe(true);
+    expect(result.links.graph.some((node) => node.url === "https://fatehmusic.ir/locations/shushtar")).toBe(true);
+    expect(result.links.graph.some((node) => node.url === "https://fatehmusic.ir/blog/guitar-guide")).toBe(true);
+  });
+
   it("exposes temporal ownership changes", () => {
     const result = buildSEOIntelligence({
       posts: [],
