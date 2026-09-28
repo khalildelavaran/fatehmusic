@@ -8,7 +8,6 @@ import { enrichOpportunitiesWithSearchConsole, currentScoringRows } from "./gsc-
 import { buildGscSignalIndex, detectSearchCannibalization } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { buildLinkGraph } from "./internal-links.js";
-import { scoreOpportunities } from "./opportunity-scoring.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 
@@ -102,7 +101,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const gscIndex = buildGscSignalIndex(currentGscRows);
   const cannibalization = detectSearchCannibalization(currentGscRows, { pageSemantics: pages });
   const temporalCannibalization = search.temporalCannibalization || detectTemporalCannibalization(gscRows);
-  const opportunities = scoreOpportunities(search.opportunities);
+  const opportunities = search.opportunities;
 
   return Object.freeze({
     cluster,
