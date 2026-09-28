@@ -152,7 +152,7 @@ async function checkPublicPage(url) {
   }
 }
 
-async function checkRedirect(from, to) {
+async function checkRedirect(from, to, expectedStatus) {
   const url = absoluteUrl(from);
   const result = await fetchText(url);
   if (!result) return;
@@ -163,6 +163,9 @@ async function checkRedirect(from, to) {
   if (!isRedirect(response.status)) {
     fail("REDIRECT_STATUS", from + ": expected 3xx, received " + response.status);
     return;
+  }
+  if (expectedStatus != null && response.status !== Number(expectedStatus)) {
+    fail("REDIRECT_STATUS_MISMATCH", from + ": expected " + expectedStatus + ", received " + response.status);
   }
 
   const location = response.headers.get("location");
@@ -251,7 +254,7 @@ async function main() {
     const filePath = url.fileURLToPath(redirectsPath);
     const raw = await fs.readFile(filePath, "utf8");
     const rules = readRedirectsFromRaw(raw);
-    await mapLimit(rules, CONCURRENCY, (rule) => checkRedirect(rule.from, rule.to));
+    await mapLimit(rules, CONCURRENCY, (rule) => checkRedirect(rule.from, rule.to, rule.status));
   } catch (error) {
     warnings.push({ code: "REDIRECT_FILE_UNAVAILABLE", message: String(error) });
   }
