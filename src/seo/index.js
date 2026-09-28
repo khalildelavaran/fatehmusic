@@ -29,6 +29,7 @@ import { absoluteUrl } from "./helpers/url.js";
 import { normalizeQuery, queryTokens, isBrandNavigationQuery, isOwnershipEligibleQuery } from "./helpers/query.js";
 import { isPrivateRoute } from "./helpers/private-route.js";
 import { courses } from "../data/courses.js";
+import { instructors } from "../data/instructors.js";
 import { resolveTopics, topicSlugs } from "./v2/topics.js";
 import { classifyIntent } from "./v2/intents.js";
 import { getFreshness } from "./v2/freshness.js";
@@ -77,10 +78,22 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const topicsResolved = resolveTopics({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics });
     const intent = classifyIntent({ path, title: metadata.title, keywords: metadata.keywords, entityType });
     const freshness = getFreshness(lastModified);
+    const knowledgeGraph = buildKnowledgeGraph({
+        siteUrl: site.url,
+        courses,
+        instructors,
+        posts: articlePosts
+    });
     const candidates = linkCandidates?.length
         ? linkCandidates
         : [...buildSiteLinkCandidates(site), ...buildArticleLinkCandidates(articlePosts, site.url)];
-    const links = buildInternalLinkPlan({ currentUrl: canonicalUrl, currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }), currentType: entityType, candidates });
+    const links = buildInternalLinkPlan({
+        currentUrl: canonicalUrl,
+        currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }),
+        currentType: entityType,
+        candidates,
+        semanticGraph: knowledgeGraph
+    });
     const answers = buildAnswerBlocks(answerBlocks);
     const clusterReport = articlePosts.length ? buildContentClusterReport(articlePosts, { courses, siteUrl: site.url }) : null;
     const contentStrategy = clusterReport ? clusterReport.strategy : buildContentStrategy([], courses, { siteUrl: site.url });
@@ -103,9 +116,26 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         buildLocalPlaceSchema(site),
         ...buildTopicSchemas(topicsResolved, { site }),
         ...extraSchema
-    ]);
+    ], { knowledgeGraph });
     const audit = auditPage({ metadata, url: canonicalUrl, canonical: canonicalUrl, schemaGraph, indexable: !effectiveNoindex, topicSlugs: topicsResolved.map((topic) => topic.slug), primaryIntent: intent.primary, freshness, ...auditContext });
-    return Object.freeze({ metadata, canonical: canonicalUrl, openGraph, twitter, schemaGraph, geo: Object.freeze({ topics: topicsResolved, intent, freshness, internalLinks: links, answerBlocks: answers, audit, clusters: clusterReport, strategy: contentStrategy }) });
+    return Object.freeze({
+        metadata,
+        canonical: canonicalUrl,
+        openGraph,
+        twitter,
+        schemaGraph,
+        geo: Object.freeze({
+            topics: topicsResolved,
+            intent,
+            freshness,
+            internalLinks: links,
+            answerBlocks: answers,
+            audit,
+            clusters: clusterReport,
+            strategy: contentStrategy,
+            knowledgeGraph
+        })
+    });
 }
 
 export { resolveSite, resolveCourse, resolveInstructor, buildCourseSchema, buildCourseStyleSchemas, buildGuitarStyleSchema, buildPersonSchema,
