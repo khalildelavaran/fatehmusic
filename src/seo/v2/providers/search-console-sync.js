@@ -298,10 +298,15 @@ export async function runScheduledSearchConsoleSync(env = {}, options = {}) {
   }
 
   const failedWindows = windows.filter((item) => item.status === "failed");
+  const overallStatus =
+    currentResult?.status === "failed"
+      ? "failed"
+      : currentResult?.status === "empty"
+        ? (failedWindows.length ? "partial" : "empty")
+        : (failedWindows.length ? "partial" : "success");
+
   return {
-    status: currentResult?.status === "success"
-      ? (failedWindows.length ? "partial" : "success")
-      : "failed",
+    status: overallStatus,
     windows,
     currentWindow: { startDate: currentStart, endDate: currentEnd },
     previousWindow: { startDate: previousStart, endDate: previousEnd }
