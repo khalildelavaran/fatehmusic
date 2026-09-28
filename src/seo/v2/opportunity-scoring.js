@@ -2,58 +2,79 @@
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number(value) || 0));
 
-function decisionConfidenceScore(item = {}) {
-  let score = 45;
+function decisionConfidenceEvidence(item = {}) {
+  const points = [];
   const signal = item.searchSignal;
   const ownership = item.searchOwnership;
 
-  const intentConfidence = Number(item.intentConfidence);
-  if (Number.isFinite(intentConfidence) && intentConfidence > 0) {
-    score += Math.round(Math.min(10, intentConfidence * 10));
-  }
-
   if (signal?.available) {
-    score += 15;
+    points.push(["GSC signal present", 18]);
     const impressions = Math.max(0, Number(signal.impressions) || 0);
-    if (impressions >= 300) score += 15;
-    else if (impressions >= 100) score += 12;
-    else if (impressions >= 20) score += 8;
-    else if (impressions >= 5) score += 4;
+    if (impressions >= 300) points.push(["GSC sample >= 300 impressions", 15]);
+    else if (impressions >= 100) points.push(["GSC sample >= 100 impressions", 12]);
+    else if (impressions >= 20) points.push(["GSC sample >= 20 impressions", 8]);
+    else if (impressions >= 5) points.push(["GSC sample >= 5 impressions", 4]);
+    else if (impressions > 0) points.push(["GSC sample is trace-level", 1]);
 
-    if (Number.isFinite(Number(signal.position))) score += 5;
-    if (Array.isArray(signal.matchedQueries) && signal.matchedQueries.length > 0) score += 5;
+    if (Number.isFinite(Number(signal.position)) && Number(signal.position) > 0) {
+      points.push(["GSC position available", 5]);
+    }
+    if (Array.isArray(signal.matchedQueries) && signal.matchedQueries.length > 0) {
+      points.push(["matched query evidence", 5]);
+    }
   }
 
   if (item.marketSignal?.available) {
-    const hasVolume = Number(item.marketSignal.estimatedVolume) > 0;
-    const hasDifficulty = Number.isFinite(Number(item.marketSignal.difficulty));
-    score += hasVolume ? 6 : 2;
-    if (hasDifficulty) score += 4;
+    points.push(["market signal present", 10]);
+    if (Number(item.marketSignal.estimatedVolume) > 0) points.push(["market volume available", 5]);
+    if (Number.isFinite(Number(item.marketSignal.difficulty))) points.push(["market difficulty available", 3]);
+    if (item.marketSignal.matchType === "EXACT") points.push(["exact market keyword match", 5]);
+    else if (item.marketSignal.matchType === "SEMANTIC") points.push(["semantic market keyword match", 2]);
+  }
+
+  const intentConfidence = Number(item.intentConfidence);
+  if (Number.isFinite(intentConfidence) && intentConfidence > 0) {
+    points.push(["intent confidence", Math.round(Math.min(10, intentConfidence * 10))]);
   }
 
   if (ownership?.matchType === "EXACT") {
-    score += 15;
-    if (ownership.ownerStatus === "STABLE") score += 10;
-    else if (ownership.ownerStatus === "SPLIT") score -= 8;
-    else if (ownership.ownerStatus === "EMERGING") score += 2;
+    points.push(["exact GSC query ownership", 12]);
+    if (ownership.ownerStatus === "STABLE") points.push(["stable query owner", 10]);
+    else if (ownership.ownerStatus === "SPLIT") points.push(["split query ownership", -8]);
+    else if (ownership.ownerStatus === "EMERGING") points.push(["emerging query ownership", -3]);
   } else if (ownership?.matchType === "RELATED") {
-    score += 3;
+    points.push(["related-only query evidence", 2]);
   }
 
-  if (item.gscDataQuality?.truncated) score -= 10;
-  if (item.gscDataQuality?.completeness != null && item.gscDataQuality.completeness < 0.8) score -= 5;
+  if (item.gscDataQuality?.truncated) points.push(["GSC snapshot truncated", -12]);
+  if (item.gscDataQuality?.completeness != null && item.gscDataQuality.completeness < 0.8) {
+    points.push(["GSC completeness below 80%", -8]);
+  }
 
-  if (item.cannibalization?.severity === "HIGH") score -= 10;
-  else if (item.cannibalization?.severity === "MEDIUM") score -= 5;
+  if (item.cannibalization?.severity === "HIGH") points.push(["high cannibalization", -10]);
+  else if (item.cannibalization?.severity === "MEDIUM") points.push(["medium cannibalization", -5]);
 
   if (item.temporalCannibalization?.actionable) {
-    score += item.temporalCannibalization.severity === "HIGH" ? 5 : 3;
+    points.push([
+      item.temporalCannibalization.severity === "HIGH"
+        ? "high temporal ownership shift"
+        : "medium temporal ownership shift",
+      item.temporalCannibalization.severity === "HIGH" ? 4 : 2
+    ]);
   }
 
-  if (item.gapDetected) score += 5;
-  return Math.round(clamp(score));
+  if (item.gapDetected) points.push(["content gap confirmed", 4]);
+
+  return points;
 }
 
+function decisionConfidenceScore(item = {}) {
+  return Math.round(clamp(
+    30 + decisionConfidenceEvidence(item).reduce((sum, [, value]) => sum + value, 0)
+  ));
+}
+
+export const decisionConfidenceEvidence = decisionConfidenceEvidence;
 function marketSignalScore(signal = {}) {
   if (!signal?.available) return null;
 
@@ -158,10 +179,13 @@ export function scoreOpportunity(item = {}) {
   const weightedMarket = market == null ? 0 : market * 0.20;
   const weightTotal = market == null ? 1 : 1.2;
   const score = clamp(Math.round((weightedBase + weightedSearch + weightedMarket) / weightTotal - competitionPenalty + temporalBonus));
-  const decisionConfidence = decisionConfidenceScore({
+  const confidenceEvidence = decisionConfidenceEvidence({
     ...item,
     marketSignal: market == null ? undefined : item.marketSignal
   });
+  const decisionConfidence = Math.round(clamp(
+    30 + confidenceEvidence.reduce((sum, [, value]) => sum + value, 0)
+  ));
   return Object.freeze({
     ...item,
     action: classifyOpportunityAction(item),
@@ -173,7 +197,8 @@ export function scoreOpportunity(item = {}) {
       competitionPenalty,
       temporalBonus,
       marketSignal: market,
-      decisionConfidence
+      decisionConfidence,
+      confidenceEvidence: Object.freeze(confidenceEvidence)
     })
   });
 }
@@ -183,4 +208,4 @@ export function scoreOpportunities(items = []) {
 }
 
 
-export { decisionConfidenceScore };
+export { decisionConfidenceScore, decisionConfidenceEvidence };
