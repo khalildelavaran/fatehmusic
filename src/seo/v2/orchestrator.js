@@ -65,9 +65,9 @@ function articleSemantics(posts = [], siteUrl = "") {
 
 /**
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
- * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], siteUrl?: string}} options
+ * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketSignals = [], marketKeywordRows = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
@@ -92,6 +92,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, {
     pageSemantics: pages,
     gscDataQuality,
+    marketDataQuality,
     marketSignals: mergedMarketSignals
   });
   const articleNodes = pages.map((page) => ({
@@ -181,6 +182,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       gscCoverageStatus: search.dataQuality?.coverageStatus || "EMPTY",
       gscFreshness: search.dataQuality?.freshness || "UNKNOWN",
       gscAgeDays: search.dataQuality?.ageDays ?? null,
+      marketFreshness: search.marketDataQuality?.freshness || "UNKNOWN",
+      marketAgeDays: search.marketDataQuality?.ageDays ?? null,
+      marketSignalCount: search.marketDataQuality?.signalCount || 0,
       marketOpportunityCount: marketOpportunities.length
     })
   });
