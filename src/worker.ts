@@ -37,18 +37,23 @@ export default {
       return;
     }
     if (controller.cron === "15 1 * * *") {
-      // Refresh Search Console first, then use the fresh signals for topic discovery.
-      // Keeping both tasks under one trigger stays within the Free-plan account limit.
+      // Search Console runs in its own invocation so its D1 query budget is not
+      // shared with Topic Discovery on Workers Free.
       ctx.waitUntil((async () => {
-        // A transient GSC outage must not block topic discovery; discovery can
-        // continue safely from the last successful Search Console snapshot.
         try {
           const gscResult = await runScheduledSearchConsoleSync(env);
           console.log("Scheduled GSC sync:", gscResult.status);
         } catch (error) {
-          console.error("Scheduled GSC sync failed; continuing with existing data:", error);
+          console.error("Scheduled GSC sync failed; keeping the last successful snapshot:", error);
         }
+      })());
+      return;
+    }
 
+    if (controller.cron === "45 1 * * *") {
+      // Run after the GSC window so discovery normally consumes the fresh data,
+      // while still remaining independent when Search Console is unavailable.
+      ctx.waitUntil((async () => {
         try {
           const discoveryResult = await runTopicDiscovery(env.DB, { env });
           console.log("Scheduled topic discovery:", discoveryResult.status);
