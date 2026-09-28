@@ -129,7 +129,7 @@ export function detectSemanticTemporalCannibalization(rows = [], {
 
     for (const [clusterKey, currentCluster] of currentSnapshot.clusters) {
       const previousCluster = previousSnapshot.clusters.get(clusterKey);
-      if (!previousCluster || currentCluster.pageCount < 2 || previousCluster.pageCount < 1) continue;
+      if (!previousCluster || currentCluster.queryCount < 2 || previousCluster.queryCount < 2 || currentCluster.pageCount < 2 || previousCluster.pageCount < 1) continue;
 
       const previousOwner = previousCluster.pages[0];
       const currentOwner = currentCluster.pages[0];
