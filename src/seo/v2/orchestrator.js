@@ -78,10 +78,17 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gscRows: currentScoringRows(gscRows)
   });
   const marketSignalMap = buildMarketSignalMap(marketOpportunities);
+  const currentRowsForGapBaseline = currentScoringRows(gscRows);
   const competitorGaps = buildCompetitiveGapReport({
     competitorKeywordRows,
-    targetKeywordRows,
-    targetQueries
+    targetKeywordRows: [
+      ...targetKeywordRows,
+      ...marketKeywordRows
+    ],
+    targetQueries: [
+      ...targetQueries,
+      ...currentRowsForGapBaseline.map((row) => row?.query).filter(Boolean)
+    ]
   });
   const mergedMarketSignals = new Map(marketSignalMap);
   if (marketSignals instanceof Map) {
