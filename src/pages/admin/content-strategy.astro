@@ -273,6 +273,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                 <p>{action.target_url}</p>
                 {action.latest && <small>CTR: {(Number(action.latest.ctr) * 100).toFixed(1)}% · رتبه: {action.latest.position != null ? Number(action.latest.position).toFixed(1) : "-"} · Impression: {Math.round(Number(action.latest.impressions)).toLocaleString("fa-IR")}</small>}
                 {action.ctrDelta != null && <small>تغییر CTR: {(action.ctrDelta * 100).toFixed(2)}% · تغییر رتبه: {action.positionDelta?.toFixed(2) ?? "-"}</small>}
+                {action.outcome && <small>نتیجه: {action.outcome.effect === "POSITIVE" ? "شواهد مثبت" : action.outcome.effect === "NEGATIVE" ? "شواهد منفی" : action.outcome.effect === "NEUTRAL" ? "خنثی" : "داده ناکافی"} · اطمینان اندازه‌گیری: {action.outcome.confidence}%</small>}
               </article>)}
             </div>
           )}
