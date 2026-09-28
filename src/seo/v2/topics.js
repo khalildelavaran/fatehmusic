@@ -53,13 +53,33 @@ function suppressParentTopics(topics) {
     return topics.filter((topic) => topic.slug !== PARENT_TOPIC);
 }
 
+function suppressSubsumedTopics(topics) {
+    return topics.filter((topic) => {
+        const broadMatches = topic.matchedBy || [];
+        return !topics.some((candidate) => {
+            if (candidate.slug === topic.slug) return false;
+            const specificMatches = candidate.matchedBy || [];
+
+            return specificMatches.some((specificPhrase) =>
+                broadMatches.some((broadPhrase) => {
+                    const broadTokens = normalizeSemanticText(broadPhrase).split(/\s+/).filter(Boolean);
+                    const specificTokens = normalizeSemanticText(specificPhrase).split(/\s+/).filter(Boolean);
+                    return specificTokens.length > broadTokens.length &&
+                        broadTokens.length > 0 &&
+                        containsSemanticPhrase(specificPhrase, broadPhrase);
+                })
+            );
+        });
+    });
+}
+
 function applyTopicPrecedence(topics) {
     // Local scope is a more specific semantic scope than the generic
     // "music-education" topic. A query such as "آموزش موسیقی در شوشتر"
     // must become one local asset, not two independent topic clusters.
     const hasLocalTopic = topics.some((topic) => topic.slug === LOCAL_TOPIC);
     const narrowed = hasLocalTopic ? topics.filter((topic) => topic.slug !== PARENT_TOPIC) : topics;
-    return suppressParentTopics(narrowed);
+    return suppressSubsumedTopics(suppressParentTopics(narrowed));
 }
 
 /**
