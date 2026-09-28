@@ -63,14 +63,14 @@ function articleSemantics(posts = [], siteUrl = "") {
 
 /**
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
- * @param {{posts?: object[], courses?: object[], topicCandidates?: object[], gscRows?: object[], siteUrl?: string}} options
+ * @param {{posts?: object[], courses?: object[], topicCandidates?: object[], gscRows?: object[], marketSignals?: object[]|Map|string, siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates = [], gscRows = [], marketSignals = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
-  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
+  const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages, marketSignals });
   const articleNodes = pages.map((page) => ({
     url: page.url,
     title: page.title,
