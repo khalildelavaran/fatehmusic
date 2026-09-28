@@ -269,12 +269,12 @@ export async function releaseGeneratingTopic(db: D1Database, id: number): Promis
 
 export async function markTopicDrafted(db: D1Database, id: number, postId: number): Promise<void> {
   await db
-    .prepare("UPDATE content_topics SET status = 'drafted', used_at = NULL, used_by_post_id = ?, updated_at = datetime('now') WHERE id = ? AND status = 'generating'")
+    .prepare("UPDATE content_topics SET status='drafted', used_at=NULL, used_by_post_id=?, updated_at=datetime('now') WHERE id=? AND status='generating'")
     .bind(postId, id)
     .run();
 }
 
-export async function markTopicUsed(db: D1Database, postId: number): Promise<number> {
+export async function markTopicPublished(db: D1Database, postId: number): Promise<number> {
   const result = await db
     .prepare("UPDATE content_topics SET status='used', used_at=COALESCE(used_at, datetime('now')), updated_at=datetime('now') WHERE used_by_post_id=? AND status='drafted'")
     .bind(postId)
@@ -282,10 +282,27 @@ export async function markTopicUsed(db: D1Database, postId: number): Promise<num
   return Number(result.meta?.changes || 0);
 }
 
-export async function releaseDraftedTopic(db: D1Database, postId: number): Promise<number> {
+export async function markTopicDraftPost(db: D1Database, postId: number): Promise<number> {
   const result = await db
-    .prepare("UPDATE content_topics SET status='approved', used_by_post_id=NULL, used_at=NULL, updated_at=datetime('now') WHERE used_by_post_id=? AND status='drafted'")
+    .prepare("UPDATE content_topics SET status='drafted', used_at=NULL, updated_at=datetime('now') WHERE used_by_post_id=? AND status='used'")
     .bind(postId)
     .run();
   return Number(result.meta?.changes || 0);
 }
+
+export async function releaseTopicForDeletedPost(db: D1Database, postId: number): Promise<number> {
+  const result = await db
+    .prepare("UPDATE content_topics SET status='approved', used_by_post_id=NULL, used_at=NULL, updated_at=datetime('now') WHERE used_by_post_id=? AND status IN ('drafted', 'used')")
+    .bind(postId)
+    .run();
+  return Number(result.meta?.changes || 0);
+}
+
+export async function markTopicUsed(db: D1Database, postId: number): Promise<number> {
+  return markTopicPublished(db, postId);
+}
+
+export async function releaseDraftedTopic(db: D1Database, postId: number): Promise<number> {
+  return releaseTopicForDeletedPost(db, postId);
+}
+
