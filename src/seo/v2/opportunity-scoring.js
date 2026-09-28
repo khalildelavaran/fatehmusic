@@ -11,6 +11,18 @@ function decisionConfidenceEvidence(item = {}) {
 
   if (signal?.available) {
     points.push(["GSC signal present", 18]);
+    const queryIntent = signal.queryIntentEvidence;
+    const targetIntent = String(item.searchIntent || item.intent || "").toLowerCase();
+    if (queryIntent?.primary) {
+      if (targetIntent && queryIntent.primary === targetIntent && Number(queryIntent.confidence || 0) >= 0.55) {
+        points.push(["GSC query intent agrees with target", 6]);
+      } else if (targetIntent && queryIntent.primary !== targetIntent && Number(queryIntent.confidence || 0) >= 0.70) {
+        points.push(["GSC query intent conflicts with target", -5]);
+      }
+      if (Number(queryIntent.primaryShare || 0) < 0.50 && Number(queryIntent.queryCount || 0) >= 2) {
+        points.push(["ambiguous GSC query intent", -3]);
+      }
+    }
     const impressions = Math.max(0, Number(signal.impressions) || 0);
     if (impressions >= 300) points.push(["GSC sample >= 300 impressions", 15]);
     else if (impressions >= 100) points.push(["GSC sample >= 100 impressions", 12]);
