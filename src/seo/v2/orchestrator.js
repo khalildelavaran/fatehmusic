@@ -79,7 +79,25 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
-  const pageNodes = pages.map((page) => ({ url: page.url, title: page.title, type: "Article", topics: page.topics, priority: 12, local: true }));
+  const articleNodes = pages.map((page) => ({
+    url: page.url,
+    title: page.title,
+    type: "Article",
+    topics: page.topics,
+    priority: 12,
+    local: page.local ?? true
+  }));
+  const siteNodes = buildSiteLinkCandidates({
+    url: siteUrl,
+    name: "آموزشگاه موسیقی فاتح",
+    keywords: ["آموزش موسیقی", "آموزشگاه موسیقی", "شوشتر"]
+  });
+  const graphNodeMap = new Map();
+  for (const node of [...siteNodes, ...articleNodes]) {
+    if (!node?.url || graphNodeMap.has(node.url)) continue;
+    graphNodeMap.set(node.url, node);
+  }
+  const pageNodes = [...graphNodeMap.values()];
   const currentGscRows = currentScoringRows(gscRows);
   const gscIndex = buildGscSignalIndex(currentGscRows);
   const cannibalization = detectSearchCannibalization(currentGscRows, { pageSemantics: pages });
