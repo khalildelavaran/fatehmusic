@@ -245,6 +245,55 @@ export function classifyOpportunityAction(item = {}) {
   return item.action || "NEW_CONTENT";
 }
 
+function buildDecisionTrace(item, action, evidence) {
+  const reasonCodes = [];
+
+  if (
+    item.searchOwnership?.matchType === "EXACT" &&
+    item.searchOwnership?.ownerStatus === "STABLE"
+  ) {
+    reasonCodes.push("GSC_EXACT_OWNER_STABLE");
+  } else if (item.semanticQueryCluster?.ownerStatus === "STABLE") {
+    reasonCodes.push("GSC_SEMANTIC_CLUSTER_STABLE");
+  }
+
+  if (item.cannibalization?.severity === "HIGH") reasonCodes.push("CANNIBALIZATION_HIGH");
+  else if (item.cannibalization?.severity === "MEDIUM") reasonCodes.push("CANNIBALIZATION_MEDIUM");
+
+  if (item.temporalCannibalization?.actionable) {
+    reasonCodes.push(
+      item.temporalCannibalization.severity === "HIGH"
+        ? "TEMPORAL_OWNER_SHIFT_HIGH"
+        : "TEMPORAL_OWNER_SHIFT_MEDIUM"
+    );
+  }
+
+  const position = Number(item.searchSignal?.position);
+  const ctr = Number(item.searchSignal?.ctr);
+  if (Number.isFinite(position) && position >= 1 && position <= 10 && Number.isFinite(ctr) && ctr < 0.03) {
+    reasonCodes.push("TOP10_LOW_CTR");
+  }
+  if (Number.isFinite(position) && position > 10 && position <= 30) {
+    reasonCodes.push("STRIKING_DISTANCE");
+  }
+  if (item.internalLinkGap === true || item.linkGap === true) reasonCodes.push("INTERNAL_LINK_GAP");
+  if (item.gapDetected) reasonCodes.push("CONTENT_GAP");
+  if (item.marketSignal?.available) reasonCodes.push("MARKET_SIGNAL_PRESENT");
+  if (evidence.independentMarketAndGsc) reasonCodes.push("CROSS_SOURCE_EVIDENCE");
+
+  if (reasonCodes.length === 0) {
+    reasonCodes.push(action === "NEW_CONTENT" ? "NO_ESTABLISHED_OWNER" : "UPSTREAM_ACTION");
+  }
+
+  return Object.freeze({
+    action,
+    reasonCodes: Object.freeze([...new Set(reasonCodes)]),
+    evidenceScore: evidence.score,
+    evidenceQuality: evidence.quality,
+    evidenceSources: evidence.sources
+  });
+}
+
 export function scoreOpportunity(item = {}) {
   const base = clamp(item.priority);
   const signal = searchSignalScore(item.searchSignal);
@@ -268,9 +317,11 @@ export function scoreOpportunity(item = {}) {
     ...item,
     marketSignal: market == null ? undefined : item.marketSignal
   });
+  const action = classifyOpportunityAction(item);
+  const decisionTrace = buildDecisionTrace(item, action, evidence);
   return Object.freeze({
     ...item,
-    action: classifyOpportunityAction(item),
+    action,
     priority: score,
     decisionConfidence,
     scoreBreakdown: Object.freeze({
@@ -284,7 +335,8 @@ export function scoreOpportunity(item = {}) {
       evidenceSourceCount: evidence.sourceCount,
       evidenceSources: evidence.sources,
       crossSourceAgreement: crossSourceAgreement(item),
-      confidenceEvidence: Object.freeze(confidenceEvidence)
+      confidenceEvidence: Object.freeze(confidenceEvidence),
+      decisionTrace
     })
   });
 }
