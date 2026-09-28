@@ -273,7 +273,13 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                       {item.searchSignal?.available && <div><strong>داده جستجو:</strong> {Math.round(Number(item.searchSignal.impressions || 0)).toLocaleString("fa-IR")} impression · CTR {(Number(item.searchSignal.ctr || 0) * 100).toFixed(1)}% · رتبه {item.searchSignal.position != null ? Number(item.searchSignal.position).toFixed(1) : "-"}</div>}
                     </div>
                     {item.searchSignal?.available && item.searchSignal.matchedQueries?.length > 0 && (
-                      <div class="strategy-search-evidence"><strong>Queryهای مؤثر</strong><div>{item.searchSignal.matchedQueries.slice(0, 5).map((query: string) => <span>{query}</span>)}</div></div>
+                      <div class="strategy-search-evidence">
+                        <strong>Queryهای مؤثر</strong>
+                        <div>{item.searchSignal.matchedQueries.slice(0, 5).map((query: string) => <span>{query}</span>)}</div>
+                        {item.searchSignal.matchedPages?.length > 0 && (
+                          <small>مالک فعلی: {item.searchSignal.matchedPages.slice(0, 3).map((page: string) => page.replace(site.url, "") || "/").join(" · ")}</small>
+                        )}
+                      </div>
                     )}
                     {item.existingArticleSlugs?.length > 0 && <div class="strategy-existing"><strong>محتوای موجود برای بهینه‌سازی</strong><div>{item.existingArticleSlugs.map((slug: string) => <code>{slug}</code>)}</div></div>}
                     <div class="strategy-queries"><strong>Query angles</strong><div>{item.queryAngles.map((query: string) => <span>{query}</span>)}</div></div>
