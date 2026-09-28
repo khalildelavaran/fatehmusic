@@ -185,3 +185,45 @@ export function validateKnowledgeGraph(graph) {
     errors: Object.freeze(errors)
   });
 }
+
+
+export function findRelatedEntities(graph, nodeId, {
+  relations = [],
+  direction = "out",
+  limit = 20
+} = {}) {
+  if (!graph?.nodes?.length || !nodeId) return [];
+
+  const relationSet = new Set((Array.isArray(relations) ? relations : [relations]).filter(Boolean));
+  const nodesById = new Map(graph.nodes.map((node) => [node.id, node]));
+  const matches = [];
+
+  for (const edge of graph.edges || []) {
+    const isOutgoing = edge.from === nodeId;
+    const isIncoming = edge.to === nodeId;
+    const directionMatch =
+      direction === "both" ||
+      (direction === "out" && isOutgoing) ||
+      (direction === "in" && isIncoming);
+
+    if (!directionMatch) continue;
+    if (relationSet.size && !relationSet.has(edge.relation)) continue;
+
+    const targetId = isOutgoing ? edge.to : edge.from;
+    const target = nodesById.get(targetId);
+    if (!target) continue;
+
+    matches.push({
+      entity: target,
+      relation: edge.relation,
+      direction: isOutgoing ? "out" : "in",
+      confidence: Number(edge.confidence) || 0
+    });
+  }
+
+  return Object.freeze(
+    matches
+      .sort((a, b) => b.confidence - a.confidence || a.relation.localeCompare(b.relation))
+      .slice(0, Math.max(0, Number(limit) || 20))
+  );
+}
