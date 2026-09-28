@@ -16,6 +16,7 @@ import { instructors } from "../../data/instructors.js";
 import { courseContent } from "../../data/course-content.js";
 import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
+import { slugifyArticleTitle } from "../../seo/v2/content-strategy.js";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
@@ -49,19 +50,6 @@ interface SelectedTopic {
   excerpt: string;
   topicLabel: string;
   scoreTotal: number | null;
-}
-
-function slugify(text: string): string {
-  const base = String(text || "")
-    .normalize("NFKC")
-    .trim()
-    .toLocaleLowerCase("fa")
-    .replace(/[^a-z0-9\u0600-\u06ff\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-  return base;
 }
 
 function stableIndex(size: number, offset = 0): number {
@@ -439,7 +427,7 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
     // The Topic title is the canonical editorial identity. Do not let the
     // language model invent a divergent URL slug; only collision suffixes
     // are added when an existing post already uses the deterministic slug.
-    const baseSlug = slugify(topic.title);
+    const baseSlug = slugifyArticleTitle(topic.title);
     if (!baseSlug) {
       await releaseClaim();
       return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
