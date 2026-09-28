@@ -342,6 +342,17 @@ describe("Persian query normalization", () => {
 
 
 describe("GSC query ownership map", () => {
+  it("keeps meaningful two-word queries such as آموزش گیتار eligible", () => {
+    const map = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 25 },
+      { query: "گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 100 }
+    ]);
+
+    expect(map).toHaveLength(1);
+    expect(map[0].displayQuery).toBe("آموزش گیتار");
+    expect(map[0].impressions).toBe(25);
+  });
+
   it("builds page shares for substantive non-brand queries", () => {
     const map = buildQueryOwnershipMap([
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
