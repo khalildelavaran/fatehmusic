@@ -265,6 +265,10 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                     {item.existingArticleSlugs?.length > 0 && <div class="strategy-existing"><strong>محتوای موجود برای بهینه‌سازی</strong><div>{item.existingArticleSlugs.map((slug: string) => <code>{slug}</code>)}</div></div>}
                     <div class="strategy-queries"><strong>Query angles</strong><div>{item.queryAngles.map((query: string) => <span>{query}</span>)}</div></div>
                     <div class="strategy-links"><strong>Internal links</strong><div>{item.recommendedLinks.map((url: string) => <a href={url}>{url.replace(site.url, "") || "/"}</a>)}</div></div>
+                    <div class="strategy-generate">
+                      <button type="button" class="ai-generate" data-generate-opportunity data-title={item.title} data-course-slug={item.course?.slug ?? ""} data-course-title={item.course?.title ?? ""} data-topic-name={item.topicName ?? ""}>ساخت با هوش مصنوعی</button>
+                      <p class="admin-ai-status" data-opportunity-status role="status"></p>
+                    </div>
                   </div>
                 </article>
               ))}

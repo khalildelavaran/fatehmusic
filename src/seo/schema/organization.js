@@ -43,11 +43,14 @@ export function buildOrganizationSchema(site) {
       "آموزش گیتار",
       "آموزش پیانو",
       "آموزش ویولن",
-      "آموزش تار و سه تار",
-      "آموزش سنتور و کمانچه",
+      "آموزش کمانچه",
+      "آموزش تار و سه‌تار",
+      "آموزش سنتور",
       "آموزش آواز",
-      "سلفژ و تئوری موسیقی",
-      "موسیقی کودک"
+      "آموزش موسیقی کودک",
+      "سلفژ",
+      "تئوری موسیقی",
+      "ریتم و وزن‌خوانی"
     ],
     contactPoint: [{
       "@type": "ContactPoint",
@@ -68,6 +71,7 @@ export function buildOrganizationSchema(site) {
       longitude: site.geo.longitude
     },
     hasMap: site.mapUrl,
+    mainEntityOfPage: { "@id": `${site.url}/#webpage` },
     location: { "@id": `${site.url}/locations/shushtar#place` },
     areaServed: site.areaServed,
     openingHoursSpecification: site.openingHoursSpecification,

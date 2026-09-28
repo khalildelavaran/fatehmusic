@@ -4,11 +4,14 @@ import { runTopicDiscovery } from "./ai/content-engine/pipeline";
 import { runScheduledSearchConsoleSync } from "./seo/v2/providers/search-console-sync.js";
 import { runScheduledAhrefsMarketIntelligence } from "./seo/v2/providers/ahrefs.js";
 import { generateClassReminders } from "./server/in-app-notifications";
+import { applySecurityHeaders } from "./security-headers";
 
 interface WorkerEnv extends Env {
   DB: D1Database;
   AI: Ai;
   ANTHROPIC_API_KEY?: string;
+  /** Set to "true" (wrangler var) to re-enable the daily automatic AI draft. Off by default. */
+  AUTO_ARTICLE_GENERATION?: string;
   GSC_CLIENT_EMAIL?: string;
   GSC_PRIVATE_KEY?: string;
   GSC_SITE_URL?: string;
@@ -21,7 +24,8 @@ interface WorkerEnv extends Env {
 
 export default {
   async fetch(request: Request, env: WorkerEnv, ctx: ExecutionContext) {
-    return handle(request, env, ctx);
+    const response = await handle(request, env, ctx);
+    return applySecurityHeaders(request, response);
   },
 
   async scheduled(controller: ScheduledController, env: WorkerEnv, ctx: ExecutionContext) {
@@ -65,7 +69,12 @@ export default {
     }
 
     if (controller.cron === "30 2 * * *") {
-      ctx.waitUntil(runDailyArticleGeneration(env));
+      // Daily automatic AI drafts are paused (they need a paid Anthropic API key).
+      // Drafts are now created on demand from the admin "ساخت با هوش مصنوعی" buttons.
+      // To resume the daily run: set AUTO_ARTICLE_GENERATION="true" and ANTHROPIC_API_KEY.
+      if (env.AUTO_ARTICLE_GENERATION === "true") {
+        ctx.waitUntil(runDailyArticleGeneration(env));
+      }
       return;
     }
 

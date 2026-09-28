@@ -90,18 +90,8 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
-    <!-- Load the Persian webfont without blocking first paint. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap"
-      media="print"
-      onload="this.media='all'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" />
-    </noscript>
+    <!-- Self-hosted Vazirmatn (see src/styles/global.css). Preload the Persian subset only. -->
+    <link rel="preload" href="/fonts/vazirmatn-arabic-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
 
     <meta property="og:type" content={openGraph["og:type"]} />
     <meta property="og:locale" content={openGraph["og:locale"]} />

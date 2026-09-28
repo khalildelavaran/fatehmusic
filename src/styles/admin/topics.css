@@ -143,3 +143,33 @@
         align-items:stretch;
     }
 }
+
+/* AI generation buttons (topics table + strategy queue) */
+.admin-shell button.ai-generate{
+    background:rgba(212,175,55,.14);
+    color:#e6c76a;
+    border:1px solid rgba(212,175,55,.5);
+    font-weight:700;
+}
+
+.admin-shell button.ai-generate:hover:not(:disabled){
+    background:rgba(212,175,55,.26);
+    transform:translateY(-2px);
+}
+
+.admin-shell button.ai-generate:disabled{
+    opacity:.6;
+    cursor:progress;
+}
+
+.strategy-generate{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-top:14px;
+}
+
+.strategy-generate .admin-ai-status{
+    margin:0;
+}

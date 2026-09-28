@@ -46,6 +46,7 @@ function renderTopics() {
       const actions = [];
       if (topic.status !== "approved" && topic.status !== "generating" && topic.status !== "drafted" && topic.status !== "used") actions.push(`<button type="button" data-action="approved" data-id="${topic.id}">تأیید</button>`);
       if (topic.status !== "rejected" && topic.status !== "generating" && topic.status !== "drafted" && topic.status !== "used") actions.push(`<button type="button" class="secondary" data-action="rejected" data-id="${topic.id}">رد</button>`);
+      if (topic.status === "approved" || topic.status === "candidate") actions.unshift(`<button type="button" class="ai-generate" data-generate-topic="${topic.id}">ساخت با هوش مصنوعی</button>`);
       actions.push(`<button type="button" class="danger" data-delete="${topic.id}">حذف</button>`);
       return `
     <tr>
@@ -92,11 +93,62 @@ generateButton.addEventListener("click", async () => {
   }
 });
 
+async function requestArticle(payload) {
+  const response = await fetch("/api/admin/topic-generate-article", {
+    method: "POST", credentials: "same-origin", headers: headers(), body: JSON.stringify(payload)
+  });
+  if (response.status === 401) { window.location.assign("/admin/login"); return null; }
+  return response.json().catch(() => ({ success: false, message: "پاسخ نامعتبر از سرور." }));
+}
+
+// Strategy tab: "ساخت با هوش مصنوعی" on a production-queue opportunity.
+document.addEventListener("click", async (event) => {
+  const button = event.target instanceof HTMLElement ? event.target.closest("[data-generate-opportunity]") : null;
+  if (!button) return;
+  const card = button.closest(".strategy-card");
+  const statusEl = card?.querySelector("[data-opportunity-status]");
+  button.disabled = true;
+  const label = button.textContent;
+  button.textContent = "در حال تولید...";
+  if (statusEl) { statusEl.textContent = ""; statusEl.className = "admin-ai-status"; }
+  try {
+    const data = await requestArticle({
+      title: button.dataset.title,
+      relatedCourseSlug: button.dataset.courseSlug || undefined,
+      relatedCourseTitle: button.dataset.courseTitle || undefined,
+      topicLabel: button.dataset.topicName || undefined
+    });
+    if (!data) return;
+    if (statusEl) { statusEl.textContent = data.message; statusEl.className = "admin-ai-status " + (data.success ? "is-success" : "is-error"); }
+  } catch {
+    if (statusEl) { statusEl.textContent = "خطای شبکه هنگام تماس با سرور."; statusEl.className = "admin-ai-status is-error"; }
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
+});
+
 list.addEventListener("click", async (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
   const status = target.dataset.action;
   const deleteId = target.dataset.delete;
+  const generateId = target.dataset.generateTopic;
+
+  if (generateId) {
+    target.disabled = true;
+    target.textContent = "در حال تولید...";
+    setGenerateStatus("");
+    try {
+      const data = await requestArticle({ id: Number(generateId) });
+      if (!data) return;
+      setGenerateStatus(data.message, !data.success);
+    } catch {
+      setGenerateStatus("خطای شبکه هنگام تماس با سرور.", true);
+    }
+    await loadTopics();
+    return;
+  }
 
   if (status) {
     const id = Number(target.dataset.id);

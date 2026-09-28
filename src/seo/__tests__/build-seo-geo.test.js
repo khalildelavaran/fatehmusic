@@ -35,15 +35,16 @@ describe("buildSEO GEO integration", () => {
     });
 
 
-    it("includes the GEO authority entity in the canonical graph", () => {
+    it("exposes a single merged organization entity (no duplicate #authority node)", () => {
         const result = buildSEO({ path: "/", title: "آموزشگاه موسیقی فاتح" });
-        const authority = result.schemaGraph["@graph"].find(
-            (node) => node?.["@id"] === "https://fatehmusic.ir#authority"
-        );
+        const graph = result.schemaGraph["@graph"];
+        const org = graph.find((node) => node?.["@id"] === "https://fatehmusic.ir/#organization");
 
-        expect(authority).toBeDefined();
-        expect(authority["@type"]).toBe("EducationalOrganization");
-        expect(authority.sameAs).toEqual(expect.any(Array));
+        expect(graph.some((node) => String(node?.["@id"] || "").endsWith("#authority"))).toBe(false);
+        expect(org).toBeDefined();
+        expect(org["@type"]).toEqual(expect.arrayContaining(["EducationalOrganization", "LocalBusiness"]));
+        expect(org.sameAs).toEqual(expect.any(Array));
+        expect(org.knowsAbout.length).toBeGreaterThanOrEqual(10);
     });
 
     it("contains only one canonical Organization and WebSite", () => {

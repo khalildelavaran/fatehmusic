@@ -1,6 +1,6 @@
-# Static-asset headers (SSR responses should get the same via a Cloudflare
-# Transform Rule or src/worker.ts — see the SEO audit report).
+# Static-asset headers. SSR/API responses get theirs from src/security-headers.ts.
 /*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self)
@@ -10,3 +10,7 @@
 
 /llms.txt
   Content-Type: text/plain; charset=utf-8
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *

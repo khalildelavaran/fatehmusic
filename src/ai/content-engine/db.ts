@@ -262,6 +262,27 @@ export async function claimNextApprovedTopic(db: D1Database, attempts = 3): Prom
   return null;
 }
 
+/**
+ * Atomically claim ONE specific topic (chosen by an admin from the UI) for AI
+ * generation. Only approved/candidate topics can be claimed; anything already
+ * generating, drafted, used or rejected returns null.
+ */
+export async function claimTopicById(db: D1Database, id: number): Promise<ContentTopicRow | null> {
+  await resetStaleGeneratingTopics(db);
+  const row = await db
+    .prepare("SELECT * FROM content_topics WHERE id = ? AND status IN ('approved','candidate')")
+    .bind(id)
+    .first<ContentTopicRow>();
+  if (!row) return null;
+
+  const claimed = await db
+    .prepare("UPDATE content_topics SET status='generating', updated_at=datetime('now') WHERE id=? AND status IN ('approved','candidate')")
+    .bind(id)
+    .run();
+  if (Number(claimed.meta?.changes || 0) !== 1) return null;
+  return { ...row, status: "generating", updated_at: new Date().toISOString() };
+}
+
 export async function releaseGeneratingTopic(db: D1Database, id: number): Promise<void> {
   await db
     .prepare("UPDATE content_topics SET status='approved', updated_at=datetime('now') WHERE id=? AND status='generating'")

@@ -19,7 +19,7 @@ import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { slugifyArticleTitle } from "../../seo/v2/content-strategy.js";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
-import { claimNextApprovedTopic, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
+import { claimNextApprovedTopic, claimTopicById, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { NEAR_DUPLICATE_THRESHOLD } from "./dedup";
 import { callClaudeArticle } from "./providers/anthropic";
 import type { ContentTopicRow } from "./types";
@@ -127,7 +127,44 @@ async function pickFallbackTopic(db: D1Database): Promise<SelectedTopic | null> 
   };
 }
 
-async function selectTopic(db: D1Database): Promise<SelectedTopic> {
+export interface GenerateOptions {
+  /** Generate for this exact queued topic (admin clicked the button on a topic row). */
+  topicId?: number;
+  /** Generate for a strategy opportunity that is not in the topic queue. */
+  manualTopic?: {
+    title: string;
+    relatedCourseSlug?: string | null;
+    relatedCourseTitle?: string | null;
+    topicLabel?: string | null;
+  };
+}
+
+async function selectTopic(db: D1Database, options: GenerateOptions = {}): Promise<SelectedTopic> {
+  if (options.manualTopic?.title?.trim()) {
+    const manual = options.manualTopic;
+    return {
+      topicRowId: null,
+      title: manual.title.trim(),
+      relatedCourseSlug: manual.relatedCourseSlug ?? null,
+      relatedCourseTitle: manual.relatedCourseTitle ?? null,
+      excerpt: "",
+      topicLabel: manual.topicLabel || manual.relatedCourseTitle || "عمومی",
+      scoreTotal: null
+    };
+  }
+  if (options.topicId) {
+    const picked = await claimTopicById(db, options.topicId);
+    if (!picked) throw new Error("TOPIC_NOT_AVAILABLE (این موضوع وجود ندارد یا در وضعیت قابل تولید نیست)");
+    return {
+      topicRowId: picked.id,
+      title: picked.title,
+      relatedCourseSlug: picked.related_course_slug,
+      relatedCourseTitle: picked.related_course_title,
+      excerpt: "",
+      topicLabel: picked.category ?? picked.related_course_title ?? "عمومی",
+      scoreTotal: picked.score_total
+    };
+  }
   const queued: ContentTopicRow | null = await claimNextApprovedTopic(db);
   if (queued) {
     return {
@@ -403,7 +440,7 @@ function buildBrief(topic: SelectedTopic): string {
   lines.push("عنوان، موضوع، فکت‌های رسمی و whitelist لینک‌های بالا را مبنا قرار بده. slug را تغییر نده؛ URL بر اساس همین عنوان توسط سیستم تعیین می‌شود.");
   return lines.join("\n");
 }
-export async function runDailyArticleGeneration(env: ArticleEnv): Promise<GenerateResult> {
+export async function runDailyArticleGeneration(env: ArticleEnv, options: GenerateOptions = {}): Promise<GenerateResult> {
   console.log("runDailyArticleGeneration: starting");
 
   if (!env.DB) {
@@ -418,7 +455,7 @@ export async function runDailyArticleGeneration(env: ArticleEnv): Promise<Genera
 
   let topic: SelectedTopic;
   try {
-    topic = await selectTopic(env.DB);
+    topic = await selectTopic(env.DB, options);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     console.error("runDailyArticleGeneration: topic selection failed:", error);
