@@ -7,6 +7,11 @@ function decisionConfidenceScore(item = {}) {
   const signal = item.searchSignal;
   const ownership = item.searchOwnership;
 
+  const intentConfidence = Number(item.intentConfidence);
+  if (Number.isFinite(intentConfidence) && intentConfidence > 0) {
+    score += Math.round(Math.min(10, intentConfidence * 10));
+  }
+
   if (signal?.available) {
     score += 15;
     const impressions = Math.max(0, Number(signal.impressions) || 0);
