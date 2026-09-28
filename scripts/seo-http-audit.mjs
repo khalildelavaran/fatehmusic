@@ -145,6 +145,11 @@ async function checkPublicPage(url) {
   if (/<meta[^>]+name=["']robots["'][^>]+content=["'][^"']*noindex/i.test(body)) {
     fail("PUBLIC_NOINDEX", url + ": live page is noindex but is present in sitemap");
   }
+
+  const xRobots = response.headers.get("x-robots-tag") || "";
+  if (/noindex/i.test(xRobots)) {
+    fail("PUBLIC_X_ROBOTS_NOINDEX", url + ": X-Robots-Tag contains noindex");
+  }
 }
 
 async function checkRedirect(from, to) {
