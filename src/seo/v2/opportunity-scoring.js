@@ -50,6 +50,8 @@ function decisionConfidenceEvidence(item = {}) {
   if (item.gscDataQuality?.completeness != null && item.gscDataQuality.completeness < 0.8) {
     points.push(["GSC completeness below 80%", -8]);
   }
+  if (item.gscDataQuality?.freshness === "STALE") points.push(["GSC snapshot is stale", -10]);
+  else if (item.gscDataQuality?.freshness === "AGING") points.push(["GSC snapshot is aging", -4]);
 
   if (item.cannibalization?.severity === "HIGH") points.push(["high cannibalization", -10]);
   else if (item.cannibalization?.severity === "MEDIUM") points.push(["medium cannibalization", -5]);
