@@ -406,6 +406,14 @@ function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
     reasons.push("MARKET_AGING");
   }
 
+  if (item.competitorDataQuality?.freshness === "STALE") {
+    cap = Math.min(cap, 86);
+    reasons.push("COMPETITOR_STALE");
+  } else if (item.competitorDataQuality?.freshness === "AGING") {
+    cap = Math.min(cap, 94);
+    reasons.push("COMPETITOR_AGING");
+  }
+
   if (evidence.sourceCount <= 1 && evidence.quality === "INSUFFICIENT") {
     cap = Math.min(cap, 58);
     reasons.push("EVIDENCE_INSUFFICIENT");
