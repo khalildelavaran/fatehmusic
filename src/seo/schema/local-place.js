@@ -34,7 +34,6 @@ export function buildLocalPlaceSchema(site) {
     sameAs: site.sameAs,
     areaServed: site.areaServed,
     parentOrganization: { "@id": site.url + "/#organization" },
-    containedInPlace: { "@type": "City", name: "شوشتر", containedInPlace: { "@type": "AdministrativeArea", name: "خوزستان" } },
     mainEntityOfPage: { "@id": url + "#webpage" }
   };
 }
