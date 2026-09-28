@@ -35,8 +35,8 @@ const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsRefdomainsHisto
 ]) : [null, null, null, null, null];
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
-const currentGscRows = gscRows.filter((row) =>
-  String((row as Record<string, unknown>).snapshotLabel || (row as Record<string, unknown>).snapshot_label || "") === "current"
+const currentGscRows = (gscRows as Array<Record<string, unknown>>).filter((row) =>
+  String(row.snapshotLabel || row.snapshot_label || "") === "current"
 );
 const intelligence = buildSEOIntelligence({
   posts,
@@ -67,8 +67,16 @@ const daysSince = (value: string | null | undefined) => {
   return Math.max(0, Math.floor((Date.now() - time) / 86_400_000));
 };
 
-const gscAgeDays = daysSince(latestGscSync?.finishedAt || latestGscSync?.startedAt);
-const ahrefsAgeDays = daysSince(ahrefsMetrics?.fetchedAt || ahrefsMetrics?.snapshotDate);
+const gscSyncMeta = latestGscSync as Record<string, unknown> | null;
+const ahrefsMeta = ahrefsMetrics as Record<string, unknown> | null;
+const gscAgeDays = daysSince(
+  typeof gscSyncMeta?.finishedAt === "string" ? gscSyncMeta.finishedAt :
+  typeof gscSyncMeta?.startedAt === "string" ? gscSyncMeta.startedAt : null
+);
+const ahrefsAgeDays = daysSince(
+  typeof ahrefsMeta?.fetchedAt === "string" ? ahrefsMeta.fetchedAt :
+  typeof ahrefsMeta?.snapshotDate === "string" ? ahrefsMeta.snapshotDate : null
+);
 const gscStale = gscAgeDays !== null && gscAgeDays > 3;
 const ahrefsStale = ahrefsAgeDays !== null && ahrefsAgeDays > 8;
 
