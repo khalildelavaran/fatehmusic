@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getExistingTitleIndex } from "../../../src/ai/content-engine/db";
+import { getExistingTitleIndex, getRunApprovedCount } from "../../../src/ai/content-engine/db";
 
 describe("content intelligence title index", () => {
   it("does not let rejected topics permanently block a title", async () => {
@@ -32,5 +32,28 @@ describe("content intelligence title index", () => {
     expect(index.normalizedKeys.has("موضوع تاییدشده")).toBe(true);
     expect(index.normalizedKeys.has("مقاله منتشرشده")).toBe(true);
     expect(calls[0]).toContain("WHERE status != 'rejected'");
+  });
+});
+
+
+describe("content intelligence discovery run counts", () => {
+  it("reads the persisted approved count for the current run", async () => {
+    const db = {
+      prepare(sql: string) {
+        expect(sql).toContain("FROM content_topics");
+        expect(sql).toContain("run_id = ?");
+        expect(sql).toContain("status = 'approved'");
+        return {
+          bind: (...args: unknown[]) => {
+            expect(args).toEqual([42]);
+            return {
+              first: async <T>() => ({ count: 3 } as T)
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await expect(getRunApprovedCount(db, 42)).resolves.toBe(3);
   });
 });
