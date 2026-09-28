@@ -27,6 +27,7 @@ describe("SEO audit evidence coverage", () => {
 
     expect(audit.coverageScore).toBeLessThan(100);
     expect(audit.score).toBeGreaterThan(0);
+    expect(audit.checks.some((check) => check.id === "answer-blocks")).toBe(false);
     expect(audit.summary.coverageScore).toBe(audit.coverageScore);
   });
 
