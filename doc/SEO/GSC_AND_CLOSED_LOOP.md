@@ -25,9 +25,11 @@ Service Account باید دسترسی مشاهده به Property آموزشگا�
 
 Search Console impression معادل حجم جستجوی ماهانه نیست. موتور آن را به‌عنوان تقاضای مشاهده‌شده استفاده می‌کند و تا وقتی یک provider واقعی keyword research متصل نشده، volume یا difficulty ساختگی تولید نمی‌کند.
 
-## ابعاد GSC
+## ابعاد و نگهداری GSC
 
 ذخیره‌سازی جدید country، device و search appearance را نیز پشتیبانی می‌کند. scoring فقط ردیف canonical بدون breakdown را می‌خواند تا یک query/page به‌خاطر چند dimension دوباره شمرده نشود.
+
+داده‌ی تصمیم‌گیری GSC به دو snapshot نام‌گذاری‌شده نگه داشته می‌شود: `current` و `previous`. هر snapshot یک پنجره‌ی ۲۸روزه است و sync جدید snapshot همان نام را جایگزین داده‌ی قبلی آن می‌کند؛ بنابراین پنجره‌های روزانه‌ی هم‌پوشان در scoring دوباره شمرده نمی‌شوند. ردیف‌های قدیمی مهاجرت‌شده با برچسب `legacy` عمداً وارد scoring نمی‌شوند.
 
 برای ذخیره‌ی breakdownهای country/device می‌توان Secret/Variable زیر را فعال کرد:
 
