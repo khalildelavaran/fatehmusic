@@ -10,18 +10,11 @@ import { detectTemporalCannibalization } from "./gsc-temporal.js";
 import { buildLinkGraph } from "./internal-links.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
+import { normalizeSemanticText } from "../helpers/text.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
 
-function normalize(value) {
-  return String(value ?? "")
-    .replace(/[\u200c\u200f\u200e]/g, "")
-    .replace(/[يى]/g, "ی")
-    .replace(/[ك]/g, "ک")
-    .replace(/[\s\-_]+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+function normalize(value) { return normalizeSemanticText(value); }
 
 /**
  * Stored topic-engine candidates can outlive the rules that generated them.
