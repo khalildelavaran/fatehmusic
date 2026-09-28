@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyOpportunityAction, scoreOpportunity, decisionConfidenceScore } from "./opportunity-scoring.js";
+import { classifyOpportunityAction, scoreOpportunity, decisionConfidenceScore, evidenceStrength } from "./opportunity-scoring.js";
 
 describe("opportunity scoring", () => {
   it("prioritizes CTR optimization for a strong-ranking page", () => {
@@ -63,6 +63,28 @@ describe("opportunity scoring", () => {
   it("keeps new-content opportunities when no search signal exists", () => {
     expect(classifyOpportunityAction({ action: "NEW_CONTENT", searchSignal: { available: false } })).toBe("NEW_CONTENT");
   });
+
+  it("does not let a high-cannibalization new-content candidate bypass the merge action", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      searchSignal: { available: false },
+      cannibalization: { severity: "HIGH" }
+    })).toBe("MERGE_CONTENT");
+  });
+
+  it("exposes evidence strength separately from priority", () => {
+    const evidence = evidenceStrength({
+      searchSignal: { available: true, impressions: 300, position: 6, matchedQueries: ["آموزش گیتار"] },
+      searchOwnership: { matchType: "EXACT", ownerStatus: "STABLE" },
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 },
+      intentConfidence: 0.9
+    });
+
+    expect(evidence.quality).toBe("STRONG");
+    expect(evidence.sourceCount).toBeGreaterThanOrEqual(3);
+    expect(evidence.independentMarketAndGsc).toBe(true);
+  });
+
 
   it("does not convert a new article into optimization because a related page has demand", () => {
     expect(classifyOpportunityAction({
