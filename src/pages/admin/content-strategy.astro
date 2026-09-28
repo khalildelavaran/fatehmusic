@@ -26,12 +26,13 @@ const gscRows = db ? await getRecentSearchConsoleRows(db, site.url, { days: 90 }
 const latestGscSync = db ? await getLatestGscSyncRun(db, site.url) : null;
 const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[] : [];
 const ahrefsConfig = getAhrefsConfig(env as unknown as Record<string, unknown>);
-const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsOrganicKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
+const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsRefdomainsHistory, ahrefsOrganicKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "metrics" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-competitors" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "refdomains" }),
+  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "refdomains-history" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-keywords" })
-]) : [null, null, null, null];
+]) : [null, null, null, null, null];
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
 const currentGscRows = gscRows.filter((row) =>
@@ -198,7 +199,11 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
               <div><strong>Organic keywords</strong><span>{Number(ahrefsMetrics?.payload?.org_keywords || 0).toLocaleString("fa-IR")}</span><small>Top 3: {Number(ahrefsMetrics?.payload?.org_keywords_1_3 || 0).toLocaleString("fa-IR")}</small></div>
               <div><strong>Organic traffic</strong><span>{Number(ahrefsMetrics?.payload?.org_traffic || 0).toLocaleString("fa-IR")}</span><small>تخمین ماهانه Ahrefs</small></div>
               <div><strong>Competitors</strong><span>{Array.isArray(ahrefsCompetitors?.payload) ? ahrefsCompetitors.payload.length.toLocaleString("fa-IR") : "0"}</span><small>رقبای ارگانیک ثبت‌شده</small></div>
-              <div><strong>Referring domains</strong><span>{Array.isArray(ahrefsRefdomains?.payload) ? ahrefsRefdomains.payload.length.toLocaleString("fa-IR") : "0"}</span><small>دامنه‌های ارجاع‌دهنده</small></div>
+              <div><strong>Referring domains</strong><span>{
+                Array.isArray(ahrefsRefdomainsHistory?.payload) && ahrefsRefdomainsHistory.payload.length
+                  ? Number(ahrefsRefdomainsHistory.payload.at(-1)?.refdomains || 0).toLocaleString("fa-IR")
+                  : "0"
+              }</span><small>تعداد کل دامنه‌های یکتای لینک‌دهنده</small></div>
               <div><strong>Tracked keyword rows</strong><span>{Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload.length.toLocaleString("fa-IR") : "0"}</span><small>نمونه کلمات ارگانیک</small></div>
             </div>
           )}
