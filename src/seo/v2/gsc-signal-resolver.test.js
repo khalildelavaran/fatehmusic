@@ -32,7 +32,7 @@ describe("GSC signal resolver", () => {
       { title: "کلاس گیتار در شوشتر", topicName: "گیتار", topic: "guitar", searchIntent: "local", suggestedSlug: "guitar-local" }
     ], buildGscSignalIndex(rows));
     expect(result[0].searchSignalSource).toBe("google-search-console");
-    expect(result[0].searchSignal.impressions).toBeGreaterThan(0);
+    expect(result[0].searchSignal.impressions).toBe(1500);
   });
 
   it("detects a potential conflict when multiple pages share a query", () => {
