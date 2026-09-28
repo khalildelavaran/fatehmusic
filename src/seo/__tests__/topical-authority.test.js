@@ -20,6 +20,7 @@ describe("Topical Authority graph", () => {
     const candidates = buildSiteLinkCandidates(site);
 
     expect(candidates.some((item) => item.url === `${site.url}/locations/shushtar`)).toBe(true);
+    expect(candidates.some((item) => item.url === `${site.url}/gallery` && item.type === "ImageGallery")).toBe(true);
     expect(candidates.some((item) => /\/student\/|\/admin\/|\/dashboard\/|\/api\//.test(item.url))).toBe(false);
   });
 
