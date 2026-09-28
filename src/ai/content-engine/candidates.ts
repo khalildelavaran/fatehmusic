@@ -120,7 +120,13 @@ function generateForCourse(anchor: InstrumentAnchor): TopicCandidate[] {
     if (modifierType === "age_specific") {
       // One candidate per audience this course actually serves.
       for (const audience of courseAudiences) {
-        const idx = ALL_AUDIENCES.indexOf(audience);
+        const normalizedAudience = normalizePersianText(audience);
+        const idx =
+          normalizedAudience === "کودک" || normalizedAudience === "۳ تا ۷ سال" ? 0
+          : normalizedAudience === "۷ تا ۱۲ سال" ? 1
+          : normalizedAudience === "نوجوان" ? 2
+          : normalizedAudience === "بزرگسال" ? 3
+          : 0;
         const template = templates[idx] ?? templates[0];
         out.push(candidateFrom(fillTemplate(template, { name }), anchor, audience, "", modifierType, "informational"));
       }
