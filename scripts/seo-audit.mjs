@@ -416,6 +416,16 @@ function validateSitemaps(pages, serverRoutePatterns = []) {
     return;
   }
 
+  const sitemapIndexFiles = sitemapData.files.filter((file) => /sitemap-index\.xml$/i.test(path.basename(file)));
+  if (sitemapIndexFiles.length > 0) {
+    const indexXml = fs.readFileSync(sitemapIndexFiles[0], "utf8");
+    if (!/https:\/\/fatehmusic\.ir\/sitemap-blog\.xml/i.test(indexXml)) {
+      error("BLOG_SITEMAP_NOT_IN_INDEX", "sitemap-index.xml does not include sitemap-blog.xml");
+    }
+  } else {
+    warn("SITEMAP_INDEX_NOT_RENDERED", "no sitemap-index.xml found in generated dist");
+  }
+
   for (const [route, page] of pages) {
     if (!route || route === "/" || route.startsWith("/blog/")) continue;
     if (!sitemapData.urls.has(route) && !page.noindex) error("PAGE_MISSING_FROM_SITEMAP", route + ": not present in sitemap");
