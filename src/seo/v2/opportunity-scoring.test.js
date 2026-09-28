@@ -145,8 +145,45 @@ describe("opportunity scoring", () => {
 
     expect(confidence).toBeLessThan(75);
   });
-});
 
+  it("uses a stable semantic query cluster to avoid creating a duplicate article", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      semanticQueryCluster: {
+        ownerStatus: "STABLE",
+        impressions: 120,
+        topShare: 0.82,
+        queryCount: 3
+      },
+      searchSignal: { available: false }
+    })).toBe("LINK");
+  });
+
+  it("records agreement when GSC and market identify the same exact keyword", () => {
+    const result = scoreOpportunity({
+      title: "آموزش گیتار",
+      priority: 80,
+      searchSignal: {
+        available: true,
+        impressions: 150,
+        position: 7,
+        ctr: 0.03,
+        matchedQueries: ["آموزش گیتار"]
+      },
+      marketSignal: {
+        available: true,
+        estimatedVolume: 250,
+        difficulty: 30,
+        matchType: "EXACT",
+        matchedKeyword: "اموزش گیتار"
+      }
+    });
+
+    expect(result.scoreBreakdown.crossSourceAgreement).toBe(1);
+    expect(result.decisionConfidence).toBeGreaterThan(80);
+  });
+
+});
 
   it("does not force link action from related-only ownership", () => {
     expect(classifyOpportunityAction({
