@@ -30,6 +30,12 @@ export function temporalAnalysisRows(rows = []) {
 
 /** Enrich the unified content queue with real GSC signals when available. */
 export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
+  const gscDataQuality = Object.freeze({
+    truncated: Boolean(options.gscDataQuality?.truncated),
+    rows: currentScoringRows(rows).length,
+    completeness: options.gscDataQuality?.truncated ? 0.7 : (currentScoringRows(rows).length ? 1 : 0)
+  });
+
   // Scoring uses only the current snapshot. The previous snapshot remains
   // available to temporal analysis so historical ownership changes are not lost.
   const scoringRows = currentScoringRows(rows);
@@ -92,7 +98,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       ...item,
       cannibalization: conflictByPage.get(page) || null,
       temporalCannibalization: temporalByPage.get(page) || null,
-      marketSignal
+      marketSignal,
+      gscDataQuality
     });
   });
   const scored = scoreOpportunities(enriched);
@@ -103,6 +110,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     cannibalization: Object.freeze(conflicts),
     temporalCannibalization: Object.freeze(temporal),
     queryOwnership: Object.freeze(queryOwnership),
+    dataQuality: gscDataQuality,
     summary: Object.freeze({
       connected: scoringRows.length > 0,
       signalRows: scoringRows.length,
@@ -117,7 +125,8 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       newContentCount: scored.filter((item) => item.action === "NEW_CONTENT").length,
       temporalCannibalizationCount: temporal.length,
       temporalActionableCount: temporal.filter((item) => item.actionable).length,
-      queryOwnershipCount: queryOwnership.length
+      queryOwnershipCount: queryOwnership.length,
+      gscCompleteness: gscDataQuality.completeness
     })
   });
 }
