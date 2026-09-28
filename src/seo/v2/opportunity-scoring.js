@@ -319,6 +319,47 @@ export function classifyOpportunityAction(item = {}) {
   return item.action || "NEW_CONTENT";
 }
 
+function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
+  const reasons = [];
+  let cap = 100;
+
+  if (item.gscDataQuality?.truncated) {
+    cap = Math.min(cap, 78);
+    reasons.push("GSC_PARTIAL_COVERAGE");
+  }
+  if (item.gscDataQuality?.freshness === "STALE") {
+    cap = Math.min(cap, 72);
+    reasons.push("GSC_STALE");
+  } else if (item.gscDataQuality?.freshness === "AGING") {
+    cap = Math.min(cap, 88);
+    reasons.push("GSC_AGING");
+  }
+
+  if (item.marketDataQuality?.freshness === "STALE") {
+    cap = Math.min(cap, 82);
+    reasons.push("MARKET_STALE");
+  } else if (item.marketDataQuality?.freshness === "AGING") {
+    cap = Math.min(cap, 92);
+    reasons.push("MARKET_AGING");
+  }
+
+  if (evidence.sourceCount <= 1 && evidence.quality === "INSUFFICIENT") {
+    cap = Math.min(cap, 58);
+    reasons.push("EVIDENCE_INSUFFICIENT");
+  } else if (evidence.sourceCount === 1 && evidence.quality === "WEAK") {
+    cap = Math.min(cap, 72);
+    reasons.push("SINGLE_SOURCE_WEAK");
+  }
+
+  return Object.freeze({
+    rawScore: clamp(rawScore),
+    cappedScore: Math.min(clamp(rawScore), cap),
+    cap,
+    guarded: cap < 100,
+    reasons: Object.freeze(reasons)
+  });
+}
+
 function buildDecisionTrace(item, action, evidence) {
   const reasonCodes = [];
 
@@ -396,12 +437,13 @@ export function scoreOpportunity(item = {}) {
     ...item,
     marketSignal: market == null ? undefined : item.marketSignal
   });
+  const guard = decisionGuard(item, evidence, score);
   const action = classifyOpportunityAction(item);
   const decisionTrace = buildDecisionTrace(item, action, evidence);
   return Object.freeze({
     ...item,
     action,
-    priority: score,
+    priority: Math.round(guard.cappedScore),
     decisionConfidence,
     evidenceStrengthScore: evidence.score,
     scoreBreakdown: Object.freeze({
@@ -414,6 +456,7 @@ export function scoreOpportunity(item = {}) {
       evidenceStrengthScore: evidence.score,
       evidenceStrength: evidence.quality,
       evidenceSourceCount: evidence.sourceCount,
+      decisionGuard: guard,
       evidenceSources: evidence.sources,
       crossSourceAgreement: crossSourceAgreement(item),
       confidenceEvidence: Object.freeze(confidenceEvidence),
