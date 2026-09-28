@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import "../styles/reveal.css";
 import { buildSEO } from "../seo/index.js";
+import SEOAnswerSummary from "../components/SEOAnswerSummary.astro";
 
 export interface Props {
   title?: string;
@@ -164,6 +165,7 @@ const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?
     )}
   </head>
   <body>
+    <SEOAnswerSummary blocks={seo.geo.answerBlocks} />
     <slot />
 
     <script src="../scripts/reveal.js"></script>
