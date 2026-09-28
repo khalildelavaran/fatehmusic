@@ -23,6 +23,9 @@ import {
   normalizeBaseUrl
 } from "./content-strategy/resolvers.js";
 
+function normalize(value) {
+  return normalizeSemanticText(value);
+}
 
 function buildTitle(topic, intent, course) {
   const name = localTopicName(topic); const courseName = course?.title || name;
