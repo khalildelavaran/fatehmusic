@@ -1,7 +1,7 @@
 import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 
 // D1 limits the number of executed SQL statements per Worker invocation.
- // Store many rows in one prepared multi-row INSERT so GSC can ingest a
+// Store many rows in one prepared multi-row INSERT so GSC can ingest a
  // materially larger snapshot without multiplying SQL statement count.
 const DEFAULT_PAGE_SIZE = 1000;
 const DEFAULT_MAX_ROWS = 2000;
@@ -9,7 +9,6 @@ const MAX_STANDARD_ROWS = 3000;
 const DEFAULT_BREAKDOWN_MAX_ROWS = 600;
 const MAX_BREAKDOWN_ROWS = 800;
 const BATCH_SIZE = 200;
-const INSERT_COLUMN_COUNT = 14;
 
 function normalizeSiteUrl(value) {
   return String(value || "").replace(/\/$/, "");
