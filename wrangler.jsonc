@@ -45,9 +45,10 @@
         "binding": "BROWSER"
     },
 
-    // UTC schedules: weekly Ahrefs -> daily GSC + topic discovery -> daily draft -> reminders.
-    // Keep this Worker at four triggers to remain within the Cloudflare Free-plan account limit.
+    // UTC schedules: weekly Ahrefs -> daily GSC -> daily topic discovery -> daily draft -> reminders.
+    // Five triggers fit the current Workers Free account limit and keep each
+    // D1-heavy SEO job in its own invocation/query budget.
     "triggers": {
-        "crons": ["45 0 * * 0", "15 1 * * *", "30 2 * * *", "*/30 * * * *"]
+        "crons": ["45 0 * * 0", "15 1 * * *", "45 1 * * *", "30 2 * * *", "*/30 * * * *"]
     }
 }
