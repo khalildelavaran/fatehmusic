@@ -83,12 +83,15 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       }
     }
   }
+  const marketSignals = normalizeMarketSignals(options.marketSignals);
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
     const page = normalizeUrl(item.url || item.targetEntity?.url || "");
+    const marketSignal = resolveMarketSignal(item, marketSignals);
     return Object.freeze({
       ...item,
       cannibalization: conflictByPage.get(page) || null,
-      temporalCannibalization: temporalByPage.get(page) || null
+      temporalCannibalization: temporalByPage.get(page) || null,
+      marketSignal
     });
   });
   const scored = scoreOpportunities(enriched);
@@ -115,4 +118,36 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       queryOwnershipCount: queryOwnership.length
     })
   });
+}
+
+
+function normalizeMarketSignals(value) {
+  if (value instanceof Map) return value;
+  if (Array.isArray(value)) {
+    return new Map(value
+      .filter((item) => item && item.keyword)
+      .map((item) => [normalizeText(item.keyword), item]));
+  }
+  if (value && typeof value === "object") {
+    return new Map(Object.entries(value).map(([key, item]) => [normalizeText(key), item]).filter(([key]) => key));
+  }
+  return new Map();
+}
+
+function resolveMarketSignal(item, signals) {
+  if (!signals.size) return null;
+
+  const candidates = [
+    ...(item.searchSignal?.matchedQueries || []),
+    item.title,
+    item.topicName,
+    item.topic,
+  ].filter(Boolean);
+
+  for (const value of candidates) {
+    const exact = signals.get(normalizeText(value));
+    if (exact?.available) return exact;
+  }
+
+  return null;
 }
