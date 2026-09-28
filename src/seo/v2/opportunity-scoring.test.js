@@ -94,6 +94,26 @@ describe("opportunity scoring", () => {
     })).toBe("NEW_CONTENT");
   });
 
+  it("reduces evidence strength when market data is stale", () => {
+    const fresh = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 70,
+      searchSignal: { available: false },
+      marketDataQuality: { ageDays: 3, freshness: "FRESH" },
+      marketSignal: { available: true, estimatedVolume: 200, difficulty: 30 }
+    });
+    const stale = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 70,
+      searchSignal: { available: false },
+      marketDataQuality: { ageDays: 30, freshness: "STALE" },
+      marketSignal: { available: true, estimatedVolume: 200, difficulty: 30 }
+    });
+
+    expect(fresh.decisionConfidence).toBeGreaterThan(stale.decisionConfidence);
+  });
+
+
   it("uses market demand and difficulty when Ahrefs data is available", () => {
     const withoutMarket = scoreOpportunity({
       title: "آموزش گیتار",
