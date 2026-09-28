@@ -104,6 +104,30 @@ describe("opportunity scoring", () => {
     })).toBe("NEW_CONTENT");
   });
 
+  it("caps priority when GSC coverage is partial", () => {
+    const result = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 100,
+      searchSignal: { available: true, impressions: 2000, position: 6, ctr: 0.01 },
+      gscDataQuality: { truncated: true, freshness: "FRESH" }
+    });
+
+    expect(result.priority).toBeLessThanOrEqual(78);
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("GSC_PARTIAL_COVERAGE");
+  });
+
+  it("caps priority when GSC is stale", () => {
+    const result = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 100,
+      searchSignal: { available: true, impressions: 2000, position: 6, ctr: 0.01 },
+      gscDataQuality: { truncated: false, freshness: "STALE" }
+    });
+
+    expect(result.priority).toBeLessThanOrEqual(72);
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("GSC_STALE");
+  });
+
   it("discounts stale market demand in the final priority", () => {
     const fresh = scoreOpportunity({
       action: "NEW_CONTENT",
