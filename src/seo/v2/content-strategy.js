@@ -2,6 +2,7 @@ import { courseEntityId } from "../geo/entity.js";
 import { COMPARISON_PAIRS } from "../../data/content-engine-seeds.ts";
 // Unified Content Intelligence: intent is metadata on a canonical content asset.
 import { TOPICS } from "./topics.js";
+import { classifyIntent } from "./intents.js";
 
 const INTENT_PRIORITY = Object.freeze({ transactional: 100, local: 92, commercial: 84, informational: 70, navigational: 58 });
 const INTENT_SUFFIX = Object.freeze({ informational: "راهنمای جامع", commercial: "راهنمای انتخاب", transactional: "هزینه و ثبت‌نام", local: "در شوشتر", navigational: "معرفی و مسیر دسترسی" });
@@ -197,7 +198,13 @@ function buildBrief(gap, courses = [], siteUrl) {
   const topic = findTopic(gap.topic); const intent = gap.missingIntents?.[0]; if (!topic || !intent) return null; const baseUrl = normalizeBaseUrl(siteUrl); const isLocal = gap.scope === "shushtar" || intent === "local" || isShushtarTopic(topic);
   const course = gap.courseSlug ? courses.find((item) => item?.slug === gap.courseSlug) || null : isLocal && isShushtarTopic(topic) ? null : findCourseForTopic(topic, courses, gap.title || "");
   const articleCount = Number(gap.articleCount) || 0; const action = articleCount > 0 ? "OPTIMIZE_EXISTING" : "NEW_CONTENT"; const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
-  return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], isLocal, scope: gap.scope || canonicalScope(topic, isLocal), title: buildTitle(topic, intent, course), suggestedSlug: suggestedArticleSlug({ topic: topic.slug, scope: gap.scope, isLocal, modifierType: isLocal ? "local_shushtar" : intent, searchIntent: intent, course, courseSlug: course?.slug || gap.courseSlug || null, articleCount, existingArticleSlugs: gap.articleSlugs || [] }), targetEntity, course: makeCourseRef(course, baseUrl), courseSlug: gap.courseSlug || course?.slug || null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: isLocal ? "local_shushtar" : null, audience: "", level: "" });
+  const intentConfidence = classifyIntent({
+    path: isLocal ? "/blog/local" : "/blog",
+    title: buildTitle(topic, intent, course),
+    keywords: [topic.name, course?.title || ""],
+    entityType: "Article"
+  }).confidence;
+  return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], intentConfidence, isLocal, scope: gap.scope || canonicalScope(topic, isLocal), title: buildTitle(topic, intent, course), suggestedSlug: suggestedArticleSlug({ topic: topic.slug, scope: gap.scope, isLocal, modifierType: isLocal ? "local_shushtar" : intent, searchIntent: intent, course, courseSlug: course?.slug || gap.courseSlug || null, articleCount, existingArticleSlugs: gap.articleSlugs || [] }), targetEntity, course: makeCourseRef(course, baseUrl), courseSlug: gap.courseSlug || course?.slug || null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: isLocal ? "local_shushtar" : null, audience: "", level: "" });
 }
 function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)); }
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
@@ -212,6 +219,12 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const topic = isComparison ? findTopic("music-education") : resolveCandidateTopic(candidate, explicitCourse);
   if (!topic) return null;
   const intent = candidate.intent || "informational";
+  const intentConfidence = classifyIntent({
+    path: isComparison ? "/blog/comparison" : "/blog",
+    title: candidate.title,
+    keywords: [topic.name, course?.title || ""],
+    entityType: "Article"
+  }).confidence;
   const isLocal = !isComparison && (candidate.modifierType === "local_shushtar" || hasLocalSignal(candidate.title) || isShushtarTopic(topic));
   const course = isComparison ? null : (explicitCourse || (topic.slug === "shushtar" ? null : findCourseForTopic(topic, courses, candidate.title)));
   const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
@@ -235,6 +248,7 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
     topicName: topic.name,
     searchIntent: intent,
     searchIntents: [intent],
+    intentConfidence,
     isLocal,
     scope: canonicalScope(topic, isLocal),
     title: candidate.title,
