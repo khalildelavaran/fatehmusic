@@ -253,8 +253,11 @@ function buildQueryOwnership(querySignals = [], item = {}) {
 export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 50 } = {}) {
   const queryPages = new Map();
 
+  const displayQueries = new Map();
+
   for (const row of rows) {
     const query = normalizeText(row?.query);
+    const rawQuery = String(row?.query || "").trim();
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     const page = normalizeUrl(row?.page);
     if (!query || !page || impressions < minImpressions || isBrandNavigationQuery(query)) continue;
@@ -263,6 +266,11 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
     const pages = queryPages.get(query) || new Map();
     pages.set(page, (pages.get(page) || 0) + impressions);
     queryPages.set(query, pages);
+
+    const display = displayQueries.get(query);
+    if (!display || impressions > display.impressions) {
+      displayQueries.set(query, { value: rawQuery || query, impressions });
+    }
   }
 
   return Object.freeze(
@@ -280,6 +288,7 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
 
         return Object.freeze({
           query,
+          displayQuery: displayQueries.get(query)?.value || query,
           impressions: totalImpressions,
           pageCount: pages.size,
           topPage: rankedPages[0]?.page || null,
