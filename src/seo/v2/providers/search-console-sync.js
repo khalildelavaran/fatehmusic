@@ -5,7 +5,7 @@ const DEFAULT_MAX_ROWS = 25000;
 const BATCH_SIZE = 50;
 
 function normalizeSiteUrl(value) {
-  return String(value || "").replace(/\\/$/, "");
+  return String(value || "").replace(/\/$/, "");
 }
 
 function toRow(keys = [], dimensions = ["query", "page"], metrics = {}, { startDate, endDate, dataState } = {}) {
