@@ -117,6 +117,9 @@ export async function syncPublishedSeoActionMeasurements(db, {
     "LEFT JOIN gsc_search_signals_v2 g ON " +
     "g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = ? " +
     "AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
+    "AND lower(trim(COALESCE(g.query, ''))) NOT IN (" +
+      "'fatehmusic.ir', 'www.fatehmusic.ir', 'fateh music', 'fateh music academy', 'آموزشگاه موسیقی فاتح'" +
+    ") " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
     // Full-window comparisons are valid only for content that was live
     // from the beginning of the reporting window. Newly published content
