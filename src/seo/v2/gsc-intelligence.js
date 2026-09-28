@@ -150,7 +150,13 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
 
 
 function normalizeMarketSignals(value) {
-  if (value instanceof Map) return value;
+  if (value instanceof Map) {
+    return new Map(
+      [...value.entries()]
+        .map(([key, item]) => [normalizeText(key), item])
+        .filter(([key]) => key)
+    );
+  }
   if (Array.isArray(value)) {
     return new Map(value
       .filter((item) => item && item.keyword)
