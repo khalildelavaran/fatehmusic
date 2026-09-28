@@ -4,8 +4,8 @@ import { createGoogleSearchConsoleClient } from "./search-console-client.js";
 // Store many rows in one prepared multi-row INSERT so GSC can ingest a
  // materially larger snapshot without multiplying SQL statement count.
 const DEFAULT_PAGE_SIZE = 1000;
-const DEFAULT_MAX_ROWS = 2500;
-const MAX_STANDARD_ROWS = 5000;
+const DEFAULT_MAX_ROWS = 10000;
+const MAX_STANDARD_ROWS = 12000;
 const DEFAULT_BREAKDOWN_MAX_ROWS = 600;
 const MAX_BREAKDOWN_ROWS = 800;
 const BATCH_SIZE = 200;
