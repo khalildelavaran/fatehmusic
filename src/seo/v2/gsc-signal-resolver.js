@@ -279,7 +279,7 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
     const rawQuery = String(row?.query || "").trim();
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     const page = normalizeUrl(row?.page);
-    if (!query || !page || impressions < minImpressions || isBrandNavigationQuery(query)) continue;
+    if (!query || !page || impressions <= 0 || isBrandNavigationQuery(query)) continue;
     if (!isOwnershipEligibleQuery(query)) continue;
 
     const pages = queryPages.get(query) || new Map();
@@ -295,6 +295,8 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
   return Object.freeze(
     [...queryPages.entries()]
       .map(([query, pages]) => {
+        const aggregatedImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
+        if (aggregatedImpressions < Math.max(1, Number(minImpressions) || 1)) return null;
         const totalImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
         const rankedPages = [...pages.entries()]
           .map(([page, impressions]) => ({
@@ -323,6 +325,7 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
           pages: Object.freeze(rankedPages)
         });
       })
+      .filter(Boolean)
       .sort((a, b) => b.impressions - a.impressions || a.query.localeCompare(b.query))
       .slice(0, Math.max(1, limit))
   );
