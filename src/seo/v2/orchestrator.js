@@ -80,8 +80,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], topicCandidates
   const pages = articleSemantics(posts, siteUrl);
   const search = enrichOpportunitiesWithSearchConsole(base.opportunities, gscRows, { pageSemantics: pages });
   const pageNodes = pages.map((page) => ({ url: page.url, title: page.title, type: "Article", topics: page.topics, priority: 12, local: true }));
-  const gscIndex = buildGscSignalIndex(currentScoringRows(gscRows));
-  const cannibalization = detectSearchCannibalization(gscRows, { pageSemantics: pages });
+  const currentGscRows = currentScoringRows(gscRows);
+  const gscIndex = buildGscSignalIndex(currentGscRows);
+  const cannibalization = detectSearchCannibalization(currentGscRows, { pageSemantics: pages });
   const temporalCannibalization = search.temporalCannibalization || detectTemporalCannibalization(gscRows);
   const opportunities = scoreOpportunities(search.opportunities);
 
