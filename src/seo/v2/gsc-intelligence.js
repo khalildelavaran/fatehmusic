@@ -108,6 +108,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       temporalSignalRows: rows.length,
       opportunityCount: scored.length,
       searchBackedCount: scored.filter((item) => item.searchSignal?.available).length,
+      marketBackedCount: scored.filter((item) => item.marketSignal?.available).length,
       optimizeExistingCount: scored.filter((item) => item.action === "OPTIMIZE_EXISTING").length,
       expandCount: scored.filter((item) => item.action === "EXPAND").length,
       mergeCount: scored.filter((item) => item.action === "MERGE_CONTENT").length,
