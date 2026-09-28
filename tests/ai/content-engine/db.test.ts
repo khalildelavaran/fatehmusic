@@ -31,7 +31,7 @@ describe("content intelligence title index", () => {
     expect(index.titles).toEqual(["موضوع تأییدشده", "مقاله منتشرشده"]);
     expect(index.normalizedKeys.has("موضوع تاییدشده")).toBe(true);
     expect(index.normalizedKeys.has("مقاله منتشرشده")).toBe(true);
-    expect(calls[0]).toContain("WHERE status != 'rejected'");
+    expect(calls[0]).toContain("status != 'rejected' OR updated_at >= datetime('now', '-30 days')");
   });
 });
 
