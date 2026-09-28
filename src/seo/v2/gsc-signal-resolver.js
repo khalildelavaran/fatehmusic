@@ -360,7 +360,7 @@ function buildQueryOwnership(querySignals = [], item = {}) {
   });
 }
 
-export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 50 } = {}) {
+export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 500 } = {}) {
   const queryPages = new Map();
 
   const displayQueries = new Map();
