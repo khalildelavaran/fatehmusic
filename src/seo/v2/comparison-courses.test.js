@@ -13,4 +13,11 @@ describe("comparison course resolver", () => {
   it("does not classify a normal course article as comparison", () => {
     expect(findComparisonCourses("آموزش تار برای مبتدی‌ها")).toHaveLength(0);
   });
+
+  it("does not match a longer unrelated token as a course name", () => {
+    expect(
+      findComparisonCourses("مقایسه پایداری و سهولت تمرین برای هنرجویان")
+    ).toHaveLength(0);
+  });
+
 });
