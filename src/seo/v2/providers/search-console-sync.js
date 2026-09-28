@@ -5,7 +5,7 @@ import { createGoogleSearchConsoleClient } from "./search-console-client.js";
  // materially larger snapshot without multiplying SQL statement count.
 const DEFAULT_PAGE_SIZE = 1000;
 const DEFAULT_MAX_ROWS = 2000;
-const MAX_STANDARD_ROWS = 3000;
+const MAX_STANDARD_ROWS = 2400;
 const DEFAULT_BREAKDOWN_MAX_ROWS = 600;
 const MAX_BREAKDOWN_ROWS = 800;
 const BATCH_SIZE = 200;
