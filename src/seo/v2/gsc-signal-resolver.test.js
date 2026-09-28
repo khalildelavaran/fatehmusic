@@ -27,6 +27,24 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBeGreaterThan(0);
   });
 
+  it("prefers relevant query evidence over unrelated non-brand page aggregate", () => {
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "OPTIMIZE_EXISTING",
+        title: "آموزش گیتار",
+        topicName: "گیتار",
+        topic: "guitar",
+        targetEntity: { url: "https://fatehmusic.ir/courses/guitar-course" }
+      }
+    ], buildGscSignalIndex([
+      { query: "کلاس پیانو", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 0, impressions: 1000, ctr: 0, position: 5 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 2, impressions: 20, ctr: 0.1, position: 5 }
+    ]));
+
+    expect(result[0].searchSignal.impressions).toBe(20);
+    expect(result[0].searchSignal.matchedQueries).toEqual(["آموزش گیتار"]);
+  });
+
   it("resolves a search signal for a matching opportunity", () => {
     const result = resolveOpportunitySearchSignals([
       { title: "کلاس گیتار در شوشتر", topicName: "گیتار", topic: "guitar", searchIntent: "local", suggestedSlug: "guitar-local" }
