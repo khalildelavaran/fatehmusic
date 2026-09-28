@@ -1,3 +1,4 @@
+import { courseEntityId } from "../geo/entity.js";
 // Unified Content Intelligence: intent is metadata on a canonical content asset.
 import { TOPICS } from "./topics.js";
 
@@ -77,8 +78,14 @@ function buildQueryAngles(topic, intent, course) {
 }
 function buildPriority(intent, articleCount, course, isLocal) { return Math.min(100, (INTENT_PRIORITY[intent] ?? 60) + Math.min(20, Math.max(0, 3 - articleCount) * 8) + (course ? 12 : 0) + (isLocal ? 8 : 0)); }
 function buildTargetEntity(topic, course, isLocal, baseUrl) {
-  if (course) return { type: "Course", id: `${baseUrl}/#course-${course.slug}`, name: course.title, url: `${baseUrl}/courses/${course.slug}` };
-  if (isLocal || isShushtarTopic(topic)) return { type: "Place", id: `${baseUrl}/#place-shushtar`, name: "آموزش موسیقی در شوشتر", url: `${baseUrl}/locations/shushtar` };
+  if (course) {
+    const courseUrl = `${baseUrl}/courses/${course.slug}`;
+    return { type: "Course", id: courseEntityId(courseUrl), name: course.title, url: courseUrl };
+  }
+  if (isLocal || isShushtarTopic(topic)) {
+    const locationUrl = `${baseUrl}/locations/shushtar`;
+    return { type: "LocalBusiness", id: `${locationUrl}#localbusiness`, name: "آموزش موسیقی در شوشتر", url: locationUrl };
+  }
   return { type: "Thing", id: `${baseUrl}/#topic-${topic.slug}`, name: topic.name, url: `${baseUrl}/courses` };
 }
 function buildRecommendedLinks(targetEntity, baseUrl) { return Object.freeze([...new Set([targetEntity.url, `${baseUrl}/locations/shushtar`, `${baseUrl}/register`, `${baseUrl}/blog`])]); }
