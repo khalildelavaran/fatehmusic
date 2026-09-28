@@ -4,7 +4,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
-import { absoluteUrl } from "../helpers/url.js";
+import { absoluteUrl, webPageEntityId } from "../helpers/url.js";
 
 /**
  * @param {Object} params
@@ -26,7 +26,7 @@ export function buildContactPageSchema({ title, description, site }) {
         isPartOf: { "@id": `${site.url}/#website` },
         about: { "@id": `${site.url}/#organization` },
         mainEntity: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${url.replace(/\/$/, "")}/#webpage` },
+        mainEntityOfPage: { "@id": webPageEntityId(url) },
         publisher: { "@id": `${site.url}/#organization` },
         primaryImageOfPage: site.image
             ? {
