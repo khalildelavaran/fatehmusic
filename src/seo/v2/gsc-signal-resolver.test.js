@@ -355,6 +355,16 @@ describe("GSC query ownership map", () => {
     expect(map[0].signalQuality).toBe("MEDIUM");
   });
 
+  it("applies minimum impressions after aggregating query rows", () => {
+    const map = buildQueryOwnershipMap([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 6 },
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 7 }
+    ], { minImpressions: 10 });
+
+    expect(map).toHaveLength(1);
+    expect(map[0].impressions).toBe(13);
+  });
+
   it("marks low-volume ownership as emerging instead of stable", () => {
     const map = buildQueryOwnershipMap([
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2 }
