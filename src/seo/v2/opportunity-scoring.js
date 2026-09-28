@@ -177,14 +177,19 @@ function evidenceStrength(item = {}) {
   const sourceFamilies = new Set();
   const evidenceSignals = new Set();
 
-  if (item.searchSignal?.available) {
+  if (
+    item.searchSignal?.available ||
+    item.searchOwnership?.matchType === "EXACT" ||
+    item.cannibalization?.severity ||
+    item.temporalCannibalization?.actionable
+  ) {
     sourceFamilies.add("GSC");
-    evidenceSignals.add("GSC_SIGNAL");
   }
-  if (item.searchOwnership?.matchType === "EXACT") {
-    sourceFamilies.add("GSC");
-    evidenceSignals.add("GSC_OWNERSHIP");
-  }
+  if (item.searchSignal?.available) evidenceSignals.add("GSC_SIGNAL");
+  if (item.searchOwnership?.matchType === "EXACT") evidenceSignals.add("GSC_OWNERSHIP");
+  if (item.cannibalization?.severity) evidenceSignals.add("CANNIBALIZATION");
+  if (item.temporalCannibalization?.actionable) evidenceSignals.add("TEMPORAL_OWNERSHIP");
+
   if (item.marketSignal?.available) {
     sourceFamilies.add("MARKET");
     evidenceSignals.add("MARKET_SIGNAL");
@@ -194,12 +199,8 @@ function evidenceStrength(item = {}) {
     evidenceSignals.add("INTENT_CONFIDENCE");
   }
   if (item.gapDetected) {
-    sourceFamilies.add("CONTENT-GAP");
+    sourceFamilies.add("SITE_CONTENT");
     evidenceSignals.add("CONTENT_GAP");
-  }
-  if (item.cannibalization?.severity) {
-    sourceFamilies.add("CANNIBALIZATION");
-    evidenceSignals.add("CANNIBALIZATION");
   }
 
   const quality =
