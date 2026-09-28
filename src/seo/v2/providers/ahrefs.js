@@ -38,6 +38,8 @@ export function buildAhrefsKeywordSignalMap(rows = []) {
         : Number(row.keyword_difficulty),
       trafficPotential: row.traffic_potential == null ? undefined : Number(row.traffic_potential),
       cpc: row.cpc == null ? undefined : Number(row.cpc),
+      intents: row.intents || undefined,
+      serpFeatures: row.serp_features || row.serpFeatures || undefined,
       source: "ahrefs"
     };
 
@@ -253,6 +255,8 @@ export async function getCachedAhrefsKeywordSignals(db, {
         difficulty: row.difficulty == null ? undefined : Number(row.difficulty),
         trafficPotential: row.traffic_potential == null ? undefined : Number(row.traffic_potential),
         cpc: row.cpc == null ? undefined : Number(row.cpc),
+        intents: row.intents == null ? undefined : (() => { try { return JSON.parse(row.intents); } catch { return row.intents; } })(),
+        serpFeatures: row.serp_features == null ? undefined : (() => { try { return JSON.parse(row.serp_features); } catch { return row.serp_features; } })(),
         source: "ahrefs"
       });
     }
