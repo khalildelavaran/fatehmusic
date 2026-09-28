@@ -122,8 +122,8 @@ function generateForCourse(anchor: InstrumentAnchor): TopicCandidate[] {
       for (const audience of courseAudiences) {
         const normalizedAudience = normalizePersianText(audience);
         const idx =
-          normalizedAudience === "کودک" || normalizedAudience === "۳ تا ۷ سال" ? 0
-          : normalizedAudience === "۷ تا ۱۲ سال" ? 1
+          normalizedAudience === "کودک" || normalizedAudience === "3 تا 7 سال" ? 0
+          : normalizedAudience === "7 تا 12 سال" ? 1
           : normalizedAudience === "نوجوان" ? 2
           : normalizedAudience === "بزرگسال" ? 3
           : 0;
