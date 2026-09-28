@@ -1,4 +1,4 @@
-import { normalizeSemanticText } from "./text.js";
+import { normalizeSemanticText, semanticTokens } from "./text.js";
 
 export const GENERIC_QUERY_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
@@ -12,8 +12,7 @@ export function normalizeQuery(value) {
 
 export function queryTokens(value) {
   return new Set(
-    normalizeQuery(value)
-      .split(/\s+/)
+    semanticTokens(value)
       .filter((token) => token.length >= 2 && !GENERIC_QUERY_TOKENS.has(token))
   );
 }
