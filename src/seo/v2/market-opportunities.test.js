@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMarketOpportunityReport } from "./market-opportunities.js";
+import { buildMarketOpportunityReport, buildMarketSignalMap } from "./market-opportunities.js";
 
 describe("Ahrefs market opportunity discovery", () => {
   it("finds striking-distance keywords and joins exact GSC evidence", () => {
@@ -40,5 +40,27 @@ describe("Ahrefs market opportunity discovery", () => {
 
     expect(result.map((item) => item.keyword)).not.toContain("fatehmusic.ir");
     expect(result).toHaveLength(1);
+  });
+});
+
+
+describe("normalized market signals", () => {
+  it("creates a core-scoring signal from Ahrefs opportunity data", () => {
+    const report = buildMarketOpportunityReport({
+      keywordRows: [
+        {
+          keyword: "آموزش گیتار شوشتر",
+          volume_monthly: 200,
+          keyword_difficulty: 30,
+          best_position: 14
+        }
+      ]
+    });
+    const signals = buildMarketSignalMap(report);
+    const signal = signals.get("اموزش گیتار شوشتر");
+    expect(signal.available).toBe(true);
+    expect(signal.estimatedVolume).toBe(200);
+    expect(signal.difficulty).toBe(30);
+    expect(signal.source).toBe("ahrefs");
   });
 });
