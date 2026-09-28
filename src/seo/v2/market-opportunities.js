@@ -4,7 +4,7 @@
  */
 
 import { isBrandNavigationQuery, normalizeQuery } from "../helpers/query.js";
-import { semanticTokens } from "../helpers/text.js";
+import { resolveTopics } from "./topics.js";
 
 function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, Number(value) || 0));
@@ -72,24 +72,18 @@ function gscExactSignal(keyword, rows = []) {
 }
 
 function semanticTopicHint(keyword) {
-  const tokens = new Set(semanticTokens(keyword));
-  if (tokens.has("گیتار")) return "guitar";
-  if (tokens.has("پیانو")) return "piano";
-  if (tokens.has("ویولن")) return "violin";
-  if (tokens.has("کمانچه")) return "kamancheh";
-  if (tokens.has("سنتور")) return "santur";
-  if (tokens.has("سه") && tokens.has("تار")) return "setar";
-  if (tokens.has("تنبک")) return "tombak";
-  if (tokens.has("دف")) return "daf";
-  if (tokens.has("نی")) return "ney";
-  if (tokens.has("آواز") || tokens.has("خوانندگی")) return "vocal";
-  if (tokens.has("سلفژ")) return "solfege";
-  if (tokens.has("تئوری")) return "music-theory";
-  if (tokens.has("ریتم") || tokens.has("تمپو")) return "rhythm";
-  if (tokens.has("شوشتر")) return "music-education";
-  return "music-education";
-}
+  const topics = resolveTopics({
+    title: keyword,
+    keywords: [keyword],
+    path: ""
+  });
 
+  const specific = topics.find(
+    (topic) => topic.slug !== "shushtar" && topic.slug !== "music-education"
+  );
+
+  return specific?.slug || "music-education";
+}
 export function buildMarketOpportunityReport({
   keywordRows = [],
   gscRows = [],
