@@ -99,6 +99,20 @@ export function createAhrefsClient(env = {}, fetchImpl = fetch) {
       return Array.isArray(data?.refdomains) ? data.refdomains : [];
     },
 
+    async refdomainsHistory({ dateFrom, dateTo = "" } = {}) {
+      if (!dateFrom) throw new Error("AHREFS_REFDOMAIN_HISTORY_DATE_REQUIRED");
+      const data = await get("/site-explorer/refdomains-history", {
+        target: config.target,
+        protocol: "https",
+        mode: "subdomains",
+        date_from: dateFrom,
+        date_to: dateTo || dateFrom,
+        history_grouping: "monthly",
+        output: "json"
+      });
+      return Array.isArray(data?.refdomains) ? data.refdomains : [];
+    },
+
     async metrics({ date = today() } = {}) {
       const data = await get("/site-explorer/metrics", {
         select: "org_keywords,org_keywords_1_3,org_traffic,org_cost",
@@ -222,6 +236,10 @@ export async function syncAhrefsMarketIntelligence({ db, env = {}, date = today(
     ["metrics", () => client.metrics({ date })],
     ["organic-competitors", () => client.organicCompetitors({ date })],
     ["refdomains", () => client.refdomains()],
+    ["refdomains-history", () => client.refdomainsHistory({
+      dateFrom: new Date(new Date(date).getTime() - 31 * 86_400_000).toISOString().slice(0, 10),
+      dateTo: date
+    })],
     ["organic-keywords", () => client.organicKeywords({ date, limit: 100 })]
   ];
 
