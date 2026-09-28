@@ -58,6 +58,7 @@ function normalizeAudit(audit) {
   return {
     score: Number(audit.score),
     coverageScore: Number(audit.coverageScore),
+    qualityScore: Number(audit.qualityScore),
     checks: Array.isArray(audit.checks) ? audit.checks : [],
     errors: Array.isArray(audit.errors) ? audit.errors : [],
     warnings: Array.isArray(audit.warnings) ? audit.warnings : []
@@ -172,22 +173,27 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
     Object.values(WEIGHTS).reduce((sum, value) => sum + value, 0)
   );
 
+  const qualityAdjustedScore = Math.round(weightedScore * evidenceCoverage / 100);
   const qualityGate = Boolean(
     (!graphValidation || graphValidation.valid) &&
     issues.every((issue) => issue.severity !== "CRITICAL") &&
-    weightedScore >= 70
+    weightedScore >= 70 &&
+    evidenceCoverage >= 75 &&
+    qualityAdjustedScore >= 60
   );
 
   return Object.freeze({
     version: "1.0",
     weightedScore,
     evidenceCoverage,
+    qualityAdjustedScore,
     qualityGate,
     categories: Object.freeze(categories),
     issues: Object.freeze(issues),
     statistics: Object.freeze({
       pagesAnalyzed: normalizedAudits.length,
       issueCount: issues.length,
+      qualityAdjustedScore,
       errorCount: issues.filter((item) => item.severity === "ERROR").length,
       warningCount: issues.filter((item) => item.severity === "WARNING").length,
       graphNodes: Number(knowledgeGraph?.statistics?.nodeCount || 0),
