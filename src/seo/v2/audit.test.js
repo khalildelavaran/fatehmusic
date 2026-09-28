@@ -31,6 +31,14 @@ describe("SEO audit evidence coverage", () => {
     expect(audit.summary.coverageScore).toBe(audit.coverageScore);
   });
 
+  it("does not present incomplete audit coverage as full quality", () => {
+    const audit = auditPage(base);
+
+    expect(audit.coverageScore).toBeLessThan(100);
+    expect(audit.qualityScore).toBeLessThan(audit.score);
+    expect(audit.summary.qualityScore).toBe(audit.qualityScore);
+  });
+
   it("reaches full evidence coverage when all optional checks are supplied", () => {
     const audit = auditPage({
       ...base,
