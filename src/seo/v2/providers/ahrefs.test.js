@@ -14,4 +14,21 @@ describe("Ahrefs keyword signal normalization", () => {
     expect(signal?.difficulty).toBe(25);
     expect(signal?.source).toBe("ahrefs");
   });
+
+  it("preserves Ahrefs intent and SERP metadata", () => {
+    const map = buildAhrefsKeywordSignalMap([
+      {
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        intents: { transactional: true },
+        serp_features: ["featured_snippet", "local_pack"]
+      }
+    ]);
+
+    const signal = map.get("آموزش گیتار");
+    expect(signal?.intents).toEqual({ transactional: true });
+    expect(signal?.serpFeatures).toEqual(["featured_snippet", "local_pack"]);
+  });
+
 });
