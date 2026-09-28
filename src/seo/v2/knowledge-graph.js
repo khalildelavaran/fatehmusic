@@ -62,6 +62,19 @@ export function buildKnowledgeGraph({
   addEdge(websiteId, "publisher", organizationId);
   addEdge(organizationId, "location", locationId);
 
+  for (const instructor of instructors || []) {
+    if (!instructor?.slug || !instructor?.name) continue;
+    const instructorId = instructorEntityId(absoluteUrl("/instructors/" + instructor.slug, base));
+    addNode({
+      id: instructorId,
+      type: "Person",
+      name: instructor.name,
+      url: absoluteUrl("/instructors/" + instructor.slug, base),
+      topics: instructor.professional?.roles || []
+    });
+    addEdge(instructorId, "worksFor", organizationId);
+  }
+
   for (const course of courses || []) {
     if (!course?.slug || !course?.title) continue;
     const courseId = courseEntityId(absoluteUrl("/courses/" + course.slug, base));
@@ -74,22 +87,14 @@ export function buildKnowledgeGraph({
     });
     addEdge(courseId, "provider", organizationId);
 
-    for (const instructor of instructors || []) {
-      const instructorIds = Array.isArray(course.instructors)
-        ? course.instructors
-        : course.instructor ? [course.instructor] : [];
-      if (!instructorIds.includes(instructor?.id)) continue;
+    const instructorIds = Array.isArray(course.instructors)
+      ? course.instructors
+      : course.instructor ? [course.instructor] : [];
 
+    for (const instructor of instructors || []) {
+      if (!instructorIds.includes(instructor?.id)) continue;
       const instructorId = instructorEntityId(absoluteUrl("/instructors/" + instructor.slug, base));
-      addNode({
-        id: instructorId,
-        type: "Person",
-        name: instructor.name,
-        url: absoluteUrl("/instructors/" + instructor.slug, base),
-        topics: instructor.professional?.roles || []
-      });
       addEdge(instructorId, "teaches", courseId);
-      addEdge(instructorId, "worksFor", organizationId);
     }
   }
 
