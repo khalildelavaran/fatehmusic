@@ -23,7 +23,7 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
       level: string;
       modifier_type: ContentTopicRow["modifier_type"];
     }>(),
-    db.prepare("SELECT title FROM blog_posts").all<{ title: string }>()
+    db.prepare("SELECT title FROM blog_posts WHERE status = 'published'").all<{ title: string }>()
   ]);
 
   const normalizedKeys = new Set<string>(topics.results.map((r) => r.normalized_key));
@@ -44,8 +44,9 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
     ...topics.results.map((r) => r.title),
     ...posts.results.map((r) => r.title)
   ];
-  // blog_posts has no normalized_key/canonical metadata, so derive only the
-  // exact normalized title key from published or draft posts.
+  // blog_posts has no normalized_key/canonical metadata, so derive the exact
+  // normalized title key only from published posts; a draft already reserved
+  // by an approved/used topic is tracked by content_topics itself.
   for (const post of posts.results) normalizedKeys.add(toDedupKey(post.title));
   return { normalizedKeys, canonicalKeys, titles };
 }
