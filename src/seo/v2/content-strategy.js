@@ -91,6 +91,16 @@ function slugToken(value) {
   ]);
   return map.get(normalized) || normalized.replace(/[^a-z0-9\u0600-\u06ff]+/gu, "-").replace(/^-+|-+$/g, "");
 }
+
+export function slugifyArticleTitle(title) {
+  return normalize(title)
+    .replace(/[^a-z0-9\u0600-\u06ff\s-]/gu, " ")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 function canonicalSlug(topic, isLocal = false, course = null, angle = "guide", audience = "", level = "") {
   const courseKey = course?.slug || null;
   const base = courseKey || (topic.slug === "shushtar" ? "music-education" : topic.slug);
@@ -98,17 +108,15 @@ function canonicalSlug(topic, isLocal = false, course = null, angle = "guide", a
   const parts = [base, scope, slugToken(angle), slugToken(audience), slugToken(level)].filter(Boolean);
   return [...new Set(parts)].join("-");
 }
-function suggestedArticleSlug(item) {
+
+export function suggestedArticleSlug(item) {
   if (Number(item.articleCount) > 0 && Array.isArray(item.existingArticleSlugs) && item.existingArticleSlugs[0]) {
     return item.existingArticleSlugs[0];
   }
-  if (item.modifierType === "comparison") {
-    return "comparison-" + String(item.title || item.normalizedKey || "")
-      .replace(/[^\w\u0600-\u06ff\s-]/gu, " ")
-      .trim().replace(/\s+/g, "-").slice(0, 80);
-  }
+  const titleSlug = slugifyArticleTitle(item.title || item.normalizedKey || "");
+  if (titleSlug) return titleSlug;
   return canonicalSlug(
-    findTopic(item.topic) || { slug: item.topic },
+    findTopic(item.topic) || { slug: item.topic || "music-education" },
     Boolean(item.scope === "shushtar" || item.isLocal || item.modifierType === "local_shushtar"),
     item.course || null,
     item.modifierType || item.searchIntent || "guide",
