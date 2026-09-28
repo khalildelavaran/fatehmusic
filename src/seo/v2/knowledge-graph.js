@@ -28,6 +28,7 @@ export function buildKnowledgeGraph({
   const base = String(siteUrl || "").replace(/\/$/, "");
   const nodes = [];
   const edges = [];
+  const missingReferences = [];
   const nodeIds = new Set();
   const edgeKeys = new Set();
 
@@ -118,8 +119,16 @@ export function buildKnowledgeGraph({
       ? course.instructors
       : course.instructor ? [course.instructor] : [];
 
-    for (const instructor of instructors || []) {
-      if (!instructorIds.includes(instructor?.id)) continue;
+    for (const instructorIdRef of instructorIds) {
+      const instructor = (instructors || []).find((item) => item?.id === instructorIdRef);
+      if (!instructor) {
+        missingReferences.push(Object.freeze({
+          type: "CourseInstructor",
+          sourceId: courseId,
+          reference: instructorIdRef
+        }));
+        continue;
+      }
       const instructorId = instructorEntityId(absoluteUrl("/instructors/" + instructor.slug, base));
       addEdge(instructorId, "teaches", courseId);
     }
@@ -141,7 +150,16 @@ export function buildKnowledgeGraph({
       addEdge(articleId, "about", ensureTopicNode(topic));
     }
     if (post.related_course_slug) {
-      addEdge(articleId, "about", courseEntityId(absoluteUrl("/courses/" + post.related_course_slug, base)), 0.95);
+      const relatedCourse = (courses || []).find((course) => course?.slug === post.related_course_slug);
+      if (!relatedCourse) {
+        missingReferences.push(Object.freeze({
+          type: "ArticleRelatedCourse",
+          sourceId: articleId,
+          reference: post.related_course_slug
+        }));
+      } else {
+        addEdge(articleId, "about", courseEntityId(absoluteUrl("/courses/" + post.related_course_slug, base)), 0.95);
+      }
     }
   }
 
@@ -156,6 +174,7 @@ export function buildKnowledgeGraph({
     version: "1.0",
     nodes: freezeArray(nodes),
     edges: freezeArray(edges),
+    missingReferences: freezeArray(missingReferences),
     statistics: Object.freeze({
       nodeCount: nodes.length,
       edgeCount: edges.length,
@@ -166,7 +185,8 @@ export function buildKnowledgeGraph({
       ).length,
       connectedNodeCount: nodes.filter((node) =>
         (inbound.get(node.id) || 0) + (outbound.get(node.id) || 0) > 0
-      ).length
+      ).length,
+      missingReferenceCount: missingReferences.length
     })
   });
 }
@@ -174,7 +194,12 @@ export function buildKnowledgeGraph({
 export function validateKnowledgeGraph(graph) {
   const graphNodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
   const graphEdges = Array.isArray(graph?.edges) ? graph.edges : [];
+  const graphMissingReferences = Array.isArray(graph?.missingReferences) ? graph.missingReferences : [];
   const errors = [];
+
+  for (const reference of graphMissingReferences) {
+    errors.push("Unresolved graph reference: " + String(reference?.type || "unknown") + ":" + String(reference?.reference || ""));
+  }
   const ids = new Set();
 
   for (const node of graphNodes) {
@@ -226,6 +251,9 @@ export function validateKnowledgeGraph(graph) {
   }
 
   if (graph?.statistics) {
+    if (Number(graph.statistics.missingReferenceCount || 0) !== graphMissingReferences.length) {
+      errors.push("Knowledge Graph missingReferenceCount statistic is inconsistent");
+    }
     if (Number(graph.statistics.nodeCount) !== graphNodes.length) {
       errors.push("Knowledge Graph nodeCount statistic is inconsistent");
     }
