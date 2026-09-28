@@ -20,4 +20,22 @@ describe("topic semantic resolution", () => {
     expect(topics).toContain("setar");
     expect(topics).toContain("shushtar");
   });
+
+  it("does not double-assign a compound instrument to its component topic", () => {
+    const topics = resolveTopics({
+      title: "آموزش سه تار در شوشتر"
+    }).map((topic) => topic.slug);
+
+    expect(topics).toContain("setar");
+    expect(topics).not.toContain("tar");
+  });
+
+  it("does not assign ney to the compound ney-anban phrase", () => {
+    const topics = resolveTopics({
+      title: "کلاس نی انبان در شوشتر"
+    }).map((topic) => topic.slug);
+
+    expect(topics).toContain("neyanban");
+    expect(topics).not.toContain("ney");
+  });
 });
