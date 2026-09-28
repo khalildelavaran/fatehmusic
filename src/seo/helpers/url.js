@@ -46,3 +46,29 @@ export function normalizePath(path) {
         ? withoutQuery.replace(/\/+$/, "")
         : withoutQuery;
 }
+
+
+/**
+ * Builds the canonical identity URL for a WebPage node.
+ * The root keeps its conventional slash; non-root paths do not.
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+export function webPageEntityId(url) {
+    const raw = String(url || "").trim();
+    if (!raw) return "#webpage";
+
+    try {
+        const parsed = new URL(raw);
+        parsed.search = "";
+        parsed.hash = "";
+        parsed.pathname = normalizePath(parsed.pathname || "/");
+        return parsed.toString() + "#webpage";
+    } catch {
+        const normalized = normalizePath(raw);
+        return normalized === "/"
+            ? "/#webpage"
+            : normalized + "#webpage";
+    }
+}
