@@ -127,19 +127,23 @@ function generateForCourse(anchor: InstrumentAnchor): TopicCandidate[] {
       continue;
     }
 
-    // Non-audience-specific variant (audience === "") if the modifier allows it.
+    // Only generate an audience-specific candidate when the template
+    // family itself is audience-specific. Most modifier templates are
+    // intentionally general; assigning one of them a child/teen/adult label
+    // would create false segmentation and silently discard the other audiences
+    // during title-key deduplication.
+    if (modifierType === "parent_guide") {
+      const supportsParents = courseAudiences.some((audience) => audience === "کودک" || audience === "نوجوان");
+      if (supportsParents) {
+        out.push(candidateFrom(fillTemplate(templates[0], { name }), anchor, "", "", modifierType, "informational"));
+      }
+      continue;
+    }
+
     if (allowedAudiences.includes("")) {
       const template = templates[0];
       const level: Level = modifierType === "how_to" || modifierType === "practice_tips" ? "مبتدی" : "";
       out.push(candidateFrom(fillTemplate(template, { name }), anchor, "", level, modifierType, "informational"));
-    }
-
-    // Audience-specific variants, only for audiences this course serves
-    // AND this modifier is allowed to target directly.
-    for (const audience of courseAudiences) {
-      if (!allowedAudiences.includes(audience)) continue;
-      const template = templates[templates.length > 1 ? 1 : 0];
-      out.push(candidateFrom(fillTemplate(template, { name }), anchor, audience, "", modifierType, "informational"));
     }
   }
   return out;
