@@ -87,7 +87,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     temporalCannibalization: Object.freeze(temporal),
     summary: Object.freeze({
       connected: scoringRows.length > 0,
-      signalRows: searchRows.length,
+      signalRows: scoringRows.length,
       temporalSignalRows: rows.length,
       opportunityCount: scored.length,
       searchBackedCount: scored.filter((item) => item.searchSignal?.available).length,
