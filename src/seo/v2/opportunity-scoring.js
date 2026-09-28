@@ -1,3 +1,5 @@
+import { normalizeSemanticText } from "../helpers/text.js";
+
 /** Unified SEO/GEO opportunity scoring. Deterministic and safe for dashboard use. */
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number(value) || 0));
@@ -49,6 +51,23 @@ function decisionConfidenceEvidence(item = {}) {
     }
   }
 
+  if (item.searchSignal?.available && item.marketSignal?.available) {
+    const marketKeyword = normalizeSemanticText(item.marketSignal.matchedKeyword || "");
+    const matchedQueries = (item.searchSignal.matchedQueries || []).map((query) => normalizeSemanticText(query));
+    if (
+      item.marketSignal.matchType === "EXACT" &&
+      marketKeyword &&
+      matchedQueries.includes(marketKeyword)
+    ) {
+      points.push(["GSC and market exact keyword agreement", 5]);
+    } else if (
+      item.marketSignal.matchType === "SEMANTIC" &&
+      Number(item.marketSignal.semanticSimilarity || 0) >= 0.7
+    ) {
+      points.push(["GSC and market semantic agreement", 3]);
+    }
+  }
+
   if (ownership?.matchType === "EXACT") {
     points.push(["exact GSC query ownership", 12]);
     if (ownership.ownerStatus === "STABLE") points.push(["stable query owner", 10]);
@@ -86,6 +105,18 @@ function decisionConfidenceScore(item = {}) {
   return Math.round(clamp(
     30 + decisionConfidenceEvidence(item).reduce((sum, [, value]) => sum + value, 0)
   ));
+}
+
+function crossSourceAgreement(item = {}) {
+  const gsc = item.searchSignal;
+  const market = item.marketSignal;
+  if (!gsc?.available || !market?.available) return 0;
+
+  const marketKeyword = normalizeSemanticText(market.matchedKeyword || "");
+  const matchedQueries = (gsc.matchedQueries || []).map((query) => normalizeSemanticText(query));
+  if (market.matchType === "EXACT" && marketKeyword && matchedQueries.includes(marketKeyword)) return 1;
+  if (market.matchType === "SEMANTIC" && Number(market.semanticSimilarity || 0) >= 0.7) return 1;
+  return 0;
 }
 
 function evidenceStrength(item = {}) {
@@ -170,6 +201,15 @@ export function classifyOpportunityAction(item = {}) {
   // URL, reinforce that owner rather than creating a competing article.
   if (
     item.action === "NEW_CONTENT" &&
+    item.semanticQueryCluster?.ownerStatus === "STABLE" &&
+    Number(item.semanticQueryCluster.impressions || 0) >= 20 &&
+    Number(item.semanticQueryCluster.topShare || 0) >= 0.75
+  ) {
+    return "LINK";
+  }
+
+  if (
+    item.action === "NEW_CONTENT" &&
     item.searchOwnership?.available &&
     item.searchOwnership?.matchType === "EXACT" &&
     item.searchOwnership.ownerStatus === "STABLE" &&
@@ -243,6 +283,7 @@ export function scoreOpportunity(item = {}) {
       evidenceStrength: evidence.quality,
       evidenceSourceCount: evidence.sourceCount,
       evidenceSources: evidence.sources,
+      crossSourceAgreement: crossSourceAgreement(item),
       confidenceEvidence: Object.freeze(confidenceEvidence)
     })
   });
