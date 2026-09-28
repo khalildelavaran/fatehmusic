@@ -92,13 +92,29 @@ function slugToken(value) {
   return map.get(normalized) || normalized.replace(/[^a-z0-9\u0600-\u06ff]+/gu, "-").replace(/^-+|-+$/g, "");
 }
 
+const PERSIAN_SLUG_MAP = Object.freeze({
+  "ا":"a","آ":"a","ب":"b","پ":"p","ت":"t","ث":"s","ج":"j","چ":"ch","ح":"h","خ":"kh",
+  "د":"d","ذ":"z","ر":"r","ز":"z","ژ":"zh","س":"s","ش":"sh","ص":"s","ض":"z","ط":"t",
+  "ظ":"z","ع":"a","غ":"gh","ف":"f","ق":"gh","ک":"k","گ":"g","ل":"l","م":"m","ن":"n",
+  "و":"v","ه":"h","ی":"y","ء":"a","ئ":"y","ؤ":"v"
+});
+
+function transliterateSlug(value) {
+  return normalize(value)
+    .split("")
+    .map((char) => PERSIAN_SLUG_MAP[char] ?? char)
+    .join("");
+}
+
 export function slugifyArticleTitle(title) {
-  return normalize(title)
-    .replace(/[^a-z0-9\u0600-\u06ff\s-]/gu, " ")
+  return transliterateSlug(title)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .slice(0, 80)
+    .replace(/-+$/g, "");
 }
 
 function canonicalSlug(topic, isLocal = false, course = null, angle = "guide", audience = "", level = "") {
