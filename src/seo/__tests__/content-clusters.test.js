@@ -46,4 +46,17 @@ describe("Content Cluster Engine", () => {
     expect(guitar.topics).not.toContain("آموزش گیتار برای مبتدیان در شوشتر");
     expect(piano.topics).toContain("piano");
   });
+
+  it("does not treat a larger token containing شوشتر as local", () => {
+    const [profile] = buildArticleProfiles([
+      {
+        slug: "unrelated",
+        title: "راهنمای ساز در شوشترستان",
+        excerpt: "بررسی ساز برای هنرجویان",
+        topic: "گیتار"
+      }
+    ]);
+    expect(profile.scope).toBe("global");
+  });
+
 });
