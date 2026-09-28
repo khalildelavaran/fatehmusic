@@ -351,6 +351,7 @@ export function scoreOpportunity(item = {}) {
     action,
     priority: score,
     decisionConfidence,
+    evidenceStrengthScore: evidence.score,
     scoreBreakdown: Object.freeze({
       basePriority: base,
       searchSignal: signal,
@@ -358,6 +359,7 @@ export function scoreOpportunity(item = {}) {
       temporalBonus,
       marketSignal: market,
       decisionConfidence,
+      evidenceStrengthScore: evidence.score,
       evidenceStrength: evidence.quality,
       evidenceSourceCount: evidence.sourceCount,
       evidenceSources: evidence.sources,
