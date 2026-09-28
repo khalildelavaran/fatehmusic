@@ -42,4 +42,15 @@ describe("temporal cannibalization", () => {
   it("requires dated data", () => {
     expect(detectTemporalCannibalization(rows.map(({ startDate, endDate, ...row }) => row))).toHaveLength(0);
   });
+
+  it("ignores brand navigation and one-word queries", () => {
+    const noisy = [
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/a", startDate: "2026-07-01", endDate: "2026-07-30", impressions: 800 },
+      { query: "گیتار", page: "https://fatehmusic.ir/a", startDate: "2026-07-01", endDate: "2026-07-30", impressions: 800 },
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/b", startDate: "2026-08-01", endDate: "2026-08-30", impressions: 700 },
+      { query: "گیتار", page: "https://fatehmusic.ir/b", startDate: "2026-08-01", endDate: "2026-08-30", impressions: 700 }
+    ];
+    expect(detectTemporalCannibalization(noisy)).toHaveLength(0);
+  });
+
 });
