@@ -120,9 +120,11 @@ export async function insertScoredCandidates(db: D1Database, candidates: ScoredC
       "title=excluded.title, instrument_key=excluded.instrument_key, related_course_slug=excluded.related_course_slug, " +
       "related_course_title=excluded.related_course_title, category=excluded.category, audience=excluded.audience, " +
       "level=excluded.level, modifier_type=excluded.modifier_type, intent=excluded.intent, score_total=excluded.score_total, " +
-      "score_breakdown=excluded.score_breakdown, reasoning=excluded.reasoning, status=excluded.status, source=excluded.source, " +
-      "run_id=excluded.run_id, updated_at=datetime('now'), used_by_post_id=NULL, used_at=NULL " +
-      "WHERE content_topics.status='rejected'";
+      "score_breakdown=excluded.score_breakdown, reasoning=excluded.reasoning, " +
+      "status=CASE WHEN content_topics.status IN ('approved', 'used') THEN content_topics.status ELSE excluded.status END, " +
+      "source=excluded.source, run_id=excluded.run_id, updated_at=datetime('now'), " +
+      "used_by_post_id=CASE WHEN content_topics.status='used' THEN content_topics.used_by_post_id ELSE NULL END, " +
+      "used_at=CASE WHEN content_topics.status='used' THEN content_topics.used_at ELSE NULL END";
     return db.prepare(sql).bind(
       c.title,
       c.normalizedKey,
