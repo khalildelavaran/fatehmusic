@@ -111,6 +111,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     posts
   });
   const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
+  const semanticLinks = buildLinkGraph(pageNodes, { semanticGraph: knowledgeGraph });
 
   return Object.freeze({
     cluster,
@@ -123,7 +124,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       temporalCannibalization: freeze(temporalCannibalization),
       queryOwnership: freeze(search.queryOwnership)
     }),
-    links: Object.freeze({ graph: freeze(buildLinkGraph(pageNodes)) }),
+    links: Object.freeze({ graph: freeze(semanticLinks) }),
     knowledgeGraph,
     knowledgeGraphValidation,
     marketOpportunities: freeze(marketOpportunities),
