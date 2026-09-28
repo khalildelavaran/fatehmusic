@@ -2,23 +2,13 @@ import type { KeywordProvider, KeywordSignal } from "./keyword-provider";
 
 const DEFAULT_SITE_URL = "https://fatehmusic.ir";
 import { containsSemanticPhrase, normalizeSemanticText } from "../../../seo/helpers/text.js";
+import { isOwnershipEligibleQuery, queryTokens } from "../../../seo/helpers/query.js";
 
 function normalize(value: string): string {
   return normalizeSemanticText(value);
 }
-const GENERIC_QUERY_TERMS = new Set(["آموزش", "موسیقی", "کلاس", "دوره", "شوشتر", "فاتح", "یادگیری", "مدرس"]);
-
-const GENERIC_TOKENS = new Set([
-  "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای", "و",
-  "یا", "با", "را", "این", "یک", "چه", "چگونه", "چطور", "شوشتر"
-]);
-
 function tokens(value: string): Set<string> {
-  return new Set(
-    normalize(value)
-      .split(/\s+/)
-      .filter((token) => token.length >= 2 && !GENERIC_TOKENS.has(token))
-  );
+  return queryTokens(value);
 }
 
 function overlap(a: Set<string>, b: Set<string>): number {
@@ -87,12 +77,13 @@ export class D1SearchConsoleKeywordProvider implements KeywordProvider {
 
     const matches = rows
       .map((row) => {
-        const normalizedQuery = normalize(row.query);
-        const queryTokens = tokens(row.query);
-        const isGenericSingleTerm = queryTokens.size === 1 && [...queryTokens].every((token) => GENERIC_QUERY_TERMS.has(token));
-        const similarity = !isGenericSingleTerm && containsSemanticPhrase(title, row.query) && queryTokens.size >= 1
+        const rowTokens = tokens(row.query);
+        const eligible = isOwnershipEligibleQuery(row.query);
+        if (!eligible || !rowTokens.size) return { row, similarity: 0 };
+
+        const similarity = containsSemanticPhrase(title, row.query)
           ? 1
-          : overlap(target, queryTokens);
+          : overlap(target, rowTokens);
         return { row, similarity: similarity >= 0.34 ? similarity : 0 };
       })
       .filter((item) => item.similarity > 0)
