@@ -77,8 +77,17 @@ function parseAttributes(tag) {
   return attrs;
 }
 
+function normalizeRedirectSource(value) {
+  const route = normalizeRoute(value);
+  if (!route) return null;
+  const raw = String(value || "").trim();
+  return raw.endsWith("/") && route !== "/" ? route + "/" : route;
+}
+
 function readRedirects() {
-  const files = [path.join(ROOT, "_redirects"), path.join(ROOT, "public", "_redirects")];
+  // Astro copies public/_redirects into the deployed dist. Keep the root
+  // fallback for projects/environments that still place the rules there.
+  const files = [path.join(ROOT, "public", "_redirects"), path.join(ROOT, "_redirects")];
   const file = files.find((item) => fs.existsSync(item));
   const map = new Map();
   if (!file) return map;
@@ -87,7 +96,7 @@ function readRedirects() {
     if (!trimmed || trimmed.startsWith("#")) continue;
     const parts = trimmed.split(/\s+/);
     if (parts.length < 2) continue;
-    const from = normalizeRoute(parts[0]);
+    const from = normalizeRedirectSource(parts[0]);
     const to = normalizeRoute(parts[1]);
     if (!from || !to) continue;
     if (map.has(from)) error("DUPLICATE_REDIRECT", "duplicate redirect source: " + from);
@@ -439,6 +448,24 @@ function isKnownServerRoute(route, patterns) {
   return patterns.some((pattern) => pattern.test(route));
 }
 
+function validateCanonicalRedirectCoverage(pages, redirects) {
+  for (const [route, page] of pages) {
+    if (route === "/" || page.noindex) continue;
+    const slashVariant = route + "/";
+    if (!redirects.has(slashVariant)) {
+      error("TRAILING_SLASH_REDIRECT_MISSING", route + ": missing 301 from " + slashVariant + " to " + route);
+      continue;
+    }
+    const rule = redirects.get(slashVariant);
+    if (rule.to !== route) {
+      error("TRAILING_SLASH_REDIRECT_TARGET", route + ": " + slashVariant + " must redirect directly to " + route + " (found " + rule.to + ")");
+    }
+    if (String(rule.status) !== "301") {
+      error("TRAILING_SLASH_REDIRECT_STATUS", route + ": " + slashVariant + " must use 301");
+    }
+  }
+}
+
 function validateLinks(pages, redirects, knownRoutes = new Set(), serverRoutePatterns = []) {
   for (const [from, rule] of redirects) {
     if (!pages.has(rule.to) && !isKnownServerRoute(rule.to, serverRoutePatterns)) {
@@ -561,6 +588,7 @@ function main() {
   const sitemapRoutes = collectSitemapUrls().urls;
   const serverRoutePatterns = collectServerRoutePatterns();
   const dynamicRoutes = new Set([...sitemapRoutes].filter((route) => isKnownServerRoute(route, serverRoutePatterns)));
+  validateCanonicalRedirectCoverage(pages, redirects);
   validateLinks(pages, redirects, dynamicRoutes, serverRoutePatterns);
   validateSitemaps(pages, serverRoutePatterns);
   report();
@@ -574,5 +602,7 @@ export {
   routeFromHtml,
   validateRedirects,
   validateSchema,
-  collectSitemapUrls
+  collectSitemapUrls,
+  readRedirects,
+  validateCanonicalRedirectCoverage
 };
