@@ -36,6 +36,15 @@ export function classifyOpportunityAction(item = {}) {
   if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
   if (temporal?.severity === "MEDIUM" && temporal.actionable && item.internalLinkGap !== true && item.linkGap !== true) return "OPTIMIZE_EXISTING";
   if (item.internalLinkGap === true || item.linkGap === true) return "LINK";
+
+  // Query demand can exist before a dedicated article exists. For a genuinely
+  // new content opportunity, use that demand as a scoring signal only; do not
+  // relabel the action as an optimization/expansion of a page that does not
+  // exist.
+  const hasExistingContent = Number(item.articleCount || 0) > 0 ||
+    (Array.isArray(item.existingArticleSlugs) && item.existingArticleSlugs.length > 0);
+  if (item.action === "NEW_CONTENT" && !hasExistingContent) return "NEW_CONTENT";
+
   if (signal.available) {
     if (signal.position != null && signal.position <= 10 && signal.ctr < 0.03) return "OPTIMIZE_EXISTING";
     if (signal.position != null && signal.position > 10 && signal.position <= 30) return "EXPAND";
