@@ -34,6 +34,18 @@ describe("buildSEO GEO integration", () => {
         expect(validateEntityGraph(result.schemaGraph).valid).toBe(true);
     });
 
+
+    it("includes the GEO authority entity in the canonical graph", () => {
+        const result = buildSEO({ path: "/", title: "آموزشگاه موسیقی فاتح" });
+        const authority = result.schemaGraph["@graph"].find(
+            (node) => node?.["@id"] === "https://fatehmusic.ir#authority"
+        );
+
+        expect(authority).toBeDefined();
+        expect(authority["@type"]).toBe("EducationalOrganization");
+        expect(authority.sameAs).toEqual(expect.any(Array));
+    });
+
     it("contains only one canonical Organization and WebSite", () => {
         const result = buildSEO({ path: "/" });
         const ids = idsOf(result.schemaGraph);
