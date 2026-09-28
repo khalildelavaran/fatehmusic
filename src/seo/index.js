@@ -12,6 +12,8 @@ import { buildOrganizationSchema } from "./schema/organization.js";
 import { buildWebsiteSchema } from "./schema/website.js";
 import { buildWebPageSchema } from "./schema/webpage.js";
 import { buildSchemaGraph } from "./schema/graph.js";
+import { compileKnowledgeGraphEdges } from "./schema/compiler.js";
+import { SCHEMA_REGISTRY, isKnownSchemaType, getSchemaTypeDefinition, validateSchemaTypes, schemaRegistryStatistics } from "./schema/registry.js";
 import { buildTopicSchemas } from "./schema/topic.js";
 import { buildLocalPlaceSchema } from "./schema/local-place.js";
 import { buildCourseSchema, buildCourseStyleSchemas, buildGuitarStyleSchema } from "./schema/course.js";
