@@ -125,7 +125,7 @@ export function normalizeSemanticText(text) {
         .replace(/[\u200c\u200f\u200e]/g, "")
         .replace(/[يى]/g, "ی")
         .replace(/[ك]/g, "ک")
-        .replace(/[أإٱ]/g, "ا")
+        .replace(/[آأإٱ]/g, "ا")
         .replace(/[ۀة]/g, "ه")
         .replace(/[\u064B-\u065F\u0670]/g, "")
         .replace(/ـ/g, ""))
