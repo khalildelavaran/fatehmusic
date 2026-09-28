@@ -191,6 +191,7 @@ function validateGeneratedArticle(article: { content?: string; excerpt?: string;
   const excerpt = String(article.excerpt || "").trim();
   const metaTitle = String(article.meta_title || "").trim();
   const metaDescription = String(article.meta_description || "").trim();
+  const wordCount = content ? content.split(/\\s+/).filter(Boolean).length : 0;
   const paragraphCount = rawContent.split(/\\n\\s*\\n/g).map((part) => part.trim()).filter(Boolean).length;
   const headingCount = (rawContent.match(/^(#{1,4})\\s+.+$/gm) || []).length + (rawContent.match(/<h[1-4]\\b[^>]*>/gi) || []).length;
   const normalizedMetaTitle = metaTitle.toLocaleLowerCase("fa");
