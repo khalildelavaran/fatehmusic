@@ -95,6 +95,32 @@ describe("GSC query ownership exposure", () => {
     expect(result.summary.queryOwnershipCount).toBe(1);
   });
 
+  it("matches an Ahrefs keyword semantically when no exact keyword exists", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [], {
+      marketSignals: [
+        {
+          keyword: "کلاس گیتار شوشتر",
+          estimatedVolume: 300,
+          difficulty: 35,
+          available: true,
+          source: "ahrefs"
+        }
+      ]
+    });
+
+    expect(result.opportunities[0].marketSignal?.available).toBe(true);
+    expect(result.opportunities[0].marketSignal?.matchType).toBe("SEMANTIC");
+    expect(result.opportunities[0].marketSignal?.matchedKeyword).toBe("کلاس گیتار شوشتر");
+  });
+
   it("accepts ownership filtering options without affecting search scoring", () => {
     const result = enrichOpportunitiesWithSearchConsole([], [
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 2, snapshotLabel: "current" },
