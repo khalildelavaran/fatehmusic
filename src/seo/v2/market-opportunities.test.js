@@ -44,6 +44,30 @@ describe("Ahrefs market opportunity discovery", () => {
 });
 
 
+describe("market position fallback", () => {
+  it("uses GSC position when Ahrefs has no ranking position", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار شوشتر",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: null
+      }],
+      gscRows: [{
+        query: "آموزش گیتار شوشتر",
+        impressions: 80,
+        clicks: 4,
+        position: 17
+      }]
+    });
+
+    expect(result[0].bestPosition).toBe(17);
+    expect(result[0].bestPositionSource).toBe("gsc");
+    expect(result[0].classification).toBe("STRIKING_DISTANCE");
+  });
+});
+
+
 describe("normalized market signals", () => {
   it("creates a core-scoring signal from Ahrefs opportunity data", () => {
     const report = buildMarketOpportunityReport({
