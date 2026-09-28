@@ -103,7 +103,7 @@ describe("GSC signal resolver", () => {
   it("does not use a course page signal for a brand-new article opportunity", () => {
     const result = resolveOpportunitySearchSignals([
       {
-        action: "NEW_CONTENT",
+        action: "LINK",
         title: "آموزش گیتار در شوشتر",
         topicName: "گیتار",
         topic: "guitar",
@@ -208,6 +208,26 @@ describe("GSC signal resolver", () => {
 
     expect(result[0].searchSignal.impressions).toBe(20);
     expect(result[0].searchSignal.ctr).toBe(0.1);
+  });
+
+  it("promotes the established GSC owner to the first recommended link", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", clicks: 4, impressions: 100, ctr: 0.04, position: 6 }
+    ]);
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        recommendedLinks: [
+          "https://fatehmusic.ir/locations/shushtar",
+          "https://fatehmusic.ir/register"
+        ]
+      }
+    ], index);
+    expect(result[0].recommendedLinks[0]).toBe("https://fatehmusic.ir/courses/guitar-course");
+    expect(result[0].recommendedLinks).toHaveLength(3);
   });
 
   it("maps an existing non-brand query owner for a new-content opportunity", () => {
