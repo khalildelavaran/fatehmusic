@@ -16,6 +16,7 @@ import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/pr
 import { listSeoActions } from "../../seo/v2/seo-action-store.js";
 import { buildAhrefsKeywordSignalMap, getAhrefsConfig, getLatestAhrefsMarketSnapshot } from "../../seo/v2/providers/ahrefs.js";
 import { getSearchConsoleConfig } from "../../seo/v2/providers/search-console-config.js";
+import { normalizeSemanticText } from "../../seo/helpers/text.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/login");
@@ -56,19 +57,15 @@ const intelligence = buildSEOIntelligence({
     truncated: Number(latestGscSync?.truncated) === 1,
     finishedAt: latestGscSync?.finishedAt || undefined
   },
+  marketDataQuality: {
+    fetchedAt: ahrefsOrganicKeywords?.fetchedAt || undefined
+  },
   marketSignals,
   marketKeywordRows: Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : [],
   siteUrl: site.url
 });
 
-const normalizeText = (value: string) => String(value ?? "")
-  .replace(/[\u200c\u200f\u200e]/g, "")
-  .replace(/[يى]/g, "ی")
-  .replace(/[ك]/g, "ک")
-  .replace(/[\s\u0640]+/g, " ")
-  .replace(/[؟?!.,،؛:]+$/g, "")
-  .trim()
-  .toLowerCase();
+const normalizeText = (value: string) => normalizeSemanticText(value);
 
 const normalizeSlug = (value: string) => String(value ?? "")
   .trim()
