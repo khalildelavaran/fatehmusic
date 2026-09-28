@@ -281,7 +281,7 @@ function validateHtmlFiles() {
     if (canonicals.length !== 1) error("CANONICAL_COUNT", route + ": expected exactly one canonical");
     if (h1s.length !== 1) error("H1_COUNT", route + ": expected exactly one H1, found " + h1s.length);
     if (!/\blang=["']fa["']/i.test(htmlTag) || !/\bdir=["']rtl["']/i.test(htmlTag)) {
-      error("HTML_LANGUAGE", route + ": expected <html lang="fa" dir="rtl">");
+      error("HTML_LANGUAGE", route + ': expected <html lang="fa" dir="rtl">');
     }
     for (const [label, value] of [
       ["og:title", metaByProperty("og:title")],
