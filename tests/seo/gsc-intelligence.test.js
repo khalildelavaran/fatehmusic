@@ -155,9 +155,10 @@ describe("GSC query ownership exposure", () => {
     });
 
     expect(result.dataQuality.truncated).toBe(true);
-    expect(result.dataQuality.completeness).toBe(0.7);
-    expect(result.summary.gscCompleteness).toBe(0.7);
-    expect(result.opportunities[0].gscDataQuality.completeness).toBe(0.7);
+    expect(result.dataQuality.completeness).toBeNull();
+    expect(result.dataQuality.coverageStatus).toBe("PARTIAL");
+    expect(result.summary.gscCompleteness).toBe(0);
+    expect(result.opportunities[0].gscDataQuality.completeness).toBeNull();
   });
 
   it("accepts ownership filtering options without affecting search scoring", () => {
