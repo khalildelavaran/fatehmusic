@@ -209,12 +209,17 @@ function normalizeGeneratedText(value: string): string {
     .split(slash + "r" + slash + "n").join(newline)
     .split(slash + "n").join(newline)
     .split(slash + "r").join(carriage)
+    .split(carriage + newline).join(newline)
+    .split(carriage).join(newline)
     .trim();
 }
 
 function validateGeneratedArticle(article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string }): string | null {
   const rawContent = normalizeGeneratedText(article.content || "");
   const content = rawContent.replace(/<[^>]+>/g, " ")
+    .split("\n").join(" ")
+    .split("\r").join(" ")
+    .split("\t").join(" ")
     .split(" ")
     .filter(Boolean)
     .join(" ");
