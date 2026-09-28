@@ -55,8 +55,18 @@ export class HybridKeywordProvider implements KeywordProvider {
     )];
     if (!unique.length) return [];
 
-    const gscSignals = await this.gsc.lookupMany(unique);
-    const gscByTitle = new Map(unique.map((title, index) => [cacheKey(title), gscSignals[index] || { available: false, source: "none" }]));
+    let gscSignals: KeywordSignal[] = [];
+    try {
+      gscSignals = await this.gsc.lookupMany(unique);
+    } catch (error) {
+      // Ahrefs must remain usable when Search Console is absent, stale, or
+      // temporarily unavailable. GSC is enrichment, not a hard dependency.
+      console.warn("[hybrid-keyword] GSC enrichment unavailable:", error);
+    }
+    const gscByTitle = new Map(unique.map((title, index) => [
+      cacheKey(title),
+      gscSignals[index] || { available: false, source: "none" }
+    ]));
 
     const pending = unique.filter((title) => !this.cache.has(cacheKey(title)));
     const config = getAhrefsConfig(this.env);
