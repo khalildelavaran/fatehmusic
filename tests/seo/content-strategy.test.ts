@@ -85,4 +85,25 @@ describe("comparison content strategy", () => {
       ])
     );
   });
+
+
+  it("builds a course-linked gap brief without losing intent evidence", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      siteUrl: "https://fatehmusic.ir",
+      gaps: [{
+        topic: "guitar",
+        scope: "shushtar",
+        courseSlug: "guitar-course",
+        articleCount: 0,
+        articleSlugs: [],
+        title: "آموزش گیتار در شوشتر",
+        missingIntents: ["informational"]
+      }]
+    });
+
+    expect(result.opportunities).toHaveLength(1);
+    expect(result.opportunities[0].course?.slug).toBe("guitar-course");
+    expect(result.opportunities[0].intentConfidence).toBeGreaterThan(0);
+  });
 });
