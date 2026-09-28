@@ -69,8 +69,11 @@ export async function getCoverageByCourse(db: D1Database): Promise<Map<string, n
 export async function getRecentlyUsedCourses(db: D1Database, withinDays = 21): Promise<Set<string>> {
   const cutoff = new Date(Date.now() - withinDays * 86_400_000).toISOString();
   const [topics, posts] = await Promise.all([
-    db.prepare("SELECT DISTINCT related_course_slug AS slug FROM content_topics WHERE status = 'used' AND used_at >= ?")
-      .bind(cutoff).all<{ slug: string | null }>(),
+    db.prepare(
+      "SELECT DISTINCT t.related_course_slug AS slug FROM content_topics t " +
+      "JOIN blog_posts p ON p.id = t.used_by_post_id " +
+      "WHERE t.status = 'used' AND t.used_at >= ? AND p.status = 'published'"
+    ).bind(cutoff).all<{ slug: string | null }>(),
     db.prepare("SELECT DISTINCT related_course_slug AS slug FROM blog_posts WHERE status = 'published' AND created_at >= ?")
       .bind(cutoff).all<{ slug: string | null }>()
   ]);
