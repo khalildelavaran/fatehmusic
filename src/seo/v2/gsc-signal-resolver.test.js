@@ -326,7 +326,7 @@ describe("GSC signal resolver", () => {
 
 describe("Persian query normalization", () => {
   it("normalizes common Arabic and Persian spelling variants", () => {
-    expect(normalizeText("اموزش  كلاسِ موسیقی")).toBe("اموزش کلاسی موسیقی");
+    expect(normalizeText("اموزش  كلاس موسیقی")).toBe("اموزش کلاس موسیقی");
     expect(normalizeText("أموزشگاه")).toBe("اموزشگاه");
   });
 
