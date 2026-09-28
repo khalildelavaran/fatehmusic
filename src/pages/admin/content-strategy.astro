@@ -9,7 +9,7 @@ import "../../styles/admin/topics.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
-import { buildSEOIntelligence, resolveSite } from "../../seo/index.js";
+import { buildSEOIntelligence, buildGscSignalIndex, resolveSite } from "../../seo/index.js";
 import { listTopics } from "../../ai/content-engine/db";
 import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
 import { listSeoActions } from "../../seo/v2/seo-action-store.js";
@@ -34,6 +34,9 @@ const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsOrganicKeywords
 ]) : [null, null, null, null];
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
+const currentGscRows = gscRows.filter((row) =>
+  String((row as Record<string, unknown>).snapshotLabel || (row as Record<string, unknown>).snapshot_label || "") === "current"
+);
 const intelligence = buildSEOIntelligence({
   posts,
   courses,
@@ -176,10 +179,10 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
           </div>
           {intelligence.gsc.connected && <div class="strategy-gsc-grid">
             <div><strong>Queryهای برتر</strong><div class="strategy-gsc-list">
-              {[...intelligence.gsc.index.byQuery.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
+              {[...buildGscSignalIndex(currentGscRows).byQuery.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
             </div></div>
             <div><strong>صفحات برتر</strong><div class="strategy-gsc-list">
-              {[...intelligence.gsc.index.byPage.entries()].slice(0, 8).map(([page, signal]) => <span><code>{page.replace(site.url, "") || "/"}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · CTR {(signal.ctr * 100).toFixed(1)}%</span>)}
+              {[...buildGscSignalIndex(currentGscRows).byPage.entries()].slice(0, 8).map(([page, signal]) => <span><code>{page.replace(site.url, "") || "/"}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · CTR {(signal.ctr * 100).toFixed(1)}%</span>)}
             </div></div>
           </div>}
         </section>
