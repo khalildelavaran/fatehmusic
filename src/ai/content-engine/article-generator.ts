@@ -187,15 +187,55 @@ const SYSTEM_PROMPT = `تو یک نویسنده‌ی محتوای حرفه‌ا�
 - حداقل ۵ و حداکثر ۸ پاراگراف، پاراگراف‌ها با دو خط جدید (\\n\\n) از هم جدا بشن.
 - هیچ آمار، جایزه، یا نقل‌قولی که در بریف نیومده اختراع نکن.`;
 
+function countOccurrences(value: string, needle: string): number {
+  if (!needle) return 0;
+  let count = 0;
+  let offset = 0;
+  while (true) {
+    const index = value.indexOf(needle, offset);
+    if (index < 0) return count;
+    count += 1;
+    offset = index + needle.length;
+  }
+}
+
+function normalizeGeneratedText(value: string): string {
+  const slash = String.fromCharCode(92);
+  const newline = String.fromCharCode(10);
+  const carriage = String.fromCharCode(13);
+  return String(value || "")
+    .split(slash + "r" + slash + "n").join(newline)
+    .split(slash + "n").join(newline)
+    .split(slash + "r").join(carriage)
+    .trim();
+}
+
 function validateGeneratedArticle(article: { content?: string; excerpt?: string; meta_title?: string; meta_description?: string; slug?: string }): string | null {
-  const rawContent = String(article.content || "").replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n").replace(/\\r/g, "\r").trim();
-  const content = rawContent.replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
+  const rawContent = normalizeGeneratedText(article.content || "");
+  const content = rawContent.replace(/<[^>]+>/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .join(" ");
   const excerpt = String(article.excerpt || "").trim();
   const metaTitle = String(article.meta_title || "").trim();
   const metaDescription = String(article.meta_description || "").trim();
-  const wordCount = content ? content.split(/\\s+/).filter(Boolean).length : 0;
-  const paragraphCount = rawContent.split(/\\n\\s*\\n/g).map((part) => part.trim()).filter(Boolean).length;
-  const headingCount = (rawContent.match(/^(#{1,4})\\s+.+$/gm) || []).length + (rawContent.match(/<h[1-4]\\b[^>]*>/gi) || []).length;
+  const wordCount = content ? content.split(" ").filter(Boolean).length : 0;
+  const lines = rawContent.split(String.fromCharCode(10)).map((line) => line.trim()).filter(Boolean);
+  const paragraphCount = rawContent
+    .split(String.fromCharCode(10) + String.fromCharCode(10))
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .length;
+  const markdownHeadingCount = lines.filter((line) => {
+    const first = line.indexOf("#");
+    return first === 0 && line.length > 1 && line[1] === " ";
+  }).length;
+  const htmlHeadingCount =
+    countOccurrences(rawContent.toLowerCase(), "<h1") +
+    countOccurrences(rawContent.toLowerCase(), "<h2") +
+    countOccurrences(rawContent.toLowerCase(), "<h3") +
+    countOccurrences(rawContent.toLowerCase(), "<h4");
+  const headingCount = markdownHeadingCount + htmlHeadingCount;
   const normalizedMetaTitle = metaTitle.toLocaleLowerCase("fa");
   const normalizedExcerpt = excerpt.toLocaleLowerCase("fa");
   const placeholderPattern = /(todo|lorem ipsum|tbd|نام مدرس|نام آموزشگاه|مثال ساختگی)/i;
