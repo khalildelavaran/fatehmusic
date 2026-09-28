@@ -383,6 +383,15 @@ function buildQueryOwnership(querySignals = [], item = {}) {
     (sum, row) => sum + Math.max(0, Number(row?.impressions) || 0),
     0
   );
+  const totalClicks = exactEligible.reduce(
+    (sum, row) => sum + Math.max(0, Number(row?.clicks) || 0),
+    0
+  );
+  const weightedPosition = exactEligible.reduce((sum, row) => {
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    const position = Number(row?.position);
+    return Number.isFinite(position) && impressions > 0 ? sum + position * impressions : sum;
+  }, 0);
   const pages = [...pageImpressions.entries()]
     .map(([page, impressions]) => ({
       page,
@@ -397,6 +406,9 @@ function buildQueryOwnership(querySignals = [], item = {}) {
     available: pages.length > 0,
     matchType: "EXACT",
     impressions: totalImpressions,
+    clicks: totalClicks,
+    ctr: totalImpressions ? totalClicks / totalImpressions : 0,
+    position: totalImpressions ? weightedPosition / totalImpressions : null,
     relatedImpressions: eligible.reduce((sum, row) => sum + Math.max(0, Number(row?.impressions) || 0), 0),
     matchedQueries: [...new Set(exactEligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
     relatedQueries: [...new Set(eligible.map((row) => String(row?.query || "").trim()).filter(Boolean))].slice(0, 10),
@@ -423,6 +435,7 @@ function buildQueryOwnership(querySignals = [], item = {}) {
 
 export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 500 } = {}) {
   const queryPages = new Map();
+  const queryStats = new Map();
 
   const displayQueries = new Map();
 
@@ -437,6 +450,13 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
     const pages = queryPages.get(query) || new Map();
     pages.set(page, (pages.get(page) || 0) + impressions);
     queryPages.set(query, pages);
+
+    const stats = queryStats.get(query) || { clicks: 0, impressions: 0, weightedPosition: 0 };
+    stats.clicks += Math.max(0, Number(row?.clicks) || 0);
+    stats.impressions += impressions;
+    const position = Number(row?.position);
+    if (Number.isFinite(position) && impressions > 0) stats.weightedPosition += position * impressions;
+    queryStats.set(query, stats);
 
     const display = displayQueries.get(query);
     if (!display || impressions > display.impressions) {
@@ -464,6 +484,11 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
           query,
           displayQuery: displayQueries.get(query)?.value || query,
           impressions: totalImpressions,
+          clicks: queryStats.get(query)?.clicks || 0,
+          ctr: totalImpressions ? (queryStats.get(query)?.clicks || 0) / totalImpressions : 0,
+          position: queryStats.get(query)?.impressions
+            ? queryStats.get(query).weightedPosition / queryStats.get(query).impressions
+            : null,
           pageCount: pages.size,
           topPage: rankedPages[0]?.page || null,
           topShare: rankedPages[0]?.share || 0,
