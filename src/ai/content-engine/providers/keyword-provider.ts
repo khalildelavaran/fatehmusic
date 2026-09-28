@@ -4,10 +4,11 @@
 // are explicit: never fabricate search volume, difficulty, or trend
 // numbers. The default Worker provider now consumes first-party Search Console
 // impressions when available. It still reports "unavailable" rather than
-// inventing a third-party volume or difficulty number. Swap NullKeywordProvider for a real implementation
-// (e.g. an Ahrefs API v3 client, keyed by a new AHREFS_API_KEY secret)
-// once one is actually connected -- everything else in the engine only
-// depends on this interface, not on any specific provider.
+// inventing a third-party volume or difficulty number. The production
+// pipeline uses Search Console by default and HybridKeywordProvider when
+// AHREFS_API_KEY is configured. NullKeywordProvider remains available for
+// tests and explicit no-data environments; every provider still follows the
+// same interface so scoring never depends on fabricated market data.
 
 export interface KeywordSignal {
   available: boolean;
