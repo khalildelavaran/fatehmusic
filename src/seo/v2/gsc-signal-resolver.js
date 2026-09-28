@@ -1,6 +1,7 @@
 /** Resolve GSC query/page rows into actionable SEO/GEO search intelligence. */
 
 import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
+import { classifyIntent } from "./intents.js";
 
 function normalizeUrl(value) {
   return String(value || "").replace(/#.*$/, "").replace(/\/$/, "").trim().toLowerCase();
@@ -153,6 +154,37 @@ function queryMatches(item, query) {
   const exact = phraseIncludes(haystack, normalizedQuery) ? 1 : 0;
   const overlap = jaccard(tokens(haystack), tokens(normalizedQuery));
   return exact === 1 || overlap >= 0.25;
+}
+
+function queryRelevanceScore(item, query) {
+  const haystack = normalizeText([
+    item?.title,
+    item?.topicName,
+    item?.topic,
+    item?.course?.title
+  ].filter(Boolean).join(" | "));
+  const normalizedQuery = normalizeText(query);
+  if (!haystack || !normalizedQuery) return 0;
+
+  const exact = phraseIncludes(haystack, normalizedQuery) ? 1 : 0;
+  const overlap = jaccard(tokens(haystack), tokens(normalizedQuery));
+  let score = exact * 100 + overlap * 50;
+
+  const targetIntent = String(item?.searchIntent || item?.intent || "").trim().toLowerCase();
+  if (targetIntent) {
+    const queryIntent = classifyIntent({ title: query, keywords: [query] }).primary;
+    if (queryIntent === targetIntent) score += 20;
+    else if (
+      (targetIntent === "commercial" && queryIntent === "transactional") ||
+      (targetIntent === "transactional" && queryIntent === "commercial")
+    ) {
+      score += 8;
+    } else if (queryIntent && queryIntent !== "informational" && targetIntent === "informational") {
+      score -= 6;
+    }
+  }
+
+  return score;
 }
 
 function relevantQueryRows(index, item) {
@@ -441,7 +473,12 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
     // used for exact query ownership. The owner calculation must see every
     // page that contributed impressions for the matching query.
     const querySignals = matchedQueryRows
-      .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))
+      .slice()
+      .sort((a, b) => {
+        const relevanceDelta = queryRelevanceScore(item, b?.query) - queryRelevanceScore(item, a?.query);
+        if (relevanceDelta !== 0) return relevanceDelta;
+        return Number(b.impressions || 0) - Number(a.impressions || 0);
+      })
       .slice(0, 20);
     const relevantQuerySignal = aggregate(querySignals);
     const ownership = buildQueryOwnership(matchedQueryRows, item);
