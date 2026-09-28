@@ -85,7 +85,7 @@ describe("content intelligence draft lifecycle", () => {
     const db = {
       prepare(sql: string) {
         expect(sql).toContain("status='approved'");
-        expect(sql).toContain("status='drafted'");
+        expect(sql).toContain("status IN ('drafted', 'used')");
         return {
           bind: (...args: unknown[]) => {
             expect(args).toEqual([88]);
