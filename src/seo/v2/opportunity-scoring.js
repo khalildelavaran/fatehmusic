@@ -49,6 +49,18 @@ function decisionConfidenceEvidence(item = {}) {
     }
   }
 
+  if (item.competitorGap?.available) {
+    points.push(["competitor keyword gap", 8]);
+    if (Number(item.competitorGap.competitorCount) >= 3) {
+      points.push(["multiple competitors share gap", 4]);
+    } else if (Number(item.competitorGap.competitorCount) >= 2) {
+      points.push(["multiple competitor evidence", 2]);
+    }
+    if (Number(item.competitorGap.gapScore) >= 70) {
+      points.push(["strong competitor gap signal", 3]);
+    }
+  }
+
   if (item.marketSignal?.available) {
     points.push(["market signal present", 10]);
     const marketIntents = item.marketSignal.intents && typeof item.marketSignal.intents === "object"
@@ -194,6 +206,10 @@ function evidenceStrength(item = {}) {
     sourceFamilies.add("MARKET");
     evidenceSignals.add("MARKET_SIGNAL");
   }
+  if (item.competitorGap?.available) {
+    sourceFamilies.add("COMPETITOR");
+    evidenceSignals.add("COMPETITOR_GAP");
+  }
   if (Number.isFinite(Number(item.intentConfidence)) && Number(item.intentConfidence) > 0) {
     sourceFamilies.add("INTENT");
     evidenceSignals.add("INTENT_CONFIDENCE");
@@ -217,6 +233,17 @@ function evidenceStrength(item = {}) {
     evidenceSignals: Object.freeze([...evidenceSignals]),
     independentMarketAndGsc: sourceFamilies.has("MARKET") && sourceFamilies.has("GSC")
   });
+}
+
+function competitorGapScore(signal = {}) {
+  if (!signal?.available) return 0;
+  return clamp(
+    Math.min(
+      18,
+      (Number(signal.gapScore) || 0) * 0.12 +
+      Math.min(8, Math.max(0, Number(signal.competitorCount) || 0) * 2)
+    )
+  );
 }
 
 function marketSignalScore(signal = {}, item = {}) {
@@ -466,14 +493,20 @@ export function scoreOpportunity(item = {}) {
   const base = clamp(item.priority);
   const signal = searchSignalScore(item.searchSignal);
   const market = marketSignalScore(item.marketSignal, item);
+  const competitor = competitorGapScore(item.competitorGap);
   const competitionPenalty = item.cannibalization?.severity === "HIGH" ? 0 : item.cannibalization?.severity === "MEDIUM" ? 3 : 0;
   const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
 
   const weightedBase = base * 0.55;
   const weightedSearch = signal * 0.45;
   const weightedMarket = market == null ? 0 : market * 0.20;
-  const weightTotal = market == null ? 1 : 1.2;
-  const score = clamp(Math.round((weightedBase + weightedSearch + weightedMarket) / weightTotal - competitionPenalty + temporalBonus));
+  const weightedCompetitor = competitor > 0 ? competitor * 0.15 : 0;
+  const weightTotal = (market == null ? 1 : 1.2) + (competitor > 0 ? 0.15 : 0);
+  const score = clamp(Math.round(
+    (weightedBase + weightedSearch + weightedMarket + weightedCompetitor) / weightTotal -
+    competitionPenalty +
+    temporalBonus
+  ));
   const confidenceEvidence = decisionConfidenceEvidence({
     ...item,
     marketSignal: market == null ? undefined : item.marketSignal
@@ -500,6 +533,8 @@ export function scoreOpportunity(item = {}) {
       competitionPenalty,
       temporalBonus,
       marketSignal: market,
+      competitorGap: competitor > 0 ? item.competitorGap : null,
+      competitorGapScore: competitor,
       decisionConfidence,
       evidenceStrengthScore: evidence.score,
       evidenceStrength: evidence.quality,
