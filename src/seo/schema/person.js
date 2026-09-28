@@ -6,6 +6,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
+import { webPageEntityId } from "../helpers/url.js";
 import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
 /**
@@ -34,7 +35,7 @@ export function buildPersonSchema(instructor, { site }) {
         image: instructor.image,
         disambiguatingDescription: buildDisambiguatingDescription(instructor),
         worksFor: { "@id": `${site.url}/#organization` },
-        mainEntityOfPage: { "@id": `${String(instructor.url).replace(/\/$/, "")}/#webpage` },
+        mainEntityOfPage: { "@id": webPageEntityId(instructor.url) },
         teaches: taughtCourseRefs.length ? taughtCourseRefs : undefined,
         knowsAbout: [...new Set(knowsAbout)].filter(Boolean),
         sameAs: instructor.sameAs && instructor.sameAs.length ? instructor.sameAs : undefined
