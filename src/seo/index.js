@@ -41,6 +41,7 @@ import { detectTemporalCannibalization } from "./v2/gsc-temporal.js";
 import { scoreOpportunity, scoreOpportunities, classifyOpportunityAction } from "./v2/opportunity-scoring.js";
 import { auditPage } from "./v2/audit.js";
 import { buildSEOIntelligence } from "./v2/orchestrator.js";
+import { buildGeoAuthorityEntity } from "./geo/authority.js";
 
 /**
  * @param {{
