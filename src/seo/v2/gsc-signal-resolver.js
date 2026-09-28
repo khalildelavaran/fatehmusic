@@ -123,7 +123,12 @@ function relevantQueryRows(index, item) {
   const rows = [];
   for (const token of candidateTokens) {
     for (const row of index.queryTokenRows.get(token) || []) {
-      const key = normalizeText(row.query);
+      const key = [
+        normalizeText(row.query),
+        normalizeUrl(row.page),
+        String(row.startDate || row.start_date || ""),
+        String(row.endDate || row.end_date || "")
+      ].join("|");
       if (seen.has(key)) continue;
       seen.add(key);
       rows.push(row);
