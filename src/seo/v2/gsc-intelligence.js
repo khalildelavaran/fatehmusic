@@ -81,12 +81,12 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const scored = scoreOpportunities(enriched);
   return Object.freeze({
     opportunities: Object.freeze(scored),
-    signalRowCount: searchRows.length,
-    connected: searchRows.length > 0,
+    signalRowCount: scoringRows.length,
+    connected: scoringRows.length > 0,
     cannibalization: Object.freeze(conflicts),
     temporalCannibalization: Object.freeze(temporal),
     summary: Object.freeze({
-      connected: searchRows.length > 0,
+      connected: scoringRows.length > 0,
       signalRows: searchRows.length,
       temporalSignalRows: rows.length,
       opportunityCount: scored.length,
