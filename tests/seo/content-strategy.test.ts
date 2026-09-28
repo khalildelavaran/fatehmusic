@@ -74,7 +74,7 @@ describe("comparison content strategy", () => {
     expect(comparison.course).toBeNull();
     expect(comparison.targetEntity.type).not.toBe("Course");
     expect(comparison.comparisonCourses).toHaveLength(2);
-    expect(comparison.comparisonCourses.map((item) => item.slug)).toEqual(
+    expect(comparison.comparisonCourses.map((item: { slug: string } | null) => item?.slug)).toEqual(
       expect.arrayContaining(["tar-course", "setar-course"])
     );
     expect(comparison.suggestedSlug.startsWith("comparison-")).toBe(true);
