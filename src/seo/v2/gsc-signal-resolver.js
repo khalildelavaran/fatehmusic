@@ -374,7 +374,7 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
     const page = normalizeUrl(row.page);
     const startDate = String(row.startDate || row.start_date || "").trim();
     const endDate = String(row.endDate || row.end_date || "").trim();
-    if (!query || !page || Number(row.impressions) < minImpressions) continue;
+    if (!query || !page || !isOwnershipEligibleQuery(query) || Number(row.impressions) < minImpressions) continue;
     const period = startDate || endDate ? `${startDate}|${endDate}` : "undated";
     const groupKey = `${query}|${period}`;
     const pages = groups.get(groupKey) || new Map();
