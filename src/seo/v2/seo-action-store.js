@@ -118,6 +118,9 @@ export async function syncPublishedSeoActionMeasurements(db, {
     "g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = ? " +
     "AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
+    // Full-window comparisons are valid only for content that was live
+    // from the beginning of the reporting window. Newly published content
+    // will become measurable once the next complete window is available.
     "WHERE a.status = 'published' AND a.target_url IS NOT NULL " +
     "AND (a.published_at IS NULL OR date(a.published_at) <= ?) " +
     "GROUP BY a.id, a.target_url " +
@@ -132,7 +135,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
     windowStart,
     windowEnd,
     snapshotLabel,
-    windowEnd
+    windowStart
   ).run();
 
   return { measured: Number(result.meta?.changes || 0) };
