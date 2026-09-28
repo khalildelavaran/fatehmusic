@@ -102,77 +102,47 @@ export async function finishRun(
 export async function insertScoredCandidates(db: D1Database, candidates: ScoredCandidate[], runId: number): Promise<number> {
   if (candidates.length === 0) return 0;
   const autoApproveThreshold = 55;
-  // A rejected topic may legitimately be reconsidered on a later run.
-  // Because normalized_key is unique, revive rejected rows before the insert;
-  // INSERT OR IGNORE alone would silently keep the old rejected row forever.
   const targetStatus = (c: ScoredCandidate) => c.scoreTotal >= autoApproveThreshold ? "approved" : "candidate";
-  const statements = [];
-  for (const c of candidates) {
-    const status = targetStatus(c);
-    statements.push(
-      db.prepare(
-        `UPDATE content_topics
-         SET title=?, instrument_key=?, related_course_slug=?, related_course_title=?, category=?,
-             audience=?, level=?, modifier_type=?, intent=?, score_total=?, score_breakdown=?,
-             reasoning=?, status=?, source=?, run_id=?, updated_at=datetime('now'), used_by_post_id=NULL, used_at=NULL
-         WHERE normalized_key=? AND status='rejected'`
-      ).bind(
-        c.title,
-        c.instrumentKey,
-        c.relatedCourseSlug,
-        c.relatedCourseTitle,
-        c.category,
-        c.audience,
-        c.level,
-        c.modifierType,
-        c.intent,
-        c.scoreTotal,
-        JSON.stringify(c.scoreBreakdown),
-        c.reasoning,
-        status,
-        c.source,
-        runId,
-        c.normalizedKey
-      )
-    );
-    statements.push(
-      db.prepare(
-        `INSERT OR IGNORE INTO content_topics
-         (title, normalized_key, instrument_key, related_course_slug, related_course_title, category,
-          audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, run_id)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
-      ).bind(
-        c.title,
-        c.normalizedKey,
-        c.instrumentKey,
-        c.relatedCourseSlug,
-        c.relatedCourseTitle,
-        c.category,
-        c.audience,
-        c.level,
-        c.modifierType,
-        c.intent,
-        c.scoreTotal,
-        JSON.stringify(c.scoreBreakdown),
-        c.reasoning,
-        status,
-        c.source,
-        runId
-      )
-    );
-  }
-  const results = await db.batch(statements);
-  let changed = 0;
-  for (let index = 0; index < results.length; index += 2) {
-    // Count each candidate exactly once when either the rejected row was
-    // revived or a new row was inserted.
-    const revived = Number(results[index]?.meta?.changes || 0) > 0;
-    const inserted = Number(results[index + 1]?.meta?.changes || 0) > 0;
-    if (revived || inserted) changed += 1;
-  }
-  return changed;
-}
 
+  // One conditional UPSERT per candidate. Existing candidate/approved/used
+  // topics stay untouched; only a previously rejected topic is revived.
+  // This halves the batch size compared with separate UPDATE + INSERT calls.
+  const statements = candidates.map((c) => {
+    const status = targetStatus(c);
+    const sql = "INSERT INTO content_topics " +
+      "(title, normalized_key, instrument_key, related_course_slug, related_course_title, category, " +
+      "audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, run_id) " +
+      "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) " +
+      "ON CONFLICT(normalized_key) DO UPDATE SET " +
+      "title=excluded.title, instrument_key=excluded.instrument_key, related_course_slug=excluded.related_course_slug, " +
+      "related_course_title=excluded.related_course_title, category=excluded.category, audience=excluded.audience, " +
+      "level=excluded.level, modifier_type=excluded.modifier_type, intent=excluded.intent, score_total=excluded.score_total, " +
+      "score_breakdown=excluded.score_breakdown, reasoning=excluded.reasoning, status=excluded.status, source=excluded.source, " +
+      "run_id=excluded.run_id, updated_at=datetime('now'), used_by_post_id=NULL, used_at=NULL " +
+      "WHERE content_topics.status='rejected'";
+    return db.prepare(sql).bind(
+      c.title,
+      c.normalizedKey,
+      c.instrumentKey,
+      c.relatedCourseSlug,
+      c.relatedCourseTitle,
+      c.category,
+      c.audience,
+      c.level,
+      c.modifierType,
+      c.intent,
+      c.scoreTotal,
+      JSON.stringify(c.scoreBreakdown),
+      c.reasoning,
+      status,
+      c.source,
+      runId
+    );
+  });
+
+  const results = await db.batch(statements);
+  return results.reduce((sum, result) => sum + (Number(result.meta?.changes || 0) > 0 ? 1 : 0), 0);
+}
 export interface TopicListFilters {
   status?: TopicStatus;
   limit?: number;
