@@ -34,8 +34,13 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       severity: transition.severity,
       actionable: transition.actionable
     };
-    temporalByPage.set(normalizeUrl(transition.previousOwner.page), payload);
-    temporalByPage.set(normalizeUrl(transition.currentOwner.page), payload);
+    for (const page of [transition.previousOwner.page, transition.currentOwner.page]) {
+      const key = normalizeUrl(page);
+      const existing = temporalByPage.get(key);
+      if (!existing || Number(payload.shareDelta) > Number(existing.shareDelta)) {
+        temporalByPage.set(key, payload);
+      }
+    }
   }
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
     const page = normalizeUrl(item.url || item.targetEntity?.url || "");
