@@ -183,6 +183,22 @@ function validateSchema(route, scripts) {
     }
   }
 
+  if (route === "/gallery") {
+    const gallery = nodes.find((node) => schemaTypes(node).includes("ImageGallery"));
+    const imageObjects = nodes.filter((node) => schemaTypes(node).includes("ImageObject"));
+    if (!gallery) {
+      error("IMAGE_GALLERY_MISSING", route + ": ImageGallery entity missing");
+    } else if (webpage?.mainEntity?.["@id"] !== gallery["@id"]) {
+      error("IMAGE_GALLERY_MAINENTITY_MISMATCH", route + ": WebPage mainEntity must reference the ImageGallery entity");
+    }
+    if (imageObjects.length === 0) {
+      error("IMAGE_OBJECTS_MISSING", route + ": gallery has no ImageObject nodes");
+    }
+    if (!Array.isArray(gallery?.associatedMedia) || gallery.associatedMedia.length !== imageObjects.length) {
+      error("IMAGE_GALLERY_MEDIA_MISMATCH", route + ": ImageGallery associatedMedia does not cover all ImageObject nodes");
+    }
+  }
+
 
   for (const node of nodes) {
     const type = schemaTypes(node);
