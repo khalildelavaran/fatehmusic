@@ -29,11 +29,11 @@ const intelligence = db
       db,
       siteUrl: site.url,
       courses,
-      topicLimit: 60,
-      gscQueryLimit: 100,
-      gscPageLimit: 100,
-      gscOwnershipLimit: 120,
-      marketLimit: 12
+      topicLimit: 30,
+      gscQueryLimit: 60,
+      gscPageLimit: 60,
+      gscOwnershipLimit: 80,
+      marketLimit: 8
     })
   : await getSeoDashboardIntelligence({ db, siteUrl: site.url, courses });
 
