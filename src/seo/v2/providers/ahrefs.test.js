@@ -32,3 +32,38 @@ describe("Ahrefs keyword signal normalization", () => {
   });
 
 });
+
+
+describe("Ahrefs competitor keyword discovery", () => {
+  it("accepts a target override for competitor keyword snapshots", async () => {
+    const requests: Array<URL> = [];
+    const fetchImpl = async (url: URL) => {
+      requests.push(url);
+      return new Response(JSON.stringify({ keywords: [] }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    };
+
+    const { createAhrefsClient } = await import("./ahrefs.js");
+    const client = createAhrefsClient({
+      AHREFS_API_KEY: "test",
+      AHREFS_COUNTRY: "IR",
+      AHREFS_TARGET_URL: "https://fatehmusic.ir"
+    }, fetchImpl as typeof fetch);
+
+    await client.organicKeywords({
+      target: "https://competitor.example",
+      country: "IR",
+      mode: "domain",
+      date: "2026-09-29",
+      limit: 25
+    });
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].searchParams.get("target")).toBe("https://competitor.example");
+    expect(requests[0].searchParams.get("mode")).toBe("domain");
+    expect(requests[0].searchParams.get("country")).toBe("IR");
+    expect(requests[0].searchParams.get("limit")).toBe("25");
+  });
+});
