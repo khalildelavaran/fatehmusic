@@ -124,3 +124,21 @@ describe("competitive gap keyword normalization", () => {
     expect(result[0].estimatedVolume).toBe(80);
   });
 });
+
+
+describe("competitive semantic modifier equivalence", () => {
+  it("suppresses pricing synonyms of an existing target", () => {
+    const gaps = buildCompetitiveGapReport({
+      competitorKeywordRows: [{
+        keyword: "هزینه کلاس گیتار",
+        competitor_domain: "a.example",
+        volume_monthly: 120,
+        keyword_difficulty: 25
+      }],
+      targetQueries: ["قیمت گیتار"],
+      semanticMatchThreshold: 0.9
+    });
+
+    expect(gaps).toHaveLength(0);
+  });
+});
