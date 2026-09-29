@@ -235,6 +235,25 @@ function evidenceStrength(item = {}) {
   });
 }
 
+function queryIntentAlignmentPenalty(item = {}) {
+  const evidence = item.searchSignal?.queryIntentEvidence;
+  if (!evidence?.primary) return 0;
+
+  const targetIntent = String(item.searchIntent || item.intent || "").trim().toLowerCase();
+  const primaryIntent = String(evidence.primary || "").trim().toLowerCase();
+  const confidence = Number(evidence.confidence) || 0;
+  const sampleImpressions = Number(evidence.sampleImpressions ?? item.searchSignal?.impressions) || 0;
+
+  if (!targetIntent || !primaryIntent || targetIntent === primaryIntent || confidence < 0.70 || sampleImpressions < 20) {
+    return 0;
+  }
+
+  // Strong evidence that the live SERP intent differs from the planned asset
+  // should lower priority, not merely confidence. Keep the penalty bounded so
+  // a useful opportunity is not erased by a single classifier disagreement.
+  return evidence.queryCount >= 2 ? 8 : 6;
+}
+
 function competitorGapScore(signal = {}) {
   if (!signal?.available) return 0;
   return clamp(
@@ -504,6 +523,7 @@ export function scoreOpportunity(item = {}) {
   const market = marketSignalScore(item.marketSignal, item);
   const competitor = competitorGapScore(item.competitorGap);
   const competitionPenalty = item.cannibalization?.severity === "HIGH" ? 0 : item.cannibalization?.severity === "MEDIUM" ? 3 : 0;
+  const queryIntentPenalty = queryIntentAlignmentPenalty(item);
   const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
 
   const weightedBase = base * 0.55;
@@ -513,7 +533,8 @@ export function scoreOpportunity(item = {}) {
   const weightTotal = (market == null ? 1 : 1.2) + (competitor > 0 ? 0.15 : 0);
   const score = clamp(Math.round(
     (weightedBase + weightedSearch + weightedMarket + weightedCompetitor) / weightTotal -
-    competitionPenalty +
+    competitionPenalty -
+    queryIntentPenalty +
     temporalBonus
   ));
   const confidenceEvidence = decisionConfidenceEvidence({
@@ -540,6 +561,7 @@ export function scoreOpportunity(item = {}) {
       basePriority: base,
       searchSignal: signal,
       competitionPenalty,
+      queryIntentPenalty,
       temporalBonus,
       marketSignal: market,
       competitorGap: competitor > 0 ? item.competitorGap : null,
