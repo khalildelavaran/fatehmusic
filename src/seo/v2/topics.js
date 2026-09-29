@@ -5,7 +5,7 @@
  * --------------------------------------------------------
  */
 
-import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
+import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "../helpers/text.js";
 
 export const TOPICS = Object.freeze([
     { slug: "music-education", name: "آموزش موسیقی", aliases: ["آموزش موسیقی", "کلاس موسیقی", "یادگیری موسیقی"] },
@@ -34,10 +34,44 @@ const LOCAL_TOPIC = "shushtar";
 
 function normalize(value) { return normalizeSemanticText(value); }
 
+const TOPIC_ALIAS_INDEX = Object.freeze(
+    TOPICS.map((topic) => Object.freeze({
+        topic,
+        aliases: Object.freeze(
+            (topic.aliases || []).map((alias) => Object.freeze({
+                value: alias,
+                tokens: Object.freeze(semanticTokens(alias))
+            }))
+        )
+    }))
+);
+
+function containsTokenSequence(haystackTokens, needleTokens) {
+    if (!haystackTokens.length || !needleTokens.length || needleTokens.length > haystackTokens.length) {
+        return false;
+    }
+
+    for (let index = 0; index <= haystackTokens.length - needleTokens.length; index += 1) {
+        let matches = true;
+        for (let offset = 0; offset < needleTokens.length; offset += 1) {
+            if (haystackTokens[index + offset] !== needleTokens[offset]) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches) return true;
+    }
+
+    return false;
+}
+
 function resolveTopicMatches(corpus) {
-    return TOPICS
-        .map((topic) => {
-            const matches = topic.aliases.filter((alias) => containsSemanticPhrase(corpus, alias));
+    const corpusTokens = semanticTokens(corpus);
+    return TOPIC_ALIAS_INDEX
+        .map(({ topic, aliases }) => {
+            const matches = aliases
+                .filter((alias) => containsTokenSequence(corpusTokens, alias.tokens))
+                .map((alias) => alias.value);
             return {
                 ...topic,
                 score: matches.length ? Math.min(95, 35 + matches.length * 20) : 0,
@@ -90,10 +124,13 @@ export function resolveTopics({ title = "", keywords = [], path = "", explicit =
     const corpus = normalize([title, path, ...(keywords || [])].join(" | "));
     const explicitSet = new Set((explicit || []).map(normalize));
 
-    const resolved = TOPICS
-        .map((topic) => {
+    const corpusTokens = semanticTokens(corpus);
+    const resolved = TOPIC_ALIAS_INDEX
+        .map(({ topic, aliases }) => {
             const explicitMatch = explicitSet.has(topic.slug) || explicitSet.has(normalize(topic.name));
-            const matches = topic.aliases.filter((alias) => containsSemanticPhrase(corpus, alias));
+            const matches = aliases
+                .filter((alias) => containsTokenSequence(corpusTokens, alias.tokens))
+                .map((alias) => alias.value);
             const score = explicitMatch ? 100 : matches.length ? Math.min(95, 35 + matches.length * 20) : 0;
             return {
                 ...topic,
