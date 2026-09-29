@@ -253,10 +253,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const currentRowsForGapBaseline = currentScoringRows(gscRows);
   const competitorGaps = buildCompetitiveGapReport({
     competitorKeywordRows,
-    targetKeywordRows: [
-      ...targetKeywordRows,
-      ...marketKeywordRows
-    ],
+    // External market keywords are opportunities, not proof of first-party coverage.
+    targetKeywordRows,
+
     targetQueries: [
       ...targetQueries,
       ...currentRowsForGapBaseline.map((row) => row?.query).filter(Boolean)
