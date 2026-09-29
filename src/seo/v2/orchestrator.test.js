@@ -40,6 +40,9 @@ describe("buildSEOIntelligence", () => {
     expect(result.gsc.index).toBe(gscIndex);
     expect(result.knowledgeGraph).toBeNull();
     expect(result.links.graph).toEqual([]);
+    expect(result.summary.knowledgeGraphNodeCount).toBe(0);
+    expect(result.summary.knowledgeGraphEdgeCount).toBe(0);
+    expect(result.summary.knowledgeGraphValid).toBe(true);
   });
 
   it("composes existing engines into one view", () => {
