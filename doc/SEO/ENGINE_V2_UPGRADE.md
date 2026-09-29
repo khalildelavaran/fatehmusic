@@ -85,6 +85,16 @@
 - competitor evidence به‌صورت source family مستقل وارد evidenceStrength می‌شود.
 - freshness رقابتی نیز می‌تواند decisionGuard را محدود کند.
 
+### 14. Canonical semantic course matching
+- `src/seo/v2/content-strategy/course-matching.js`
+- تشخیص دورهٔ مقاله، دورهٔ مرکب و عنوان مقایسه‌ای در یک matcher واحد متمرکز شده است.
+- تطبیق parent/compound با token boundary انجام می‌شود تا مواردی مانند «تار/سه‌تار» و «نی/نی‌انبان» اشتباه نشوند.
+- `article-generator`، `resolvers` و `comparison-courses` از همین قرارداد مشترک استفاده می‌کنند.
+
+### 15. Audit robots semantics
+- نبودن meta robots به‌تنهایی failure نیست؛ only explicit `noindex` یک مانع indexability محسوب می‌شود.
+- مسیر measured score و `auditPage` اکنون همین semantics واحد را دارند.
+
 ### 13. Coverage & freshness hardening
 - سقف ingestion استاندارد GSC افزایش یافته و truncation همچنان صریح ثبت می‌شود.
 - Query Ownership از محدودیت نمایشی داشبورد جدا شده و برای long-tail ظرفیت بیشتری دارد.
