@@ -242,3 +242,66 @@ describe("graph-aware candidate pool", () => {
     expect(source.links.some((link) => link.url.endsWith("/instructors/teacher"))).toBe(true);
   });
 });
+
+
+describe("anchor diversity", () => {
+  it("rotates recommended anchors for repeated links to the same target", () => {
+    const pages = [
+      {
+        url: "https://fatehmusic.ir/blog/source-a",
+        title: "راهنمای گیتار",
+        type: "Article",
+        topics: ["guitar"],
+        priority: 20
+      },
+      {
+        url: "https://fatehmusic.ir/blog/source-b",
+        title: "آموزش گیتار برای مبتدی",
+        type: "Article",
+        topics: ["guitar"],
+        priority: 19
+      },
+      {
+        url: "https://fatehmusic.ir/blog/source-c",
+        title: "تمرین گیتار در شوشتر",
+        type: "Article",
+        topics: ["guitar", "shushtar"],
+        priority: 18
+      },
+      {
+        url: "https://fatehmusic.ir/courses/guitar-course",
+        title: "کلاس آموزش گیتار",
+        type: "Course",
+        topics: ["guitar"],
+        priority: 10
+      }
+    ];
+
+    const graph = buildLinkGraph(pages, {
+      limit: 1,
+      maxOutboundLinks: 1,
+      maxInboundLinks: 3
+    });
+
+    const anchors = graph
+      .flatMap((page) => page.links)
+      .filter((link) => link.url.endsWith("/courses/guitar-course"))
+      .map((link) => link.recommendedAnchor);
+
+    expect(anchors.length).toBe(3);
+    expect(new Set(anchors).size).toBeGreaterThan(1);
+  });
+
+  it("maps topic slugs to readable Persian anchor hints", () => {
+    const result = buildInternalLinkPlan({
+      currentUrl: pages[0].url,
+      currentTopics: pages[0].topics,
+      currentType: pages[0].type,
+      candidates: pages
+    });
+    const guitar = result.find((item) => item.url.endsWith("/guitar-course"));
+
+    expect(guitar.anchorHints).toContain("گیتار");
+    expect(guitar.anchorHints).not.toContain("guitar");
+  });
+});
