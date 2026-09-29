@@ -169,6 +169,43 @@ export function auditPage({
     }, 0);
     const score = theoreticalPoints ? Math.round((applicablePoints / theoreticalPoints) * 100) : 0;
     const qualityScore = Math.round(score * coverageScore / 100);
+
+    // A fixed core rubric prevents a sparse audit payload from looking
+    // complete merely because the checks that happened to be supplied passed.
+    // Optional/performance checks continue to contribute through the existing
+    // evidence score and coverage score.
+    const coreWeights = Object.freeze({
+        title: 10,
+        description: 10,
+        indexability: 10,
+        canonical: 10,
+        schema: 10,
+        h1: 10,
+        topics: 5,
+        intent: 5
+    });
+    const coreChecks = Object.entries(coreWeights).map(([id, maxPoints]) => {
+        const check = checks.find((item) => item.id === id);
+        return {
+            id,
+            applicable: Boolean(check),
+            points: check ? Math.min(maxPoints, Math.max(0, Number(check.points) || 0)) : 0,
+            maxPoints
+        };
+    });
+    const coreApplicablePoints = coreChecks.reduce((sum, item) => sum + item.points, 0);
+    const coreMaxPoints = Object.values(coreWeights).reduce((sum, value) => sum + value, 0);
+    const coreScore = coreMaxPoints
+        ? Math.round((coreApplicablePoints / coreMaxPoints) * 100)
+        : 0;
+    const coreCoverageScore = coreMaxPoints
+        ? Math.round(
+            (coreChecks.filter((item) => item.applicable).reduce((sum, item) => sum + item.maxPoints, 0) / coreMaxPoints) * 100
+        )
+        : 0;
+    const missingCoreChecks = coreChecks
+        .filter((item) => !item.applicable)
+        .map((item) => item.id);
     const errors = checks.filter((item) => item.status === "fail");
     const warnings = checks.filter((item) => item.status === "warn");
 
@@ -176,6 +213,9 @@ export function auditPage({
         score,
         coverageScore,
         qualityScore,
+        coreScore,
+        coreCoverageScore,
+        missingCoreChecks: Object.freeze(missingCoreChecks),
         status: errors.length ? "error" : warnings.length ? "warning" : "pass",
         checks,
         errors,
@@ -185,6 +225,9 @@ export function auditPage({
                 score,
             coverageScore,
             qualityScore,
+            coreScore,
+            coreCoverageScore,
+            missingCoreChecks: missingCoreChecks.length,
             errors: errors.length,
             warnings: warnings.length,
             graphNodes: graphNodes.length,
