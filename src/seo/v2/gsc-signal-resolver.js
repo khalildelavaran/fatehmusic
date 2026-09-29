@@ -238,6 +238,7 @@ export function buildGscSignalIndex(rows = []) {
       brandNavigation: isBrandNavigationQuery(item.query),
       opportunitySignalScore: scoreRow(item, ctrBenchmarks, nonBrandItems)
     }))
+    .filter((item) => !item.brandNavigation)
     .sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore);
   const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(rows, { minImpressions: 1, limit: 5000 });
   const semanticQueryClusters = semanticQueryClustersResult.items;
