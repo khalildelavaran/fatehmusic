@@ -73,3 +73,18 @@ describe("temporal cannibalization", () => {
   });
 
 });
+
+
+describe("brand navigation exclusion", () => {
+  it("does not create temporal ownership shifts for brand queries", () => {
+    const rows = [
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/about", impressions: 200, startDate: "2026-07-01", endDate: "2026-07-28" },
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/contact", impressions: 100, startDate: "2026-07-01", endDate: "2026-07-28" },
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/contact", impressions: 200, startDate: "2026-08-01", endDate: "2026-08-28" },
+      { query: "fatehmusic.ir", page: "https://fatehmusic.ir/about", impressions: 100, startDate: "2026-08-01", endDate: "2026-08-28" }
+    ];
+
+    expect(detectTemporalCannibalization(rows)).toEqual([]);
+    expect(detectSemanticTemporalCannibalization(rows)).toEqual([]);
+  });
+});
