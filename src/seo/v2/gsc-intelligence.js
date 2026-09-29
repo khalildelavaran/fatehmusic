@@ -4,6 +4,48 @@ import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } 
 import { queryTokens, querySemanticFeatureSet } from "../helpers/query.js";
 import { normalizeSemanticText } from "../helpers/text.js";
 
+function hasBreakdownDimensions(row = {}) {
+  return Boolean(
+    String(row?.country || "").trim() ||
+    String(row?.device || "").trim() ||
+    String(row?.searchAppearance || row?.search_appearance || "").trim()
+  );
+}
+
+/**
+ * Describe the dimension contract present in an imported GSC row set.
+ * Production syncs use snapshot labels, but callers may also supply historical
+ * unlabelled exports. Scoring must never mix canonical query/page rows with
+ * country/device/search-appearance breakdowns.
+ */
+export function classifyGscDimensionMix(rows = []) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  let canonicalRows = 0;
+  let breakdownRows = 0;
+
+  for (const row of safeRows) {
+    if (hasBreakdownDimensions(row)) breakdownRows += 1;
+    else canonicalRows += 1;
+  }
+
+  const dimensionMode =
+    breakdownRows === 0 ? "QUERY_PAGE" :
+    canonicalRows === 0 ? "BREAKDOWN" :
+    "MIXED";
+
+  return Object.freeze({
+    canonicalRows,
+    breakdownRows,
+    totalRows: safeRows.length,
+    dimensionMode,
+    mixed: canonicalRows > 0 && breakdownRows > 0
+  });
+}
+
+function filterCanonicalGscRows(rows = []) {
+  return (Array.isArray(rows) ? rows : []).filter((row) => !hasBreakdownDimensions(row));
+}
+
 export function currentScoringRows(rows = []) {
   const safeRows = Array.isArray(rows) ? rows : [];
   const snapshotLabels = safeRows
@@ -20,16 +62,29 @@ export function currentScoringRows(rows = []) {
   }
 
   const datedRows = safeRows.filter((row) => row?.startDate || row?.start_date || row?.endDate || row?.end_date);
-  if (!datedRows.length) return safeRows;
+  if (!datedRows.length) {
+    // Unlabelled mixed-dimensional exports are inherently ambiguous. Prefer
+    // canonical query/page rows; if none exist, fail closed instead of
+    // double-counting a country/device/search-appearance breakdown.
+    const dimensionMix = classifyGscDimensionMix(safeRows);
+    return dimensionMix.mixed || dimensionMix.dimensionMode === "BREAKDOWN"
+      ? filterCanonicalGscRows(safeRows)
+      : safeRows;
+  }
 
   const latestPeriod = datedRows
     .map((row) => `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}`)
     .sort()
     .at(-1);
 
-  return datedRows.filter((row) =>
+  const latestRows = datedRows.filter((row) =>
     `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}` === latestPeriod
   );
+  const dimensionMix = classifyGscDimensionMix(latestRows);
+
+  return dimensionMix.mixed || dimensionMix.dimensionMode === "BREAKDOWN"
+    ? filterCanonicalGscRows(latestRows)
+    : latestRows;
 }
 
 export function temporalAnalysisRows(rows = []) {
@@ -42,7 +97,9 @@ export function temporalAnalysisRows(rows = []) {
 
 /** Enrich the unified content queue with real GSC signals when available. */
 export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
-  const currentRows = currentScoringRows(rows);
+  const rawCurrentRows = currentScoringRows(rows);
+  const currentDimensionProfile = classifyGscDimensionMix(rawCurrentRows);
+  const currentRows = rawCurrentRows;
   const ageDays = resolveAgeDays(options.gscDataQuality?.finishedAt);
   const freshness = ageDays == null
     ? "UNKNOWN"
@@ -81,6 +138,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
         : "EMPTY";
 
   const gscDataQuality = Object.freeze({
+    ...currentDimensionProfile,
     truncated,
     rows: currentRows.length,
     rowsReceived: rowsReceivedNormalized,
