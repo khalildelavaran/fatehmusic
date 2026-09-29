@@ -955,3 +955,36 @@ describe("leave-one-out CTR benchmarking", () => {
     expect(guitar.ctrBenchmarkImpressions).toBe(100);
   });
 });
+
+
+describe("semantic modifier clustering", () => {
+  it("clusters pricing synonyms without collapsing distinct subtopics", () => {
+    const clusters = buildSemanticQueryClusters([
+      {
+        query: "قیمت کلاس گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-price",
+        impressions: 40
+      },
+      {
+        query: "هزینه گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-price",
+        impressions: 30
+      },
+      {
+        query: "راهنمای گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 25
+      }
+    ]);
+
+    const pricing = clusters.find((cluster) =>
+      cluster.queries.some((query) => query.displayQuery === "قیمت کلاس گیتار")
+    );
+
+    expect(pricing).toBeDefined();
+    expect(pricing.modifierFamilies).toContain("pricing");
+    expect(pricing.queryCount).toBe(2);
+    expect(pricing.impressions).toBe(70);
+    expect(clusters).toHaveLength(2);
+  });
+});
