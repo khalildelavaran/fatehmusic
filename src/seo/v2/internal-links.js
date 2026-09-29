@@ -33,6 +33,63 @@ function semanticTopicSimilarity(left = [], right = []) {
     return shared / new Set([...a, ...b]).size;
 }
 
+function buildCandidateTokenIndex(pages = []) {
+    const index = new Map();
+    for (const page of pages) {
+        if (!page?.url) continue;
+        const tokens = new Set(
+            semanticTokens([
+                page.title,
+                ...(page.topics || [])
+            ].filter(Boolean).join(" "))
+        );
+        for (const token of tokens) {
+            const bucket = index.get(token) || [];
+            bucket.push(page);
+            index.set(token, bucket);
+        }
+    }
+    return index;
+}
+
+function buildCandidatePool(source, pages, tokenIndex, {
+    maxCandidates = 120,
+    fullScanThreshold = 160
+} = {}) {
+    if (pages.length <= fullScanThreshold) return pages;
+
+    const selected = new Map();
+    const sourceTokens = new Set(
+        semanticTokens([
+            source?.title,
+            ...(source?.topics || [])
+        ].filter(Boolean).join(" "))
+    );
+
+    for (const token of sourceTokens) {
+        for (const page of tokenIndex.get(token) || []) {
+            if (page?.url) selected.set(normalizeUrl(page.url), page);
+        }
+    }
+
+    for (const page of pages) {
+        if (!page?.url) continue;
+        const important =
+            Number(page.priority || 0) >= 20 ||
+            page.type === "Course" ||
+            page.type === "CollectionPage" ||
+            page.type === "LocalBusiness";
+        if (important) selected.set(normalizeUrl(page.url), page);
+    }
+
+    return [...selected.values()]
+        .sort((a, b) =>
+            Number(b.priority || 0) - Number(a.priority || 0) ||
+            String(a.url).localeCompare(String(b.url))
+        )
+        .slice(0, Math.max(20, Number(maxCandidates) || 120));
+}
+
 export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, gscSignals = null, limit = 6 } = {}) {
     const currentTopicSet = normalizedTopicSet(currentTopics);
     const resolvedCurrentTitle = currentTitle || (candidates || []).find((candidate) => normalizeUrl(candidate?.url) === normalizeUrl(currentUrl))?.title || "";
@@ -108,15 +165,18 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
         .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0) || String(a.url).localeCompare(String(b.url)));
 
     const allEdges = new Map();
+    const candidateTokenIndex = buildCandidateTokenIndex(sourcePages);
     for (const page of sourcePages) {
+        const candidatePool = buildCandidatePool(page, sourcePages, candidateTokenIndex);
         const plan = buildInternalLinkPlan({
             currentUrl: page.url,
+            currentTitle: page.title,
             currentTopics: page.topics,
             currentType: page.type,
-            candidates: pages,
+            candidates: candidatePool,
             semanticGraph,
             gscSignals,
-            limit: pages.length
+            limit: candidatePool.length
         });
         allEdges.set(
             normalizeUrl(page.url),
