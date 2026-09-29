@@ -845,6 +845,46 @@ describe("semantic GSC cluster identity", () => {
 });
 
 
+describe("aggregated cannibalization thresholds", () => {
+  it("detects conflicts when page-level rows are individually below the threshold but the query total is above it", () => {
+    const conflicts = detectSearchCannibalization([
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 40
+      },
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 40
+      }
+    ], { minImpressions: 50 });
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].pages).toHaveLength(2);
+    expect(conflicts[0].pages[0].share).toBeCloseTo(0.5);
+    expect(conflicts[0].severity).toBe("HIGH");
+  });
+
+  it("ignores a multi-row query whose aggregate remains below the threshold", () => {
+    const conflicts = detectSearchCannibalization([
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 20
+      },
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 20
+      }
+    ], { minImpressions: 50 });
+
+    expect(conflicts).toHaveLength(0);
+  });
+});
+
+
 describe("leave-one-out CTR benchmarking", () => {
   it("does not benchmark a page against itself when it is the only page in its rank bucket", () => {
     const index = buildGscSignalIndex([
