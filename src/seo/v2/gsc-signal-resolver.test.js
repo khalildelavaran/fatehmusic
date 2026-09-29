@@ -13,6 +13,25 @@ describe("GSC signal resolver", () => {
     expect(index.byQuery.get("کلاس گیتار شوشتر").impressions).toBe(1500);
   });
 
+
+
+  it("ignores breakdown rows when building the public GSC index", () => {
+    const index = buildGscSignalIndex([
+      ...rows,
+      {
+        query: "کلاس گیتار شوشتر",
+        page: "https://fatehmusic.ir/blog/guitar",
+        country: "irn",
+        impressions: 10000,
+        clicks: 500,
+        position: 2
+      }
+    ]);
+
+    expect(index.byQuery.get("کلاس گیتار شوشتر").impressions).toBe(1500);
+    expect(index.byPage.get("https://fatehmusic.ir/blog/guitar").impressions).toBe(1000);
+  });
+
   it("honors an explicit semantic-cluster limit without changing base query aggregation", () => {
     const index = buildGscSignalIndex([
       ...rows,
