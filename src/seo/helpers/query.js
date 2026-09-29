@@ -1,4 +1,4 @@
-import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "./text.js";
+import { normalizeSemanticText, semanticTokens } from "./text.js";
 
 export const GENERIC_QUERY_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
@@ -32,8 +32,7 @@ export function isBrandNavigationQuery(query) {
     normalized === "fateh music" ||
     normalized === "fateh music academy" ||
     normalized === "آموزشگاه موسیقی فاتح" ||
-    normalized === "آموزشگاه فاتح" ||
-    containsSemanticPhrase(normalized, "آموزشگاه موسیقی فاتح")
+    normalized === "آموزشگاه فاتح"
   ) {
     return true;
   }
