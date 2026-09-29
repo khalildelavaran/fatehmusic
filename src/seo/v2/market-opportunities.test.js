@@ -235,3 +235,30 @@ describe("market position sample gating", () => {
     expect(result[0].gscPositionEvidence).toBe("TRACE");
   });
 });
+
+
+describe("market position provenance", () => {
+  it("does not expose a trace-only GSC page as the fused best-position URL", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 22,
+        best_position_url: "https://fatehmusic.ir/courses/guitar-course"
+      }],
+      gscRows: [{
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 1,
+        clicks: 0,
+        position: 5
+      }],
+      gscFreshness: "FRESH"
+    });
+
+    expect(result[0].bestPosition).toBe(22);
+    expect(result[0].bestPositionSource).toBe("ahrefs");
+    expect(result[0].bestPositionUrl).toBe("https://fatehmusic.ir/courses/guitar-course");
+  });
+});
