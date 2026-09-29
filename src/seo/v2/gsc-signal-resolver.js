@@ -681,15 +681,27 @@ function buildQuerySemanticProfile(query, cache = null) {
   const hasLocalScope = topics.some((topic) => topic.slug === "shushtar");
   const intent = classifyIntent({ title: query }).primary || "informational";
   const scope = hasLocalScope ? "local" : "global";
+  const fallbackTokens = [...queryTokens(query)].sort();
+  const subjectSource = topicSlugs.length
+    ? "TOPIC"
+    : fallbackTokens.length
+      ? "TOKENS"
+      : "QUERY_ISOLATED";
+  // A query with no specific topic or substantive token has no reliable
+  // semantic fingerprint. Keep it isolated rather than collapsing every broad
+  // local/informational query into one false cluster.
   const subject = topicSlugs.length
     ? topicSlugs.join("+")
-    : [...queryTokens(query)].sort().join("+");
+    : fallbackTokens.length
+      ? fallbackTokens.join("+")
+      : "query:" + normalized;
 
   const profile = Object.freeze({
     key: ["scope:" + scope, "intent:" + intent, "subject:" + subject].join("|"),
     scope,
     intent,
-    subjects: Object.freeze(topicSlugs)
+    subjects: Object.freeze(topicSlugs),
+    subjectSource
   });
   cache?.set(normalized, profile);
   return profile;
@@ -720,7 +732,8 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
       pages: new Map(),
       scope: profile.scope,
       intent: profile.intent,
-      subjects: profile.subjects
+      subjects: profile.subjects,
+      subjectSource: profile.subjectSource
     };
 
     cluster.queries.set(query, (cluster.queries.get(query) || 0) + impressions);
@@ -772,6 +785,7 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
       scope: cluster.scope,
       intent: cluster.intent,
       subjects: Object.freeze(cluster.subjects),
+      subjectSource: cluster.subjectSource,
       impressions,
       pageCount: cluster.pages.size,
       topPage: topOwner?.page || null,
