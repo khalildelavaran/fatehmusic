@@ -178,18 +178,14 @@ function decisionConfidenceScore(item = {}) {
   // Evidence strength is explicitly non-probabilistic. Quality failures still
   // need hard ceilings so stale/partial inputs cannot look "high confidence".
   let ceiling = 100;
-  const reasons = [];
 
   if (item.gscDataQuality?.truncated) {
     ceiling = Math.min(ceiling, 78);
-    reasons.push("GSC_PARTIAL");
   }
   if (item.gscDataQuality?.freshness === "STALE") {
     ceiling = Math.min(ceiling, 72);
-    reasons.push("GSC_STALE");
   } else if (item.gscDataQuality?.freshness === "AGING") {
     ceiling = Math.min(ceiling, 84);
-    reasons.push("GSC_AGING");
   }
 
   const marketFreshness = String(
@@ -197,7 +193,6 @@ function decisionConfidenceScore(item = {}) {
   ).toUpperCase();
   if (item.marketSignal?.available && marketFreshness === "STALE") {
     ceiling = Math.min(ceiling, 82);
-    reasons.push("MARKET_STALE");
   }
 
   const competitorFreshness = String(
@@ -205,16 +200,13 @@ function decisionConfidenceScore(item = {}) {
   ).toUpperCase();
   if (item.competitorGap?.available && competitorFreshness === "STALE") {
     ceiling = Math.min(ceiling, 82);
-    reasons.push("COMPETITOR_STALE");
   }
 
   if (item.semanticQueryCluster?.ownerDominanceEvidence === "WEAK") {
     ceiling = Math.min(ceiling, 76);
-    reasons.push("WEAK_SEMANTIC_OWNER");
   }
   if (item.searchOwnership?.ownerDominanceEvidence === "WEAK") {
     ceiling = Math.min(ceiling, 76);
-    reasons.push("WEAK_QUERY_OWNER");
   }
 
   const intentEvidence = item.searchSignal?.queryIntentEvidence;
@@ -225,13 +217,11 @@ function decisionConfidenceScore(item = {}) {
     Number(intentEvidence.confidence || 0) >= 0.70
   ) {
     ceiling = Math.min(ceiling, 78);
-    reasons.push("GSC_INTENT_CONFLICT");
   }
 
   const independentSourceCount = evidenceIndependentSourceCount(item);
   if (independentSourceCount === 0) {
     ceiling = Math.min(ceiling, 68);
-    reasons.push("NO_INDEPENDENT_SOURCE");
   }
 
   return Math.round(clamp(Math.min(raw, ceiling)));
