@@ -88,3 +88,51 @@ describe("normalized market signals", () => {
     expect(signal.source).toBe("ahrefs");
   });
 });
+
+
+describe("market ranking source precedence", () => {
+  it("prefers a current GSC position over an older Ahrefs position", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار شوشتر",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 22,
+        best_position_url: "https://fatehmusic.ir/courses/guitar-course"
+      }],
+      gscRows: [{
+        query: "آموزش گیتار شوشتر",
+        impressions: 80,
+        clicks: 4,
+        position: 12
+      }],
+      gscFreshness: "FRESH"
+    });
+
+    expect(result[0].bestPosition).toBe(12);
+    expect(result[0].bestPositionSource).toBe("gsc");
+    expect(result[0].gscBestPosition).toBe(12);
+    expect(result[0].ahrefsBestPosition).toBe(22);
+  });
+
+  it("falls back to Ahrefs when GSC is stale and both positions exist", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار شوشتر",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 22
+      }],
+      gscRows: [{
+        query: "آموزش گیتار شوشتر",
+        impressions: 80,
+        clicks: 4,
+        position: 12
+      }],
+      gscFreshness: "STALE"
+    });
+
+    expect(result[0].bestPosition).toBe(22);
+    expect(result[0].bestPositionSource).toBe("ahrefs");
+  });
+});
