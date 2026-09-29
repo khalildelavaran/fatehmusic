@@ -264,6 +264,24 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBe(50);
   });
 
+  it("does not collapse broad queries without a semantic fingerprint", () => {
+    const clusters = buildSemanticQueryClusters([
+      {
+        query: "آموزش موسیقی در شوشتر",
+        page: "https://fatehmusic.ir/blog/music-local",
+        impressions: 30
+      },
+      {
+        query: "کلاس موسیقی در شوشتر",
+        page: "https://fatehmusic.ir/blog/class-local",
+        impressions: 30
+      }
+    ]);
+
+    expect(clusters).toHaveLength(2);
+    expect(clusters.every((cluster) => cluster.subjectSource === "QUERY_ISOLATED")).toBe(true);
+  });
+
   it("builds semantic query clusters from equivalent generic-word variants", () => {
     const clusters = buildSemanticQueryClusters([
       { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
