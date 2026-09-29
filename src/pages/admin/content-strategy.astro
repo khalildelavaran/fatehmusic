@@ -33,7 +33,9 @@ const intelligence = db
       gscQueryLimit: 60,
       gscPageLimit: 60,
       gscOwnershipLimit: 80,
-      marketLimit: 8
+      marketLimit: 8,
+      marketTarget: ahrefsConfig.target,
+      marketCountry: ahrefsConfig.country
     })
   : await getSeoDashboardIntelligence({ db, siteUrl: site.url, courses });
 
