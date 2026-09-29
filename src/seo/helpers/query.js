@@ -135,9 +135,14 @@ export function querySemanticDimensions(value) {
 
 export function querySemanticFeatureSet(value) {
   const dimensions = querySemanticDimensions(value);
+  const anchored = dimensions.substantiveTokens.length > 0 || dimensions.local;
+
+  // Modifier families are useful only when attached to a semantic subject.
+  // A modifier-only query such as «قیمت کلاس» must not become a global
+  // cluster for every pricing-related topic.
   return new Set([
     ...dimensions.substantiveTokens,
-    ...dimensions.modifierFamilies.map((family) => "mod:" + family),
+    ...(anchored ? dimensions.modifierFamilies.map((family) => "mod:" + family) : []),
     ...(dimensions.local ? ["scope:local"] : [])
   ]);
 }
