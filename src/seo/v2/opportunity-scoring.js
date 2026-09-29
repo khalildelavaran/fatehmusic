@@ -449,6 +449,7 @@ export function classifyOpportunityAction(item = {}) {
   // across reporting windows.
   if (competition === "HIGH") return "MERGE_CONTENT";
   if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
+  if (item.searchOwnership?.temporalOwnership?.highActionable) return "MERGE_CONTENT";
 
   // When GSC already attributes a matching non-brand query to one dominant
   // URL, reinforce that owner rather than creating a competing article.
