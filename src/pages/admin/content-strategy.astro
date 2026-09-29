@@ -209,7 +209,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.summary.searchBackedCount} فرصت search-backed</span>
             <span>{intelligence.summary.marketBackedCount} فرصت market-backed</span>
             <span>{intelligence.summary.cannibalizationCount} تعارض</span>
-            <span>اطمینان تصمیم: {intelligence.summary.decisionConfidenceAverage}%</span>
+            <span>قدرت شواهد تصمیم: {intelligence.summary.evidenceStrengthAverage}%</span>
             <span>پوشش دریافت GSC: {intelligence.summary.gscCoverageStatus === "PARTIAL" ? "جزئی (به سقف ردیف رسیده)" : intelligence.summary.gscCoverageStatus === "COMPLETE" ? "کامل (گزارش‌شده)" : intelligence.summary.gscCoverageStatus === "OBSERVED" ? "دریافت‌شده (کامل بودن اثبات نشده)" : "نامشخص"}</span>
             {intelligence.summary.queryOwnershipTruncated && <span class="strategy-data-age is-stale">نقشه مالکیت Query در نمایش محدود شده: {intelligence.summary.queryOwnershipCount.toLocaleString("fa-IR")} از {intelligence.summary.queryOwnershipTotalCount.toLocaleString("fa-IR")}</span>}
             <span>تازگی GSC: {intelligence.summary.gscFreshness === "FRESH" ? "تازه" : intelligence.summary.gscFreshness === "AGING" ? "در حال کهنگی" : intelligence.summary.gscFreshness === "STALE" ? "قدیمی" : "نامشخص"}</span>
