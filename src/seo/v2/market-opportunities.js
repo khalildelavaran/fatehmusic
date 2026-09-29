@@ -155,7 +155,9 @@ function groupMarketKeywordRows(rows = []) {
     if (volume > Number(current.volume || 0)) {
       current.volume = volume;
       current.keyword = keyword;
-      current.difficulty = difficulty;
+      // A higher-volume duplicate should not erase a valid difficulty when
+      // the incoming provider row omits difficulty.
+      if (Number.isFinite(difficulty)) current.difficulty = difficulty;
     } else if (!Number.isFinite(Number(current.difficulty)) && Number.isFinite(difficulty)) {
       current.difficulty = difficulty;
     }
