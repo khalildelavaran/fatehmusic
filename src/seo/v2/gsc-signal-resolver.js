@@ -132,21 +132,38 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
   };
 }
 
-function scoreRow(row) {
+function scoreRow(row, ctrBenchmarks = {}) {
   const impressions = Math.max(0, Number(row.impressions) || 0);
   const clicks = Math.max(0, Number(row.clicks) || 0);
   const ctr = impressions ? clicks / impressions : 0;
   const position = Number(row.position) || 0;
   let score = 0;
+
   if (impressions >= 1000) score += 40;
   else if (impressions >= 300) score += 30;
   else if (impressions >= 100) score += 20;
   else if (impressions > 0) score += 10;
+
   if (position >= 4 && position <= 10) score += 35;
   else if (position > 10 && position <= 20) score += 25;
   else if (position > 20 && position <= 50) score += 10;
-  if (ctr < 0.03) score += 20;
-  else if (ctr < 0.06) score += 10;
+
+  const benchmark = ctrBenchmarks[positionBucket(position)]?.ctr;
+  if (Number.isFinite(benchmark) && benchmark > 0) {
+    const gap = benchmark - ctr;
+    const ratio = ctr / benchmark;
+
+    // Reward genuine underperformance relative to peers at the same
+    // ranking range instead of applying one raw CTR threshold to all ranks.
+    if (gap >= 0.03 || ratio <= 0.55) score += 20;
+    else if (gap >= 0.015 || ratio <= 0.75) score += 10;
+  } else if (ctr < 0.03) {
+    // Conservative fallback when the page has no usable peer benchmark.
+    score += 20;
+  } else if (ctr < 0.06) {
+    score += 10;
+  }
+
   return Math.min(100, score);
 }
 
@@ -156,7 +173,7 @@ export function buildGscSignalIndex(rows = []) {
   const queryRows = new Map();
   const nonBrandQueryRows = new Map();
   const queryTokenRows = new Map();
-  const opportunities = [];
+  const rawOpportunityItems = [];
   const nonBrandItems = [];
   for (const row of rows) {
     const page = normalizeUrl(row.page);
@@ -185,9 +202,16 @@ export function buildGscSignalIndex(rows = []) {
         queryTokenRows.set(token, bucket);
       }
     }
-    opportunities.push(Object.freeze({ ...item, brandNavigation: isBrandNavigationQuery(query), opportunitySignalScore: scoreRow(item) }));
+    rawOpportunityItems.push(item);
   }
   const ctrBenchmarks = buildCtrBenchmarks(nonBrandItems);
+  const opportunities = rawOpportunityItems
+    .map((item) => Object.freeze({
+      ...item,
+      brandNavigation: isBrandNavigationQuery(item.query),
+      opportunitySignalScore: scoreRow(item, ctrBenchmarks)
+    }))
+    .sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore);
   const semanticQueryClusters = buildSemanticQueryClusters(rows, { minImpressions: 1, limit: 5000 });
   const queryClusterByQuery = new Map();
   for (const cluster of semanticQueryClusters) {
