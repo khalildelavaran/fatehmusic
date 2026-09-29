@@ -57,7 +57,8 @@ function buildCandidateTokenIndex(pages = []) {
 function buildCandidatePool(source, pages, tokenIndex, {
     maxCandidates = 120,
     fullScanThreshold = 160,
-    semanticGraph = null
+    semanticGraph = null,
+    pagesByUrl = null
 } = {}) {
     if (pages.length <= fullScanThreshold) return pages;
 
@@ -90,7 +91,8 @@ function buildCandidatePool(source, pages, tokenIndex, {
             })) {
                 const relatedUrl = normalizeUrl(related.entity?.url);
                 if (!relatedUrl) continue;
-                const page = pages.find((candidate) => normalizeUrl(candidate?.url) === relatedUrl);
+                const page = pagesByUrl?.get(relatedUrl) ||
+                    pages.find((candidate) => normalizeUrl(candidate?.url) === relatedUrl);
                 if (page?.url) selected.set(relatedUrl, page);
             }
         }
@@ -196,10 +198,14 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
         .sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0) || String(a.url).localeCompare(String(b.url)));
 
     const allEdges = new Map();
+    const pagesByUrl = new Map(
+        sourcePages.map((page) => [normalizeUrl(page.url), page])
+    );
     const candidateTokenIndex = buildCandidateTokenIndex(sourcePages);
     for (const page of sourcePages) {
         const candidatePool = buildCandidatePool(page, sourcePages, candidateTokenIndex, {
-            semanticGraph
+            semanticGraph,
+            pagesByUrl
         });
         const plan = buildInternalLinkPlan({
             currentUrl: page.url,
