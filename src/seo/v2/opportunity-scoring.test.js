@@ -55,7 +55,8 @@ describe("opportunity scoring", () => {
         matchType: "EXACT",
         impressions: 120,
         topPage: "https://fatehmusic.ir/courses/guitar-course",
-        topShare: 100 / 120
+        topShare: 100 / 120,
+        ownerDominanceEvidence: "STRONG"
       }
     })).toBe("LINK");
   });
@@ -637,6 +638,22 @@ describe("opportunity scoring", () => {
         impressions: 120,
         topPage: "https://fatehmusic.ir/courses/guitar-course",
         topShare: 0.95
+      }
+    })).toBe("NEW_CONTENT");
+  });
+
+
+  it("does not link on moderate statistical ownership evidence", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      searchSignal: { available: false },
+      searchOwnership: {
+        available: true,
+        matchType: "EXACT",
+        ownerStatus: "STABLE",
+        impressions: 40,
+        topShare: 0.8,
+        ownerDominanceEvidence: "MODERATE"
       }
     })).toBe("NEW_CONTENT");
   });
