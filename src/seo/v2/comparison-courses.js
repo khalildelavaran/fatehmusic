@@ -1,22 +1,10 @@
-import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
-
-function normalize(value) {
-  return normalizeSemanticText(value);
-}
+import { matchCoursesInTitle } from "./content-strategy/course-matching.js";
 
 export function findComparisonCourses(title, courses = [], limit = 2) {
-  const normalizedTitle = normalize(title);
+  const normalizedTitle = String(title || "").normalize("NFKC").toLocaleLowerCase("fa");
   if (!/تفاوت|مقایسه| یا /u.test(normalizedTitle)) return [];
-
-  const sourceCourses = Array.isArray(courses) ? courses : [];
-
-  return sourceCourses
-    .filter((course) => course.active && course.slug && course.title)
-    .filter((course) => {
-      const name = normalize(course.title)
-        .replace(/^آموزش /u, "")
-        .replace(/^دوره /u, "");
-      return name && containsSemanticPhrase(title || "", name);
-    })
-    .slice(0, Math.max(0, limit));
+  return matchCoursesInTitle(title, courses, {
+    comparison: true,
+    limit: Math.max(0, Number(limit) || 2)
+  });
 }
