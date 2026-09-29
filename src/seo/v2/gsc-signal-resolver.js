@@ -212,7 +212,8 @@ export function buildGscSignalIndex(rows = []) {
       opportunitySignalScore: scoreRow(item, ctrBenchmarks)
     }))
     .sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore);
-  const semanticQueryClusters = buildSemanticQueryClusters(rows, { minImpressions: 1, limit: 5000 });
+  const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(rows, { minImpressions: 1, limit: 5000 });
+  const semanticQueryClusters = semanticQueryClustersResult.items;
   const queryClusterByQuery = new Map();
   for (const cluster of semanticQueryClusters) {
     for (const query of cluster.queries) {
@@ -228,6 +229,9 @@ export function buildGscSignalIndex(rows = []) {
     byQueryNonBrand: new Map([...nonBrandQueryRows].map(([key, values]) => [key, aggregate(values, ctrBenchmarks)])),
     queryTokenRows: new Map([...queryTokenRows].map(([key, values]) => [key, Object.freeze(values)])),
     queryClusters: semanticQueryClusters,
+    queryClusterTotalCount: semanticQueryClustersResult.totalCount,
+    queryClusterLimit: semanticQueryClustersResult.limit,
+    queryClusterTruncated: semanticQueryClustersResult.truncated,
     queryClusterByQuery: Object.freeze(queryClusterByQuery),
     opportunities: Object.freeze(opportunities.sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore))
   });
@@ -557,7 +561,7 @@ function queryClusterKey(query) {
   return [scope, ...tokens].join(" ");
 }
 
-export function buildSemanticQueryClusters(rows = [], { minImpressions = 1, limit = 50 } = {}) {
+export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions = 1, limit = 50 } = {}) {
   const clusters = new Map();
   const displayQueries = new Map();
 
@@ -641,11 +645,21 @@ export function buildSemanticQueryClusters(rows = [], { minImpressions = 1, limi
     }));
   }
 
-  return Object.freeze(
-    result
-      .sort((a, b) => b.impressions - a.impressions || a.key.localeCompare(b.key))
-      .slice(0, Math.max(1, Number(limit) || 50))
-  );
+  const safeLimit = Math.max(1, Number(limit) || 50);
+  const items = result
+    .sort((a, b) => b.impressions - a.impressions || a.key.localeCompare(b.key))
+    .slice(0, safeLimit);
+
+  return Object.freeze({
+    items: Object.freeze(items),
+    totalCount: result.length,
+    limit: safeLimit,
+    truncated: result.length > safeLimit
+  });
+}
+
+export function buildSemanticQueryClusters(rows = [], options = {}) {
+  return buildSemanticQueryClustersWithMeta(rows, options).items;
 }
 
 function classifySearchOpportunity(signal) {
