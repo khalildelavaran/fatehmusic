@@ -639,6 +639,7 @@ function buildQueryOwnership(querySignals = [], item = {}) {
 }
 
 export function buildQueryOwnershipMapWithMeta(rows = [], { minImpressions = 1, limit = 500 } = {}) {
+  const safeRows = sanitizeGscQueryPageRows(rows);
   const queryPages = new Map();
   const queryStats = new Map();
   const displayQueries = new Map();
@@ -802,6 +803,7 @@ function queryClusterKey(query, cache = null) {
 }
 
 export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions = 1, limit = 50 } = {}) {
+  const safeRows = sanitizeGscQueryPageRows(rows);
   const clusters = new Map();
   const displayQueries = new Map();
   const semanticProfileCache = new Map();
@@ -1025,6 +1027,7 @@ export function detectSearchCannibalization(rows = [], {
   // Compare pages that rank for the same query within the same GSC
   // reporting window. A page switching ownership between windows is a
   // temporal transition, not simultaneous cannibalization.
+  const safeRows = sanitizeGscQueryPageRows(rows);
   const groups = new Map();
   for (const row of safeRows) {
     const query = normalizeText(row.query);
@@ -1096,6 +1099,7 @@ export function detectSemanticQueryCannibalization(rows = [], {
   maxQueryClusters = 5000
 } = {}) {
   const semanticMap = normalizeSemanticMap(pageSemantics);
+  const safeRows = sanitizeGscQueryPageRows(rows);
   const periods = new Map();
 
   for (const row of safeRows) {
