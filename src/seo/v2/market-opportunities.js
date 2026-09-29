@@ -39,10 +39,20 @@ function positionScore(position) {
   return 8;
 }
 
-function effectiveRankingPosition(ahrefsPosition, gscSignal) {
-  if (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0) return ahrefsPosition;
+function effectiveRankingPosition(ahrefsPosition, gscSignal, gscFreshness = "UNKNOWN") {
+  const normalizedFreshness = String(gscFreshness || "UNKNOWN").toUpperCase();
   const gscPosition = Number(gscSignal?.position);
-  return Number.isFinite(gscPosition) && gscPosition > 0 ? gscPosition : null;
+  const hasGscPosition = Number.isFinite(gscPosition) && gscPosition > 0;
+  const hasAhrefsPosition = Number.isFinite(ahrefsPosition) && ahrefsPosition > 0;
+
+  // GSC is the property's current first-party ranking signal. Prefer it while
+  // the snapshot is fresh/aging; when GSC is stale, retain Ahrefs as the
+  // market fallback unless GSC is the only available position.
+  if (hasGscPosition && (!hasAhrefsPosition || normalizedFreshness !== "STALE")) {
+    return gscPosition;
+  }
+  if (hasAhrefsPosition) return ahrefsPosition;
+  return hasGscPosition ? gscPosition : null;
 }
 
 function classifyMarketOpportunity(position, gscImpressions) {
@@ -130,7 +140,8 @@ export function buildMarketOpportunityReport({
   keywordRows = [],
   gscRows = [],
   minVolume = 1,
-  limit = 50
+  limit = 50,
+  gscFreshness = "UNKNOWN"
 } = {}) {
   const rows = Array.isArray(keywordRows) ? keywordRows : [];
   const gsc = Array.isArray(gscRows) ? gscRows : [];
@@ -150,7 +161,8 @@ export function buildMarketOpportunityReport({
 
     seen.add(key);
     const gscSignal = gscExactSignal(keyword, gsc);
-    const position = effectiveRankingPosition(ahrefsPosition, gscSignal);
+    const gscPosition = Number(gscSignal?.position);
+    const position = effectiveRankingPosition(ahrefsPosition, gscSignal, gscFreshness);
     const classification = classifyMarketOpportunity(position, gscSignal?.impressions || 0);
     const marketScore = Math.round(clamp(
       volumeScore(volume) * 0.45 +
@@ -171,12 +183,24 @@ export function buildMarketOpportunityReport({
       volume,
       difficulty: Number.isFinite(difficulty) ? difficulty : null,
       bestPosition: Number.isFinite(position) && position > 0 ? position : null,
-      bestPositionSource: Number.isFinite(ahrefsPosition) && ahrefsPosition > 0
-        ? "ahrefs"
-        : (gscSignal?.position != null ? "gsc" : null),
-      bestPositionUrl: (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0)
-        ? (row?.best_position_url || null)
-        : (gscSignal?.bestPage || null),
+      ahrefsBestPosition: Number.isFinite(ahrefsPosition) && ahrefsPosition > 0 ? ahrefsPosition : null,
+      gscBestPosition: Number.isFinite(gscPosition) && gscPosition > 0 ? gscPosition : null,
+      bestPositionSource:
+        Number.isFinite(gscPosition) && gscPosition > 0 && (
+          !Number.isFinite(ahrefsPosition) ||
+          ahrefsPosition <= 0 ||
+          String(gscFreshness || "UNKNOWN").toUpperCase() !== "STALE"
+        )
+          ? "gsc"
+          : (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0 ? "ahrefs" : "gsc"),
+      bestPositionUrl:
+        Number.isFinite(gscPosition) && gscPosition > 0 && (
+          !Number.isFinite(ahrefsPosition) ||
+          ahrefsPosition <= 0 ||
+          String(gscFreshness || "UNKNOWN").toUpperCase() !== "STALE"
+        )
+          ? (gscSignal?.bestPage || row?.best_position_url || null)
+          : (row?.best_position_url || gscSignal?.bestPage || null),
       classification,
       action,
       topic: semanticTopicHint(keyword),
