@@ -249,6 +249,34 @@ describe("GSC query ownership exposure", () => {
     expect(result.opportunities[0].marketSignal?.matchedKeyword).toBe("کلاس گیتار شوشتر");
   });
 
+  it("uses market query angles as evidence for an existing content asset", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "راهنمای آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "informational",
+        action: "NEW_CONTENT",
+        priority: 70,
+        queryAngles: ["کلاس گیتار شوشتر"],
+        marketQueryAngles: ["کلاس گیتار شوشتر"]
+      }
+    ], [], {
+      marketSignals: [
+        {
+          keyword: "کلاس گیتار شوشتر",
+          estimatedVolume: 300,
+          difficulty: 35,
+          available: true,
+          source: "ahrefs"
+        }
+      ]
+    });
+
+    expect(result.opportunities[0].marketSignal?.available).toBe(true);
+    expect(result.opportunities[0].marketSignal?.matchedKeyword).toBe("کلاس گیتار شوشتر");
+  });
+
   it("reduces completeness when the current GSC snapshot is truncated", () => {
     const result = enrichOpportunitiesWithSearchConsole([
       { title: "آموزش گیتار شوشتر", action: "NEW_CONTENT", priority: 70 }
