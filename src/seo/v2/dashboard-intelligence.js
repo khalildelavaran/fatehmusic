@@ -306,6 +306,7 @@ export async function getSeoDashboardIntelligence({
         activeTopicCount: 0,
         approvedTopicCount: 0,
         candidateTopicCount: 0,
+        gscSignalCount: 0,
         gscFreshness: "UNKNOWN",
         marketFreshness: "UNKNOWN"
       })
@@ -558,6 +559,7 @@ export async function getSeoDashboardIntelligence({
       activeTopicCount: Number(topicCountResult?.activeCount || 0),
       approvedTopicCount: Number(topicCountResult?.approvedCount || 0),
       candidateTopicCount: Number(topicCountResult?.candidateCount || 0),
+      gscSignalCount: Number(gscCountResult?.signalCount || 0),
       gscFreshness,
       marketFreshness
     }),
