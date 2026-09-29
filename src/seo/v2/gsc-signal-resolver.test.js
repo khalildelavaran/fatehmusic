@@ -503,6 +503,21 @@ describe("Persian query normalization", () => {
 });
 
 
+
+
+  it("surfaces statistical owner strength for semantic query clusters", () => {
+    const clusters = buildSemanticQueryClusters([
+      { query: "آموزش گیتار شوشتر", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 80 },
+      { query: "کلاس گیتار شوشتر", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 30 }
+    ]);
+
+    const cluster = clusters[0];
+    expect(cluster.ownerShareInterval95).toBeTruthy();
+    expect(cluster.ownerShareLower95).toBeGreaterThan(0.5);
+    expect(cluster.ownerDominanceEvidence).toBe("STRONG");
+    expect(cluster.pages[0].shareInterval95).toBeTruthy();
+  });
+
 describe("GSC query ownership map", () => {
   it("keeps meaningful two-word queries such as آموزش گیتار eligible", () => {
     const map = buildQueryOwnershipMap([
