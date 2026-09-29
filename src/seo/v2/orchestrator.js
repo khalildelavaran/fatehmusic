@@ -233,7 +233,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     marketOpportunities,
     marketAdjustedBase,
     courses,
-    siteUrl: resolvedSiteUrl
+    resolvedSiteUrl
   );
   const marketDerived = buildUnifiedContentOpportunities({
     gaps: [],
