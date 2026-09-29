@@ -46,15 +46,14 @@ function filterCanonicalGscRows(rows = []) {
   return (Array.isArray(rows) ? rows : []).filter((row) => !hasBreakdownDimensions(row));
 }
 
-export function currentScoringRows(rows = []) {
+function selectCurrentGscInputRows(rows = []) {
   const safeRows = Array.isArray(rows) ? rows : [];
   const snapshotLabels = safeRows
     .map((row) => String(row?.snapshotLabel || row?.snapshot_label || "").trim())
     .filter(Boolean);
 
-  // Once snapshot labels are present, scoring must use the explicit current
-  // snapshot only. Never silently score with "previous" or dimensional
-  // breakdown rows when current data is missing.
+  // Once snapshot labels are present, the explicit current snapshot wins.
+  // Do not mix previous/breakdown snapshots into live scoring.
   if (snapshotLabels.length) {
     return safeRows.filter((row) =>
       String(row?.snapshotLabel || row?.snapshot_label || "") === "current"
@@ -62,29 +61,28 @@ export function currentScoringRows(rows = []) {
   }
 
   const datedRows = safeRows.filter((row) => row?.startDate || row?.start_date || row?.endDate || row?.end_date);
-  if (!datedRows.length) {
-    // Unlabelled mixed-dimensional exports are inherently ambiguous. Prefer
-    // canonical query/page rows; if none exist, fail closed instead of
-    // double-counting a country/device/search-appearance breakdown.
-    const dimensionMix = classifyGscDimensionMix(safeRows);
-    return dimensionMix.mixed || dimensionMix.dimensionMode === "BREAKDOWN"
-      ? filterCanonicalGscRows(safeRows)
-      : safeRows;
-  }
+  if (!datedRows.length) return safeRows;
 
   const latestPeriod = datedRows
     .map((row) => `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}`)
     .sort()
     .at(-1);
 
-  const latestRows = datedRows.filter((row) =>
+  return datedRows.filter((row) =>
     `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}` === latestPeriod
   );
-  const dimensionMix = classifyGscDimensionMix(latestRows);
+}
 
+export function currentScoringRows(rows = []) {
+  const selected = selectCurrentGscInputRows(rows);
+  const dimensionMix = classifyGscDimensionMix(selected);
+
+  // Unlabelled mixed-dimensional exports are inherently ambiguous. Prefer
+  // canonical query/page rows; if none exist, fail closed instead of
+  // double-counting a country/device/search-appearance breakdown.
   return dimensionMix.mixed || dimensionMix.dimensionMode === "BREAKDOWN"
-    ? filterCanonicalGscRows(latestRows)
-    : latestRows;
+    ? filterCanonicalGscRows(selected)
+    : selected;
 }
 
 export function temporalAnalysisRows(rows = []) {
@@ -97,9 +95,11 @@ export function temporalAnalysisRows(rows = []) {
 
 /** Enrich the unified content queue with real GSC signals when available. */
 export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = [], options = {}) {
-  const rawCurrentRows = currentScoringRows(rows);
-  const currentDimensionProfile = classifyGscDimensionMix(rawCurrentRows);
-  const currentRows = rawCurrentRows;
+  const selectedCurrentRows = selectCurrentGscInputRows(rows);
+  const currentDimensionProfile = classifyGscDimensionMix(selectedCurrentRows);
+  const currentRows = currentDimensionProfile.mixed || currentDimensionProfile.dimensionMode === "BREAKDOWN"
+    ? filterCanonicalGscRows(selectedCurrentRows)
+    : selectedCurrentRows;
   const ageDays = resolveAgeDays(options.gscDataQuality?.finishedAt);
   const freshness = ageDays == null
     ? "UNKNOWN"
