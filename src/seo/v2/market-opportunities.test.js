@@ -262,3 +262,26 @@ describe("market position provenance", () => {
     expect(result[0].bestPositionUrl).toBe("https://fatehmusic.ir/courses/guitar-course");
   });
 });
+
+
+describe("market signal passthrough", () => {
+  it("preserves Ahrefs traffic potential for downstream scoring", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 22,
+        traffic_potential: 900,
+        cpc: 1200
+      }]
+    });
+
+    expect(result[0].trafficPotential).toBe(900);
+    expect(result[0].cpc).toBe(1200);
+
+    const signal = buildMarketSignalMap(result).get("اموزش گیتار");
+    expect(signal.trafficPotential).toBe(900);
+    expect(signal.cpc).toBe(1200);
+  });
+});
