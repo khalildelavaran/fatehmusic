@@ -545,7 +545,8 @@ describe("opportunity scoring", () => {
         matchType: "EXACT",
         ownerStatus: "STABLE",
         impressions: 300,
-        topShare: 1
+        topShare: 1,
+        ownerDominanceEvidence: "STRONG"
       },
       marketSignal: {
         available: true,
