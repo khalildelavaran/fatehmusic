@@ -184,7 +184,12 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
     course: makeCourseRef(course, baseUrl),
     comparisonCourses: comparisonCourses.map((item) => makeCourseRef(item, baseUrl)).filter(Boolean),
     courseSlug: course?.slug || null,
-    priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)),
+    // Market-discovery candidates carry their Ahrefs evidence separately.
+    // Keep the structural base priority independent so the same market signal
+    // is not counted once during candidate generation and again during scoring.
+    priority: candidate.marketDiscovery
+      ? buildPriority(intent, articleCount, course, isLocal)
+      : Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)),
     articleCount,
     existingArticleSlugs,
     rationale: candidate.rationale || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.",
