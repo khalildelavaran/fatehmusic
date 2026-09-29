@@ -22,7 +22,7 @@ import {
   mergeQueryAngles,
   makeCourseRef
 } from "./content-strategy/builders.js";
-import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "../helpers/text.js";
+import { normalizeSemanticText } from "../helpers/text.js";
 
 function canonicalAssetKey(item) {
   const topic = findTopic(item.topic);
