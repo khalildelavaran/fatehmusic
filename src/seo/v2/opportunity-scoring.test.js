@@ -731,6 +731,54 @@ describe("opportunity scoring", () => {
 
 });
 
+describe("cross-source intent guards", () => {
+  it("penalizes an explicit market-content intent conflict", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 90,
+      searchIntent: "informational",
+      searchSignal: { available: false },
+      marketSignal: {
+        available: true,
+        matchType: "EXACT",
+        estimatedVolume: 500,
+        difficulty: 20,
+        intents: { transactional: true }
+      }
+    });
+
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("MARKET_CONTENT_INTENT_CONFLICT");
+    expect(result.decisionConfidence).toBeLessThanOrEqual(84);
+  });
+
+  it("guards high-confidence disagreement between GSC and market intent", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 90,
+      searchIntent: "informational",
+      searchSignal: {
+        available: true,
+        impressions: 200,
+        position: 8,
+        queryIntentEvidence: {
+          primary: "informational",
+          confidence: 0.95
+        }
+      },
+      marketSignal: {
+        available: true,
+        matchType: "EXACT",
+        estimatedVolume: 500,
+        difficulty: 20,
+        intents: { transactional: true }
+      }
+    });
+
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("GSC_MARKET_INTENT_CONFLICT");
+    expect(result.decisionConfidence).toBeLessThanOrEqual(80);
+  });
+});
+
 describe("evidence match quality guards", () => {
   it("caps weak semantic market evidence", () => {
     const result = scoreOpportunity({
