@@ -2,6 +2,14 @@ import { normalizeSemanticText } from "../helpers/text.js";
 
 /** Unified SEO/GEO opportunity scoring. Deterministic and safe for dashboard use. */
 
+export const SCORE_FORMULA_VERSION = "2.2";
+export const SCORE_COMPONENT_WEIGHTS = Object.freeze({
+  basePriority: 0.55,
+  searchSignal: 0.45,
+  marketSignal: 0.20,
+  competitorGap: 0.15
+});
+
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number(value) || 0));
 
 function decisionConfidenceEvidence(item = {}) {
@@ -781,17 +789,30 @@ export function scoreOpportunity(item = {}) {
   const queryIntentPenalty = queryIntentAlignmentPenalty(item);
   const temporalBonus = item.temporalCannibalization?.actionable ? (item.temporalCannibalization.severity === "HIGH" ? 10 : 5) : 0;
 
-  const weightedBase = base * 0.55;
-  const weightedSearch = signal * 0.45;
-  const weightedMarket = market == null ? 0 : market * 0.20;
-  const weightedCompetitor = competitor > 0 ? competitor * 0.15 : 0;
-  const weightTotal = (market == null ? 1 : 1.2) + (competitor > 0 ? 0.15 : 0);
-  const score = clamp(Math.round(
-    (weightedBase + weightedSearch + weightedMarket + weightedCompetitor) / weightTotal -
+  const weightedBase = base * SCORE_COMPONENT_WEIGHTS.basePriority;
+  const weightedSearch = signal * SCORE_COMPONENT_WEIGHTS.searchSignal;
+  const weightedMarket = market == null ? 0 : market * SCORE_COMPONENT_WEIGHTS.marketSignal;
+  const weightedCompetitor = competitor > 0 ? competitor * SCORE_COMPONENT_WEIGHTS.competitorGap : 0;
+  const weightTotal =
+    (market == null ? 1 : 1.2) +
+    (competitor > 0 ? SCORE_COMPONENT_WEIGHTS.competitorGap : 0);
+  const normalizedContributions = Object.freeze({
+    basePriority: Number((weightedBase / weightTotal).toFixed(3)),
+    searchSignal: Number((weightedSearch / weightTotal).toFixed(3)),
+    marketSignal: Number((weightedMarket / weightTotal).toFixed(3)),
+    competitorGap: Number((weightedCompetitor / weightTotal).toFixed(3))
+  });
+  const scoreBeforePenalties = (
+    weightedBase +
+    weightedSearch +
+    weightedMarket +
+    weightedCompetitor
+  ) / weightTotal;
+  const unguardedScore = scoreBeforePenalties -
     competitionPenalty -
     queryIntentPenalty +
-    temporalBonus
-  ));
+    temporalBonus;
+  const score = clamp(Math.round(unguardedScore));
   const scoredItem = {
     ...item,
     marketSignal: market == null ? undefined : item.marketSignal
@@ -809,6 +830,8 @@ export function scoreOpportunity(item = {}) {
     decisionConfidence,
     evidenceStrengthScore: evidence.score,
     scoreBreakdown: Object.freeze({
+      formulaVersion: SCORE_FORMULA_VERSION,
+      componentWeights: SCORE_COMPONENT_WEIGHTS,
       basePriority: base,
       searchSignal: signal,
       competitionPenalty,
@@ -817,6 +840,10 @@ export function scoreOpportunity(item = {}) {
       marketSignal: market,
       competitorGap: competitor > 0 ? item.competitorGap : null,
       competitorGapScore: competitor,
+      weightTotal,
+      scoreBeforePenalties: Number(scoreBeforePenalties.toFixed(3)),
+      unguardedScore: Number(unguardedScore.toFixed(3)),
+      normalizedContributions,
       decisionConfidence,
       evidenceStrengthScore: evidence.score,
       evidenceStrength: evidence.quality,
