@@ -110,7 +110,7 @@ function decisionConfidenceEvidence(item = {}) {
     points.push(["intent confidence", Math.round(Math.min(10, intentConfidence * 10))]);
   }
 
-  if (item.semanticQueryCluster?.impressions > 0) {
+  if (item.semanticQueryCluster?.impressions > 0 && item.semanticQueryCluster.subjectSource !== "QUERY_ISOLATED") {
     points.push(["semantic GSC query cluster", 5]);
     if (Number(item.semanticQueryCluster.queryCount) >= 2) {
       points.push(["multiple query variants in cluster", 3]);
