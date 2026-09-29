@@ -98,3 +98,29 @@ describe("competitive keyword gaps", () => {
     expect(signal.source).toBe("competitor-gap");
   });
 });
+
+
+describe("competitive gap keyword normalization", () => {
+  it("keeps the highest-volume raw spelling for a normalized competitor keyword", () => {
+    const result = buildCompetitiveGapReport({
+      competitorKeywordRows: [
+        {
+          keyword: "آموزش گیتار شوشتر",
+          volume_monthly: 20,
+          keyword_difficulty: 30,
+          competitor_domain: "competitor-a.example"
+        },
+        {
+          keyword: "اموزش گیتار شوشتر",
+          volume_monthly: 80,
+          keyword_difficulty: 35,
+          competitor_domain: "competitor-a.example"
+        }
+      ],
+      targetKeywordRows: []
+    });
+
+    expect(result[0].keyword).toBe("اموزش گیتار شوشتر");
+    expect(result[0].estimatedVolume).toBe(80);
+  });
+});
