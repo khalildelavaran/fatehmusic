@@ -188,4 +188,31 @@ describe("semantic internal links", () => {
     expect(Math.max(...targetLinks.map((link) => link.saturationPenalty))).toBeGreaterThan(0);
   });
 
+
+  it("boosts the canonical GSC query owner without bypassing semantic relevance", () => {
+    const result = buildInternalLinkPlan({
+      currentUrl: pages[0].url,
+      currentTitle: pages[0].title,
+      currentTopics: pages[0].topics,
+      currentType: pages[0].type,
+      candidates: [
+        pages[0],
+        pages[1],
+        pages[2]
+      ],
+      gscOwnership: [{
+        query: "آموزش گیتار شوشتر",
+        topPage: pages[1].url,
+        ownerStatus: "STABLE",
+        ownerDominanceEvidence: "STRONG",
+        impressions: 200,
+        topShare: 0.9
+      }]
+    });
+
+    const guitar = result.find((item) => item.url === pages[1].url);
+    expect(guitar.reasonCodes).toContain("GSC_OWNER_STRONG");
+    expect(guitar.score).toBeGreaterThan(10);
+  });
+
 });
