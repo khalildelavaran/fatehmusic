@@ -352,6 +352,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gsc: Object.freeze({
       connected: search.connected,
       signalRowCount: search.signalRowCount,
+      dataQuality: search.dataQuality || Object.freeze({}),
       index: effectiveGscIndex,
       cannibalization: freeze(cannibalization),
       semanticCannibalization: freeze(semanticCannibalization),
@@ -404,6 +405,10 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       knowledgeGraphValid: knowledgeGraph ? knowledgeGraphValidation.valid : true,
       gscCompleteness: search.dataQuality?.completeness || 0,
       gscCoverageStatus: search.dataQuality?.coverageStatus || "EMPTY",
+      gscDimensionMode: search.dataQuality?.dimensionMode || "QUERY_PAGE",
+      gscMixedDimensions: Boolean(search.dataQuality?.mixed),
+      gscCanonicalRows: Number(search.dataQuality?.canonicalRows) || 0,
+      gscBreakdownRowsFiltered: Number(search.dataQuality?.breakdownRows) || 0,
       gscFreshness: search.dataQuality?.freshness || "UNKNOWN",
       gscAgeDays: search.dataQuality?.ageDays ?? null,
       marketFreshness: search.marketDataQuality?.freshness || "UNKNOWN",
