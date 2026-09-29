@@ -93,6 +93,18 @@ describe("opportunity scoring", () => {
     expect(evidence.sources).toEqual(["GSC"]);
   });
 
+  it("does not count Market and Competitor Ahrefs dimensions as two independent providers", () => {
+    const evidence = evidenceStrength({
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 },
+      competitorGap: { available: true, gapScore: 80, competitorCount: 3 }
+    });
+
+    expect(evidence.sources).toEqual(expect.arrayContaining(["MARKET", "COMPETITOR"]));
+    expect(evidence.independentSources).toEqual(["AHREFS"]);
+    expect(evidence.independentSourceCount).toBe(1);
+  });
+
+
   it("separates independent evidence sources from derived evidence dimensions", () => {
     const evidence = evidenceStrength({
       searchSignal: { available: true, impressions: 100, position: 8 },
