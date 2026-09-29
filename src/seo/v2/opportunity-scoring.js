@@ -350,14 +350,35 @@ function evidenceStrength(item = {}) {
     score >= 45 ? "WEAK" :
     "INSUFFICIENT";
 
+  const limitations = [];
+  if (!independentSources.size) limitations.push("NO_INDEPENDENT_PROVIDER");
+  if (item.gscDataQuality?.truncated) limitations.push("GSC_PARTIAL_COVERAGE");
+  if (item.gscDataQuality?.freshness === "STALE") limitations.push("GSC_STALE");
+  if (item.marketSignal?.available && String(item.marketDataQuality?.freshness || item.marketSignal?.dataFreshness || "").toUpperCase() === "STALE") {
+    limitations.push("MARKET_STALE");
+  }
+  if (item.competitorGap?.available && String(item.competitorDataQuality?.freshness || item.competitorGap?.dataFreshness || "").toUpperCase() === "STALE") {
+    limitations.push("COMPETITOR_STALE");
+  }
+  if (item.searchOwnership?.ownerDominanceEvidence === "WEAK") limitations.push("WEAK_QUERY_OWNERSHIP");
+  if (item.semanticQueryCluster?.ownerDominanceEvidence === "WEAK") limitations.push("WEAK_SEMANTIC_OWNERSHIP");
+  if (item.searchSignal?.queryIntentEvidence?.primary && item.searchIntent &&
+      item.searchSignal.queryIntentEvidence.primary !== item.searchIntent &&
+      Number(item.searchSignal.queryIntentEvidence.confidence || 0) >= 0.70) {
+    limitations.push("GSC_INTENT_CONFLICT");
+  }
+
   return Object.freeze({
     score,
     quality,
+    method: "HEURISTIC_EVIDENCE_RUBRIC",
+    probabilistic: false,
     sourceCount: sourceFamilies.size,
     independentSourceCount: independentSources.size,
     independentSources: Object.freeze([...independentSources]),
     sources: Object.freeze([...sourceFamilies]),
     evidenceSignals: Object.freeze([...evidenceSignals]),
+    limitations: Object.freeze([...new Set(limitations)]),
     independentMarketAndGsc: sourceFamilies.has("MARKET") && sourceFamilies.has("GSC")
   });
 }
