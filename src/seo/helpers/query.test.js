@@ -73,5 +73,6 @@ describe("modifier spacing robustness", () => {
     expect(halfSpace.has("mod:enrollment")).toBe(true);
     expect(spaced.has("mod:enrollment")).toBe(true);
     expect([...halfSpace]).toEqual(expect.arrayContaining(["گیتار", "mod:enrollment"]));
+    expect(querySemanticDimensions("ثبتنامه گیتار").modifierFamilies).not.toContain("enrollment");
   });
 });
