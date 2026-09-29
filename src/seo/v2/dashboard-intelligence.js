@@ -460,14 +460,30 @@ export async function getSeoDashboardIntelligence({
       priority: clamp(Number(row?.score_total) || 0),
       articleCount: 0,
       existingArticleSlugs: [],
+      gapDetected: false,
+      gapPriority: 0,
       rationale: String(row?.reasoning || "موضوع در موتور تولید محتوا ذخیره شده و آماده بررسی است."),
       queryAngles: queryAngles(row),
       recommendedLinks: recommendedLinks(row, baseUrl),
       source: String(row?.source || "topic-engine"),
       searchSignal: matchedSearch
-        ? { available: true, ...matchedSearch, matchedQueries: [matchedSearch.displayQuery], matchedPages: searchOwner?.pages?.map((item) => item.page) || [] }
+        ? {
+            available: true,
+            ...matchedSearch,
+            ctrBenchmark: null,
+            queryIntentEvidence: null,
+            matchedQueries: [matchedSearch.displayQuery],
+            matchedPages: searchOwner?.pages?.map((item) => item.page) || []
+          }
         : null,
-      searchOwnership: searchOwner,
+      searchOwnership: searchOwner
+        ? {
+            ...searchOwner,
+            available: true,
+            matchType: "EXACT",
+            ownerDominanceEvidence: searchOwner.topShare >= 0.9 ? "STRONG" : searchOwner.topShare >= 0.7 ? "MODERATE" : "WEAK"
+          }
+        : null,
       marketSignal: (() => {
         const normalizedTitle = normalizeQuery(title);
         const market = marketKeywords.find((candidate) => normalizeQuery(candidate?.keyword) === normalizedTitle);
