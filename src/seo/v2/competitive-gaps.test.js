@@ -44,6 +44,42 @@ describe("competitive keyword gaps", () => {
     expect(gaps[0].gapScore).toBeGreaterThan(0);
   });
 
+  it("keeps local scope distinct from a broader national keyword", () => {
+    const gaps = buildCompetitiveGapReport({
+      competitorKeywordRows: [
+        {
+          keyword: "کلاس گیتار در شوشتر",
+          competitor_domain: "a.example",
+          volume_monthly: 120,
+          keyword_difficulty: 25
+        }
+      ],
+      targetQueries: ["آموزش گیتار"],
+      semanticMatchThreshold: 0.9
+    });
+
+    expect(gaps).toHaveLength(1);
+    expect(gaps[0].keyword).toBe("کلاس گیتار در شوشتر");
+    expect(gaps[0].coverageMode).toBe("UNMATCHED_TARGET_SEMANTICALLY");
+  });
+
+  it("suppresses equivalent wording variants of an existing target", () => {
+    const gaps = buildCompetitiveGapReport({
+      competitorKeywordRows: [
+        {
+          keyword: "کلاس گیتار",
+          competitor_domain: "a.example",
+          volume_monthly: 120,
+          keyword_difficulty: 25
+        }
+      ],
+      targetQueries: ["آموزش گیتار"],
+      semanticMatchThreshold: 0.9
+    });
+
+    expect(gaps).toHaveLength(0);
+  });
+
   it("builds a normalized signal map without fabricating keyword demand", () => {
     const map = buildCompetitiveGapSignalMap([
       {
