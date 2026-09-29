@@ -310,9 +310,11 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const temporalCannibalization = search.temporalCannibalization || [];
   const semanticTemporalCannibalization = search.semanticTemporalCannibalization || [];
   const opportunities = search.opportunities;
-  const decisionConfidenceAverage = opportunities.length
-    ? Math.round(opportunities.reduce((sum, item) => sum + Number(item.decisionConfidence || 0), 0) / opportunities.length)
+  const evidenceStrengthAverage = opportunities.length
+    ? Math.round(opportunities.reduce((sum, item) => sum + Number(item.evidenceStrengthScore ?? item.decisionConfidence ?? 0), 0) / opportunities.length)
     : 0;
+  // Backward-compatible alias: this value is an evidence score, not a probability.
+  const decisionConfidenceAverage = evidenceStrengthAverage;
   const knowledgeGraph = buildKnowledgeGraph({
     siteUrl: resolvedSiteUrl,
     courses,
@@ -377,6 +379,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
       queryClusterTotalCount: Number(search.summary?.queryClusterTotalCount || search.queryClusters?.length || 0),
       queryClusterLimit: Number(search.summary?.queryClusterLimit || search.queryClusters?.length || 0),
       queryClusterTruncated: Boolean(search.summary?.queryClusterTruncated),
+      evidenceStrengthAverage,
       decisionConfidenceAverage,
       knowledgeGraphNodeCount: knowledgeGraph.statistics.nodeCount,
       knowledgeGraphEdgeCount: knowledgeGraph.statistics.edgeCount,
