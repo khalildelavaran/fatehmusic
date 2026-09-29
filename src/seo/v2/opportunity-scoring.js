@@ -479,10 +479,19 @@ export function classifyOpportunityAction(item = {}) {
   const competition = item.cannibalization?.severity || item.competition?.severity || "NONE";
   const temporal = item.temporalCannibalization || null;
   const hasExistingTarget = Number(item.articleCount) > 0 || Boolean(item.existingArticleSlugs?.length);
+  const partialGscEvidence = item.gscDataQuality?.truncated === true;
   // Hard conflicts must be resolved before creation or link reinforcement.
-  // A current owner is not enough to justify LINK when the same query/topic is
-  // simultaneously in a severe conflict or has materially changed ownership
-  // across reporting windows.
+  // When the current GSC snapshot is partial, however, a merge recommendation
+  // based only on incomplete search evidence is too destructive. Surface the
+  // conflict for monitoring instead; once a complete snapshot arrives, the
+  // normal merge policy can act.
+  if (partialGscEvidence && (
+    competition === "HIGH" ||
+    (temporal?.severity === "HIGH" && temporal.actionable) ||
+    item.searchOwnership?.temporalOwnership?.highActionable
+  )) {
+    return "MONITOR";
+  }
   if (competition === "HIGH") return "MERGE_CONTENT";
   if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
   if (item.searchOwnership?.temporalOwnership?.highActionable) return "MERGE_CONTENT";
