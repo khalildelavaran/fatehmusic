@@ -1,4 +1,4 @@
-import { normalizeSemanticText, semanticTokens } from "./text.js";
+import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "./text.js";
 
 export const GENERIC_QUERY_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
@@ -17,15 +17,44 @@ export function queryTokens(value) {
   );
 }
 
+const BRAND_GENERIC_TOKENS = new Set([
+  "آموزش", "کلاس", "دوره", "موسیقی", "آموزشگاه", "academy", "music",
+  "ir", "www", "در", "شوشتر", "فاتح", "fateh"
+]);
+
 export function isBrandNavigationQuery(query) {
   const normalized = normalizeQuery(query);
   if (!normalized) return false;
 
-  return normalized === "fatehmusic.ir" ||
+  if (
+    normalized === "fatehmusic.ir" ||
     normalized === "www.fatehmusic.ir" ||
     normalized === "fateh music" ||
     normalized === "fateh music academy" ||
-    normalized === "آموزشگاه موسیقی فاتح";
+    normalized === "آموزشگاه موسیقی فاتح" ||
+    normalized === "آموزشگاه فاتح" ||
+    containsSemanticPhrase(normalized, "آموزشگاه موسیقی فاتح")
+  ) {
+    return true;
+  }
+
+  const tokens = semanticTokens(normalized);
+  const tokenSet = new Set(tokens);
+  const hasLatinBrandCore =
+    tokenSet.has("fatehmusic") ||
+    (tokenSet.has("fateh") && tokenSet.has("music"));
+  if (hasLatinBrandCore) {
+    return tokens.every((token) => BRAND_GENERIC_TOKENS.has(token));
+  }
+
+  const hasPersianBrandCore =
+    tokenSet.has("فاتح") &&
+    (tokenSet.has("آموزشگاه") || tokenSet.has("موسیقی"));
+  if (hasPersianBrandCore) {
+    return tokens.every((token) => BRAND_GENERIC_TOKENS.has(token));
+  }
+
+  return false;
 }
 
 export function isOwnershipEligibleQuery(query, minWords = 2) {
