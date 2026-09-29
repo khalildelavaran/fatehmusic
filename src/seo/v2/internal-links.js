@@ -56,7 +56,8 @@ function buildCandidateTokenIndex(pages = []) {
 
 function buildCandidatePool(source, pages, tokenIndex, {
     maxCandidates = 120,
-    fullScanThreshold = 160
+    fullScanThreshold = 160,
+    semanticGraph = null
 } = {}) {
     if (pages.length <= fullScanThreshold) return pages;
 
@@ -71,6 +72,27 @@ function buildCandidatePool(source, pages, tokenIndex, {
     for (const token of sourceTokens) {
         for (const page of tokenIndex.get(token) || []) {
             if (page?.url) selected.set(normalizeUrl(page.url), page);
+        }
+    }
+
+    // Large graphs cannot rely only on token overlap. Entity relationships can
+    // legitimately connect pages whose visible vocabulary is different, such
+    // as a course and its instructor. Pull direct graph neighbors into the
+    // candidate pool before applying the deterministic cap.
+    if (semanticGraph?.nodes?.length && semanticGraph?.edges?.length && source?.url) {
+        const sourceNode = semanticGraph.nodes.find(
+            (node) => normalizeUrl(node?.url) === normalizeUrl(source.url)
+        );
+        if (sourceNode?.id) {
+            for (const related of findRelatedEntities(semanticGraph, sourceNode.id, {
+                direction: "both",
+                limit: Math.max(20, Number(maxCandidates) || 120)
+            })) {
+                const relatedUrl = normalizeUrl(related.entity?.url);
+                if (!relatedUrl) continue;
+                const page = pages.find((candidate) => normalizeUrl(candidate?.url) === relatedUrl);
+                if (page?.url) selected.set(relatedUrl, page);
+            }
         }
     }
 
@@ -176,7 +198,9 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
     const allEdges = new Map();
     const candidateTokenIndex = buildCandidateTokenIndex(sourcePages);
     for (const page of sourcePages) {
-        const candidatePool = buildCandidatePool(page, sourcePages, candidateTokenIndex);
+        const candidatePool = buildCandidatePool(page, sourcePages, candidateTokenIndex, {
+            semanticGraph
+        });
         const plan = buildInternalLinkPlan({
             currentUrl: page.url,
             currentTitle: page.title,
