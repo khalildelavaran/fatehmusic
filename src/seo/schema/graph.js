@@ -10,7 +10,7 @@
 
 import { mergeEntityNodes } from "../geo/graph.js";
 import { compileKnowledgeGraphEdges } from "./compiler.js";
-import { validateSchemaTypes } from "./registry.js";
+import { validateSchemaTypes, validateSchemaContracts } from "./registry.js";
 
 /**
  * @param {Object[]} nodes
@@ -19,9 +19,13 @@ import { validateSchemaTypes } from "./registry.js";
 export function buildSchemaGraph(nodes = [], { knowledgeGraph = null } = {}) {
     const merged = mergeEntityNodes(nodes.filter(Boolean));
     const compiled = compileKnowledgeGraphEdges(merged, knowledgeGraph);
-    const validation = validateSchemaTypes(compiled);
-    if (!validation.valid) {
-        throw new Error("SCHEMA_REGISTRY_VALIDATION_FAILED: " + validation.errors.join(" | "));
+    const typeValidation = validateSchemaTypes(compiled);
+    if (!typeValidation.valid) {
+        throw new Error("SCHEMA_REGISTRY_VALIDATION_FAILED: " + typeValidation.errors.join(" | "));
+    }
+    const contractValidation = validateSchemaContracts(compiled);
+    if (!contractValidation.valid) {
+        throw new Error("SCHEMA_CONTRACT_VALIDATION_FAILED: " + contractValidation.errors.join(" | "));
     }
 
     return deepFreeze({
