@@ -1,4 +1,5 @@
-import { isBrandNavigationQuery } from "../helpers/query.js";
+import { isBrandNavigationQuery, querySemanticFeatureSet } from "../helpers/query.js";
+import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 import { classifySeoActionMeasurement } from "./action-attribution.js";
 
 /** @param {D1Database} db @param {{actionType:string,targetUrl?:string|null,targetSlug?:string|null,targetTitle?:string|null,targetPostId?:number|null,relatedCourseSlug?:string|null,recommendationScore?:number|null,status?:string,source?:string,notes?:string|null}} [options] */
@@ -107,6 +108,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
   const site = String(siteUrl).replace(/\/$/, "");
   const result = await db.prepare(
     "SELECT a.id AS action_id, " +
+    "a.target_title AS target_title, " +
     "g.query, g.impressions, g.clicks, g.position " +
     "FROM seo_action_log a " +
     "LEFT JOIN gsc_search_signals_v2 g ON " +
@@ -130,10 +132,16 @@ export async function syncPublishedSeoActionMeasurements(db, {
 
     const current = grouped.get(actionId) || {
       actionId,
+      targetTitle: row?.target_title || "",
       impressions: 0,
       clicks: 0,
       weightedPosition: 0,
-      positionImpressions: 0
+      positionImpressions: 0,
+      cohortImpressions: 0,
+      cohortClicks: 0,
+      cohortWeightedPosition: 0,
+      cohortPositionImpressions: 0,
+      cohortQueries: new Map()
     };
 
     // Use the canonical semantic Brand detector instead of a second SQL
@@ -148,6 +156,54 @@ export async function syncPublishedSeoActionMeasurements(db, {
         current.weightedPosition += impressions * position;
         current.positionImpressions += impressions;
       }
+      const normalizedQuery = normalizeSemanticText(row?.query || "");
+      const normalizedTarget = normalizeSemanticText(current.targetTitle || "");
+      const queryFeatures = querySemanticFeatureSet(normalizedQuery);
+      const targetFeatures = querySemanticFeatureSet(normalizedTarget);
+      let cohortMatched = false;
+      let cohortScore = 0;
+      if (normalizedQuery && normalizedTarget) {
+        if (
+          containsSemanticPhrase(normalizedQuery, normalizedTarget) ||
+          containsSemanticPhrase(normalizedTarget, normalizedQuery)
+        ) {
+          cohortMatched = true;
+          cohortScore = 1;
+        } else if (queryFeatures.size && targetFeatures.size) {
+          let shared = 0;
+          for (const feature of queryFeatures) {
+            if (targetFeatures.has(feature)) shared += 1;
+          }
+          if (shared > 0) {
+            const queryCoverage = shared / queryFeatures.size;
+            const targetCoverage = shared / targetFeatures.size;
+            const union = new Set([...queryFeatures, ...targetFeatures]).size;
+            const jaccard = union ? shared / union : 0;
+            cohortMatched = jaccard >= 0.5 || queryCoverage >= 0.75 || targetCoverage >= 0.75;
+            cohortScore = cohortMatched
+              ? Number(Math.max(jaccard, queryCoverage * 0.75 + targetCoverage * 0.25).toFixed(3))
+              : 0;
+          }
+        }
+      }
+      if (cohortMatched) {
+        current.cohortImpressions += impressions;
+        current.cohortClicks += clicks;
+        if (impressions > 0 && Number.isFinite(position) && position > 0) {
+          current.cohortWeightedPosition += impressions * position;
+          current.cohortPositionImpressions += impressions;
+        }
+        if (normalizedQuery) {
+          const existing = current.cohortQueries.get(normalizedQuery) || {
+            query: String(row?.query || "").trim(),
+            impressions: 0,
+            score: 0
+          };
+          existing.impressions += impressions;
+          existing.score = Math.max(existing.score, cohortScore);
+          current.cohortQueries.set(normalizedQuery, existing);
+        }
+      }
     }
 
     grouped.set(actionId, current);
@@ -155,15 +211,40 @@ export async function syncPublishedSeoActionMeasurements(db, {
 
   if (!grouped.size) return { measured: 0 };
 
-  const rows = [...grouped.values()].map((item) => ({
-    actionId: item.actionId,
-    impressions: item.impressions,
-    clicks: item.clicks,
-    ctr: item.impressions > 0 ? item.clicks / item.impressions : 0,
-    position: item.positionImpressions > 0
-      ? item.weightedPosition / item.positionImpressions
-      : null
-  }));
+  const rows = [...grouped.values()].map((item) => {
+    const cohortQueries = [...item.cohortQueries.values()]
+      .sort((a, b) => b.impressions - a.impressions || String(a.query).localeCompare(String(b.query), "fa"))
+      .slice(0, 20);
+    const cohortImpressions = item.cohortImpressions;
+    const cohortClicks = item.cohortClicks;
+    const cohortPosition = item.cohortPositionImpressions > 0
+      ? item.cohortWeightedPosition / item.cohortPositionImpressions
+      : null;
+    return {
+      actionId: item.actionId,
+      impressions: item.impressions,
+      clicks: item.clicks,
+      ctr: item.impressions > 0 ? item.clicks / item.impressions : 0,
+      position: item.positionImpressions > 0
+        ? item.weightedPosition / item.positionImpressions
+        : null,
+      metadata: JSON.stringify({
+        attributionModel: "PAGE_PLUS_QUERY_COHORT",
+        cohort: cohortImpressions > 0 ? {
+          queryCount: cohortQueries.length,
+          matchedQueries: cohortQueries.map((entry) => ({
+            query: entry.query,
+            impressions: entry.impressions,
+            matchScore: entry.score
+          })),
+          impressions: cohortImpressions,
+          clicks: cohortClicks,
+          ctr: cohortClicks / cohortImpressions,
+          position: cohortPosition
+        } : null
+      })
+    };
+  });
 
   // One multi-row upsert per bounded chunk keeps D1 statement/parameter usage
   // predictable while still recording zero-demand windows.
@@ -171,7 +252,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
   let measured = 0;
   for (let offset = 0; offset < rows.length; offset += CHUNK_SIZE) {
     const chunk = rows.slice(offset, offset + CHUNK_SIZE);
-    const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, 'google-search-console')").join(", ");
+    const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, 'google-search-console', ?)").join(", ");
     const sql =
       "INSERT INTO seo_action_measurements " +
       "(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
@@ -190,7 +271,8 @@ export async function syncPublishedSeoActionMeasurements(db, {
         item.impressions,
         item.clicks,
         item.ctr,
-        item.position
+        item.position,
+        item.metadata
       );
     }
 
@@ -217,7 +299,7 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
 
   const placeholders = actionRows.map(() => "?").join(",");
   const measurements = await db.prepare(
-    "SELECT action_id AS actionId, measured_at AS measuredAt, window_start AS windowStart, window_end AS windowEnd, impressions, clicks, ctr, position " +
+    "SELECT action_id AS actionId, measured_at AS measuredAt, window_start AS windowStart, window_end AS windowEnd, impressions, clicks, ctr, position, metadata " +
     "FROM seo_action_measurements WHERE action_id IN (" + placeholders + ") " +
     "AND window_start >= date('now', '-180 days') ORDER BY window_start DESC"
   ).bind(...actionRows.map((action) => action.id)).all();
@@ -237,10 +319,24 @@ export async function listSeoActions(db, { limit = 20 } = {}) {
     const previous = latest
       ? list.find((item) => String(item.windowEnd || "") < String(latest.windowStart || ""))
       : null;
+    const parseMetadata = (measurement) => {
+      if (!measurement?.metadata) return null;
+      try {
+        const parsed = JSON.parse(measurement.metadata);
+        return parsed && typeof parsed === "object" ? parsed : null;
+      } catch {
+        return null;
+      }
+    };
+    const latestCohort = parseMetadata(latest)?.cohort || null;
+    const previousCohort = parseMetadata(previous)?.cohort || null;
     return {
       ...action,
       latest,
       previous,
+      latestCohort,
+      previousCohort,
+      cohortOutcome: classifySeoActionMeasurement(latestCohort, previousCohort),
       ctrDelta: latest && previous ? Number(latest.ctr) - Number(previous.ctr) : null,
       positionDelta: latest && previous && latest.position != null && previous.position != null
         ? Number(latest.position) - Number(previous.position)
