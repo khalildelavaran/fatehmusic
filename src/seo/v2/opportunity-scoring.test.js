@@ -238,6 +238,39 @@ describe("opportunity scoring", () => {
   });
 
 
+  it("caps evidence strength when GSC is partial or stale", () => {
+    const partial = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 100,
+      searchSignal: { available: true, impressions: 2000, position: 6, ctr: 0.01 },
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 },
+      gscDataQuality: { truncated: true, freshness: "FRESH" }
+    });
+    const stale = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 100,
+      searchSignal: { available: true, impressions: 2000, position: 6, ctr: 0.01 },
+      marketSignal: { available: true, estimatedVolume: 500, difficulty: 20 },
+      gscDataQuality: { truncated: false, freshness: "STALE" }
+    });
+
+    expect(partial.decisionConfidence).toBeLessThanOrEqual(78);
+    expect(stale.decisionConfidence).toBeLessThanOrEqual(72);
+  });
+
+  it("caps evidence strength when no independent provider is present", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 100,
+      gapDetected: true,
+      intentConfidence: 0.99,
+      searchSignal: { available: false }
+    });
+
+    expect(result.decisionConfidence).toBeLessThanOrEqual(68);
+  });
+
+
   it("uses market demand and difficulty when Ahrefs data is available", () => {
     const withoutMarket = scoreOpportunity({
       title: "آموزش گیتار",
