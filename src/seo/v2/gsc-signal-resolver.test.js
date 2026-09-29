@@ -690,3 +690,54 @@ describe("position-aware CTR benchmarking", () => {
   });
 });
 
+
+
+describe("GSC query semantic precision", () => {
+  it("does not attach a long-tail query when only one of several substantive concepts matches", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "گیتار کودک و نوجوان",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 80,
+        clicks: 4,
+        position: 8
+      }
+    ]);
+
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], index);
+
+    expect(result[0].searchSignal.available).toBe(false);
+    expect(result[0].searchOwnership.matchType).toBe("RELATED");
+  });
+
+  it("keeps a query when most of its substantive concepts match the target", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "آموزش گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 80,
+        clicks: 4,
+        position: 8
+      }
+    ]);
+
+    const result = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "آموزش گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar"
+      }
+    ], index);
+
+    expect(result[0].searchSignal.available).toBe(true);
+    expect(result[0].searchSignal.impressions).toBe(80);
+  });
+});
