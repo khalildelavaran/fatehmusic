@@ -1,17 +1,12 @@
 import { courseEntityId } from "../../geo/entity.js";
 import { INTENT_PRIORITY, INTENT_SUFFIX } from "./policy.js";
-import { normalizeSemanticText } from "../../helpers/text.js";
 import {
   findTopic,
   isShushtarTopic,
   localTopicName,
-  normalizeBaseUrl
 } from "./resolvers.js";
 import { canonicalSlug, slugifyArticleTitle } from "./slug.js";
 
-function normalize(value) {
-  return normalizeSemanticText(value);
-}
 
 export function buildTitle(topic, intent, course) {
   const name = localTopicName(topic);
@@ -121,4 +116,3 @@ export function makeCourseRef(course, baseUrl) {
     : null;
 }
 
-export { normalizeBaseUrl, normalize };
