@@ -2,7 +2,7 @@
 
 import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens, querySemanticDimensions } from "../helpers/query.js";
 import { normalizeUrl } from "../helpers/url.js";
-import { containsSemanticPhrase } from "../helpers/text.js";
+import { containsSemanticPhrase, semanticTokens } from "../helpers/text.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 
@@ -305,29 +305,69 @@ function candidatePrimaryTopic(item = {}) {
   return normalizeText(item?.topicName || "");
 }
 
-function queryHasCompetingSpecificTopics(query, candidateTopic = "") {
-  const specificTopics = resolveTopics({
-    title: query,
-    keywords: [query],
+function specificTopicsForText(value) {
+  return resolveTopics({
+    title: value,
+    keywords: [value],
     path: ""
   })
-    .filter((topic) => topic.slug !== "music-education" && topic.slug !== "shushtar");
+    .filter((topic) => topic.slug !== "music-education" && topic.slug !== "shushtar")
+    .map((topic) => topic.slug);
+}
 
-  if (!specificTopics.length) return false;
-  if (!candidateTopic) return specificTopics.length > 1;
-  return specificTopics.length > 1;
+function candidateSpecificTopicSlugs(item = {}) {
+  return [...new Set(
+    specificTopicsForText(candidateSemanticText(item))
+  )];
+}
+
+function isComparisonQuery(query, specificTopics = []) {
+  if (specificTopics.length < 2) return false;
+  const dimensions = querySemanticDimensions(query);
+  if (dimensions.modifierFamilies.includes("comparison")) return true;
+  return semanticTokens(query).includes("یا");
+}
+
+function queryHasCompetingSpecificTopics(query, item = {}) {
+  const specificTopics = specificTopicsForText(query);
+  if (specificTopics.length <= 1) return false;
+
+  // Multi-subject queries are valid evidence for a comparison asset when the
+  // candidate itself represents the complete subject set. A guitar page must
+  // not, however, inherit a "guitar or piano" query merely because one topic
+  // overlaps.
+  const candidateTopics = candidateSpecificTopicSlugs(item);
+  if (!isComparisonQuery(query, specificTopics)) return true;
+  if (candidateTopics.length < 2) return true;
+
+  const candidateTopicSet = new Set(candidateTopics);
+  return !specificTopics.every((topic) => candidateTopicSet.has(topic));
 }
 
 function queryTopicAlignment(item, query, cache = null) {
   const candidateTopic = candidatePrimaryTopic(item);
-  if (!candidateTopic) return false;
   const normalizedQuery = normalizeText(query);
-  const cacheKey = candidateTopic + "|" + normalizedQuery;
+  if (!normalizedQuery) return false;
+
+  const cacheKey = normalizeText(candidateSemanticText(item)) + "|" + normalizedQuery;
   if (cache?.has(cacheKey)) return cache.get(cacheKey);
-  const aligned = containsSemanticPhrase(normalizedQuery, candidateTopic) &&
-    !queryHasCompetingSpecificTopics(normalizedQuery, candidateTopic);
-  cache?.set(cacheKey, aligned);
-  return aligned;
+
+  const specificTopics = specificTopicsForText(normalizedQuery);
+  const isComparisonCandidate = candidateSpecificTopicSlugs(item).length >= 2;
+
+  let aligned = false;
+  if (specificTopics.length > 1) {
+    aligned =
+      isComparisonQuery(normalizedQuery, specificTopics) &&
+      isComparisonCandidate &&
+      specificTopics.every((topic) => candidateSpecificTopicSlugs(item).includes(topic));
+  } else if (candidateTopic) {
+    aligned = containsSemanticPhrase(normalizedQuery, candidateTopic);
+  }
+
+  const finalAlignment = aligned && !queryHasCompetingSpecificTopics(normalizedQuery, item);
+  cache?.set(cacheKey, finalAlignment);
+  return finalAlignment;
 }
 
 function queryMatches(item, query, cache = null) {
@@ -460,7 +500,14 @@ function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null) 
 }
 
 function relevantQueryRows(index, item) {
-  const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
+  const haystack = normalizeText([
+    item.title,
+    item.topicName,
+    item.topic,
+    item.course?.title,
+    ...(item.queryAngles || []),
+    ...(item.marketQueryAngles || [])
+  ].filter(Boolean).join(" | "));
   const candidateTokens = tokens(haystack);
   if (!candidateTokens.size || !index.queryTokenRows) return [];
   const seen = new Set();
@@ -482,14 +529,13 @@ function relevantQueryRows(index, item) {
 }
 
 function isExactQueryMatch(item, query) {
-  const haystack = normalizeText([
-    item?.title,
-    item?.topicName,
-    item?.topic,
-    item?.course?.title
-  ].filter(Boolean).join(" | "));
+  const haystack = normalizeText(candidateSemanticText(item));
   const normalizedQuery = normalizeText(query);
-  return Boolean(haystack && normalizedQuery && containsSemanticPhrase(haystack, normalizedQuery));
+  return Boolean(
+    haystack &&
+    normalizedQuery &&
+    containsSemanticPhrase(haystack, normalizedQuery)
+  );
 }
 
 function buildQueryOwnership(querySignals = [], item = {}) {
