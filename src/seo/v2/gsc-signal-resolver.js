@@ -433,10 +433,9 @@ function buildQueryOwnership(querySignals = [], item = {}) {
   });
 }
 
-export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 500 } = {}) {
+export function buildQueryOwnershipMapWithMeta(rows = [], { minImpressions = 1, limit = 500 } = {}) {
   const queryPages = new Map();
   const queryStats = new Map();
-
   const displayQueries = new Map();
 
   for (const row of rows) {
@@ -464,57 +463,68 @@ export function buildQueryOwnershipMap(rows = [], { minImpressions = 1, limit = 
     }
   }
 
-  return Object.freeze(
-    [...queryPages.entries()]
-      .map(([query, pages]) => {
-        const aggregatedImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
-        if (aggregatedImpressions < Math.max(1, Number(minImpressions) || 1)) return null;
-        const totalImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
-        const rankedPages = [...pages.entries()]
-          .map(([page, impressions]) => ({
-            page,
-            impressions,
-            share: totalImpressions ? impressions / totalImpressions : 0,
-            shareInterval95: wilsonInterval(impressions, totalImpressions)
-          }))
-          .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
-          .slice(0, 5);
+  const eligibleQueries = [...queryPages.entries()]
+    .map(([query, pages]) => {
+      const aggregatedImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
+      if (aggregatedImpressions < Math.max(1, Number(minImpressions) || 1)) return null;
 
-        return Object.freeze({
-          query,
-          displayQuery: displayQueries.get(query)?.value || query,
-          impressions: totalImpressions,
-          clicks: queryStats.get(query)?.clicks || 0,
-          ctr: totalImpressions ? (queryStats.get(query)?.clicks || 0) / totalImpressions : 0,
-          position: queryStats.get(query)?.impressions
-            ? queryStats.get(query).weightedPosition / queryStats.get(query).impressions
-            : null,
-          pageCount: pages.size,
-          topPage: rankedPages[0]?.page || null,
-          topShare: rankedPages[0]?.share || 0,
-          ownerStatus: !rankedPages.length
-            ? "NO_OWNER"
-            : totalImpressions < 20
-              ? "EMERGING"
-              : (rankedPages[0]?.share || 0) >= 0.7
-                ? "STABLE"
-                : "SPLIT",
-          ownerShareInterval95: rankedPages[0]?.shareInterval95 || null,
-          ownerShareLower95: rankedPages[0]?.shareInterval95?.lower ?? null,
-          ownerDominanceEvidence:
-            rankedPages[0]?.shareInterval95?.lower >= 0.5 ? "STRONG" :
-            rankedPages[0]?.shareInterval95?.lower >= 0.35 ? "MODERATE" :
-            "WEAK",
-          signalQuality: querySignalQuality(totalImpressions),
-          pages: Object.freeze(rankedPages)
-        });
-      })
-      .filter(Boolean)
-      .sort((a, b) => b.impressions - a.impressions || a.query.localeCompare(b.query))
-      .slice(0, Math.max(1, limit))
-  );
+      const totalImpressions = aggregatedImpressions;
+      const rankedPages = [...pages.entries()]
+        .map(([page, impressions]) => ({
+          page,
+          impressions,
+          share: totalImpressions ? impressions / totalImpressions : 0,
+          shareInterval95: wilsonInterval(impressions, totalImpressions)
+        }))
+        .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
+        .slice(0, 5);
+
+      return Object.freeze({
+        query,
+        displayQuery: displayQueries.get(query)?.value || query,
+        impressions: totalImpressions,
+        clicks: queryStats.get(query)?.clicks || 0,
+        ctr: totalImpressions ? (queryStats.get(query)?.clicks || 0) / totalImpressions : 0,
+        position: queryStats.get(query)?.impressions
+          ? queryStats.get(query).weightedPosition / queryStats.get(query).impressions
+          : null,
+        pageCount: pages.size,
+        topPage: rankedPages[0]?.page || null,
+        topShare: rankedPages[0]?.share || 0,
+        ownerStatus: !rankedPages.length
+          ? "NO_OWNER"
+          : totalImpressions < 20
+            ? "EMERGING"
+            : (rankedPages[0]?.share || 0) >= 0.7
+              ? "STABLE"
+              : "SPLIT",
+        ownerShareInterval95: rankedPages[0]?.shareInterval95 || null,
+        ownerShareLower95: rankedPages[0]?.shareInterval95?.lower ?? null,
+        ownerDominanceEvidence:
+          rankedPages[0]?.shareInterval95?.lower >= 0.5 ? "STRONG" :
+          rankedPages[0]?.shareInterval95?.lower >= 0.35 ? "MODERATE" :
+          "WEAK",
+        signalQuality: querySignalQuality(totalImpressions),
+        pages: Object.freeze(rankedPages)
+      });
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.impressions - a.impressions || a.query.localeCompare(b.query));
+
+  const safeLimit = Math.max(1, Number(limit) || 500);
+  const items = eligibleQueries.slice(0, safeLimit);
+
+  return Object.freeze({
+    items: Object.freeze(items),
+    totalCount: eligibleQueries.length,
+    limit: safeLimit,
+    truncated: eligibleQueries.length > safeLimit
+  });
 }
 
+export function buildQueryOwnershipMap(rows = [], options = {}) {
+  return buildQueryOwnershipMapWithMeta(rows, options).items;
+}
 
 function queryClusterKey(query) {
   const tokens = [...queryTokens(query)].sort();
