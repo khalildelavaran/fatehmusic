@@ -3,7 +3,9 @@ import {
   isBrandNavigationQuery,
   isOwnershipEligibleQuery,
   normalizeQuery,
-  queryTokens
+  queryTokens,
+  querySemanticDimensions,
+  querySemanticFeatureSet
 } from "./query.js";
 
 describe("semantic query layer", () => {
@@ -29,5 +31,24 @@ describe("semantic query layer", () => {
     expect(isOwnershipEligibleQuery("آموزش گیتار")).toBe(true);
     expect(isOwnershipEligibleQuery("گیتار")).toBe(false);
     expect(isOwnershipEligibleQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(false);
+  });
+});
+
+
+describe("semantic modifier ontology", () => {
+  it("maps pricing synonyms to the same semantic family", () => {
+    expect(querySemanticDimensions("قیمت کلاس گیتار").modifierFamilies).toEqual(["pricing"]);
+    expect(querySemanticDimensions("هزینه گیتار").modifierFamilies).toEqual(["pricing"]);
+    expect([...querySemanticFeatureSet("قیمت کلاس گیتار")]).toEqual(
+      expect.arrayContaining(["گیتار", "mod:pricing"])
+    );
+    expect([...querySemanticFeatureSet("هزینه گیتار")]).toEqual(
+      expect.arrayContaining(["گیتار", "mod:pricing"])
+    );
+  });
+
+  it("keeps local scope explicit", () => {
+    expect(querySemanticFeatureSet("کلاس گیتار شوشتر").has("scope:local")).toBe(true);
+    expect(querySemanticFeatureSet("کلاس گیتار").has("scope:local")).toBe(false);
   });
 });
