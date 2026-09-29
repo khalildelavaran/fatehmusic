@@ -51,8 +51,9 @@ export async function getRecentSearchConsoleRows(db, siteUrl = DEFAULT_SITE_URL,
 export async function getLatestGscSyncRun(db, siteUrl = DEFAULT_SITE_URL) {
   if (!db) return null;
   const row = await db.prepare(
-    "SELECT id, site_url AS siteUrl, start_date AS startDate, end_date AS endDate, status, rows_received AS rowsReceived, rows_stored AS rowsStored, truncated, started_at AS startedAt, finished_at AS finishedAt, error_message AS errorMessage " +
-    "FROM gsc_sync_runs WHERE site_url = ? ORDER BY started_at DESC LIMIT 1"
+    "SELECT r.id, r.site_url AS siteUrl, r.start_date AS startDate, r.end_date AS endDate, r.status, r.rows_received AS rowsReceived, r.rows_stored AS rowsStored, r.truncated, r.started_at AS startedAt, r.finished_at AS finishedAt, r.error_message AS errorMessage, " +
+    "(SELECT MAX(s.synced_at) FROM gsc_search_signals_v2 s WHERE s.site_url = r.site_url AND s.snapshot_label = 'current') AS snapshotSyncedAt " +
+    "FROM gsc_sync_runs r WHERE r.site_url = ? ORDER BY r.started_at DESC LIMIT 1"
   ).bind(site(siteUrl)).first();
   return row || null;
 }
