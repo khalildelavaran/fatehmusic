@@ -125,14 +125,15 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     },
     { courses, instructors }
   );
+  const currentGscRows = currentScoringRows(gscRows);
+  const gscIndex = buildGscSignalIndex(currentGscRows);
+
   const graphNodeMap = new Map();
   for (const node of [...siteNodes, ...articleNodes]) {
     if (!node?.url || graphNodeMap.has(node.url)) continue;
     graphNodeMap.set(node.url, node);
   }
   const pageNodes = [...graphNodeMap.values()];
-  const currentGscRows = currentScoringRows(gscRows);
-  const gscIndex = buildGscSignalIndex(currentGscRows);
   const cannibalization = search.cannibalization || [];
   const semanticCannibalization = search.semanticCannibalization || [];
   const temporalCannibalization = search.temporalCannibalization || [];
@@ -148,7 +149,10 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     posts
   });
   const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
-  const semanticLinks = buildLinkGraph(pageNodes, { semanticGraph: knowledgeGraph });
+  const semanticLinks = buildLinkGraph(pageNodes, {
+    semanticGraph: knowledgeGraph,
+    gscSignals: gscIndex.byPageNonBrand
+  });
 
   return Object.freeze({
     cluster,
