@@ -118,3 +118,23 @@ describe("GSC position validation", () => {
     expect(zeroPosition.scoreBreakdown.keywordSignal).toBeLessThan(lowRank.scoreBreakdown.keywordSignal + 1);
   });
 });
+
+
+
+describe("token-boundary local relevance", () => {
+  it("does not match a local anchor inside a larger token", () => {
+    const scored = scoreCandidate(
+      candidate("آموزگار شوشتران جوان"),
+      emptyContext
+    );
+    expect(scored.scoreBreakdown.localRelevance).toBe(5);
+  });
+
+  it("matches a standalone local anchor", () => {
+    const scored = scoreCandidate(
+      candidate("کلاس گیتار در شوشتر"),
+      emptyContext
+    );
+    expect(scored.scoreBreakdown.localRelevance).toBe(12);
+  });
+});
