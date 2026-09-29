@@ -10,7 +10,6 @@
  */
 
 import { normalizeQuery, isBrandNavigationQuery } from "../helpers/query.js";
-import { normalizeSemanticText } from "../helpers/text.js";
 import { slugifyArticleTitle } from "./content-strategy/slug.js";
 
 const DEFAULT_SITE = "https://fatehmusic.ir";
@@ -21,7 +20,7 @@ const DEFAULT_GSC_OWNERSHIP_LIMIT = 120;
 const DEFAULT_MARKET_LIMIT = 12;
 const DEFAULT_ACTION_LIMIT = 8;
 
-function siteUrl(value) {
+function normalizeSiteUrl(value) {
   return String(value || DEFAULT_SITE).replace(/\/$/, "");
 }
 
@@ -287,7 +286,7 @@ export async function getSeoDashboardIntelligence({
   marketLimit = DEFAULT_MARKET_LIMIT,
   actionLimit = DEFAULT_ACTION_LIMIT
 } = {}) {
-  const baseUrl = siteUrl(siteUrl);
+  const baseUrl = normalizeSiteUrl(siteUrl);
   if (!db) {
     return Object.freeze({
       mode: "READ_MODEL",
@@ -319,7 +318,7 @@ export async function getSeoDashboardIntelligence({
   const safeMarketLimit = Math.max(1, Math.min(Number(marketLimit) || DEFAULT_MARKET_LIMIT, 30));
   const safeActionLimit = Math.max(1, Math.min(Number(actionLimit) || DEFAULT_ACTION_LIMIT, 20));
 
-  const [topicResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, keywordsResult, actionResult] = await Promise.all([
+  const [topicResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, keywordsResult] = await Promise.all([
     db.prepare(
       "SELECT id, title, normalized_key, instrument_key, related_course_slug, related_course_title, category, audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, created_at, updated_at " +
       "FROM content_topics WHERE status IN ('approved','candidate') ORDER BY score_total DESC, created_at DESC LIMIT ?"
@@ -358,10 +357,6 @@ export async function getSeoDashboardIntelligence({
       "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
       "WHERE source='ahrefs' AND snapshot_type='organic-keywords' ORDER BY snapshot_date DESC LIMIT 1"
     ).first(),
-    db.prepare(
-      "SELECT id, action_type AS actionType, target_url, target_slug, target_title, recommendation_score, status, source, created_at, updated_at, published_at " +
-      "FROM seo_action_log ORDER BY updated_at DESC LIMIT ?"
-    ).bind(safeActionLimit).all()
   ]);
 
   const topics = Array.isArray(topicResult.results) ? topicResult.results : [];
@@ -448,7 +443,7 @@ export async function getSeoDashboardIntelligence({
         ? { available: true, ...matchedSearch, matchedQueries: [matchedSearch.displayQuery], matchedPages: searchOwner?.pages?.map((item) => item.page) || [] }
         : null,
       searchOwnership: searchOwner,
-      marketSignal: marketKeywords.length > 0 ? { available: true, estimatedVolume: Number(marketKeywords[0]?.volume || 0), source: "ahrefs" } : null,
+      marketSignal: (() => {\n        const normalizedTitle = normalizeQuery(title);\n        const market = marketKeywords.find((candidate) => normalizeQuery(candidate?.keyword) === normalizedTitle);\n        return market ? { available: true, estimatedVolume: Number(market.volume || 0), difficulty: market.keyword_difficulty == null ? null : Number(market.keyword_difficulty), source: "ahrefs", matchedKeyword: market.keyword } : null;\n      })(),
       marketDataQuality: {
         freshness: freshnessFromAge(ageDays(keywordsResult?.fetchedAt), 8, 16)
       },
@@ -467,7 +462,6 @@ export async function getSeoDashboardIntelligence({
   const marketFreshness = freshnessFromAge(marketAge, 8, 16);
   const gscConnected = byQueryNonBrand.size > 0 || byPageNonBrand.size > 0;
 
-  const previousMetrics = actionResult?.results || [];
   const evidenceAverage = opportunities.length
     ? Math.round(opportunities.reduce((sum, item) => sum + Number(item.evidenceStrengthScore || 0), 0) / opportunities.length)
     : 0;
@@ -487,7 +481,7 @@ export async function getSeoDashboardIntelligence({
     latestGscSync: syncResult || null,
     gsc: Object.freeze({
       connected: gscConnected,
-      signalRowCount: (queryResult.results || []).length,
+      signalRowCount: Math.max((queryResult.results || []).length, (pageResult.results || []).length),
       index: {
         byQueryNonBrand,
         byPageNonBrand
