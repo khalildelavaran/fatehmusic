@@ -159,3 +159,39 @@ describe("GSC page URL canonicalization", () => {
     expect(page.position).toBeCloseTo((20 * 6 + 10 * 4) / 30);
   });
 });
+
+
+describe("GSC effective snapshot freshness", () => {
+  it("returns the latest live current-snapshot timestamp, not an empty sync completion time", async () => {
+    let sql = "";
+    const db = {
+      prepare(statement) {
+        sql = statement;
+        return {
+          bind() {
+            return {
+              async first() {
+                return {
+                  id: 99,
+                  siteUrl: "https://fatehmusic.ir",
+                  status: "success",
+                  rowsReceived: 0,
+                  rowsStored: 0,
+                  truncated: 0,
+                  finishedAt: "2026-09-29 08:00:00",
+                  snapshotSyncedAt: "2026-09-25 08:00:00"
+                };
+              }
+            };
+          }
+        };
+      }
+    };
+
+    const run = await (await import("./search-console-store.js")).getLatestGscSyncRun(db);
+
+    expect(sql).toContain("MAX(s.synced_at)");
+    expect(run.snapshotSyncedAt).toBe("2026-09-25 08:00:00");
+    expect(run.finishedAt).toBe("2026-09-29 08:00:00");
+  });
+});
