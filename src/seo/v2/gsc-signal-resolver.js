@@ -317,15 +317,19 @@ function queryHasCompetingSpecificTopics(query, candidateTopic = "") {
   return specificTopics.length > 1;
 }
 
-function queryTopicAlignment(item, query) {
+function queryTopicAlignment(item, query, cache = null) {
   const candidateTopic = candidatePrimaryTopic(item);
   if (!candidateTopic) return false;
   const normalizedQuery = normalizeText(query);
-  return containsSemanticPhrase(normalizedQuery, candidateTopic) &&
+  const cacheKey = candidateTopic + "|" + normalizedQuery;
+  if (cache?.has(cacheKey)) return cache.get(cacheKey);
+  const aligned = containsSemanticPhrase(normalizedQuery, candidateTopic) &&
     !queryHasCompetingSpecificTopics(normalizedQuery, candidateTopic);
+  cache?.set(cacheKey, aligned);
+  return aligned;
 }
 
-function queryMatches(item, query) {
+function queryMatches(item, query, cache = null) {
   const haystack = normalizeText(candidateSemanticText(item));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return false;
@@ -349,7 +353,7 @@ function queryMatches(item, query) {
     queryTokenCount <= 3 &&
     coverage.queryCoverage >= (queryTokenCount === 2 ? 0.50 : 0.34) &&
     coverage.overlap >= 0.25 &&
-    queryTopicAlignment(item, normalizedQuery)
+    queryTopicAlignment(item, normalizedQuery, cache)
   ) {
     return true;
   }
@@ -357,7 +361,7 @@ function queryMatches(item, query) {
   return false;
 }
 
-function queryRelevanceScore(item, query) {
+function queryRelevanceScore(item, query, cache = null) {
   const haystack = normalizeText(candidateSemanticText(item));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return 0;
@@ -369,7 +373,7 @@ function queryRelevanceScore(item, query) {
     coverage.queryCoverage * 35 +
     coverage.targetCoverage * 15;
 
-  if (queryTopicAlignment(item, normalizedQuery)) score += 18;
+  if (queryTopicAlignment(item, normalizedQuery, cache)) score += 18;
 
   const targetIntent = String(item?.searchIntent || item?.intent || "").trim().toLowerCase();
   if (targetIntent) {
@@ -388,7 +392,7 @@ function queryRelevanceScore(item, query) {
   return score;
 }
 
-function buildGscQueryIntentEvidence(rows = [], opportunity = {}) {
+function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null) {
   const byQuery = new Map();
   for (const row of rows) {
     const query = normalizeText(row?.query);
@@ -406,7 +410,7 @@ function buildGscQueryIntentEvidence(rows = [], opportunity = {}) {
   for (const item of byQuery.values()) {
     const result = classifyIntent({ title: item.query });
     const primary = result.primary;
-    const relevance = Math.max(0, Math.min(1, queryRelevanceScore(opportunity, item.query) / 100));
+    const relevance = Math.max(0, Math.min(1, queryRelevanceScore(opportunity, item.query, cache) / 100));
     if (relevance < 0.34) continue;
     const weight = item.impressions * relevance;
     distribution.set(primary, (distribution.get(primary) || 0) + weight);
@@ -834,6 +838,7 @@ function classifySearchOpportunity(signal) {
 
 export function resolveOpportunitySearchSignals(opportunities = [], index) {
   if (!index) return opportunities;
+  const queryTopicAlignmentCache = new Map();
   return opportunities.map((item) => {
     const pageSignals = item.action === "NEW_CONTENT"
       ? []
@@ -848,13 +853,13 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
     const querySignals = matchedQueryRows
       .slice()
       .sort((a, b) => {
-        const relevanceDelta = queryRelevanceScore(item, b?.query) - queryRelevanceScore(item, a?.query);
+        const relevanceDelta = queryRelevanceScore(item, b?.query, queryTopicAlignmentCache) - queryRelevanceScore(item, a?.query, queryTopicAlignmentCache);
         if (relevanceDelta !== 0) return relevanceDelta;
         return Number(b.impressions || 0) - Number(a.impressions || 0);
       })
       .slice(0, 20);
     const relevantQuerySignal = aggregate(querySignals, index.ctrBenchmarks || {});
-    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows, item);
+    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows, item, queryTopicAlignmentCache);
     if (queryIntentEvidence) {
       relevantQuerySignal.queryIntentEvidence = queryIntentEvidence;
     }
