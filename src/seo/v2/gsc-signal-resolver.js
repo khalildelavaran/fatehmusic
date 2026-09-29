@@ -241,13 +241,43 @@ function getCandidatePages(item) {
   return [item.url, item.targetEntity?.url].filter(Boolean).map(normalizeUrl);
 }
 
+function queryCoverage(haystack, normalizedQuery) {
+  const targetTokens = tokens(haystack);
+  const queryTokenSet = tokens(normalizedQuery);
+  if (!targetTokens.size || !queryTokenSet.size) {
+    return { exact: 0, queryCoverage: 0, targetCoverage: 0, overlap: 0 };
+  }
+
+  let shared = 0;
+  for (const token of queryTokenSet) {
+    if (targetTokens.has(token)) shared += 1;
+  }
+
+  return {
+    exact: phraseIncludes(haystack, normalizedQuery) ? 1 : 0,
+    queryCoverage: shared / queryTokenSet.size,
+    targetCoverage: shared / targetTokens.size,
+    overlap: shared / new Set([...targetTokens, ...queryTokenSet]).size
+  };
+}
+
 function queryMatches(item, query) {
   const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return false;
-  const exact = phraseIncludes(haystack, normalizedQuery) ? 1 : 0;
-  const overlap = jaccard(tokens(haystack), tokens(normalizedQuery));
-  return exact === 1 || overlap >= 0.25;
+
+  const coverage = queryCoverage(haystack, normalizedQuery);
+  if (coverage.exact === 1) return true;
+
+  // One substantive token can still represent a useful query signal, but
+  // multi-token queries must have most of their concept represented by the
+  // target. This prevents a single shared token from pulling unrelated
+  // long-tail queries into an opportunity.
+  const queryTokenCount = tokens(normalizedQuery).size;
+  if (queryTokenCount === 1) return coverage.queryCoverage === 1;
+  return coverage.queryCoverage >= 0.67 &&
+    coverage.targetCoverage >= 0.34 &&
+    coverage.overlap >= 0.34;
 }
 
 function queryRelevanceScore(item, query) {
@@ -260,9 +290,12 @@ function queryRelevanceScore(item, query) {
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return 0;
 
-  const exact = phraseIncludes(haystack, normalizedQuery) ? 1 : 0;
-  const overlap = jaccard(tokens(haystack), tokens(normalizedQuery));
-  let score = exact * 100 + overlap * 50;
+  const coverage = queryCoverage(haystack, normalizedQuery);
+  const exact = coverage.exact;
+  const overlap = coverage.overlap;
+  let score = exact * 100 + overlap * 50 +
+    coverage.queryCoverage * 35 +
+    coverage.targetCoverage * 15;
 
   const targetIntent = String(item?.searchIntent || item?.intent || "").trim().toLowerCase();
   if (targetIntent) {
