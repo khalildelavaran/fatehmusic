@@ -1,7 +1,8 @@
 /** Resolve GSC query/page rows into actionable SEO/GEO search intelligence. */
 
-import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
+import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens, querySemanticDimensions } from "../helpers/query.js";
 import { normalizeUrl } from "../helpers/url.js";
+import { containsSemanticPhrase } from "../helpers/text.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 
@@ -282,7 +283,7 @@ function queryCoverage(haystack, normalizedQuery) {
   }
 
   return {
-    exact: phraseIncludes(haystack, normalizedQuery) ? 1 : 0,
+    exact: containsSemanticPhrase(haystack, normalizedQuery) ? 1 : 0,
     queryCoverage: shared / queryTokenSet.size,
     targetCoverage: shared / targetTokens.size,
     overlap: shared / new Set([...targetTokens, ...queryTokenSet]).size
@@ -488,7 +489,7 @@ function isExactQueryMatch(item, query) {
     item?.course?.title
   ].filter(Boolean).join(" | "));
   const normalizedQuery = normalizeText(query);
-  return Boolean(haystack && normalizedQuery && phraseIncludes(haystack, normalizedQuery));
+  return Boolean(haystack && normalizedQuery && containsSemanticPhrase(haystack, normalizedQuery));
 }
 
 function buildQueryOwnership(querySignals = [], item = {}) {
@@ -686,11 +687,11 @@ function buildQuerySemanticProfile(query, cache = null) {
   const hasLocalScope = topics.some((topic) => topic.slug === "shushtar");
   const intent = classifyIntent({ title: query }).primary || "informational";
   const scope = hasLocalScope ? "local" : "global";
-  const fallbackTokens = [...queryTokens(query)].sort();
-  // Keep topic identity, but do not discard meaningful modifiers that carry
-  // subtopic intent. Without this residual token layer, queries such as
-  // «راهنمای گیتار» and «تاریخچه گیتار» collapse into the same cluster simply
-  // because both resolve to the guitar topic and informational intent.
+  const semanticDimensions = querySemanticDimensions(query);
+  const fallbackTokens = [...semanticDimensions.substantiveTokens];
+  // Preserve topic identity, high-value modifier families and meaningful
+  // residual tokens. Thus «قیمت گیتار» and «هزینه گیتار» cluster together,
+  // while «راهنمای گیتار» and «تاریخچه گیتار» remain distinct.
   const topicFeatureTokens = new Set(
     topics.flatMap((topic) => [
       topic.name,
@@ -702,8 +703,11 @@ function buildQuerySemanticProfile(query, cache = null) {
   const residualTokens = fallbackTokens
     .filter((token) => !topicFeatureTokens.has(token))
     .slice(0, 6);
+  const modifierFeatures = semanticDimensions.modifierFamilies
+    .map((family) => "mod:" + family);
   const semanticFeatures = [
     ...topicSlugs,
+    ...modifierFeatures,
     ...residualTokens.map((token) => "token:" + token)
   ];
   const subjectSource = topicSlugs.length && residualTokens.length
@@ -725,6 +729,7 @@ function buildQuerySemanticProfile(query, cache = null) {
     scope,
     intent,
     subjects: Object.freeze(topicSlugs),
+    modifierFamilies: Object.freeze(semanticDimensions.modifierFamilies),
     semanticFeatures: Object.freeze(semanticFeatures),
     subjectSource
   });
