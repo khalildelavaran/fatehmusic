@@ -313,8 +313,32 @@ describe("buildSEOIntelligence", () => {
     expect(result.summary.semanticTemporalCannibalizationActionableCount).toBe(1);
   });
 
-});
+  it("handles compatible market intent against an existing same-topic asset", () => {
+    const result = buildSEOIntelligence({
+      courses: [{ slug: "guitar-course", title: "آموزش گیتار", instrument: "guitar" }],
+      posts: [],
+      topicCandidates: [{
+        title: "راهنمای انتخاب دوره گیتار",
+        intent: "commercial",
+        modifierType: "best",
+        relatedCourseSlug: "guitar-course",
+        scoreTotal: 70
+      }],
+      marketKeywordRows: [{
+        keyword: "کلاس گیتار مناسب مبتدی",
+        volume_monthly: 250,
+        keyword_difficulty: 30,
+        best_position: null
+      }],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
 
+    expect(areIntentsCompatible("commercial", "transactional")).toBe(true);
+    expect(result.opportunities.length).toBeGreaterThan(0);
+  });
+
+});
 
 describe("market-driven opportunity discovery", () => {
   it("turns an uncovered Ahrefs market keyword into a scored opportunity", () => {
