@@ -15,6 +15,27 @@ function ctrZScore(latestClicks, latestImpressions, previousClicks, previousImpr
   return (latestRate - previousRate) / Math.sqrt(variance);
 }
 
+function ctrLiftInterval95(latestClicks, latestImpressions, previousClicks, previousImpressions, z = 1.96) {
+  if (latestImpressions <= 0 || previousImpressions <= 0) return null;
+
+  const latestRate = latestClicks / latestImpressions;
+  const previousRate = previousClicks / previousImpressions;
+  const lift = latestRate - previousRate;
+  const variance =
+    (latestRate * (1 - latestRate)) / latestImpressions +
+    (previousRate * (1 - previousRate)) / previousImpressions;
+
+  if (!Number.isFinite(variance) || variance < 0) {
+    return Number.isFinite(lift) ? { lower: lift, upper: lift } : null;
+  }
+
+  const halfWidth = z * Math.sqrt(variance);
+  return Object.freeze({
+    lower: Number((lift - halfWidth).toFixed(4)),
+    upper: Number((lift + halfWidth).toFixed(4))
+  });
+}
+
 export function classifySeoActionMeasurement(latest, previous) {
   if (!latest || !previous) {
     return {
@@ -51,7 +72,16 @@ export function classifySeoActionMeasurement(latest, previous) {
     ? (latestImpressions - previousImpressions) / previousImpressions
     : null;
   const ctrZ = ctrZScore(latestClicks, latestImpressions, previousClicks, previousImpressions);
+  const ctrLiftInterval = ctrLiftInterval95(
+    latestClicks,
+    latestImpressions,
+    previousClicks,
+    previousImpressions
+  );
   const ctrStatisticallyStrong = Number.isFinite(ctrZ) && Math.abs(ctrZ) >= 1.96;
+  const ctrLiftStatisticallyClear =
+    Boolean(ctrLiftInterval) &&
+    (ctrLiftInterval.upper < 0 || ctrLiftInterval.lower > 0);
 
   const sampleScore =
     (latestImpressions >= 100 ? 35 : latestImpressions >= 30 ? 25 : latestImpressions >= 10 ? 15 : 5) +
@@ -77,7 +107,9 @@ export function classifySeoActionMeasurement(latest, previous) {
     confidence,
     ctrLift,
     ctrZScore: Number.isFinite(ctrZ) ? Number(ctrZ.toFixed(3)) : null,
+    ctrLiftInterval95: ctrLiftInterval,
     ctrStatisticallyStrong,
+    ctrLiftStatisticallyClear,
     positionEvidenceStrong,
     positionImprovement,
     impressionGrowth,
