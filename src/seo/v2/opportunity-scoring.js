@@ -108,7 +108,11 @@ function decisionConfidenceEvidence(item = {}) {
       points.push(["multiple query variants in cluster", 3]);
     }
     if (item.semanticQueryCluster.ownerStatus === "STABLE") {
-      points.push(["stable semantic cluster owner", 3]);
+      if (item.semanticQueryCluster.ownerDominanceEvidence === "WEAK") {
+        points.push(["weak semantic cluster ownership evidence", -2]);
+      } else {
+        points.push(["stable semantic cluster owner", 3]);
+      }
     } else if (item.semanticQueryCluster.ownerStatus === "SPLIT") {
       points.push(["split semantic cluster ownership", -4]);
     }
@@ -364,7 +368,8 @@ export function classifyOpportunityAction(item = {}) {
     item.action === "NEW_CONTENT" &&
     item.semanticQueryCluster?.ownerStatus === "STABLE" &&
     Number(item.semanticQueryCluster.impressions || 0) >= 20 &&
-    Number(item.semanticQueryCluster.topShare || 0) >= 0.75
+    Number(item.semanticQueryCluster.topShare || 0) >= 0.75 &&
+    item.semanticQueryCluster.ownerDominanceEvidence !== "WEAK"
   ) {
     return "LINK";
   }
