@@ -1,6 +1,7 @@
 import { findRelatedEntities, findRelationPaths } from "./knowledge-graph.js";
 import { normalizeSemanticText } from "../helpers/text.js";
 import { queryTokens } from "../helpers/query.js";
+import { normalizeUrl } from "../helpers/url.js";
 
 /**
  * --------------------------------------------------------
@@ -366,11 +367,6 @@ function buildAnchorHints(candidate, sharedTopics = [], relations = []) {
         else if (relationText === "location") hints.push("کلاس در شوشتر");
     }
     return [...new Set(hints.filter(Boolean))].slice(0, 4);
-}
-
-function normalizeUrl(value) {
-    const normalized = String(value || "").replace(/\/$/, "").trim().toLowerCase();
-    return normalized || "/";
 }
 
 function findRelationEvidence(currentUrl, candidateUrl, semanticGraph) {
