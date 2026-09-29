@@ -389,3 +389,29 @@ describe("market-driven opportunity discovery", () => {
     expect(result.opportunities.some((item) => (item.queryAngles || []).includes("بهترین دوره گیتار"))).toBe(true);
   });
 });
+
+
+describe("competitive gap coverage boundaries", () => {
+  it("does not treat the external market keyword universe as first-party coverage", () => {
+    const result = buildSEOIntelligence({
+      marketKeywordRows: [{
+        keyword: "آموزش دف برای مبتدیان",
+        volume_monthly: 300,
+        keyword_difficulty: 20
+      }],
+      competitorKeywordRows: [{
+        keyword: "آموزش دف برای مبتدیان",
+        competitor_domain: "competitor.example",
+        volume_monthly: 300,
+        keyword_difficulty: 20
+      }],
+      targetKeywordRows: [],
+      targetQueries: [],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.competitorGaps).toHaveLength(1);
+    expect(result.competitorGaps[0].keyword).toBe("آموزش دف برای مبتدیان");
+  });
+});
