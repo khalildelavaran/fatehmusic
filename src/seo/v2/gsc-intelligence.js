@@ -201,12 +201,22 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     freshness: competitorFreshness
   });
 
+  const temporalOwnershipByQuery = buildTemporalOwnershipQueryIndex([
+    ...temporal,
+    ...semanticTemporal
+  ]);
+
   const enriched = resolveOpportunitySearchSignals(opportunities, index).map((item) => {
     const page = normalizeUrl(item.url || item.targetEntity?.url || "");
     const marketSignal = resolveMarketSignal(item, marketSignals);
     const competitorGap = resolveCompetitorGap(item, competitorGapSignals);
+    const searchOwnership = enrichSearchOwnershipTemporalStability(
+      item.searchOwnership,
+      temporalOwnershipByQuery
+    );
     return Object.freeze({
       ...item,
+      searchOwnership,
       cannibalization: conflictByPage.get(page) || null,
       temporalCannibalization: temporalByPage.get(page) || null,
       marketSignal,
@@ -270,6 +280,81 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   });
 }
 
+
+function buildTemporalOwnershipQueryIndex(transitions = []) {
+  const byQuery = new Map();
+  for (const transition of Array.isArray(transitions) ? transitions : []) {
+    const variants = [
+      transition?.query,
+      ...(Array.isArray(transition?.queryVariants) ? transition.queryVariants.map((item) => item?.query || item?.displayQuery) : [])
+    ]
+      .map((value) => normalizeSemanticText(value || ""))
+      .filter(Boolean);
+
+    for (const query of variants) {
+      const previous = byQuery.get(query);
+      const candidate = {
+        severity: transition?.severity || "LOW",
+        actionable: Boolean(transition?.actionable),
+        shareDelta: Number(transition?.shareDelta) || 0,
+        mode: transition?.mode || "EXACT_QUERY",
+        fromPeriod: transition?.fromPeriod || null,
+        toPeriod: transition?.toPeriod || null,
+        previousOwner: transition?.previousOwner || null,
+        currentOwner: transition?.currentOwner || null
+      };
+      const rank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+      if (!previous ||
+          (rank[candidate.severity] || 0) > (rank[previous.severity] || 0) ||
+          ((rank[candidate.severity] || 0) === (rank[previous.severity] || 0) &&
+            candidate.shareDelta > previous.shareDelta)) {
+        byQuery.set(query, candidate);
+      }
+    }
+  }
+  return byQuery;
+}
+
+function enrichSearchOwnershipTemporalStability(ownership, temporalOwnershipByQuery) {
+  if (!ownership || ownership.matchType !== "EXACT" || !temporalOwnershipByQuery?.size) return ownership;
+
+  const transitions = (ownership.matchedQueries || [])
+    .map((query) => temporalOwnershipByQuery.get(normalizeSemanticText(query)))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const rank = { HIGH: 3, MEDIUM: 2, LOW: 1 };
+      return (rank[b.severity] || 0) - (rank[a.severity] || 0) ||
+        Number(b.shareDelta || 0) - Number(a.shareDelta || 0);
+    });
+
+  if (!transitions.length) {
+    return Object.freeze({
+      ...ownership,
+      temporalOwnership: Object.freeze({
+        status: "STABLE",
+        shiftCount: 0,
+        highActionable: false
+      })
+    });
+  }
+
+  const strongest = transitions[0];
+  return Object.freeze({
+    ...ownership,
+    temporalOwnership: Object.freeze({
+      status: strongest.actionable ? "SHIFT" : "MONITOR",
+      shiftCount: transitions.length,
+      highActionable: transitions.some((item) => item.severity === "HIGH" && item.actionable),
+      strongestSeverity: strongest.severity,
+      strongestShareDelta: strongest.shareDelta,
+      strongestMode: strongest.mode,
+      fromPeriod: strongest.fromPeriod,
+      toPeriod: strongest.toPeriod,
+      previousOwner: strongest.previousOwner,
+      currentOwner: strongest.currentOwner
+    })
+  });
+}
 
 function normalizeMarketSignals(value) {
   if (value instanceof Map) {
