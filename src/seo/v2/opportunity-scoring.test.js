@@ -291,6 +291,21 @@ describe("opportunity scoring", () => {
     })).toBe("LINK");
   });
 
+  it("does not link a semantic query cluster when owner evidence is weak", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      semanticQueryCluster: {
+        ownerStatus: "STABLE",
+        impressions: 120,
+        topShare: 0.82,
+        ownerDominanceEvidence: "WEAK",
+        queryCount: 3
+      },
+      searchSignal: { available: false }
+    })).toBe("NEW_CONTENT");
+  });
+
+
   it("records agreement when GSC and market identify the same exact keyword", () => {
     const result = scoreOpportunity({
       title: "آموزش گیتار",
