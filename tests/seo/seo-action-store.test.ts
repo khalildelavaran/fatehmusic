@@ -2,6 +2,62 @@ import { describe, expect, it } from "vitest";
 import { syncPublishedSeoActionMeasurements } from "../../src/seo/v2/seo-action-store.js";
 
 describe("SEO action GSC measurement", () => {
+  it("records a semantic query cohort alongside page totals", async () => {
+    let insertArgs: unknown[] = [];
+    const db = {
+      prepare(statement: string) {
+        if (statement.includes("SELECT a.id AS action_id")) {
+          return {
+            bind() {
+              return {
+                all: async () => ({
+                  results: [
+                    {
+                      action_id: 21,
+                      target_title: "هزینه کلاس گیتار در شوشتر",
+                      query: "قیمت گیتار شوشتر",
+                      impressions: 80,
+                      clicks: 4,
+                      position: 8
+                    },
+                    {
+                      action_id: 21,
+                      target_title: "هزینه کلاس گیتار در شوشتر",
+                      query: "کلاس پیانو",
+                      impressions: 200,
+                      clicks: 10,
+                      position: 6
+                    }
+                  ]
+                })
+              };
+            }
+          };
+        }
+
+        return {
+          bind(...values: unknown[]) {
+            insertArgs = values;
+            return { run: async () => ({ meta: { changes: 1 } }) };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await expect(syncPublishedSeoActionMeasurements(db, {
+      siteUrl: "https://fatehmusic.ir",
+      windowStart: "2026-09-01",
+      windowEnd: "2026-09-28"
+    })).resolves.toEqual({ measured: 1 });
+
+    const metadata = JSON.parse(String(insertArgs[insertArgs.length - 1]));
+    expect(metadata.attributionModel).toBe("PAGE_PLUS_QUERY_COHORT");
+    expect(metadata.cohort.impressions).toBe(80);
+    expect(metadata.cohort.clicks).toBe(4);
+    expect(metadata.cohort.queryCount).toBe(1);
+    expect(metadata.cohort.matchedQueries[0].query).toBe("قیمت گیتار شوشتر");
+  });
+
   it("passes the requested snapshot label to the source query", async () => {
     let selectSql = "";
     let selectArgs: unknown[] = [];
