@@ -102,8 +102,11 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   // Scoring uses only the current snapshot. The previous snapshot remains
   // available to temporal analysis so historical ownership changes are not lost.
   const scoringRows = currentScoringRows(rows);
-  const index = buildGscSignalIndex(scoringRows);
-  const queryOwnershipResult = buildQueryOwnershipMapWithMeta(scoringRows, {
+  const index = options.gscIndex || buildGscSignalIndex(scoringRows, {
+    queryClusterLimit: Number(options.maxQueryClusters) > 0 ? Number(options.maxQueryClusters) : 5000,
+    queryClusterMinImpressions: Number(options.minQueryClusterImpressions) > 0 ? Number(options.minQueryClusterImpressions) : 1
+  });
+  const queryOwnershipResult = options.queryOwnershipResult || buildQueryOwnershipMapWithMeta(scoringRows, {
     minImpressions: Number(options.minOwnershipImpressions) > 0 ? Number(options.minOwnershipImpressions) : 1,
     limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 5000
   });
