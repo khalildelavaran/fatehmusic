@@ -741,3 +741,47 @@ describe("GSC query semantic precision", () => {
     expect(result[0].searchSignal.impressions).toBe(80);
   });
 });
+
+
+describe("semantic GSC cluster identity", () => {
+  it("clusters different wording for the same topic, intent and local scope", () => {
+    const clusters = buildSemanticQueryClusters([
+      {
+        query: "آموزش گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 40
+      },
+      {
+        query: "کلاس گیتار شوشتر",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 30
+      }
+    ]);
+
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].queryCount).toBe(2);
+    expect(clusters[0].scope).toBe("local");
+    expect(clusters[0].intent).toBe("informational");
+    expect(clusters[0].subjects).toContain("guitar");
+  });
+
+  it("keeps distinct search intents in separate semantic clusters", () => {
+    const clusters = buildSemanticQueryClusters([
+      {
+        query: "آموزش گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 40
+      },
+      {
+        query: "هزینه کلاس گیتار شوشتر",
+        page: "https://fatehmusic.ir/register",
+        impressions: 30
+      }
+    ]);
+
+    expect(clusters).toHaveLength(2);
+    expect(new Set(clusters.map((cluster) => cluster.intent))).toEqual(
+      new Set(["informational", "transactional"])
+    );
+  });
+});
