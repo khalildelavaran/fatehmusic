@@ -592,6 +592,25 @@ function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
     reasons.push("GSC_QUERY_TEMPORAL_SHIFT");
   }
 
+  // A split owner means current search demand is being shared across multiple
+  // URLs. Do not allow unrelated market/base priority to turn that conflict
+  // into a high-confidence page decision until ownership consolidates.
+  if (
+    item.searchOwnership?.matchType === "EXACT" &&
+    item.searchOwnership?.ownerStatus === "SPLIT" &&
+    Number(item.searchOwnership?.impressions || 0) >= 20
+  ) {
+    cap = Math.min(cap, 84);
+    reasons.push("GSC_QUERY_OWNER_SPLIT");
+  }
+  if (
+    item.semanticQueryCluster?.ownerStatus === "SPLIT" &&
+    Number(item.semanticQueryCluster?.impressions || 0) >= 20
+  ) {
+    cap = Math.min(cap, 86);
+    reasons.push("GSC_SEMANTIC_OWNER_SPLIT");
+  }
+
   const targetIntent = String(item.searchIntent || item.intent || "").trim().toLowerCase();
   const marketIntents = item.marketSignal?.intents && typeof item.marketSignal.intents === "object"
     ? (
