@@ -39,16 +39,25 @@ function positionScore(position) {
   return 8;
 }
 
-function effectiveRankingPosition(ahrefsPosition, gscSignal, gscFreshness = "UNKNOWN") {
+function effectiveRankingPosition(
+  ahrefsPosition,
+  gscSignal,
+  gscFreshness = "UNKNOWN",
+  minGscImpressions = 20
+) {
   const normalizedFreshness = String(gscFreshness || "UNKNOWN").toUpperCase();
   const gscPosition = Number(gscSignal?.position);
+  const gscImpressions = Math.max(0, Number(gscSignal?.impressions) || 0);
+  const minimumImpressions = Math.max(1, Number(minGscImpressions) || 20);
   const hasGscPosition = Number.isFinite(gscPosition) && gscPosition > 0;
+  const hasUsableGscPosition = hasGscPosition && gscImpressions >= minimumImpressions;
   const hasAhrefsPosition = Number.isFinite(ahrefsPosition) && ahrefsPosition > 0;
 
-  // GSC is the property's current first-party ranking signal. Prefer it while
-  // the snapshot is fresh/aging; when GSC is stale, retain Ahrefs as the
-  // market fallback unless GSC is the only available position.
-  if (hasGscPosition && (!hasAhrefsPosition || normalizedFreshness !== "STALE")) {
+  // GSC is the property's first-party ranking signal, but a tiny sample is
+  // too noisy to override a market-level Ahrefs observation. Keep the GSC
+  // position visible separately while requiring a minimum impression sample
+  // before it becomes the fused decision signal.
+  if (hasUsableGscPosition && (!hasAhrefsPosition || normalizedFreshness !== "STALE")) {
     return gscPosition;
   }
   if (hasAhrefsPosition) return ahrefsPosition;
@@ -212,7 +221,8 @@ export function buildMarketOpportunityReport({
   gscRows = [],
   minVolume = 1,
   limit = 50,
-  gscFreshness = "UNKNOWN"
+  gscFreshness = "UNKNOWN",
+  minGscPositionImpressions = 20
 } = {}) {
   const rows = groupMarketKeywordRows(Array.isArray(keywordRows) ? keywordRows : []);
   const gsc = Array.isArray(gscRows) ? gscRows : [];
@@ -234,7 +244,12 @@ export function buildMarketOpportunityReport({
     // from live classification and effective-position decisions.
     const gscSignalUsable = gscFreshnessNormalized === "STALE" ? null : gscSignal;
     const gscPosition = Number(gscSignal?.position);
-    const position = effectiveRankingPosition(ahrefsPosition, gscSignalUsable, gscFreshness);
+    const position = effectiveRankingPosition(
+      ahrefsPosition,
+      gscSignalUsable,
+      gscFreshness,
+      minGscPositionImpressions
+    );
     const classification = classifyMarketOpportunity(position, gscSignalUsable?.impressions || 0);
     const marketScore = Math.round(clamp(
       volumeScore(volume) * 0.45 +
@@ -257,8 +272,16 @@ export function buildMarketOpportunityReport({
       bestPosition: Number.isFinite(position) && position > 0 ? position : null,
       ahrefsBestPosition: Number.isFinite(ahrefsPosition) && ahrefsPosition > 0 ? ahrefsPosition : null,
       gscBestPosition: Number.isFinite(gscPosition) && gscPosition > 0 ? gscPosition : null,
+      gscPositionImpressions: Math.max(0, Number(gscSignal?.impressions) || 0),
+      gscPositionEvidence:
+        Number.isFinite(gscPosition) && gscPosition > 0
+          ? Math.max(0, Number(gscSignal?.impressions) || 0) >= Math.max(1, Number(minGscPositionImpressions) || 20)
+            ? "USABLE"
+            : "TRACE"
+          : "NONE",
       bestPositionSource:
         Number.isFinite(gscPosition) && gscPosition > 0 && (
+          Math.max(0, Number(gscSignal?.impressions) || 0) >= Math.max(1, Number(minGscPositionImpressions) || 20) &&
           !Number.isFinite(ahrefsPosition) ||
           ahrefsPosition <= 0 ||
           gscFreshnessNormalized !== "STALE"
