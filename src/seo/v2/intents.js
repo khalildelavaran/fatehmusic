@@ -5,14 +5,26 @@
  */
 
 import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
+import { querySemanticDimensions } from "../helpers/query.js";
 
 const TITLE_RULES = Object.freeze([
-    { intent: "transactional", weight: 70, tokens: ["ثبت‌نام", "ثبت نام", "قیمت", "هزینه", "شهریه", "تعرفه", "رزرو", "خرید"] },
+    // Keep non-ontology lexical rules here. High-value intent modifiers are
+    // resolved through the shared semantic query ontology below.
+    { intent: "transactional", weight: 70, tokens: ["خرید"] },
     { intent: "local", weight: 65, tokens: ["شوشتر", "خوزستان", "نزدیک", "حضوری"] },
-    { intent: "informational", weight: 45, tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "اشتباهات"] },
-    { intent: "commercial", weight: 40, tokens: ["بهترین", "مناسب", "مقایسه", "تفاوت", "انتخاب", "کدام را انتخاب", "راهنمای خرید"] },
+    { intent: "informational", weight: 45, tokens: ["چیست", "آموزش"] },
+    { intent: "commercial", weight: 40, tokens: ["بهترین", "مناسب", "انتخاب", "کدام را انتخاب", "راهنمای خرید"] },
     { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "آموزشگاه فاتح", "فاتح", "فاتح موزیک"] }
 ]);
+
+const MODIFIER_INTENT_RULES = Object.freeze({
+    pricing: Object.freeze({ intent: "transactional", weight: 70 }),
+    enrollment: Object.freeze({ intent: "transactional", weight: 70 }),
+    guidance: Object.freeze({ intent: "informational", weight: 45 }),
+    curriculum: Object.freeze({ intent: "informational", weight: 45 }),
+    comparison: Object.freeze({ intent: "commercial", weight: 40 }),
+    tips: Object.freeze({ intent: "informational", weight: 45 })
+});
 
 function normalize(value) { return normalizeSemanticText(value); }
 
@@ -26,6 +38,16 @@ function scoreTitleIntents(title = "") {
         const current = scores.get(rule.intent) || { score: 0, reason: [] };
         current.score += rule.weight + matches.length * 10;
         current.reason.push(...matches);
+        scores.set(rule.intent, current);
+    }
+
+    const dimensions = querySemanticDimensions(title);
+    for (const family of dimensions.modifierFamilies) {
+        const rule = MODIFIER_INTENT_RULES[family];
+        if (!rule) continue;
+        const current = scores.get(rule.intent) || { score: 0, reason: [] };
+        current.score += rule.weight + 10;
+        current.reason.push("modifier:" + family);
         scores.set(rule.intent, current);
     }
 
