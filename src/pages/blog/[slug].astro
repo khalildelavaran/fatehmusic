@@ -22,6 +22,7 @@ import {
 } from "../../seo/index.js";
 import SeoInternalLinks from "../../components/SeoInternalLinks.astro";
 import { getPublishedPost, getPublishedPosts } from "../../server/blog";
+import { courses as runtimeCourses } from "../../data/courses.js";
 import { findComparisonCourses } from "../../seo/v2/comparison-courses.js";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
@@ -35,7 +36,7 @@ const allPosts = await getPublishedPosts();
 const clusterEntry = buildArticleClusterLinks(allPosts, 4).find((item) => item.slug === post.slug);
 const relatedPosts = clusterEntry?.related ?? [];
 const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
-const comparisonCourses = findComparisonCourses(post.title)
+const comparisonCourses = findComparisonCourses(post.title, runtimeCourses)
   .map((course) => resolveCourse(course, site))
   .filter((course): course is NonNullable<typeof course> => Boolean(course));
 const relatedCoursesForSchema = [...new Map(
