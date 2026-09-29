@@ -988,3 +988,60 @@ describe("semantic modifier clustering", () => {
     expect(clusters).toHaveLength(2);
   });
 });
+
+
+describe("comparison-aware query ownership and retrieval", () => {
+  it("matches a comparison query to a complete comparison asset, not a single-subject page", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "تفاوت گیتار و پیانو",
+        page: "https://fatehmusic.ir/blog/guitar-vs-piano",
+        impressions: 80
+      }
+    ]);
+
+    const results = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "مقایسه گیتار و پیانو برای مبتدیان",
+        topicName: "آموزش موسیقی",
+        searchIntent: "commercial"
+      },
+      {
+        action: "NEW_CONTENT",
+        title: "راهنمای گیتار برای مبتدیان",
+        topicName: "گیتار",
+        searchIntent: "informational"
+      }
+    ], index);
+
+    expect(results[0].searchSignal.available).toBe(true);
+    expect(results[0].searchSignal.impressions).toBe(80);
+    expect(results[1].searchSignal.available).toBe(false);
+    expect(results[1].searchOwnership.matchType).toBe("RELATED");
+  });
+
+  it("treats an explicit query angle as valid exact ownership evidence", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "شهریه کلاس گیتار",
+        page: "https://fatehmusic.ir/register",
+        impressions: 60
+      }
+    ]);
+
+    const results = resolveOpportunitySearchSignals([
+      {
+        action: "NEW_CONTENT",
+        title: "راهنمای انتخاب کلاس گیتار",
+        topicName: "گیتار",
+        searchIntent: "transactional",
+        queryAngles: ["شهریه کلاس گیتار"]
+      }
+    ], index);
+
+    expect(results[0].searchSignal.available).toBe(true);
+    expect(results[0].searchOwnership.matchType).toBe("EXACT");
+    expect(results[0].searchOwnership.impressions).toBe(60);
+  });
+});
