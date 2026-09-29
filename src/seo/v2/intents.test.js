@@ -60,3 +60,17 @@ describe("shared title-only intent classifier", () => {
     expect(classifyTitleIntent("چگونه گیتار را از صفر یاد بگیریم").primary).toBe("informational");
   });
 });
+
+
+describe("ontology-backed intent modifiers", () => {
+  it("maps pricing synonyms consistently to transactional intent", () => {
+    expect(classifyTitleIntent("قیمت کلاس گیتار").primary).toBe("transactional");
+    expect(classifyTitleIntent("هزینه کلاس گیتار").primary).toBe("transactional");
+    expect(classifyTitleIntent("شهریه دوره گیتار").primary).toBe("transactional");
+  });
+
+  it("maps enrollment and guidance families without duplicating synonym rules", () => {
+    expect(classifyTitleIntent("نام نویسی کلاس گیتار").primary).toBe("transactional");
+    expect(classifyTitleIntent("راهنمای گیتار برای مبتدیان").primary).toBe("informational");
+  });
+});
