@@ -12,7 +12,6 @@ const RULES = [
     { intent: "local", weight: 65, tokens: ["شوشتر", "خوزستان", "نزدیک", "حضوری"] },
     { intent: "informational", weight: 45, tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "تفاوت", "اشتباهات"] },
     { intent: "commercial", weight: 40, tokens: ["بهترین", "مناسب", "مقایسه", "انتخاب"] },
-    { intent: "commercial", weight: 55, tokens: ["بهترین"] },
     { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "فاتح"] }
 ];
 
@@ -28,7 +27,7 @@ export function classifyIntent({ path = "", title = "", keywords = [], entityTyp
 
     for (const rule of RULES) {
         const matches = rule.tokens.filter((token) => containsSemanticPhrase(corpus, token));
-        if (matches.length) scores.set(rule.intent, { score: rule.weight + matches.length * 10, reason: matches });
+        if (matches.length) add(scores, rule.intent, rule.weight + matches.length * 10, matches);
     }
 
     if (normalize(path).startsWith("/blog")) add(scores, "informational", 25, ["blog"]);
