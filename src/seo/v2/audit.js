@@ -42,9 +42,10 @@ export function auditPage({
     if (descriptionLength >= LIMITS.descriptionMin && descriptionLength <= LIMITS.descriptionMax) pass("description", "description length", 10);
     else warn("description", "description length outside recommended range", 5);
 
-    if (metadata.robots?.includes("index") && indexable) pass("indexability", "indexable", 10);
-    else if (!indexable) pass("indexability", "explicitly non-indexable", 10);
-    else fail("indexability", "indexability mismatch");
+    const robots = String(metadata.robots || "");
+    if (!indexable) pass("indexability", "explicitly non-indexable", 10);
+    else if (!/\bnoindex\b/i.test(robots)) pass("indexability", "indexable", 10);
+    else fail("indexability", "indexability mismatch: noindex directive present");
 
     if (url && canonical) pass("canonical", "canonical present", 10);
     else fail("canonical", "canonical missing");
