@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyOpportunityAction, scoreOpportunity, decisionConfidenceScore, evidenceStrength } from "./opportunity-scoring.js";
+import { classifyOpportunityAction, scoreOpportunity, decisionConfidenceScore, evidenceStrength, SCORE_FORMULA_VERSION, SCORE_COMPONENT_WEIGHTS } from "./opportunity-scoring.js";
 
 describe("opportunity scoring", () => {
   it("prioritizes CTR optimization for a strong-ranking page", () => {
@@ -946,5 +946,41 @@ describe("market traffic-potential signal", () => {
 
     expect(enriched.scoreBreakdown.marketSignal).toBeGreaterThan(baseline.scoreBreakdown.marketSignal);
     expect(enriched.priority).toBeGreaterThan(baseline.priority);
+  });
+});
+
+
+describe("score formula contract", () => {
+  it("exposes a versioned, normalized contribution trace", () => {
+    const result = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 80,
+      searchSignal: {
+        available: true,
+        impressions: 300,
+        position: 8,
+        ctr: 0.03
+      },
+      marketSignal: {
+        available: true,
+        estimatedVolume: 200,
+        difficulty: 30
+      },
+      competitorGap: {
+        available: true,
+        gapScore: 70,
+        competitorCount: 2
+      }
+    });
+
+    expect(result.scoreBreakdown.formulaVersion).toBe(SCORE_FORMULA_VERSION);
+    expect(result.scoreBreakdown.componentWeights).toBe(SCORE_COMPONENT_WEIGHTS);
+    expect(SCORE_FORMULA_VERSION).toBe("2.2");
+
+    const contributions = result.scoreBreakdown.normalizedContributions;
+    const sum = Object.values(contributions).reduce((total, value) => total + value, 0);
+    expect(sum).toBeCloseTo(result.scoreBreakdown.scoreBeforePenalties, 2);
+    expect(result.scoreBreakdown.weightTotal).toBeGreaterThan(1);
+    expect(result.scoreBreakdown.unguardedScore).toBeLessThanOrEqual(result.scoreBreakdown.scoreBeforePenalties + 15);
   });
 });
