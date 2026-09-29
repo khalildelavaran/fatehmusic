@@ -617,40 +617,44 @@ export function buildQueryOwnershipMap(rows = [], options = {}) {
   return buildQueryOwnershipMapWithMeta(rows, options).items;
 }
 
-function queryClusterKey(query) {
+function buildQuerySemanticProfile(query, cache = null) {
   const normalized = normalizeText(query);
-  const topicSlugs = resolveTopics({
+  if (cache?.has(normalized)) return cache.get(normalized);
+
+  const topics = resolveTopics({
     title: query,
     keywords: [query],
     path: ""
-  })
+  });
+  const topicSlugs = topics
     .map((topic) => topic.slug)
     .filter((slug) => slug !== "music-education" && slug !== "shushtar")
     .sort();
-
-  const hasLocalScope = resolveTopics({
-    title: query,
-    keywords: [query],
-    path: ""
-  }).some((topic) => topic.slug === "shushtar");
-
+  const hasLocalScope = topics.some((topic) => topic.slug === "shushtar");
   const intent = classifyIntent({ title: query }).primary || "informational";
   const scope = hasLocalScope ? "local" : "global";
-
-  // Canonical concept key: equivalent phrasing ("آموزش گیتار", "کلاس
-  // گیتار") shares a cluster, while a different intent or local scope does
-  // not. Fall back to meaningful normalized tokens when taxonomy cannot
-  // identify a subject.
   const subject = topicSlugs.length
     ? topicSlugs.join("+")
     : [...queryTokens(query)].sort().join("+");
 
-  return ["scope:" + scope, "intent:" + intent, "subject:" + subject].join("|");
+  const profile = Object.freeze({
+    key: ["scope:" + scope, "intent:" + intent, "subject:" + subject].join("|"),
+    scope,
+    intent,
+    subjects: Object.freeze(topicSlugs)
+  });
+  cache?.set(normalized, profile);
+  return profile;
+}
+
+function queryClusterKey(query, cache = null) {
+  return buildQuerySemanticProfile(query, cache).key;
 }
 
 export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions = 1, limit = 50 } = {}) {
   const clusters = new Map();
   const displayQueries = new Map();
+  const semanticProfileCache = new Map();
 
   for (const row of rows) {
     const query = normalizeText(row?.query);
@@ -658,16 +662,17 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     if (!query || !page || impressions <= 0 || !isOwnershipEligibleQuery(query)) continue;
 
-    const key = queryClusterKey(query);
+    const profile = buildQuerySemanticProfile(query, semanticProfileCache);
+    const key = profile.key;
     if (!key) continue;
 
     const cluster = clusters.get(key) || {
       key,
       queries: new Map(),
       pages: new Map(),
-      scope: key.includes("scope:local") ? "local" : "global",
-      intent: key.match(/(?:^|\|)intent:([^|]+)/)?.[1] || "informational",
-      subjects: key.match(/(?:^|\|)subject:(.+)$/)?.[1]?.split("+").filter(Boolean) || []
+      scope: profile.scope,
+      intent: profile.intent,
+      subjects: profile.subjects
     };
 
     cluster.queries.set(query, (cluster.queries.get(query) || 0) + impressions);
