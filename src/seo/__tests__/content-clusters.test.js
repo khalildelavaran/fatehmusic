@@ -33,6 +33,26 @@ describe("Content Cluster Engine", () => {
     const item = strategy.briefs.find((brief) => brief.topic === "guitar" && brief.searchIntent === "transactional");
     expect(item).toBeTruthy(); expect(item.title).toContain("هزینه"); expect(item.targetEntity.type).toBe("Course"); expect(item.course.slug).toBe("guitar-course"); expect(item.priority).toBeGreaterThan(80); expect(item.queryAngles.length).toBeGreaterThan(1);
   });
+  it("keeps market-discovery priority structurally independent from market score", () => {
+    const unified = buildUnifiedContentOpportunities({
+      gaps: [],
+      courses: [],
+      topicCandidates: [{
+        title: "راهنمای تمرین ساز هدف",
+        intent: "informational",
+        modifierType: "market_discovery",
+        marketDiscovery: true,
+        marketScore: 100,
+        scoreTotal: 1
+      }],
+      siteUrl: "https://fatehmusic.ir"
+    });
+    expect(unified.opportunities).toHaveLength(1);
+    expect(unified.opportunities[0].priority).toBe(90);
+    expect(unified.opportunities[0].marketDiscovery).toBe(true);
+    expect(unified.opportunities[0].marketScore).toBe(100);
+  });
+
   it("merges topic-engine candidates and SEO gaps into one deduplicated queue", () => {
     const unified = buildUnifiedContentOpportunities({
       gaps: findContentGaps(posts),
