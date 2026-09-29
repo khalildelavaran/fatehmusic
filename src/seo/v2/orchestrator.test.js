@@ -290,3 +290,54 @@ describe("buildSEOIntelligence", () => {
   });
 
 });
+
+
+describe("market-driven opportunity discovery", () => {
+  it("turns an uncovered Ahrefs market keyword into a scored opportunity", () => {
+    const result = buildSEOIntelligence({
+      courses: [{ slug: "daf-course", title: "آموزش دف", instrument: "daf" }],
+      posts: [],
+      topicCandidates: [],
+      marketKeywordRows: [{
+        keyword: "کلاس دف برای مبتدیان",
+        volume_monthly: 250,
+        keyword_difficulty: 25,
+        best_position: null
+      }],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.marketOpportunities).toHaveLength(1);
+    expect(result.opportunities.some((item) =>
+      item.source === "market-discovery" &&
+      item.marketDiscovery === true &&
+      item.title === "کلاس دف برای مبتدیان"
+    )).toBe(true);
+  });
+
+  it("does not create a second asset when an existing topic/intent already covers the market query", () => {
+    const result = buildSEOIntelligence({
+      courses: [{ slug: "guitar", title: "آموزش گیتار", instrument: "guitar" }],
+      posts: [],
+      topicCandidates: [{
+        title: "بهترین دوره گیتار برای مبتدیان",
+        intent: "commercial",
+        modifierType: "best",
+        relatedCourseSlug: "guitar",
+        scoreTotal: 70
+      }],
+      marketKeywordRows: [{
+        keyword: "بهترین دوره گیتار",
+        volume_monthly: 300,
+        keyword_difficulty: 30,
+        best_position: 18
+      }],
+      gscRows: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.opportunities.filter((item) => item.marketDiscovery)).toHaveLength(0);
+    expect(result.opportunities.some((item) => (item.queryAngles || []).includes("بهترین دوره گیتار"))).toBe(true);
+  });
+});
