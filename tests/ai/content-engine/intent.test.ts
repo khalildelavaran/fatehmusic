@@ -22,3 +22,15 @@ describe("classifyIntent", () => {
     expect(classifyIntent("هزینه ثبت‌نام در آموزشگاه فاتح")).toBe("transactional");
   });
 });
+
+
+
+describe("token-boundary intent matching", () => {
+  it("does not match a transactional term inside a larger token", () => {
+    expect(classifyIntent("گیتاریست‌های جوان")).toBe("informational");
+  });
+
+  it("keeps exact standalone commercial markers", () => {
+    expect(classifyIntent("بهترین کلاس گیتار")).toBe("commercial");
+  });
+});
