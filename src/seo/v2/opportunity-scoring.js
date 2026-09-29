@@ -208,16 +208,19 @@ function evidenceStrength(item = {}) {
   if (item.cannibalization?.severity) evidenceSignals.add("CANNIBALIZATION");
   if (item.temporalCannibalization?.actionable) evidenceSignals.add("TEMPORAL_OWNERSHIP");
 
+  const ahrefsEvidence = Boolean(item.marketSignal?.available || item.competitorGap?.available);
   if (item.marketSignal?.available) {
     sourceFamilies.add("MARKET");
-    independentSources.add("MARKET");
     evidenceSignals.add("MARKET_SIGNAL");
   }
   if (item.competitorGap?.available) {
     sourceFamilies.add("COMPETITOR");
-    independentSources.add("COMPETITOR");
     evidenceSignals.add("COMPETITOR_GAP");
   }
+  // Market demand and competitor gaps are different evidence dimensions,
+  // but both are derived from the same Ahrefs provider. Count the provider
+  // once when estimating independent-source diversity.
+  if (ahrefsEvidence) independentSources.add("AHREFS");
   if (Number.isFinite(Number(item.intentConfidence)) && Number(item.intentConfidence) > 0) {
     sourceFamilies.add("INTENT");
     evidenceSignals.add("INTENT_CONFIDENCE");
