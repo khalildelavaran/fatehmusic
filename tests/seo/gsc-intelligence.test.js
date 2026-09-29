@@ -455,3 +455,60 @@ describe("query-level temporal ownership", () => {
     expect(ownership.temporalOwnership.strongestSeverity).toBe("HIGH");
   });
 });
+
+
+describe("semantic evidence matching", () => {
+  it("matches pricing synonyms in Ahrefs market evidence", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "هزینه کلاس گیتار",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "transactional",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [], {
+      marketSignals: [
+        {
+          keyword: "قیمت گیتار",
+          estimatedVolume: 250,
+          difficulty: 30,
+          available: true,
+          source: "ahrefs"
+        }
+      ]
+    });
+
+    expect(result.opportunities[0].marketSignal?.available).toBe(true);
+    expect(result.opportunities[0].marketSignal?.matchType).toBe("SEMANTIC");
+    expect(result.opportunities[0].marketSignal?.semanticSimilarity).toBe(1);
+  });
+
+  it("matches pricing synonyms in competitor-gap evidence", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "هزینه کلاس گیتار",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "transactional",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [], {
+      competitorGaps: [
+        {
+          keyword: "قیمت گیتار",
+          estimatedVolume: 250,
+          difficulty: 30,
+          available: true,
+          source: "competitor-gap"
+        }
+      ]
+    });
+
+    expect(result.opportunities[0].competitorGap?.available).toBe(true);
+    expect(result.opportunities[0].competitorGap?.matchType).toBe("SEMANTIC");
+    expect(result.opportunities[0].competitorGap?.semanticSimilarity).toBe(1);
+  });
+});
