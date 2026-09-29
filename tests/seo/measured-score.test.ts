@@ -96,6 +96,12 @@ describe("scorePage", () => {
     expect(good()).toEqual(good());
   });
 
+  it("treats a missing robots meta as indexable by default", () => {
+    const html = page().replace(/<meta name="robots"[^>]*>/, "");
+    const r = scorePage(measureHtml(html, "/courses/piano-course"), { inboundCount: 5 });
+    expect(r.issues.map((i) => i.id)).not.toContain("indexable");
+  });
+
   it("penalizes a noindex page and explains why", () => {
     const r = scorePage(measureHtml(page({ robots: "noindex,follow" }), "/courses/piano-course"), { inboundCount: 5 });
     expect(r.score).toBeLessThan(10);
