@@ -57,7 +57,58 @@ export function scoreArticleRelation(source, target) {
 
 export function buildArticleClusterLinks(posts = [], limit = 4) {
   const profiles = buildArticleProfiles(posts);
-  return profiles.map((source) => ({ ...source, related: profiles.filter((target) => target.slug !== source.slug).map((target) => ({ ...target, score: scoreArticleRelation(source, target), sharedTopics: source.topics.filter((topic) => target.topics.includes(topic)) })).filter((target) => target.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "fa")).slice(0, Math.max(0, limit)) }));
+  const topicIndex = new Map();
+  const scopeIntentIndex = new Map();
+  const courseIndex = new Map();
+
+  const addToIndex = (index, key, profile) => {
+    if (!key) return;
+    const bucket = index.get(key) || [];
+    bucket.push(profile);
+    index.set(key, bucket);
+  };
+
+  for (const profile of profiles) {
+    for (const topic of profile.topics || []) {
+      addToIndex(topicIndex, String(topic), profile);
+    }
+    addToIndex(scopeIntentIndex, String(profile.scope || "") + "|" + String(profile.intent || ""), profile);
+    if (profile.relatedCourseSlug) addToIndex(courseIndex, String(profile.relatedCourseSlug), profile);
+  }
+
+  const safeLimit = Math.max(0, Number(limit) || 4);
+
+  return profiles.map((source) => {
+    const candidates = new Map();
+    for (const topic of source.topics || []) {
+      for (const profile of topicIndex.get(String(topic)) || []) {
+        if (profile.slug !== source.slug) candidates.set(profile.slug, profile);
+      }
+    }
+
+    const scopeIntentKey = String(source.scope || "") + "|" + String(source.intent || "");
+    for (const profile of scopeIntentIndex.get(scopeIntentKey) || []) {
+      if (profile.slug !== source.slug) candidates.set(profile.slug, profile);
+    }
+
+    if (source.relatedCourseSlug) {
+      for (const profile of courseIndex.get(String(source.relatedCourseSlug)) || []) {
+        if (profile.slug !== source.slug) candidates.set(profile.slug, profile);
+      }
+    }
+
+    const related = [...candidates.values()]
+      .map((target) => ({
+        ...target,
+        score: scoreArticleRelation(source, target),
+        sharedTopics: (source.topics || []).filter((topic) => (target.topics || []).includes(topic))
+      }))
+      .filter((target) => target.score > 0)
+      .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "fa"))
+      .slice(0, safeLimit);
+
+    return { ...source, related };
+  });
 }
 
 const DEFAULT_INTENTS = ["informational", "commercial", "transactional"];
