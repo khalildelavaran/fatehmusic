@@ -255,7 +255,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
     const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, 'google-search-console', ?)").join(", ");
     const sql =
       "INSERT INTO seo_action_measurements " +
-      "(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
+      "(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source, metadata) " +
       "VALUES " + placeholders + " " +
       "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET " +
       "measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, " +
