@@ -171,6 +171,12 @@ export function buildKnowledgeGraph({
     inbound.set(edge.to, (inbound.get(edge.to) || 0) + 1);
   }
 
+  const provenanceCounts = new Map();
+  for (const edge of edges) {
+    const provenance = String(edge?.provenance || "UNKNOWN");
+    provenanceCounts.set(provenance, (provenanceCounts.get(provenance) || 0) + 1);
+  }
+
   return Object.freeze({
     version: "1.1",
     nodes: freezeArray(nodes),
