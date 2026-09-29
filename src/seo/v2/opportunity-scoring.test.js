@@ -660,3 +660,49 @@ describe("opportunity scoring", () => {
   });
 
 });
+
+describe("evidence match quality guards", () => {
+  it("caps weak semantic market evidence", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 100,
+      searchSignal: { available: false },
+      marketSignal: {
+        available: true,
+        matchType: "SEMANTIC",
+        semanticSimilarity: 0.6,
+        estimatedVolume: 500,
+        difficulty: 20
+      }
+    });
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("MARKET_SEMANTIC_MATCH_WEAK");
+    expect(result.decisionConfidence).toBeLessThanOrEqual(78);
+  });
+
+  it("caps moderate semantic competitor evidence", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 100,
+      searchSignal: { available: false },
+      competitorGap: {
+        available: true,
+        matchType: "SEMANTIC",
+        semanticSimilarity: 0.7,
+        gapScore: 90,
+        competitorCount: 3
+      }
+    });
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("COMPETITOR_SEMANTIC_MATCH_MODERATE");
+    expect(result.decisionConfidence).toBeLessThanOrEqual(88);
+  });
+
+  it("preserves supplied GSC completeness when the snapshot is not truncated", () => {
+    const result = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 100,
+      searchSignal: { available: true, impressions: 100, position: 8 },
+      gscDataQuality: { truncated: false, completeness: 0.9, freshness: "FRESH" }
+    });
+    expect(result.scoreBreakdown.confidenceEvidence.join(" ")).toContain("GSC completeness below 95%");
+  });
+});
