@@ -31,10 +31,9 @@ const gscConfig = getSearchConsoleConfig(env as unknown as Record<string, unknow
 const gscConfigured = Boolean(gscConfig.clientEmail && gscConfig.privateKey && gscConfig.siteUrl);
 const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[] : [];
 const ahrefsConfig = getAhrefsConfig(env as unknown as Record<string, unknown>);
-const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomains, ahrefsRefdomainsHistory, ahrefsOrganicKeywords, ahrefsCompetitorKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
+const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomainsHistory, ahrefsOrganicKeywords, ahrefsCompetitorKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "metrics" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-competitors" }),
-  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "refdomains" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "refdomains-history" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-keywords" }),
   getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "competitor-keywords" })
