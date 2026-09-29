@@ -7,6 +7,11 @@ function normalizeCourseName(title) {
     .trim();
 }
 
+export function isComparisonCourseTitle(title) {
+  const normalized = normalizeSemanticText(title);
+  return /(?:تفاوت|فرق|مقایسه|\sو\s|\sیا\s)/u.test(normalized);
+}
+
 export function matchCoursesInTitle(title, courses = [], {
   comparison = false,
   limit = 0
