@@ -330,23 +330,23 @@ describe("query-level temporal ownership", () => {
         {
           query: "آموزش گیتار شوشتر",
           page: "https://fatehmusic.ir/courses/guitar-course",
-          impressions: 200,
-          snapshotLabel: "previous",
-          startDate: "2026-07-01",
-          endDate: "2026-07-28"
-        },
-        {
-          query: "آموزش گیتار شوشتر",
-          page: "https://fatehmusic.ir/blog/guitar-guide",
-          impressions: 20,
-          snapshotLabel: "previous",
-          startDate: "2026-07-01",
-          endDate: "2026-07-28"
-        },
-        {
-          query: "آموزش گیتار شوشتر",
-          page: "https://fatehmusic.ir/blog/guitar-guide",
           impressions: 180,
+          snapshotLabel: "previous",
+          startDate: "2026-07-01",
+          endDate: "2026-07-28"
+        },
+        {
+          query: "آموزش گیتار شوشتر",
+          page: "https://fatehmusic.ir/blog/guitar-guide",
+          impressions: 60,
+          snapshotLabel: "previous",
+          startDate: "2026-07-01",
+          endDate: "2026-07-28"
+        },
+        {
+          query: "آموزش گیتار شوشتر",
+          page: "https://fatehmusic.ir/blog/guitar-guide",
+          impressions: 170,
           snapshotLabel: "current",
           startDate: "2026-08-01",
           endDate: "2026-08-28"
@@ -354,7 +354,7 @@ describe("query-level temporal ownership", () => {
         {
           query: "آموزش گیتار شوشتر",
           page: "https://fatehmusic.ir/courses/guitar-course",
-          impressions: 20,
+          impressions: 70,
           snapshotLabel: "current",
           startDate: "2026-08-01",
           endDate: "2026-08-28"
