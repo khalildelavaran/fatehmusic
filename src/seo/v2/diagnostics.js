@@ -149,6 +149,7 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
     categories[category] = Object.freeze({
       score,
       available: score != null,
+      measured: categoryMaximum > 0,
       coverage,
       errors: bucket.errors,
       warnings: bucket.warnings
@@ -168,10 +169,15 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
       )
     : 0;
 
-  const evidenceCoverage = Math.round(
-    CATEGORIES.reduce((sum, category) => sum + categories[category].coverage * WEIGHTS[category], 0) /
-    Object.values(WEIGHTS).reduce((sum, value) => sum + value, 0)
-  );
+  const measuredCategories = CATEGORIES.filter((category) => categories[category].measured);
+  const measuredWeight = measuredCategories.reduce((sum, category) => sum + WEIGHTS[category], 0);
+  const evidenceCoverage = measuredWeight
+    ? Math.round(
+        measuredCategories.reduce((sum, category) => sum + categories[category].coverage * WEIGHTS[category], 0) /
+        measuredWeight
+      )
+    : 0;
+  const unmeasuredCategories = CATEGORIES.filter((category) => !categories[category].measured);
 
   const qualityAdjustedScore = Math.round(weightedScore * evidenceCoverage / 100);
   const qualityGate = Boolean(
@@ -183,12 +189,13 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
   );
 
   return Object.freeze({
-    version: "1.0",
+    version: "1.1",
     weightedScore,
     evidenceCoverage,
     qualityAdjustedScore,
     qualityGate,
     categories: Object.freeze(categories),
+    unmeasuredCategories: Object.freeze(unmeasuredCategories),
     issues: Object.freeze(issues),
     statistics: Object.freeze({
       pagesAnalyzed: normalizedAudits.length,
@@ -196,6 +203,8 @@ export function runDiagnostics({ audits = [], graphValidation = null, knowledgeG
       qualityAdjustedScore,
       errorCount: issues.filter((item) => item.severity === "ERROR").length,
       warningCount: issues.filter((item) => item.severity === "WARNING").length,
+      measuredCategoryWeight: measuredWeight,
+      unmeasuredCategories: unmeasuredCategories.length,
       graphNodes: Number(knowledgeGraph?.statistics?.nodeCount || 0),
       graphEdges: Number(knowledgeGraph?.statistics?.edgeCount || 0)
     })
