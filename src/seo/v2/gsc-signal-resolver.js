@@ -288,32 +288,77 @@ function queryCoverage(haystack, normalizedQuery) {
   };
 }
 
+function candidateSemanticText(item = {}) {
+  return [
+    item?.title,
+    item?.topicName,
+    item?.topic,
+    item?.course?.title,
+    ...(item?.queryAngles || []),
+    ...(item?.marketQueryAngles || [])
+  ].filter(Boolean).join(" | ");
+}
+
+function candidatePrimaryTopic(item = {}) {
+  return normalizeText(item?.topicName || "");
+}
+
+function queryHasCompetingSpecificTopics(query, candidateTopic = "") {
+  const specificTopics = resolveTopics({
+    title: query,
+    keywords: [query],
+    path: ""
+  })
+    .filter((topic) => topic.slug !== "music-education" && topic.slug !== "shushtar");
+
+  if (!specificTopics.length) return false;
+  if (!candidateTopic) return specificTopics.length > 1;
+  return specificTopics.length > 1 &&
+    !specificTopics.some((topic) => normalizeText(topic.name) === candidateTopic);
+}
+
+function queryTopicAlignment(item, query) {
+  const candidateTopic = candidatePrimaryTopic(item);
+  if (!candidateTopic) return false;
+  const normalizedQuery = normalizeText(query);
+  return containsSemanticPhrase(normalizedQuery, candidateTopic) &&
+    !queryHasCompetingSpecificTopics(normalizedQuery, candidateTopic);
+}
+
 function queryMatches(item, query) {
-  const haystack = normalizeText([item.title, item.topicName, item.topic, item.course?.title].filter(Boolean).join(" | "));
+  const haystack = normalizeText(candidateSemanticText(item));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return false;
 
   const coverage = queryCoverage(haystack, normalizedQuery);
   if (coverage.exact === 1) return true;
 
-  // One substantive token can still represent a useful query signal, but
-  // multi-token queries must have most of their concept represented by the
-  // target. This prevents a single shared token from pulling unrelated
-  // long-tail queries into an opportunity.
   const queryTokenCount = tokens(normalizedQuery).size;
   if (queryTokenCount === 1) return coverage.queryCoverage === 1;
-  return coverage.queryCoverage >= 0.67 &&
+
+  const strictMatch = coverage.queryCoverage >= 0.67 &&
     coverage.targetCoverage >= 0.34 &&
     coverage.overlap >= 0.34;
+  if (strictMatch) return true;
+
+  // Allow intent modifiers that sit around the candidate's subject core,
+  // but only for short queries and only when no competing subject/topic is
+  // present. This preserves precision while catching queries like
+  // «هزینه کلاس گیتار» for a guitar opportunity.
+  if (
+    queryTokenCount <= 3 &&
+    coverage.queryCoverage >= (queryTokenCount === 2 ? 0.50 : 0.34) &&
+    coverage.overlap >= 0.25 &&
+    queryTopicAlignment(item, normalizedQuery)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function queryRelevanceScore(item, query) {
-  const haystack = normalizeText([
-    item?.title,
-    item?.topicName,
-    item?.topic,
-    item?.course?.title
-  ].filter(Boolean).join(" | "));
+  const haystack = normalizeText(candidateSemanticText(item));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return 0;
 
@@ -323,6 +368,8 @@ function queryRelevanceScore(item, query) {
   let score = exact * 100 + overlap * 50 +
     coverage.queryCoverage * 35 +
     coverage.targetCoverage * 15;
+
+  if (queryTopicAlignment(item, normalizedQuery)) score += 18;
 
   const targetIntent = String(item?.searchIntent || item?.intent || "").trim().toLowerCase();
   if (targetIntent) {
@@ -341,7 +388,7 @@ function queryRelevanceScore(item, query) {
   return score;
 }
 
-function buildGscQueryIntentEvidence(rows = []) {
+function buildGscQueryIntentEvidence(rows = [], opportunity = {}) {
   const byQuery = new Map();
   for (const row of rows) {
     const query = normalizeText(row?.query);
@@ -359,12 +406,16 @@ function buildGscQueryIntentEvidence(rows = []) {
   for (const item of byQuery.values()) {
     const result = classifyIntent({ title: item.query });
     const primary = result.primary;
-    const weight = item.impressions;
+    const relevance = Math.max(0, Math.min(1, queryRelevanceScore(opportunity, item.query) / 100));
+    if (relevance < 0.34) continue;
+    const weight = item.impressions * relevance;
     distribution.set(primary, (distribution.get(primary) || 0) + weight);
     totalImpressions += weight;
     queryEvidence.push({
       query: item.query,
-      impressions: weight,
+      impressions: item.impressions,
+      weightedImpressions: Number(weight.toFixed(2)),
+      relevance: Number(relevance.toFixed(3)),
       primary,
       confidence: result.confidence
     });
@@ -389,7 +440,8 @@ function buildGscQueryIntentEvidence(rows = []) {
     primaryShare: top ? Number(top.share.toFixed(3)) : 0,
     margin: Number(margin.toFixed(3)),
     confidence: Number(Math.min(0.99, Math.max(0.35, (top?.share || 0) + margin * 0.5)).toFixed(3)),
-    sampleImpressions: totalImpressions,
+    sampleImpressions: Number(totalImpressions.toFixed(2)),
+    rawSampleImpressions: queryEvidence.reduce((sum, item) => sum + item.impressions, 0),
     queryCount: queryEvidence.length,
     distribution: Object.freeze(Object.fromEntries(
       ranked.map((item) => [item.intent, Number(item.share.toFixed(3))])
@@ -788,7 +840,7 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
       })
       .slice(0, 20);
     const relevantQuerySignal = aggregate(querySignals, index.ctrBenchmarks || {});
-    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows);
+    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows, item);
     if (queryIntentEvidence) {
       relevantQuerySignal.queryIntentEvidence = queryIntentEvidence;
     }
