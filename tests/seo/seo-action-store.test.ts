@@ -106,5 +106,40 @@ describe("SEO action GSC measurement", () => {
     expect(insertArgs).toContain(5);
     expect(insertArgs).not.toContain(1100);
   });
+  it("returns action outcome data without relying on a global attribution symbol", async () => {
+    const db = {
+      prepare(statement: string) {
+        if (statement.includes("FROM seo_action_log")) {
+          return {
+            bind() {
+              return {
+                all: async () => ({
+                  results: [{
+                    id: 12,
+                    actionType: "OPTIMIZE_EXISTING",
+                    target_url: "https://fatehmusic.ir/courses/guitar-course",
+                    target_slug: "guitar-course",
+                    target_title: "آموزش گیتار",
+                    status: "published"
+                  }]
+                })
+              };
+            }
+          };
+        }
+        return {
+          bind() {
+            return {
+              all: async () => ({ results: [] })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
 
+    const actions = await (await import("../../src/seo/v2/seo-action-store.js")).listSeoActions(db);
+    expect(actions).toHaveLength(1);
+    expect(actions[0].outcome.effect).toBe("INSUFFICIENT_DATA");
+  });
 });
+
