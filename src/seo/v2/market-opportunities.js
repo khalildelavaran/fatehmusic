@@ -63,38 +63,109 @@ function classifyMarketOpportunity(position, gscImpressions) {
   return "MONITOR";
 }
 
-function gscExactSignal(keyword, rows = []) {
-  const key = normalizeQuery(keyword);
-  if (!key) return null;
-  const exact = rows.filter((row) => {
-    if (isBrandNavigationQuery(row?.query)) return false;
-    return normalizeQuery(row?.query) === key;
-  });
-  if (!exact.length) return null;
+function buildGscExactSignalMap(rows = []) {
+  const grouped = new Map();
 
-  const impressions = exact.reduce((sum, row) => sum + Math.max(0, Number(row?.impressions) || 0), 0);
-  const clicks = exact.reduce((sum, row) => sum + Math.max(0, Number(row?.clicks) || 0), 0);
-  const weightedPosition = exact.reduce((sum, row) => {
+  for (const row of rows) {
+    if (isBrandNavigationQuery(row?.query)) continue;
+    const key = normalizeQuery(row?.query);
+    if (!key) continue;
+
+    const current = grouped.get(key) || {
+      impressions: 0,
+      clicks: 0,
+      weightedPosition: 0,
+      positionImpressions: 0,
+      pages: new Map()
+    };
+
+    const impressions = Math.max(0, Number(row?.impressions) || 0);
+    const clicks = Math.max(0, Number(row?.clicks) || 0);
     const position = Number(row?.position);
-    const weight = Math.max(0, Number(row?.impressions) || 0);
-    return Number.isFinite(position) && weight > 0 ? sum + position * weight : sum;
-  }, 0);
-  const bestPage = [...new Map(
-    exact
-      .filter((row) => row?.page)
-      .map((row) => [
-        String(row.page),
-        Math.max(0, Number(row?.impressions) || 0)
-      ])
-  ).entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || null;
-  return {
-    impressions,
-    clicks,
-    ctr: impressions ? clicks / impressions : 0,
-    position: impressions ? weightedPosition / impressions : null,
-    bestPage
-  };
+
+    current.impressions += impressions;
+    current.clicks += clicks;
+
+    if (Number.isFinite(position) && position > 0 && impressions > 0) {
+      current.weightedPosition += position * impressions;
+      current.positionImpressions += impressions;
+    }
+
+    if (row?.page) {
+      const page = String(row.page);
+      current.pages.set(page, (current.pages.get(page) || 0) + impressions);
+    }
+
+    grouped.set(key, current);
+  }
+
+  return new Map(
+    [...grouped.entries()].map(([key, value]) => {
+      const rankedPages = [...value.pages.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      return [key, Object.freeze({
+        impressions: value.impressions,
+        clicks: value.clicks,
+        ctr: value.impressions ? value.clicks / value.impressions : 0,
+        position: value.positionImpressions
+          ? value.weightedPosition / value.positionImpressions
+          : null,
+        bestPage: rankedPages[0]?.[0] || null
+      })];
+    })
+  );
+}
+
+function groupMarketKeywordRows(rows = []) {
+  const grouped = new Map();
+
+  for (const row of rows) {
+    const keyword = String(row?.keyword || "").trim();
+    const key = normalizeQuery(keyword);
+    const volume = Math.max(0, Number(row?.volume_monthly ?? row?.volume) || 0);
+    const difficulty = Number(row?.keyword_difficulty ?? row?.difficulty);
+    const position = Number(row?.best_position);
+    const fetchedAt = row?.fetched_at || row?.fetchedAt || null;
+
+    if (!keyword || !key || isBrandNavigationQuery(keyword)) continue;
+
+    const current = grouped.get(key);
+    if (!current) {
+      grouped.set(key, {
+        ...row,
+        keyword,
+        volume,
+        difficulty,
+        best_position: position,
+        best_position_url: row?.best_position_url || null,
+        fetched_at: fetchedAt
+      });
+      continue;
+    }
+
+    if (volume > Number(current.volume || 0)) {
+      current.volume = volume;
+      current.keyword = keyword;
+      current.difficulty = difficulty;
+    } else if (!Number.isFinite(Number(current.difficulty)) && Number.isFinite(difficulty)) {
+      current.difficulty = difficulty;
+    }
+
+    const currentPosition = Number(current.best_position);
+    if (Number.isFinite(position) && position > 0 &&
+        (!Number.isFinite(currentPosition) || currentPosition <= 0 || position < currentPosition)) {
+      current.best_position = position;
+      current.best_position_url = row?.best_position_url || current.best_position_url || null;
+    }
+
+    if (fetchedAt && (!current.fetched_at || String(fetchedAt) > String(current.fetched_at))) {
+      current.fetched_at = fetchedAt;
+      current.intents = row?.intents ?? current.intents;
+      current.serp_features = row?.serp_features ?? row?.serpFeatures ?? current.serp_features;
+    }
+  }
+
+  return [...grouped.values()];
 }
 
 function semanticTopicHint(keyword) {
@@ -143,10 +214,10 @@ export function buildMarketOpportunityReport({
   limit = 50,
   gscFreshness = "UNKNOWN"
 } = {}) {
-  const rows = Array.isArray(keywordRows) ? keywordRows : [];
+  const rows = groupMarketKeywordRows(Array.isArray(keywordRows) ? keywordRows : []);
   const gsc = Array.isArray(gscRows) ? gscRows : [];
-
-  const seen = new Set();
+  const gscExactSignals = buildGscExactSignalMap(gsc);
+  const gscFreshnessNormalized = String(gscFreshness || "UNKNOWN").toUpperCase();
   const opportunities = [];
 
   for (const row of rows) {
@@ -156,14 +227,15 @@ export function buildMarketOpportunityReport({
     const difficulty = Number(row?.keyword_difficulty ?? row?.difficulty);
     const ahrefsPosition = Number(row?.best_position);
 
-    if (!keyword || !key || seen.has(key) || volume < Math.max(1, Number(minVolume) || 1)) continue;
-    if (isBrandNavigationQuery(keyword)) continue;
+    if (!keyword || !key || volume < Math.max(1, Number(minVolume) || 1)) continue;
 
-    seen.add(key);
-    const gscSignal = gscExactSignal(keyword, gsc);
+    const gscSignal = gscExactSignals.get(key) || null;
+    // Stale first-party exposure is retained for observability but excluded
+    // from live classification and effective-position decisions.
+    const gscSignalUsable = gscFreshnessNormalized === "STALE" ? null : gscSignal;
     const gscPosition = Number(gscSignal?.position);
-    const position = effectiveRankingPosition(ahrefsPosition, gscSignal, gscFreshness);
-    const classification = classifyMarketOpportunity(position, gscSignal?.impressions || 0);
+    const position = effectiveRankingPosition(ahrefsPosition, gscSignalUsable, gscFreshness);
+    const classification = classifyMarketOpportunity(position, gscSignalUsable?.impressions || 0);
     const marketScore = Math.round(clamp(
       volumeScore(volume) * 0.45 +
       keywordDifficultyScore(difficulty) * 0.25 +
@@ -189,7 +261,7 @@ export function buildMarketOpportunityReport({
         Number.isFinite(gscPosition) && gscPosition > 0 && (
           !Number.isFinite(ahrefsPosition) ||
           ahrefsPosition <= 0 ||
-          String(gscFreshness || "UNKNOWN").toUpperCase() !== "STALE"
+          gscFreshnessNormalized !== "STALE"
         )
           ? "gsc"
           : (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0 ? "ahrefs" : "gsc"),
@@ -197,7 +269,7 @@ export function buildMarketOpportunityReport({
         Number.isFinite(gscPosition) && gscPosition > 0 && (
           !Number.isFinite(ahrefsPosition) ||
           ahrefsPosition <= 0 ||
-          String(gscFreshness || "UNKNOWN").toUpperCase() !== "STALE"
+          gscFreshnessNormalized !== "STALE"
         )
           ? (gscSignal?.bestPage || row?.best_position_url || null)
           : (row?.best_position_url || gscSignal?.bestPage || null),
@@ -205,6 +277,7 @@ export function buildMarketOpportunityReport({
       action,
       topic: semanticTopicHint(keyword),
       gscSignal,
+      gscSignalUsable: Boolean(gscSignalUsable),
       marketScore,
       intents: row?.intents || null,
       serpFeatures: row?.serp_features || row?.serpFeatures || null,
