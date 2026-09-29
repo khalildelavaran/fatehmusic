@@ -20,6 +20,22 @@ describe("opportunity scoring", () => {
     expect(classifyOpportunityAction({ searchSignal: { available: true }, cannibalization: { severity: "HIGH" } })).toBe("MERGE_CONTENT");
   });
 
+  it("does not recommend a destructive merge from partial GSC evidence", () => {
+    expect(classifyOpportunityAction({
+      action: "OPTIMIZE_EXISTING",
+      priority: 90,
+      gscDataQuality: { truncated: true },
+      cannibalization: { severity: "HIGH" }
+    })).toBe("MONITOR");
+
+    expect(classifyOpportunityAction({
+      action: "OPTIMIZE_EXISTING",
+      priority: 90,
+      gscDataQuality: { truncated: true },
+      temporalCannibalization: { severity: "HIGH", actionable: true }
+    })).toBe("MONITOR");
+  });
+
   it("uses merge for a high-severity actionable temporal ownership shift", () => {
     expect(classifyOpportunityAction({
       priority: 70,
