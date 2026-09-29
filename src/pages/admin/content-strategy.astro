@@ -55,6 +55,8 @@ const intelligence = buildSEOIntelligence({
   gscRows,
   gscDataQuality: {
     truncated: Number(latestGscSync?.truncated) === 1,
+    rowsReceived: Number(latestGscSync?.rowsReceived),
+    maxRows: Number(ahrefsOrganicKeywords?.rowsReceived),
     finishedAt: latestGscSync?.snapshotSyncedAt || latestGscSync?.finishedAt || undefined
   },
   marketDataQuality: {
