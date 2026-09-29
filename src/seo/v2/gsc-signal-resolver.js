@@ -195,7 +195,7 @@ function scoreRow(row, ctrBenchmarks = {}, benchmarkRows = []) {
   return Math.min(100, score);
 }
 
-export function buildGscSignalIndex(rows = []) {
+export function buildGscSignalIndex(rows = [], { queryClusterLimit = 5000, queryClusterMinImpressions = 1 } = {}) {
   const pageRows = new Map();
   const nonBrandPageRows = new Map();
   const queryRows = new Map();
@@ -241,7 +241,10 @@ export function buildGscSignalIndex(rows = []) {
     }))
     .filter((item) => !item.brandNavigation)
     .sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore);
-  const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(rows, { minImpressions: 1, limit: 5000 });
+  const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(rows, {
+    minImpressions: Math.max(1, Number(queryClusterMinImpressions) || 1),
+    limit: Math.max(1, Number(queryClusterLimit) || 5000)
+  });
   const semanticQueryClusters = semanticQueryClustersResult.items;
   const queryClusterByQuery = new Map();
   for (const cluster of semanticQueryClusters) {
