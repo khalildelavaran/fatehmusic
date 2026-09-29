@@ -71,6 +71,13 @@ export function classifySeoActionMeasurement(latest, previous) {
   const impressionGrowth = previousImpressions > 0
     ? (latestImpressions - previousImpressions) / previousImpressions
     : null;
+  const exposureRatio = previousImpressions > 0
+    ? latestImpressions / previousImpressions
+    : null;
+  const exposureComparability =
+    !Number.isFinite(exposureRatio) ? "UNKNOWN" :
+    exposureRatio >= 0.5 && exposureRatio <= 2 ? "COMPARABLE" :
+    "MIX_SHIFT";
   const ctrZ = ctrZScore(latestClicks, latestImpressions, previousClicks, previousImpressions);
   const ctrLiftInterval = ctrLiftInterval95(
     latestClicks,
@@ -113,7 +120,19 @@ export function classifySeoActionMeasurement(latest, previous) {
     positionEvidenceStrong,
     positionImprovement,
     impressionGrowth,
+    exposureRatio,
+    exposureComparability,
     sampleScore,
-    evidenceType: "DESCRIPTIVE_BEFORE_AFTER"
+    evidenceType: "DESCRIPTIVE_BEFORE_AFTER",
+    statisticalMethod: "TWO_PROPORTION_Z_TEST",
+    assumptions: Object.freeze([
+      "before_after_windows_are_non_overlapping",
+      "ctr_is_approximated_as_a_binomial_proportion",
+      "observations_are_treated_as_independent_for_the_z_test"
+    ]),
+    limitations: Object.freeze([
+      ...(exposureComparability === "MIX_SHIFT" ? ["LARGE_IMPRESSION_MIX_SHIFT"] : []),
+      "DESCRIPTIVE_NOT_CAUSAL"
+    ])
   };
 }
