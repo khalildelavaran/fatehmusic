@@ -451,7 +451,11 @@ export async function getSeoDashboardIntelligence({
         ? { available: true, ...matchedSearch, matchedQueries: [matchedSearch.displayQuery], matchedPages: searchOwner?.pages?.map((item) => item.page) || [] }
         : null,
       searchOwnership: searchOwner,
-      marketSignal: (() => {\n        const normalizedTitle = normalizeQuery(title);\n        const market = marketKeywords.find((candidate) => normalizeQuery(candidate?.keyword) === normalizedTitle);\n        return market ? { available: true, estimatedVolume: Number(market.volume || 0), difficulty: market.keyword_difficulty == null ? null : Number(market.keyword_difficulty), source: "ahrefs", matchedKeyword: market.keyword } : null;\n      })(),
+      marketSignal: (() => {
+        const normalizedTitle = normalizeQuery(title);
+        const market = marketKeywords.find((candidate) => normalizeQuery(candidate?.keyword) === normalizedTitle);
+        return market ? { available: true, estimatedVolume: Number(market.volume || 0), difficulty: market.keyword_difficulty == null ? null : Number(market.keyword_difficulty), source: "ahrefs", matchedKeyword: market.keyword } : null;
+      })(),
       marketDataQuality: {
         freshness: freshnessFromAge(ageDays(keywordsResult?.fetchedAt), 8, 16)
       },
