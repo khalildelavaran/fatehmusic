@@ -48,6 +48,38 @@ export function normalizePath(path) {
 }
 
 
+
+/**
+ * Canonical URL identity used by SEO/GSC/link-graph matching.
+ * Query strings and fragments are removed; the root keeps "/".
+ * Relative paths are supported as well.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+export function normalizeUrl(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+
+    try {
+        const url = new URL(raw);
+        url.protocol = url.protocol.toLowerCase();
+        url.hostname = url.hostname.toLowerCase();
+        url.search = "";
+        url.hash = "";
+        url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+        return url.toString();
+    } catch {
+        const withoutFragment = raw.split("#")[0];
+        const withoutQuery = withoutFragment.split("?")[0];
+        const normalized = withoutQuery.length > 1
+            ? withoutQuery.replace(/\/+$/, "")
+            : (withoutQuery || "/");
+        return normalized.toLowerCase();
+    }
+}
+
+
 /**
  * Builds the canonical identity URL for a WebPage node.
  * The root keeps its conventional slash; non-root paths do not.
