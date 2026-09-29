@@ -385,6 +385,25 @@ describe("GSC signal resolver", () => {
   });
 
 
+  it("bounds semantic cannibalization cluster output without changing page detection", () => {
+    const rows = [
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 60 },
+      { query: "کلاس گیتار", page: "https://fatehmusic.ir/blog/guitar-guide", impressions: 60 },
+      { query: "آموزش پیانو", page: "https://fatehmusic.ir/courses/piano-course", impressions: 60 },
+      { query: "کلاس پیانو", page: "https://fatehmusic.ir/blog/piano-guide", impressions: 60 }
+    ];
+    const capped = detectSemanticQueryCannibalization(rows, {
+      maxQueryClusters: 1
+    });
+    const uncapped = detectSemanticQueryCannibalization(rows, {
+      maxQueryClusters: 5000
+    });
+
+    expect(capped.length).toBeLessThanOrEqual(uncapped.length);
+    expect(capped.length).toBe(1);
+    expect(capped[0].pages).toHaveLength(2);
+  });
+
   it("detects cannibalization across semantically equivalent query variants", () => {
     const conflicts = detectSemanticQueryCannibalization([
       { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar-course", impressions: 60 },
