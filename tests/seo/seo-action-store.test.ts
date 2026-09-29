@@ -2,15 +2,38 @@ import { describe, expect, it } from "vitest";
 import { syncPublishedSeoActionMeasurements } from "../../src/seo/v2/seo-action-store.js";
 
 describe("SEO action GSC measurement", () => {
-  it("passes the requested snapshot label to the measurement query", async () => {
-    let sql = "";
-    let args: unknown[] = [];
+  it("passes the requested snapshot label to the source query", async () => {
+    let selectSql = "";
+    let selectArgs: unknown[] = [];
+    let insertSql = "";
+    let insertArgs: unknown[] = [];
+
     const db = {
       prepare(statement: string) {
-        sql = statement;
+        if (statement.includes("SELECT a.id AS action_id")) {
+          selectSql = statement;
+          return {
+            bind(...values: unknown[]) {
+              selectArgs = values;
+              return {
+                all: async () => ({
+                  results: [{
+                    action_id: 7,
+                    query: "آموزش گیتار",
+                    impressions: 20,
+                    clicks: 2,
+                    position: 7
+                  }]
+                })
+              };
+            }
+          };
+        }
+
+        insertSql = statement;
         return {
           bind(...values: unknown[]) {
-            args = values;
+            insertArgs = values;
             return { run: async () => ({ meta: { changes: 1 } }) };
           }
         };
@@ -24,17 +47,46 @@ describe("SEO action GSC measurement", () => {
       snapshotLabel: "previous"
     })).resolves.toEqual({ measured: 1 });
 
-    expect(sql).toContain("g.snapshot_label = ?");
-    expect(args).toContain("previous");
+    expect(selectSql).toContain("g.snapshot_label = ?");
+    expect(selectArgs).toContain("previous");
+    expect(insertSql).toContain("seo_action_measurements");
+    expect(insertArgs).toContain(2);
   });
 
-  it("excludes branded queries from action measurement aggregation", async () => {
-    let sql = "";
+  it("filters branded queries with the canonical Brand detector before aggregation", async () => {
+    let insertArgs: unknown[] = [];
     const db = {
       prepare(statement: string) {
-        sql = statement;
+        if (statement.includes("SELECT a.id AS action_id")) {
+          return {
+            bind() {
+              return {
+                all: async () => ({
+                  results: [
+                    {
+                      action_id: 9,
+                      query: "fateh music academy shushtar",
+                      impressions: 1000,
+                      clicks: 40,
+                      position: 2
+                    },
+                    {
+                      action_id: 9,
+                      query: "آموزش گیتار",
+                      impressions: 100,
+                      clicks: 5,
+                      position: 6
+                    }
+                  ]
+                })
+              };
+            }
+          };
+        }
+
         return {
-          bind() {
+          bind(...values: unknown[]) {
+            insertArgs = values;
             return { run: async () => ({ meta: { changes: 1 } }) };
           }
         };
@@ -47,8 +99,12 @@ describe("SEO action GSC measurement", () => {
       windowEnd: "2026-09-28"
     });
 
-    expect(sql).toContain("fatehmusic.ir");
-    expect(sql).toContain("NOT IN");
+    // The insert contains actionId, measuredAt, windowStart, windowEnd,
+    // impressions, clicks, ctr, position for one row. Brand impressions
+    // must not inflate the aggregated 100 non-brand impressions.
+    expect(insertArgs).toContain(100);
+    expect(insertArgs).toContain(5);
+    expect(insertArgs).not.toContain(1100);
   });
 
 });
