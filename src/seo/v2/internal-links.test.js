@@ -40,6 +40,46 @@ describe("semantic internal links", () => {
     expect(guitar.score).toBeGreaterThan(piano.score);
   });
 
+  it("uses real GSC demand as an additional target-selection signal", () => {
+    const result = buildInternalLinkPlan({
+      currentUrl: pages[0].url,
+      currentTitle: pages[0].title,
+      currentTopics: pages[0].topics,
+      currentType: pages[0].type,
+      candidates: [
+        pages[0],
+        {
+          url: "https://fatehmusic.ir/courses/guitar-course",
+          title: "کلاس آموزش گیتار",
+          type: "Course",
+          topics: ["guitar"],
+          priority: 10
+        },
+        {
+          url: "https://fatehmusic.ir/courses/piano-course",
+          title: "کلاس آموزش پیانو",
+          type: "Course",
+          topics: ["piano"],
+          priority: 10
+        }
+      ],
+      gscSignals: new Map([
+        ["https://fatehmusic.ir/courses/piano-course", {
+          available: true,
+          impressions: 1000,
+          clicks: 30,
+          ctr: 0.03,
+          position: 6
+        }]
+      ])
+    });
+
+    const piano = result.find((item) => item.url.endsWith("/piano-course"));
+    expect(piano.reasonCodes).toContain("SEARCH_DEMAND");
+    expect(piano.searchDemand.impressions).toBe(1000);
+    expect(piano.score).toBeGreaterThan(10);
+  });
+
   it("returns concise anchor hints and explainable link reasons", () => {
     const result = buildInternalLinkPlan({
       currentUrl: pages[0].url,
