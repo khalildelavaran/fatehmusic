@@ -259,7 +259,7 @@ export async function syncPublishedSeoActionMeasurements(db, {
       "VALUES " + placeholders + " " +
       "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET " +
       "measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, " +
-      "ctr=excluded.ctr, position=excluded.position";
+      "ctr=excluded.ctr, position=excluded.position, source=excluded.source, metadata=excluded.metadata";
 
     const bindings = [];
     for (const item of chunk) {
