@@ -62,6 +62,49 @@ export function getSchemaTypeDefinition(type) {
   return isKnownSchemaType(type) ? DEFINITIONS[type] : null;
 }
 
+const REQUIRED_SCHEMA_FIELDS = Object.freeze({
+  Organization: ["name", "url"],
+  EducationalOrganization: ["name", "url"],
+  LocalBusiness: ["name", "url"],
+  MusicSchool: ["name", "url"],
+  WebSite: ["name", "url", "publisher"],
+  WebPage: ["name", "url"],
+  Course: ["name", "description"],
+  Person: ["name"],
+  Article: ["headline", "author", "publisher"],
+  ItemList: ["name", "itemListElement"],
+  FAQPage: ["mainEntity"]
+});
+
+function hasSchemaValue(value) {
+  if (value == null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  return typeof value === "object";
+}
+
+export function validateSchemaContracts(nodes = []) {
+  const errors = [];
+
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    const types = Array.isArray(node?.["@type"]) ? node["@type"] : [node?.["@type"]];
+    const applicableTypes = types.filter((type) => REQUIRED_SCHEMA_FIELDS[type]);
+
+    for (const type of applicableTypes) {
+      for (const field of REQUIRED_SCHEMA_FIELDS[type]) {
+        if (!hasSchemaValue(node?.[field])) {
+          errors.push(`Missing required schema field: ${type}.${field}`);
+        }
+      }
+    }
+  }
+
+  return Object.freeze({
+    valid: errors.length === 0,
+    errors: Object.freeze(errors)
+  });
+}
+
 export function validateSchemaTypes(nodes = []) {
   const errors = [];
 
