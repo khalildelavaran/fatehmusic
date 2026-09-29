@@ -91,7 +91,7 @@ function buildCandidatePool(source, pages, tokenIndex, {
         .slice(0, Math.max(20, Number(maxCandidates) || 120));
 }
 
-export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, gscSignals = null, limit = 6 } = {}) {
+export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, gscSignals = null, gscOwnership = [], limit = 6 } = {}) {
     const currentTopicSet = normalizedTopicSet(currentTopics);
     const resolvedCurrentTitle = currentTitle || (candidates || []).find((candidate) => normalizeUrl(candidate?.url) === normalizeUrl(currentUrl))?.title || "";
     const currentContext = [resolvedCurrentTitle, ...(currentTopics || [])].filter(Boolean).join(" ");
@@ -110,10 +110,17 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", curr
 
             const relationEvidence = findRelationEvidence(currentUrl, candidate.url, semanticGraph);
             score += relationEvidence.score;
+            const ownerEvidence = findStrongOwnershipEvidence(candidate.url, gscOwnership);
+            if (ownerEvidence.status === "STRONG") score += 8;
+            else if (ownerEvidence.status === "MODERATE") score += 3;
+            else if (ownerEvidence.status === "SPLIT") score -= 4;
             const reasonCodes = [];
             if (sharedTopics.length) reasonCodes.push("SHARED_TOPIC");
             if (topicalSimilarity >= 0.35) reasonCodes.push("SEMANTIC_SIMILARITY");
             if (relationEvidence.score > 0) reasonCodes.push("ENTITY_RELATION");
+            if (ownerEvidence.status === "STRONG") reasonCodes.push("GSC_OWNER_STRONG");
+            else if (ownerEvidence.status === "MODERATE") reasonCodes.push("GSC_OWNER_MODERATE");
+            else if (ownerEvidence.status === "SPLIT") reasonCodes.push("GSC_OWNER_SPLIT");
             if (
                 (currentType === "Course" && candidate.type === "Instructor") ||
                 (currentType === "Instructor" && candidate.type === "Course") ||
@@ -158,7 +165,7 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", curr
 /**
  * Produce a compact graph used by templates or build-time tooling.
  */
-export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = null, limit = 6, maxInboundLinks = 12, maxOutboundLinks = limit } = {}) {
+export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = null, gscOwnership = [], limit = 6, maxInboundLinks = 12, maxOutboundLinks = limit } = {}) {
     const normalizedLimit = Math.max(0, Number(maxOutboundLinks) || 0);
     const normalizedInboundCap = Math.max(0, Number(maxInboundLinks) || 0);
     const sourcePages = [...(pages || [])]
@@ -177,6 +184,7 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
             candidates: candidatePool,
             semanticGraph,
             gscSignals,
+            gscOwnership,
             limit: candidatePool.length
         });
         allEdges.set(
@@ -300,6 +308,24 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
                 inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics
             }))
     }));
+}
+
+function findStrongOwnershipEvidence(candidateUrl, ownership = []) {
+    const normalized = normalizeUrl(candidateUrl);
+    const matches = (Array.isArray(ownership) ? ownership : [])
+        .filter((item) => normalizeUrl(item?.topPage) === normalized);
+
+    if (!matches.length) return { status: "NONE" };
+    const strongest = matches
+        .sort((a, b) => Number(b.impressions || 0) - Number(a.impressions || 0))[0];
+
+    return {
+        status:
+            strongest?.ownerStatus === "SPLIT" ? "SPLIT" :
+            strongest?.ownerDominanceEvidence === "STRONG" && strongest?.ownerStatus === "STABLE" ? "STRONG" :
+            strongest?.ownerStatus === "STABLE" ? "MODERATE" :
+            "NONE"
+    };
 }
 
 function getCandidateSearchSignal(candidate, gscSignals) {
