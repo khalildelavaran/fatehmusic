@@ -720,7 +720,7 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
     const query = normalizeText(row?.query);
     const page = normalizeUrl(row?.page);
     const impressions = Math.max(0, Number(row?.impressions) || 0);
-    if (!query || !page || impressions <= 0 || !isOwnershipEligibleQuery(query)) continue;
+    if (!query || !page || impressions <= 0 || !isOwnershipEligibleQuery(query) || isBrandNavigationQuery(query)) continue;
 
     const profile = buildQuerySemanticProfile(query, semanticProfileCache);
     const key = profile.key;
