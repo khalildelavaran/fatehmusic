@@ -1014,7 +1014,12 @@ function normalizeSemanticMap(pageSemantics = []) {
   return new Map();
 }
 
-export function detectSearchCannibalization(rows = [], { minImpressions = 50, similarityThreshold = 0.55, pageSemantics = [] } = {}) {
+export function detectSearchCannibalization(rows = [], {
+  minImpressions = 50,
+  similarityThreshold = 0.55,
+  pageSemantics = [],
+  maxPagesPerQuery = 20
+} = {}) {
   // Compare pages that rank for the same query within the same GSC
   // reporting window. A page switching ownership between windows is a
   // temporal transition, not simultaneous cannibalization.
@@ -1050,7 +1055,15 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
       const period = separator >= 0 ? groupKey.slice(separator + 1) : "undated";
       const ranked = [...pages.entries()].sort((a, b) => b[1] - a[1]);
       const totalImpressions = ranked.reduce((sum, [, value]) => sum + value, 0);
-      const competition = ranked.map(([page, impressions], index) => ({ page, impressions, share: totalImpressions ? impressions / totalImpressions : 0, rank: index + 1 }));
+      const safePageLimit = Math.max(2, Number(maxPagesPerQuery) || 20);
+      const competition = ranked
+        .slice(0, safePageLimit)
+        .map(([page, impressions], index) => ({
+          page,
+          impressions,
+          share: totalImpressions ? impressions / totalImpressions : 0,
+          rank: index + 1
+        }));
       const pairScores = [];
       for (let i = 0; i < competition.length; i += 1) {
         for (let j = i + 1; j < competition.length; j += 1) {
