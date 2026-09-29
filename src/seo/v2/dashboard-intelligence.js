@@ -272,7 +272,7 @@ function recommendedLinks(row, baseUrl) {
 }
 
 /**
- * @param {{db:D1Database,siteUrl?:string,courses?:object[],topicLimit?:number,gscQueryLimit?:number,gscPageLimit?:number,gscOwnershipLimit?:number,marketLimit?:number}} options
+ * @param {{db:D1Database,siteUrl?:string,courses?:object[],topicLimit?:number,gscQueryLimit?:number,gscPageLimit?:number,gscOwnershipLimit?:number,marketLimit?:number,marketTarget?:string,marketCountry?:string}} options
  */
 export async function getSeoDashboardIntelligence({
   db,
@@ -282,7 +282,9 @@ export async function getSeoDashboardIntelligence({
   gscQueryLimit = DEFAULT_GSC_QUERY_LIMIT,
   gscPageLimit = DEFAULT_GSC_PAGE_LIMIT,
   gscOwnershipLimit = DEFAULT_GSC_OWNERSHIP_LIMIT,
-  marketLimit = DEFAULT_MARKET_LIMIT
+  marketLimit = DEFAULT_MARKET_LIMIT,
+  marketTarget = siteUrl,
+  marketCountry = ""
 } = {}) {
   const baseUrl = normalizeSiteUrl(siteUrl);
   if (!db) {
@@ -359,20 +361,20 @@ export async function getSeoDashboardIntelligence({
     ).bind(baseUrl).first(),
     db.prepare(
       "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
-      "WHERE source='ahrefs' AND snapshot_type='metrics' ORDER BY snapshot_date DESC LIMIT 1"
-    ).first(),
+      "WHERE source='ahrefs' AND snapshot_type='metrics' AND target = ? AND country = ? ORDER BY snapshot_date DESC LIMIT 1"
+    ).bind(String(marketTarget || "").trim(), String(marketCountry || "").trim()).first(),
     db.prepare(
       "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
-      "WHERE source='ahrefs' AND snapshot_type='organic-competitors' ORDER BY snapshot_date DESC LIMIT 1"
-    ).first(),
+      "WHERE source='ahrefs' AND snapshot_type='organic-competitors' AND target = ? AND country = ? ORDER BY snapshot_date DESC LIMIT 1"
+    ).bind(String(marketTarget || "").trim(), String(marketCountry || "").trim()).first(),
     db.prepare(
       "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
-      "WHERE source='ahrefs' AND snapshot_type='refdomains-history' ORDER BY snapshot_date DESC LIMIT 1"
-    ).first(),
+      "WHERE source='ahrefs' AND snapshot_type='refdomains-history' AND target = ? AND country = ? ORDER BY snapshot_date DESC LIMIT 1"
+    ).bind(String(marketTarget || "").trim(), String(marketCountry || "").trim()).first(),
     db.prepare(
       "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
-      "WHERE source='ahrefs' AND snapshot_type='organic-keywords' ORDER BY snapshot_date DESC LIMIT 1"
-    ).first(),
+      "WHERE source='ahrefs' AND snapshot_type='organic-keywords' AND target = ? AND country = ? ORDER BY snapshot_date DESC LIMIT 1"
+    ).bind(String(marketTarget || "").trim(), String(marketCountry || "").trim()).first(),
   ]);
 
   const topics = Array.isArray(topicResult.results) ? topicResult.results : [];
