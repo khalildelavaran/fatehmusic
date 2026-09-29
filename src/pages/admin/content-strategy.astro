@@ -38,7 +38,7 @@ const intelligence = db
   : await getSeoDashboardIntelligence({ db, siteUrl: site.url, courses });
 
 const latestGscSync = intelligence.latestGscSync;
-const ahrefsMetrics = { payload: intelligence.ahrefsMetrics, snapshotDate: intelligence.ahrefsMetricsSnapshotDate };
+const ahrefsMetrics = { payload: intelligence.ahrefsMetrics };
 const ahrefsCompetitors = { payload: intelligence.ahrefsCompetitors };
 const ahrefsRefdomainsHistory = { payload: intelligence.ahrefsRefdomainsHistory };
 const ahrefsOrganicKeywords = intelligence.ahrefsOrganicKeywords;
