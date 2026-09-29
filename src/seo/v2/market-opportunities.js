@@ -206,6 +206,8 @@ export function buildMarketSignalMap(opportunities = []) {
       action: item?.action || null,
       intents: item?.intents || null,
       serpFeatures: item?.serpFeatures || null,
+      trafficPotential: Math.max(0, Number(item?.trafficPotential) || 0),
+      cpc: Number.isFinite(Number(item?.cpc)) ? Number(item.cpc) : null,
       fetchedAt: item?.fetchedAt || item?.fetched_at || null,
       dataFreshness: item?.dataFreshness || null,
       source: "ahrefs",
@@ -244,11 +246,17 @@ export function buildMarketOpportunityReport({
     // from live classification and effective-position decisions.
     const gscSignalUsable = gscFreshnessNormalized === "STALE" ? null : gscSignal;
     const gscPosition = Number(gscSignal?.position);
+    const minimumGscPositionImpressions = Math.max(1, Number(minGscPositionImpressions) || 20);
+    const hasGscPosition = Number.isFinite(gscPosition) && gscPosition > 0;
+    const gscImpressions = Math.max(0, Number(gscSignal?.impressions) || 0);
+    const hasUsableGscPosition =
+      hasGscPosition && gscImpressions >= minimumGscPositionImpressions;
+    const hasAhrefsPosition = Number.isFinite(ahrefsPosition) && ahrefsPosition > 0;
     const position = effectiveRankingPosition(
       ahrefsPosition,
       gscSignalUsable,
       gscFreshness,
-      minGscPositionImpressions
+      minimumGscPositionImpressions
     );
     const classification = classifyMarketOpportunity(position, gscSignalUsable?.impressions || 0);
     const marketScore = Math.round(clamp(
@@ -272,10 +280,10 @@ export function buildMarketOpportunityReport({
       bestPosition: Number.isFinite(position) && position > 0 ? position : null,
       ahrefsBestPosition: Number.isFinite(ahrefsPosition) && ahrefsPosition > 0 ? ahrefsPosition : null,
       gscBestPosition: Number.isFinite(gscPosition) && gscPosition > 0 ? gscPosition : null,
-      gscPositionImpressions: Math.max(0, Number(gscSignal?.impressions) || 0),
+      gscPositionImpressions: gscImpressions,
       gscPositionEvidence:
-        Number.isFinite(gscPosition) && gscPosition > 0
-          ? Math.max(0, Number(gscSignal?.impressions) || 0) >= Math.max(1, Number(minGscPositionImpressions) || 20)
+        hasGscPosition
+          ? hasUsableGscPosition
             ? "USABLE"
             : "TRACE"
           : "NONE",
@@ -293,6 +301,8 @@ export function buildMarketOpportunityReport({
       gscSignal,
       gscSignalUsable: Boolean(gscSignalUsable),
       marketScore,
+      trafficPotential: Math.max(0, Number(row?.traffic_potential ?? row?.trafficPotential) || 0),
+      cpc: Number.isFinite(Number(row?.cpc)) ? Number(row.cpc) : null,
       intents: row?.intents || null,
       serpFeatures: row?.serp_features || row?.serpFeatures || null,
       fetchedAt: row?.fetched_at || row?.fetchedAt || null,
