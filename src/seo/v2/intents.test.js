@@ -21,6 +21,16 @@ describe("intent phrase matching", () => {
     }).primary).toBe("informational");
   });
 
+  it("accumulates multiple matching rules for the same intent", () => {
+    const result = classifyIntent({
+      title: "بهترین دوره مناسب گیتار",
+      entityType: "Article"
+    });
+    const commercial = result.intents.find((item) => item.intent === "commercial");
+    expect(commercial?.score).toBe(60);
+    expect(commercial?.reason).toEqual(expect.arrayContaining(["بهترین", "مناسب"]));
+  });
+
   it("reports confidence from the separation between top intents", () => {
     const result = classifyIntent({
       path: "/register",
