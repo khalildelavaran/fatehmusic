@@ -1,8 +1,21 @@
 import { isBrandNavigationQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
+import { semanticTokens } from "../helpers/text.js";
+
+const GENERIC_GAP_TOKENS = new Set([
+  "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
+  "و", "یا", "با", "را", "این", "یک", "چه", "چگونه", "چطور",
+  "فاتح", "یادگیری", "مدرس"
+]);
+
+function semanticGapTokens(value) {
+  return new Set(semanticTokens(value).filter((token) =>
+    !GENERIC_GAP_TOKENS.has(token) && token.length >= 2
+  ));
+}
 
 function semanticSimilarity(left, right) {
-  const a = queryTokens(left);
-  const b = queryTokens(right);
+  const a = semanticGapTokens(left);
+  const b = semanticGapTokens(right);
   if (!a.size || !b.size) return 0;
   let intersection = 0;
   for (const token of a) if (b.has(token)) intersection += 1;
