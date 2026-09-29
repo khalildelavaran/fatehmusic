@@ -1,12 +1,9 @@
 import type { KeywordProvider, KeywordSignal } from "./keyword-provider";
 
 const DEFAULT_SITE_URL = "https://fatehmusic.ir";
-import { containsSemanticPhrase, normalizeSemanticText } from "../../../seo/helpers/text.js";
+import { containsSemanticPhrase } from "../../../seo/helpers/text.js";
 import { isOwnershipEligibleQuery, queryTokens } from "../../../seo/helpers/query.js";
 
-function normalize(value: string): string {
-  return normalizeSemanticText(value);
-}
 function tokens(value: string): Set<string> {
   return queryTokens(value);
 }
