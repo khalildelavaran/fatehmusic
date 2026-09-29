@@ -384,10 +384,10 @@ function allowedInternalLinks(topic: SelectedTopic): Set<string> {
   ]);
 }
 
-export function courseMatchesArticleTitle(title: string): any[] {
+export function courseMatchesArticleTitle(title: string, courseCatalog: Array<any> = courses as Array<any>): any[] {
   const normalizedTitle = normalizeSemanticText(title);
   const comparisonTitle = /(?:تفاوت|فرق|مقایسه|\sو\s|\sیا\s)/u.test(normalizedTitle);
-  const matches = (courses as Array<any>)
+  const matches = courseCatalog
     .filter((course) => course?.active && course?.slug && course?.title)
     .map((course) => {
       const name = normalizeSemanticText(
