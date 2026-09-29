@@ -249,6 +249,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   });
   const scored = scoreOpportunities(enriched);
   return Object.freeze({
+    index,
     opportunities: Object.freeze(scored),
     signalRowCount: scoringRows.length,
     connected: scoringRows.length > 0,
