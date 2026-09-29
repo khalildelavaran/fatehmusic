@@ -303,6 +303,9 @@ export async function getSeoDashboardIntelligence({
         queryOwnershipTruncated: false,
         queryOwnershipCount: 0,
         queryOwnershipTotalCount: 0,
+        activeTopicCount: 0,
+        approvedTopicCount: 0,
+        candidateTopicCount: 0,
         gscFreshness: "UNKNOWN",
         marketFreshness: "UNKNOWN"
       })
@@ -542,6 +545,5 @@ export async function getSeoDashboardIntelligence({
       gscFreshness,
       marketFreshness
     }),
-    actions: Object.freeze([])
   });
 }
