@@ -314,3 +314,57 @@ describe("GSC query ownership exposure", () => {
     expect(result.queryOwnership[0].impressions).toBe(20);
   });
 });
+
+
+describe("query-level temporal ownership", () => {
+  it("attaches high temporal ownership shifts to a new-content query owner", () => {
+    const result = enrichOpportunitiesWithSearchConsole(
+      [{
+        title: "آموزش گیتار شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        action: "NEW_CONTENT",
+        priority: 80
+      }],
+      [
+        {
+          query: "آموزش گیتار شوشتر",
+          page: "https://fatehmusic.ir/courses/guitar-course",
+          impressions: 200,
+          snapshotLabel: "previous",
+          startDate: "2026-07-01",
+          endDate: "2026-07-28"
+        },
+        {
+          query: "آموزش گیتار شوشتر",
+          page: "https://fatehmusic.ir/blog/guitar-guide",
+          impressions: 20,
+          snapshotLabel: "previous",
+          startDate: "2026-07-01",
+          endDate: "2026-07-28"
+        },
+        {
+          query: "آموزش گیتار شوشتر",
+          page: "https://fatehmusic.ir/blog/guitar-guide",
+          impressions: 180,
+          snapshotLabel: "current",
+          startDate: "2026-08-01",
+          endDate: "2026-08-28"
+        },
+        {
+          query: "آموزش گیتار شوشتر",
+          page: "https://fatehmusic.ir/courses/guitar-course",
+          impressions: 20,
+          snapshotLabel: "current",
+          startDate: "2026-08-01",
+          endDate: "2026-08-28"
+        }
+      ]
+    );
+
+    const ownership = result.opportunities[0].searchOwnership;
+    expect(ownership.temporalOwnership.status).toBe("SHIFT");
+    expect(ownership.temporalOwnership.highActionable).toBe(true);
+    expect(ownership.temporalOwnership.strongestSeverity).toBe("HIGH");
+  });
+});
