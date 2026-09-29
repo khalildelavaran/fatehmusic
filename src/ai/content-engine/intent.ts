@@ -8,21 +8,21 @@
 // lower in scoring.ts rather than filtered out entirely (a handful of
 // "چقدر هزینه دارد" style posts are still legitimate and helpful).
 
-import { normalizePersianText } from "./normalize";
+import { containsSemanticPhrase, normalizeSemanticText } from "../../seo/helpers/text.js";
 import type { SearchIntent } from "./types";
 
 const TRANSACTIONAL_TERMS = ["ثبت‌نام", "ثبت نام", "هزینه", "شهریه", "قیمت", "تعرفه", "رزرو کلاس", "خرید"];
 const NAVIGATIONAL_TERMS = ["آموزشگاه فاتح", "آموزشگاه موسیقی فاتح", "فاتح موزیک", "خلیل دلاوران"];
-const COMMERCIAL_TERMS = ["بهترین", "مقایسه", "تفاوت", " یا ", "راهنمای خرید", "کدام را انتخاب"];
+const COMMERCIAL_TERMS = ["بهترین", "مقایسه", "تفاوت", "یا", "راهنمای خرید", "کدام را انتخاب"];
 
 /** Returns the single strongest matching intent. Order matters: a title
  * mentioning both the brand and a price ("هزینه ثبت‌نام در آموزشگاه فاتح")
  * is still primarily transactional intent from the searcher's point of
  * view, so transactional is checked first. */
 export function classifyIntent(title: string): SearchIntent {
-  const text = normalizePersianText(title);
-  if (TRANSACTIONAL_TERMS.some((term) => text.includes(term))) return "transactional";
-  if (NAVIGATIONAL_TERMS.some((term) => text.includes(term))) return "navigational";
-  if (COMMERCIAL_TERMS.some((term) => text.includes(term))) return "commercial";
+  const text = normalizeSemanticText(title);
+  if (TRANSACTIONAL_TERMS.some((term) => containsSemanticPhrase(text, term))) return "transactional";
+  if (NAVIGATIONAL_TERMS.some((term) => containsSemanticPhrase(text, term))) return "navigational";
+  if (COMMERCIAL_TERMS.some((term) => containsSemanticPhrase(text, term))) return "commercial";
   return "informational";
 }
