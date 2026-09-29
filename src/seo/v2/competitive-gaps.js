@@ -103,14 +103,15 @@ export function buildCompetitiveGapReport({
       fetchedAt: null
     };
 
+    const previousMaxVolume = Math.max(...current.volumes, 0);
     if (domain) current.competitorDomains.add(domain);
     current.volumes.push(volume);
+    if (volume > previousMaxVolume) current.keyword = keyword;
     if (Number.isFinite(difficulty)) current.difficulties.push(difficulty);
     const fetchedAt = row?.fetched_at || row?.fetchedAt || null;
     if (fetchedAt && (!current.fetchedAt || String(fetchedAt) > String(current.fetchedAt))) {
       current.fetchedAt = fetchedAt;
     }
-    if (volume > Math.max(...current.volumes, 0)) current.keyword = keyword;
     grouped.set(normalizedKeyword, current);
   }
 
