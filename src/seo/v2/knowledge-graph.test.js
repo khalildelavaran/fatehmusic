@@ -2,6 +2,38 @@ import { describe, expect, it } from "vitest";
 import { buildKnowledgeGraph, validateKnowledgeGraph, findRelatedEntities, findRelationPaths } from "./knowledge-graph.js";
 import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
+describe("SEO knowledge graph provenance", () => {
+  it("records provenance for semantic and explicit relationships", () => {
+    const graph = buildKnowledgeGraph({
+      siteUrl: "https://fatehmusic.ir",
+      courses: [{
+        id: 1,
+        slug: "guitar-course",
+        title: "آموزش گیتار",
+        instructor: 7
+      }],
+      instructors: [{
+        id: 7,
+        slug: "ali",
+        name: "علی",
+        professional: { roles: ["مدرس گیتار"] }
+      }],
+      posts: [{
+        slug: "guitar-guide",
+        title: "راهنمای گیتار",
+        topic: "گیتار",
+        related_course_slug: "guitar-course"
+      }]
+    });
+
+    expect(graph.edges.every((edge) => typeof edge.provenance === "string" && edge.provenance.length > 0)).toBe(true);
+    expect(graph.edges.some((edge) => edge.provenance === "COURSE_INSTRUCTOR_REFERENCE")).toBe(true);
+    expect(graph.edges.some((edge) => edge.provenance === "ARTICLE_RELATED_COURSE_REFERENCE")).toBe(true);
+    expect(graph.statistics.edgeProvenanceCounts).toBeDefined();
+    expect(validateKnowledgeGraph(graph).valid).toBe(true);
+  });
+});
+
 describe("SEO knowledge graph", () => {
   it("builds connected organization, course, instructor and article nodes", () => {
     const graph = buildKnowledgeGraph({
