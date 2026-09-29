@@ -60,7 +60,8 @@ export function buildArticleClusterLinks(posts = [], limit = 4) {
   return profiles.map((source) => ({ ...source, related: profiles.filter((target) => target.slug !== source.slug).map((target) => ({ ...target, score: scoreArticleRelation(source, target), sharedTopics: source.topics.filter((topic) => target.topics.includes(topic)) })).filter((target) => target.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "fa")).slice(0, Math.max(0, limit)) }));
 }
 
-const DEFAULT_INTENTS = ["informational", "commercial", "transactional", "local"];
+const DEFAULT_INTENTS = ["informational", "commercial", "transactional"];
+const LOCAL_DEFAULT_INTENT = "local";
 const CANONICAL_TOPIC = Object.freeze({ shushtar: "music-education" });
 function canonicalTopic(topic) { return CANONICAL_TOPIC[topic] || topic; }
 
@@ -85,16 +86,23 @@ export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS) {
     }
   }
 
-  return [...byAsset.values()].map((entry) => ({
-    topic: entry.topic,
-    canonicalTopic: entry.canonicalTopic,
-    scope: entry.scope,
-    courseSlug: entry.courseSlug,
-    coveredIntents: [...entry.intents],
-    missingIntents: requiredIntents.filter((intent) => !entry.intents.has(intent)),
-    articleCount: entry.articles.length,
-    articleSlugs: [...new Set(entry.articles)]
-  })).filter((gap) => gap.missingIntents.length > 0)
+  return [...byAsset.values()].map((entry) => {
+    const scopedRequiredIntents =
+      requiredIntents === DEFAULT_INTENTS && entry.scope === "shushtar"
+        ? [...requiredIntents, LOCAL_DEFAULT_INTENT]
+        : requiredIntents;
+
+    return {
+      topic: entry.topic,
+      canonicalTopic: entry.canonicalTopic,
+      scope: entry.scope,
+      courseSlug: entry.courseSlug,
+      coveredIntents: [...entry.intents],
+      missingIntents: scopedRequiredIntents.filter((intent) => !entry.intents.has(intent)),
+      articleCount: entry.articles.length,
+      articleSlugs: [...new Set(entry.articles)]
+    };
+  }).filter((gap) => gap.missingIntents.length > 0)
     .sort((a, b) => b.missingIntents.length - a.missingIntents.length || a.articleCount - b.articleCount || a.topic.localeCompare(b.topic, "fa"));
 }
 
