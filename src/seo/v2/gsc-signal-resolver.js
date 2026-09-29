@@ -82,6 +82,28 @@ function buildCtrBenchmarks(rows = []) {
 }
 
 function aggregate(rows = [], ctrBenchmarks = {}) {
+  const groupBucketTotals = new Map();
+  for (const row of rows) {
+    const bucket = positionBucket(row?.position);
+    if (!bucket) continue;
+    const current = groupBucketTotals.get(bucket) || { clicks: 0, impressions: 0 };
+    current.clicks += Math.max(0, Number(row?.clicks) || 0);
+    current.impressions += Math.max(0, Number(row?.impressions) || 0);
+    groupBucketTotals.set(bucket, current);
+  }
+
+  const externalBenchmark = (bucket) => {
+    const totalBucket = ctrBenchmarks[bucket];
+    const ownBucket = groupBucketTotals.get(bucket);
+    if (!totalBucket || !ownBucket) return null;
+    const impressions = Math.max(0, Number(totalBucket.impressions || 0) - ownBucket.impressions);
+    const clicks = Math.max(0, Number(totalBucket.clicks || 0) - ownBucket.clicks);
+    return impressions >= 50 ? {
+      ctr: clicks / impressions,
+      impressions
+    } : null;
+  };
+
   const total = rows.reduce((acc, row) => {
     const impressions = Math.max(0, Number(row.impressions) || 0);
     const clicks = Math.max(0, Number(row.clicks) || 0);
@@ -96,18 +118,18 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
   }, { clicks: 0, impressions: 0, weightedPosition: 0, positionImpressions: 0 });
   const ctr = total.impressions ? total.clicks / total.impressions : 0;
   const benchmarkWeight = rows.reduce((sum, row) => {
-    const benchmark = ctrBenchmarks[positionBucket(row?.position)]?.ctr;
+    const benchmark = externalBenchmark(positionBucket(row?.position));
     const impressions = Math.max(0, Number(row?.impressions) || 0);
-    return Number.isFinite(benchmark) && impressions > 0 ? sum + impressions : sum;
+    return benchmark && impressions > 0 ? sum + impressions : sum;
   }, 0);
   const benchmarkBuckets = new Set(
     rows.map((row) => positionBucket(row?.position)).filter(Boolean)
   );
   const benchmarkSampleImpressions = [...benchmarkBuckets]
-    .reduce((sum, bucket) => sum + Math.max(0, Number(ctrBenchmarks[bucket]?.impressions) || 0), 0);
+    .reduce((sum, bucket) => sum + Math.max(0, Number(externalBenchmark(bucket)?.impressions) || 0), 0);
   const weightedBenchmark = benchmarkWeight > 0
     ? rows.reduce((sum, row) => {
-        const benchmark = ctrBenchmarks[positionBucket(row?.position)]?.ctr;
+        const benchmark = externalBenchmark(positionBucket(row?.position))?.ctr;
         const impressions = Math.max(0, Number(row?.impressions) || 0);
         return Number.isFinite(benchmark) && impressions > 0 ? sum + benchmark * impressions : sum;
       }, 0) / benchmarkWeight
@@ -133,7 +155,7 @@ function aggregate(rows = [], ctrBenchmarks = {}) {
   };
 }
 
-function scoreRow(row, ctrBenchmarks = {}) {
+function scoreRow(row, ctrBenchmarks = {}, benchmarkRows = []) {
   const impressions = Math.max(0, Number(row.impressions) || 0);
   const clicks = Math.max(0, Number(row.clicks) || 0);
   const ctr = impressions ? clicks / impressions : 0;
@@ -149,7 +171,14 @@ function scoreRow(row, ctrBenchmarks = {}) {
   else if (position > 10 && position <= 20) score += 25;
   else if (position > 20 && position <= 50) score += 10;
 
-  const benchmark = ctrBenchmarks[positionBucket(position)]?.ctr;
+  const bucket = positionBucket(position);
+  const totalBucket = ctrBenchmarks[bucket];
+  let benchmark = totalBucket?.ctr;
+  if (totalBucket && Array.isArray(benchmarkRows)) {
+    const externalImpressions = Math.max(0, Number(totalBucket.impressions || 0) - impressions);
+    const externalClicks = Math.max(0, Number(totalBucket.clicks || 0) - clicks);
+    benchmark = externalImpressions >= 50 ? externalClicks / externalImpressions : null;
+  }
   if (Number.isFinite(benchmark) && benchmark > 0) {
     const gap = benchmark - ctr;
     const ratio = ctr / benchmark;
@@ -210,7 +239,7 @@ export function buildGscSignalIndex(rows = []) {
     .map((item) => Object.freeze({
       ...item,
       brandNavigation: isBrandNavigationQuery(item.query),
-      opportunitySignalScore: scoreRow(item, ctrBenchmarks)
+      opportunitySignalScore: scoreRow(item, ctrBenchmarks, nonBrandItems)
     }))
     .sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore);
   const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(rows, { minImpressions: 1, limit: 5000 });
