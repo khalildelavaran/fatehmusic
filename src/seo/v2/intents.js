@@ -15,7 +15,37 @@ const RULES = [
     { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "فاتح"] }
 ];
 
+const TITLE_RULES = Object.freeze([
+    { intent: "transactional", tokens: ["ثبت‌نام", "ثبت نام", "هزینه", "شهریه", "قیمت", "تعرفه", "رزرو کلاس", "خرید"] },
+    { intent: "navigational", tokens: ["آموزشگاه فاتح", "آموزشگاه موسیقی فاتح", "فاتح موزیک", "خلیل دلاوران"] },
+    { intent: "commercial", tokens: ["بهترین", "مقایسه", "تفاوت", "راهنمای خرید", "کدام را انتخاب"] },
+    { intent: "informational", tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "اشتباهات"] }
+]);
+
 function normalize(value) { return normalizeSemanticText(value); }
+
+/**
+ * Title-only intent classification shared with the content-engine.
+ * Contextual path/entity boosts remain exclusive to classifyIntent().
+ */
+export function classifyTitleIntent(title = "") {
+    const corpus = normalize(title);
+    for (const rule of TITLE_RULES) {
+        const matches = rule.tokens.filter((token) => containsSemanticPhrase(corpus, token));
+        if (matches.length) {
+            return Object.freeze({
+                primary: rule.intent,
+                confidence: Number(Math.min(0.99, 0.65 + Math.min(0.3, matches.length * 0.1)).toFixed(3)),
+                matches: Object.freeze(matches)
+            });
+        }
+    }
+    return Object.freeze({
+        primary: "informational",
+        confidence: 0.65,
+        matches: Object.freeze([])
+    });
+}
 
 /**
  * @param {{path?:string,title?:string,keywords?:string[],entityType?:string}} input
