@@ -646,6 +646,28 @@ describe("opportunity scoring", () => {
 
 
 
+  it("prioritizes query-level temporal ownership conflicts over stable current ownership", () => {
+    expect(classifyOpportunityAction({
+      action: "NEW_CONTENT",
+      searchSignal: { available: false },
+      searchOwnership: {
+        available: true,
+        matchType: "EXACT",
+        impressions: 160,
+        topShare: 0.9,
+        ownerStatus: "STABLE",
+        ownerDominanceEvidence: "STRONG",
+        temporalOwnership: {
+          status: "SHIFT",
+          shiftCount: 1,
+          highActionable: true,
+          strongestSeverity: "HIGH",
+          strongestShareDelta: 0.4
+        }
+      }
+    })).toBe("MERGE_CONTENT");
+  });
+
   it("prioritizes severe temporal ownership conflicts over stable current ownership", () => {
     expect(classifyOpportunityAction({
       action: "NEW_CONTENT",
