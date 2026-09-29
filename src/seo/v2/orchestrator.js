@@ -214,7 +214,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const pages = articleSemantics(posts, siteUrl);
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
-    gscRows: currentScoringRows(gscRows)
+    gscRows: currentScoringRows(gscRows),
+    gscFreshness: gscDataQuality?.freshness || "UNKNOWN"
   });
 
   const preliminaryBase = buildUnifiedContentOpportunities({
