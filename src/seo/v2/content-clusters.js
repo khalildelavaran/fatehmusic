@@ -69,8 +69,8 @@ function canonicalTopic(topic) { return CANONICAL_TOPIC[topic] || topic; }
  * A gap is a coverage state of a canonical asset: subject topic + geo scope +
  * optional course. Geography is metadata on the asset, not a competing topic.
  */
-export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS) {
-  const profiles = buildArticleProfiles(posts);
+export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS, profilesOverride = null) {
+  const profiles = Array.isArray(profilesOverride) ? profilesOverride : buildArticleProfiles(posts);
   const byAsset = new Map();
 
   for (const item of profiles) {
@@ -114,7 +114,7 @@ export function buildContentClusterReport(posts = [], {
 } = {}) {
   const profiles = buildArticleProfiles(posts);
   const topics = [...new Set(profiles.flatMap((item) => item.topics))];
-  const gaps = findContentGaps(posts);
+  const gaps = findContentGaps(posts, DEFAULT_INTENTS, profiles);
   return Object.freeze({
     articleCount: profiles.length,
     topicCount: topics.length,
