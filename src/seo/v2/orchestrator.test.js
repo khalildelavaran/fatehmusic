@@ -39,10 +39,10 @@ describe("buildSEOIntelligence", () => {
       siteUrl: "https://fatehmusic.ir"
     });
 
-    expect(result.gsc.queryOwnership).toHaveLength(500);
+    expect(result.gsc.queryOwnership).toHaveLength(510);
     expect(result.gsc.queryOwnershipTotalCount).toBe(510);
-    expect(result.gsc.queryOwnershipLimit).toBe(500);
-    expect(result.gsc.queryOwnershipTruncated).toBe(true);
+    expect(result.gsc.queryOwnershipLimit).toBe(5000);
+    expect(result.gsc.queryOwnershipTruncated).toBe(false);
     expect(result.summary.queryOwnershipTotalCount).toBe(510);
   });
 
