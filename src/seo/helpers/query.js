@@ -95,6 +95,21 @@ const NORMALIZED_SEMANTIC_QUERY_MODIFIER_FAMILIES = Object.freeze(
   )
 );
 
+function compactSemanticPhrase(value) {
+  return normalizeQuery(value).replace(/[\\s\\p{P}\\p{S}]+/gu, "");
+}
+
+function containsOntologyPhrase(source, alias) {
+  if (containsSemanticPhrase(source, alias)) return true;
+
+  const aliasTokens = semanticTokens(alias);
+  if (aliasTokens.length < 2) return false;
+
+  const compactAlias = compactSemanticPhrase(alias);
+  const compactSource = compactSemanticPhrase(source);
+  return Boolean(compactAlias && compactSource.includes(compactAlias));
+}
+
 export function querySemanticDimensions(value) {
   const normalized = normalizeQuery(value);
   if (!normalized) {
@@ -111,12 +126,13 @@ export function querySemanticDimensions(value) {
   const consumedTokens = new Set();
 
   for (const [family, aliases] of Object.entries(NORMALIZED_SEMANTIC_QUERY_MODIFIER_FAMILIES)) {
-    const matchedAliases = aliases.filter((alias) => containsSemanticPhrase(normalized, alias));
+    const matchedAliases = aliases.filter((alias) => containsOntologyPhrase(normalized, alias));
     if (!matchedAliases.length) continue;
 
     modifierFamilies.push(family);
     for (const alias of matchedAliases) {
       for (const token of semanticTokens(alias)) consumedTokens.add(token);
+      for (const token of semanticTokens(compactSemanticPhrase(alias))) consumedTokens.add(token);
     }
   }
 
