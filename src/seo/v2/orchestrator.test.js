@@ -23,6 +23,29 @@ describe("buildSEOIntelligence", () => {
     expect(Array.isArray(result.opportunities)).toBe(true);
   });
 
+  it("surfaces query ownership coverage metadata without hiding the display limit", () => {
+    const rows = Array.from({ length: 510 }, (_, index) => ({
+      query: "آموزش ساز " + index,
+      page: "https://fatehmusic.ir/courses/course-" + index,
+      impressions: 5
+    }));
+
+    const result = buildSEOIntelligence({
+      gscRows: rows,
+      courses: [],
+      posts: [],
+      topicCandidates: [],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.gsc.queryOwnership).toHaveLength(500);
+    expect(result.gsc.queryOwnershipTotalCount).toBe(510);
+    expect(result.gsc.queryOwnershipLimit).toBe(500);
+    expect(result.gsc.queryOwnershipTruncated).toBe(true);
+    expect(result.summary.queryOwnershipTotalCount).toBe(510);
+  });
+
+
   it("feeds a real competitor keyword gap into the opportunity score", () => {
     const result = buildSEOIntelligence({
       courses: [{ slug: "guitar", title: "آموزش گیتار", instrument: "guitar" }],
