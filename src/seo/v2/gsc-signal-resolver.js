@@ -1,6 +1,7 @@
 /** Resolve GSC query/page rows into actionable SEO/GEO search intelligence. */
 
 import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
+import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
 
 function normalizeUrl(value) {
@@ -588,10 +589,34 @@ export function buildQueryOwnershipMap(rows = [], options = {}) {
 }
 
 function queryClusterKey(query) {
-  const tokens = [...queryTokens(query)].sort();
   const normalized = normalizeText(query);
-  const scope = normalized.split(/\s+/).includes("شوشتر") ? "scope:local" : "scope:global";
-  return [scope, ...tokens].join(" ");
+  const topicSlugs = resolveTopics({
+    title: query,
+    keywords: [query],
+    path: ""
+  })
+    .map((topic) => topic.slug)
+    .filter((slug) => slug !== "music-education" && slug !== "shushtar")
+    .sort();
+
+  const hasLocalScope = resolveTopics({
+    title: query,
+    keywords: [query],
+    path: ""
+  }).some((topic) => topic.slug === "shushtar");
+
+  const intent = classifyIntent({ title: query }).primary || "informational";
+  const scope = hasLocalScope ? "local" : "global";
+
+  // Canonical concept key: equivalent phrasing ("آموزش گیتار", "کلاس
+  // گیتار") shares a cluster, while a different intent or local scope does
+  // not. Fall back to meaningful normalized tokens when taxonomy cannot
+  // identify a subject.
+  const subject = topicSlugs.length
+    ? topicSlugs.join("+")
+    : [...queryTokens(query)].sort().join("+");
+
+  return ["scope:" + scope, "intent:" + intent, "subject:" + subject].join("|");
 }
 
 export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions = 1, limit = 50 } = {}) {
@@ -610,7 +635,10 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
     const cluster = clusters.get(key) || {
       key,
       queries: new Map(),
-      pages: new Map()
+      pages: new Map(),
+      scope: key.includes("scope:local") ? "local" : "global",
+      intent: key.match(/(?:^|\|)intent:([^|]+)/)?.[1] || "informational",
+      subjects: key.match(/(?:^|\|)subject:(.+)$/)?.[1]?.split("+").filter(Boolean) || []
     };
 
     cluster.queries.set(query, (cluster.queries.get(query) || 0) + impressions);
@@ -659,6 +687,9 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
       key,
       queries: Object.freeze(queries),
       queryCount: cluster.queries.size,
+      scope: cluster.scope,
+      intent: cluster.intent,
+      subjects: Object.freeze(cluster.subjects),
       impressions,
       pageCount: cluster.pages.size,
       topPage: topOwner?.page || null,
