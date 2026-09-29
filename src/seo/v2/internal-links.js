@@ -352,9 +352,10 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
         links: (selectedBySource.get(normalizeUrl(page.url)) || [])
             .sort((a, b) => b.finalScore - a.finalScore || String(a.title).localeCompare(String(b.title), "fa"))
             .slice(0, normalizedLimit)
-            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, searchDemand, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics }) => ({
+            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, searchDemand, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics, recommendedAnchor, anchorReuseBefore, anchorReuseAfter, anchorReusePenalty }) => ({
                 url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, searchDemand,
-                inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics
+                inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics,
+                recommendedAnchor, anchorReuseBefore, anchorReuseAfter, anchorReusePenalty
             }))
     }));
 }
