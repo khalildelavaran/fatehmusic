@@ -14,6 +14,8 @@ import { buildMarketOpportunityReport, buildMarketSignalMap } from "./market-opp
 import { buildCompetitiveGapReport } from "./competitive-gaps.js";
 import { buildSiteLinkCandidates } from "./site-graph.js";
 import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
+import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery } from "../helpers/query.js";
+import { findTopic, findCourseForTopic, hasLocalSignal, isShushtarTopic } from "./content-strategy/resolvers.js";
 
 const freeze = (value) => Object.freeze(Array.isArray(value) ? value : []);
 
@@ -52,6 +54,144 @@ function filterStaleBroadCourseCandidates(candidates = [], courses = []) {
   });
 }
 
+function inferTargetEntityFromUrl(url, keyword, courses = []) {
+  const value = String(url || "").replace(/\/$/, "");
+  if (!value) return null;
+
+  const courseMatch = value.match(/\/courses\/([^/]+)$/i);
+  if (courseMatch) {
+    const course = courses.find((item) => item?.slug === courseMatch[1]) || null;
+    return {
+      type: "Course",
+      id: value + "/#course",
+      name: course?.title || keyword,
+      url: value
+    };
+  }
+
+  if (/\/blog\//i.test(value)) {
+    return { type: "Article", id: value + "/#article", name: keyword, url: value };
+  }
+
+  if (/\/instructors\//i.test(value)) {
+    return { type: "Person", id: value + "/#person", name: keyword, url: value };
+  }
+
+  if (/\/locations\/shushtar$/i.test(value)) {
+    return { type: "LocalBusiness", id: value + "#localbusiness", name: "آموزش موسیقی در شوشتر", url: value };
+  }
+
+  return { type: "WebPage", id: value, name: keyword, url: value };
+}
+
+function marketOpportunityInitialAction(item) {
+  if (item?.classification === "STRIKING_DISTANCE" || item?.classification === "CTR_OR_RANKING") return "OPTIMIZE_EXISTING";
+  if (item?.classification === "CONTENT_EXPANSION") return "EXPAND";
+  if (item?.classification === "MARKET_ONLY") return "NEW_CONTENT";
+  return null;
+}
+
+function buildMarketDiscoveryCandidates(marketOpportunities = [], baseOpportunities = [], courses = [], siteUrl = "") {
+  const baseUrl = String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, "");
+  const candidates = [];
+  const claimed = new Set();
+
+  for (const item of Array.isArray(marketOpportunities) ? marketOpportunities : []) {
+    const keyword = String(item?.keyword || "").trim();
+    if (!keyword || isBrandNavigationQuery(keyword) || !isOwnershipEligibleQuery(keyword)) continue;
+    const marketScore = Number(item?.marketScore) || 0;
+    if (marketScore < 30) continue;
+
+    const topics = resolveTopics({ title: keyword, keywords: [keyword], path: "" });
+    const topic = topics.find((entry) => entry.slug !== "shushtar" && entry.slug !== "music-education");
+    if (!topic) continue;
+
+    const intent = classifyIntent({ title: keyword, keywords: [keyword] }).primary;
+    const normalizedKeyword = normalizeQuery(keyword);
+
+    const represented = baseOpportunities
+      .filter((opportunity) => opportunity.topic === topic.slug)
+      .some((opportunity) => {
+        const intents = opportunity.searchIntents || [opportunity.searchIntent];
+        if (!intents.includes(intent)) return false;
+        return (opportunity.queryAngles || []).some((angle) => normalizeQuery(angle) === normalizedKeyword);
+      });
+
+    if (represented || claimed.has(normalizedKeyword)) continue;
+
+    // A topic+intent asset already exists but does not mention this market
+    // keyword: enrich its query-angle layer instead of creating another page.
+    const sameAssetIndex = baseOpportunities.findIndex((opportunity) => {
+      if (opportunity.topic !== topic.slug) return false;
+      const intents = opportunity.searchIntents || [opportunity.searchIntent];
+      return intents.some((value) => areIntentsCompatible(value, intent));
+    });
+
+    if (sameAssetIndex >= 0) continue;
+
+    const course = findCourseForTopic(topic, courses, keyword);
+    const initialAction = marketOpportunityInitialAction(item);
+    if (!initialAction) continue;
+
+    const isLocal = hasLocalSignal(keyword) || isShushtarTopic(topic);
+    const bestUrl = item.bestPositionUrl ? String(item.bestPositionUrl) : "";
+    const targetEntity = inferTargetEntityFromUrl(bestUrl, keyword, courses);
+    const existingArticleSlugs = targetEntity?.type === "Article"
+      ? [targetEntity.url.split("/blog/")[1] || ""]
+      : [];
+
+    claimed.add(normalizedKeyword);
+    candidates.push({
+      title: keyword,
+      normalizedKey: normalizedKeyword,
+      instrumentKey: topic.slug,
+      relatedCourseSlug: course?.slug || null,
+      relatedCourseTitle: course?.title || null,
+      intent,
+      source: "market-discovery",
+      modifierType: "market_discovery",
+      audience: "",
+      level: "",
+      scoreTotal: Math.max(35, Math.min(90, 25 + Math.round(marketScore * 0.65))),
+      initialAction,
+      initialTargetEntity: targetEntity,
+      initialExistingArticleSlugs: existingArticleSlugs,
+      marketDiscovery: true,
+      marketClassification: item.classification || null,
+      marketBestPosition: item.bestPosition,
+      marketBestPositionUrl: bestUrl || null,
+      marketScore,
+      marketQueryAngles: [keyword],
+      rationale: `این فرصت از دادهٔ بازار Ahrefs برای «${keyword}» کشف شده و پیش از ایجاد دارایی جدید با موضوعات موجود بررسی شده است.`
+    });
+  }
+
+  return candidates;
+}
+
+function mergeMarketAnglesIntoExistingOpportunities(opportunities = [], marketOpportunities = []) {
+  return opportunities.map((opportunity) => {
+    const additions = marketOpportunities
+      .filter((item) => {
+        const topic = String(item?.topic || "");
+        if (!topic || topic !== opportunity.topic) return false;
+        const intent = classifyIntent({ title: item.keyword, keywords: [item.keyword] }).primary;
+        const intents = opportunity.searchIntents || [opportunity.searchIntent];
+        return intents.some((value) => areIntentsCompatible(value, intent));
+      })
+      .map((item) => item.keyword)
+      .filter(Boolean);
+
+    if (!additions.length) return opportunity;
+
+    return Object.freeze({
+      ...opportunity,
+      queryAngles: Object.freeze([...new Set([...(opportunity.queryAngles || []), ...additions])].slice(0, 15)),
+      marketQueryAngles: Object.freeze([...new Set(additions)].slice(0, 10))
+    });
+  });
+}
+
 function articleSemantics(posts = [], siteUrl = "") {
   const base = String(siteUrl).replace(/\/$/, "");
   return buildArticleProfiles(posts).map((page) => Object.freeze({
@@ -71,12 +211,41 @@ function articleSemantics(posts = [], siteUrl = "") {
 export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "" } = {}) {
   const cluster = buildContentClusterReport(posts, { courses, siteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
-  const base = buildUnifiedContentOpportunities({ gaps: cluster.gaps, topicCandidates: cleanCandidates, courses, siteUrl });
   const pages = articleSemantics(posts, siteUrl);
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
     gscRows: currentScoringRows(gscRows)
   });
+
+  const preliminaryBase = buildUnifiedContentOpportunities({
+    gaps: cluster.gaps,
+    topicCandidates: cleanCandidates,
+    courses,
+    siteUrl
+  });
+  const marketAdjustedBase = mergeMarketAnglesIntoExistingOpportunities(
+    preliminaryBase.opportunities,
+    marketOpportunities
+  );
+  const marketCandidates = buildMarketDiscoveryCandidates(
+    marketOpportunities,
+    marketAdjustedBase,
+    courses,
+    siteUrl
+  );
+  const marketDerived = buildUnifiedContentOpportunities({
+    gaps: [],
+    topicCandidates: marketCandidates,
+    courses,
+    siteUrl
+  });
+  const base = Object.freeze({
+    opportunities: Object.freeze([
+      ...marketAdjustedBase,
+      ...marketDerived.opportunities
+    ])
+  });
+
   const marketSignalMap = buildMarketSignalMap(marketOpportunities);
   const currentRowsForGapBaseline = currentScoringRows(gscRows);
   const competitorGaps = buildCompetitiveGapReport({
