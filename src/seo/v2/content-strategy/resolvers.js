@@ -1,4 +1,4 @@
-import { COMPARISON_PAIRS } from "../../data/content-engine-seeds.ts";
+import { COMPARISON_PAIRS } from "../../../data/content-engine-seeds.ts";
 import { TOPICS } from "../topics.js";
 import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "../../helpers/text.js";
 import { SCOPE_ONLY_TOPICS } from "./policy.js";

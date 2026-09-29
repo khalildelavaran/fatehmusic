@@ -48,6 +48,7 @@ import { auditPage } from "./v2/audit.js";
 import { buildSEOIntelligence } from "./v2/orchestrator.js";
 import { buildKnowledgeGraph, validateKnowledgeGraph, findRelatedEntities, findRelationPaths } from "./v2/knowledge-graph.js";
 import { buildMarketOpportunityReport, buildMarketSignalMap } from "./v2/market-opportunities.js";
+import { buildCompetitiveGapReport } from "./v2/competitive-gaps.js";
 import { runDiagnostics } from "./v2/diagnostics.js";
 
 /**
@@ -80,6 +81,11 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const metadata = buildMetadata({ site, title, description, keywords, noindex: effectiveNoindex });
     const canonicalUrl = buildCanonical({ site, path, override: canonical });
     const resolvedImage = absoluteUrl(image || site.image, site.url);
+    // The site default cover (public/images/og-cover.webp) is 1200x630; declare it so crawlers
+    // can render the preview without fetching the image first.
+    const usesDefaultCover = !image && /\/images\/og-cover\.webp$/.test(String(site.image || ""));
+    const ogImageWidth = imageWidth ?? (usesDefaultCover ? 1200 : undefined);
+    const ogImageHeight = imageHeight ?? (usesDefaultCover ? 630 : undefined);
     const topicsResolved = resolveTopics({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics });
     const intent = classifyIntent({ path, title: metadata.title, keywords: metadata.keywords, entityType });
     const freshness = getFreshness(lastModified);
@@ -112,8 +118,8 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         image: resolvedImage,
         url: canonicalUrl,
         type: entityType === "Article" ? "article" : undefined,
-        imageWidth,
-        imageHeight,
+        imageWidth: ogImageWidth,
+        imageHeight: ogImageHeight,
         imageType
     });
     const twitter = buildTwitter({ metadata, image: resolvedImage, site });

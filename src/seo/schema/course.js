@@ -6,7 +6,7 @@
  */
 
 import { SCHEMA_TYPES } from "../config/constants.js";
-import { webPageEntityId } from "../helpers/url.js";
+import { absoluteUrl, webPageEntityId } from "../helpers/url.js";
 import { buildCourseInstructorRefs, buildCourseRef } from "../geo/graph.js";
 import { courseEntityId, instructorEntityId } from "../geo/entity.js";
 
@@ -57,7 +57,7 @@ export function buildCourseSchema(course, { site }) {
         name: course.title,
         description: course.description,
         inLanguage: "fa-IR",
-        image: course.image,
+        image: course.image ? absoluteUrl(course.image, site.url) : undefined,
         keywords: [...new Set([
             ...courseTopics,
             ...(course.slug === "guitar-course"

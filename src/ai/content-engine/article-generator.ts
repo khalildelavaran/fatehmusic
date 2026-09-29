@@ -16,7 +16,7 @@ import { instructors } from "../../data/instructors.js";
 import { courseContent } from "../../data/course-content.js";
 import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
-import { slugifyArticleTitle } from "../../seo/v2/content-strategy.js";
+import { slugifyArticleTitle } from "../../seo/v2/content-strategy/slug.js";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, claimTopicById, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
