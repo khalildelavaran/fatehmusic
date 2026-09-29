@@ -1,15 +1,16 @@
-import { courses } from "../../data/courses.js";
 import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 
 function normalize(value) {
   return normalizeSemanticText(value);
 }
 
-export function findComparisonCourses(title, limit = 2) {
+export function findComparisonCourses(title, courses = [], limit = 2) {
   const normalizedTitle = normalize(title);
   if (!/تفاوت|مقایسه| یا /u.test(normalizedTitle)) return [];
 
-  return courses
+  const sourceCourses = Array.isArray(courses) ? courses : [];
+
+  return sourceCourses
     .filter((course) => course.active && course.slug && course.title)
     .filter((course) => {
       const name = normalize(course.title)
