@@ -313,8 +313,7 @@ function queryHasCompetingSpecificTopics(query, candidateTopic = "") {
 
   if (!specificTopics.length) return false;
   if (!candidateTopic) return specificTopics.length > 1;
-  return specificTopics.length > 1 &&
-    !specificTopics.some((topic) => normalizeText(topic.name) === candidateTopic);
+  return specificTopics.length > 1;
 }
 
 function queryTopicAlignment(item, query) {
