@@ -1,7 +1,7 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, buildQueryOwnershipMapWithMeta, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } from "./gsc-temporal.js";
-import { queryTokens } from "../helpers/query.js";
+import { queryTokens, querySemanticFeatureSet } from "../helpers/query.js";
 import { normalizeSemanticText } from "../helpers/text.js";
 
 export function currentScoringRows(rows = []) {
@@ -396,6 +396,64 @@ function normalizeMarketSignals(value) {
   return new Map();
 }
 
+function semanticFeatureMatch(left, right) {
+  const leftFeatures = querySemanticFeatureSet(left);
+  const rightFeatures = querySemanticFeatureSet(right);
+  if (!leftFeatures.size || !rightFeatures.size) return null;
+
+  let shared = 0;
+  for (const feature of rightFeatures) {
+    if (leftFeatures.has(feature)) shared += 1;
+  }
+
+  const keywordCoverage = shared / rightFeatures.size;
+  const targetCoverage = shared / leftFeatures.size;
+  const union = new Set([...leftFeatures, ...rightFeatures]).size;
+  const similarity = union ? shared / union : 0;
+
+  return { similarity, keywordCoverage, targetCoverage };
+}
+
+function findBestSemanticSignal(candidates, signals, {
+  minKeywordCoverage = 0.6,
+  minTargetCoverage = 0.5,
+  minSimilarity = 0.55,
+  volumeWeight = 5,
+  volumeCap = 25
+} = {}) {
+  let best = null;
+
+  for (const candidate of [...new Set(candidates.filter(Boolean).map(String))]) {
+    const targetFeatures = querySemanticFeatureSet(candidate);
+    if (!targetFeatures.size) continue;
+
+    for (const [keyword, signal] of signals) {
+      if (!signal?.available) continue;
+      const match = semanticFeatureMatch(candidate, keyword);
+      if (!match) continue;
+
+      if (
+        match.keywordCoverage < minKeywordCoverage ||
+        match.targetCoverage < minTargetCoverage ||
+        match.similarity < minSimilarity
+      ) continue;
+
+      const volume = Number(signal.estimatedVolume) || 0;
+      const score =
+        match.similarity * 100 +
+        match.keywordCoverage * 20 +
+        match.targetCoverage * 10 +
+        Math.min(volumeCap, Math.log10(Math.max(1, volume)) * volumeWeight);
+
+      if (!best || score > best.score) {
+        best = { score, ...match, signal, keyword, candidate };
+      }
+    }
+  }
+
+  return best;
+}
+
 function resolveCompetitorGap(item, signals) {
   if (!signals?.size) return null;
 
@@ -419,37 +477,13 @@ function resolveCompetitorGap(item, signals) {
     }
   }
 
-  const targetTokens = queryTokens(candidates.join(" "));
-  if (!targetTokens.size) return null;
-
-  let best = null;
-  for (const [keyword, signal] of signals) {
-    if (!signal?.available) continue;
-    const keywordTokens = queryTokens(keyword);
-    if (!keywordTokens.size) continue;
-
-    let shared = 0;
-    for (const token of keywordTokens) {
-      if (targetTokens.has(token)) shared += 1;
-    }
-
-    const keywordCoverage = shared / keywordTokens.size;
-    const targetCoverage = shared / targetTokens.size;
-    const union = new Set([...keywordTokens, ...targetTokens]).size;
-    const similarity = union ? shared / union : 0;
-
-    if (keywordCoverage < 0.6 || targetCoverage < 0.5 || similarity < 0.55) continue;
-
-    const score =
-      similarity * 100 +
-      keywordCoverage * 20 +
-      targetCoverage * 10 +
-      Math.min(20, Math.log10(Math.max(1, Number(signal.estimatedVolume) || 0)) * 4);
-
-    if (!best || score > best.score) {
-      best = { score, similarity, keywordCoverage, targetCoverage, signal, keyword };
-    }
-  }
+  const best = findBestSemanticSignal(candidates, signals, {
+    minKeywordCoverage: 0.6,
+    minTargetCoverage: 0.5,
+    minSimilarity: 0.55,
+    volumeWeight: 4,
+    volumeCap: 20
+  });
 
   if (!best) return null;
 
@@ -471,6 +505,8 @@ function resolveMarketSignal(item, signals) {
     item.title,
     item.topicName,
     item.topic,
+    ...(item.queryAngles || []),
+    ...(item.marketQueryAngles || [])
   ].filter(Boolean);
 
   for (const value of candidates) {
@@ -484,48 +520,13 @@ function resolveMarketSignal(item, signals) {
     }
   }
 
-  const targetText = [
-    item.title,
-    item.topicName,
-    item.topic,
-    ...(item.queryAngles || []),
-    ...(item.marketQueryAngles || []),
-    ...(item.searchSignal?.matchedQueries || [])
-  ]
-    .filter(Boolean)
-    .join(" ");
-  const targetTokens = queryTokens(targetText);
-
-  if (targetTokens.size < 1) return null;
-
-  let best = null;
-  for (const [keyword, signal] of signals) {
-    if (!signal?.available) continue;
-    const keywordTokens = queryTokens(keyword);
-    if (!keywordTokens.size) continue;
-
-    let shared = 0;
-    for (const token of keywordTokens) if (targetTokens.has(token)) shared += 1;
-    const keywordCoverage = shared / keywordTokens.size;
-    const targetCoverage = shared / targetTokens.size;
-    const union = new Set([...keywordTokens, ...targetTokens]).size;
-    const similarity = union ? shared / union : 0;
-
-    // Require the market keyword itself to be substantially represented in the
-    // page/query concept, not merely one generic token in a large title.
-    if (keywordCoverage < 0.6 || targetCoverage < 0.5 || similarity < 0.55) continue;
-
-    const volume = Number(signal.estimatedVolume) || 0;
-    const score =
-      similarity * 100 +
-      keywordCoverage * 20 +
-      targetCoverage * 10 +
-      Math.min(25, Math.log10(Math.max(1, volume)) * 5);
-
-    if (!best || score > best.score) {
-      best = { score, similarity, keywordCoverage, targetCoverage, signal, keyword };
-    }
-  }
+  const best = findBestSemanticSignal(candidates, signals, {
+    minKeywordCoverage: 0.6,
+    minTargetCoverage: 0.5,
+    minSimilarity: 0.55,
+    volumeWeight: 5,
+    volumeCap: 25
+  });
 
   if (!best) return null;
 
