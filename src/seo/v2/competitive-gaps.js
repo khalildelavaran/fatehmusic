@@ -1,5 +1,4 @@
-import { isBrandNavigationQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
-import { semanticTokens } from "../helpers/text.js";
+import { isBrandNavigationQuery, normalizeQuery, queryTokens, querySemanticFeatureSet } from "../helpers/query.js";
 
 const GENERIC_GAP_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
@@ -7,15 +6,18 @@ const GENERIC_GAP_TOKENS = new Set([
   "فاتح", "یادگیری", "مدرس"
 ]);
 
-function semanticGapTokens(value) {
-  return new Set(semanticTokens(value).filter((token) =>
-    !GENERIC_GAP_TOKENS.has(token) && token.length >= 2
-  ));
+function semanticGapFeatures(value) {
+  return new Set(
+    [...querySemanticFeatureSet(value)].filter((feature) => {
+      if (feature.startsWith("mod:") || feature.startsWith("scope:")) return true;
+      return !GENERIC_GAP_TOKENS.has(feature) && feature.length >= 2;
+    })
+  );
 }
 
 function semanticSimilarity(left, right) {
-  const a = semanticGapTokens(left);
-  const b = semanticGapTokens(right);
+  const a = semanticGapFeatures(left);
+  const b = semanticGapFeatures(right);
   if (!a.size || !b.size) return 0;
   let intersection = 0;
   for (const token of a) if (b.has(token)) intersection += 1;
