@@ -1,8 +1,47 @@
 import { describe, expect, it } from "vitest";
 import { buildSEOIntelligence } from "./orchestrator.js";
+import { buildGscSignalIndex } from "./gsc-signal-resolver.js";
 import { findContentGaps } from "./content-clusters.js";
 
 describe("buildSEOIntelligence", () => {
+  it("reuses a supplied GSC index and can skip graph work for dashboard mode", () => {
+    const gscIndex = buildGscSignalIndex([
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar",
+        impressions: 100,
+        clicks: 5,
+        position: 6
+      }
+    ], { queryClusterLimit: 1 });
+
+    const result = buildSEOIntelligence({
+      posts: [],
+      courses: [],
+      instructors: [],
+      topicCandidates: [],
+      gscRows: [
+        {
+          query: "آموزش گیتار",
+          page: "https://fatehmusic.ir/courses/guitar",
+          impressions: 100,
+          clicks: 5,
+          position: 6
+        }
+      ],
+      gscIndex,
+      maxQueryClusters: 1,
+      maxOwnershipQueries: 10,
+      includeKnowledgeGraph: false,
+      includeSemanticLinks: false,
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.gsc.index).toBe(gscIndex);
+    expect(result.knowledgeGraph).toBeNull();
+    expect(result.links.graph).toEqual([]);
+  });
+
   it("composes existing engines into one view", () => {
     const result = buildSEOIntelligence({
       posts: [{ slug: "guitar-guide", title: "آموزش گیتار در شوشتر", topic: "گیتار", excerpt: "راهنمای گیتار" }],
