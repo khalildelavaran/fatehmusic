@@ -285,3 +285,30 @@ describe("market signal passthrough", () => {
     expect(signal.cpc).toBe(1200);
   });
 });
+
+
+describe("market duplicate robustness", () => {
+  it("preserves a valid difficulty when the higher-volume duplicate omits it", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [
+        {
+          keyword: "آموزش گیتار",
+          volume_monthly: 80,
+          keyword_difficulty: 22,
+          best_position: 25
+        },
+        {
+          keyword: "اموزش گیتار",
+          volume_monthly: 120,
+          keyword_difficulty: null,
+          best_position: 18
+        }
+      ]
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].volume).toBe(120);
+    expect(result[0].difficulty).toBe(22);
+    expect(result[0].bestPosition).toBe(18);
+  });
+});
