@@ -1,5 +1,6 @@
 import { courseEntityId } from "../../geo/entity.js";
 import { INTENT_PRIORITY, INTENT_SUFFIX } from "./policy.js";
+import { normalizeSemanticText } from "../../helpers/text.js";
 import {
   findTopic,
   isShushtarTopic,
@@ -9,7 +10,7 @@ import {
 import { canonicalSlug, slugifyArticleTitle } from "./slug.js";
 
 function normalize(value) {
-  return String(value || "").normalize("NFKC").toLocaleLowerCase("fa").trim();
+  return normalizeSemanticText(value);
 }
 
 export function buildTitle(topic, intent, course) {
