@@ -216,3 +216,29 @@ describe("semantic internal links", () => {
   });
 
 });
+
+describe("graph-aware candidate pool", () => {
+  it("retains a directly related target in a large graph", () => {
+    const pages = [
+      { url: "https://fatehmusic.ir/blog/source", title: "راهنمای ساز", type: "Article", topics: ["music"], priority: 12 },
+      ...Array.from({ length: 165 }, (_, index) => ({
+        url: "https://fatehmusic.ir/blog/noise-" + index,
+        title: "مقاله " + index,
+        type: "Article",
+        topics: ["noise-" + index],
+        priority: 5
+      })),
+      { url: "https://fatehmusic.ir/instructors/teacher", title: "استاد تخصصی", type: "Instructor", topics: ["teacher"], priority: 5 }
+    ];
+
+    const semanticGraph = {
+      nodes: pages.map((page, index) => ({ id: "n" + index, type: page.type, url: page.url })),
+      edges: [{ from: "n0", relation: "knowsAbout", to: "n166", confidence: 1, provenance: "TEST" }]
+    };
+
+    const graph = buildLinkGraph(pages, { semanticGraph, limit: 1, maxInboundLinks: 4 });
+    const source = graph.find((page) => page.url.endsWith("/blog/source"));
+
+    expect(source.links.some((link) => link.url.endsWith("/instructors/teacher"))).toBe(true);
+  });
+});
