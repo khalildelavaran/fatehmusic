@@ -944,7 +944,7 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
     // threshold to the complete query/window. GSC can distribute one query's
     // impressions across several page rows; filtering each row before
     // aggregation can silently hide a real cannibalization conflict.
-    const period = startDate || endDate ? `${query}|${period}` : "undated";
+    const period = startDate || endDate ? `${startDate}|${endDate}` : "undated";
     const groupKey = `${query}|${period}`;
     const pages = groups.get(groupKey) || new Map();
     pages.set(page, (pages.get(page) || 0) + Math.max(0, Number(row.impressions) || 0));
