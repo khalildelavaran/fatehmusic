@@ -60,3 +60,18 @@ describe("semantic modifier anchoring", () => {
     expect([...querySemanticFeatureSet("هزینه دوره")]).toEqual([]);
   });
 });
+
+
+describe("modifier spacing robustness", () => {
+  it("treats half-space compounds as the same modifier phrase", () => {
+    expect(querySemanticDimensions("ثبت‌نام کلاس گیتار").modifierFamilies).toContain("enrollment");
+    expect(querySemanticDimensions("ثبت نام کلاس گیتار").modifierFamilies).toContain("enrollment");
+
+    const halfSpace = querySemanticFeatureSet("ثبت‌نام کلاس گیتار");
+    const spaced = querySemanticFeatureSet("ثبت نام کلاس گیتار");
+
+    expect(halfSpace.has("mod:enrollment")).toBe(true);
+    expect(spaced.has("mod:enrollment")).toBe(true);
+    expect([...halfSpace]).toEqual(expect.arrayContaining(["گیتار", "mod:enrollment"]));
+  });
+});
