@@ -68,3 +68,27 @@ describe("SEO action outcome classifier", () => {
   });
 
 });
+
+
+describe("position measurement sample gate", () => {
+  it("does not classify a small-sample position move as positive evidence", () => {
+    const result = classifySeoActionMeasurement(
+      { impressions: 20, clicks: 2, ctr: 0.10, position: 4 },
+      { impressions: 20, clicks: 2, ctr: 0.10, position: 7 }
+    );
+
+    expect(result.positionEvidenceStrong).toBe(false);
+    expect(result.positionEvidenceMinImpressions).toBe(30);
+    expect(result.effect).toBe("NEUTRAL");
+  });
+
+  it("allows position evidence after the minimum sample threshold", () => {
+    const result = classifySeoActionMeasurement(
+      { impressions: 30, clicks: 3, ctr: 0.10, position: 4 },
+      { impressions: 30, clicks: 3, ctr: 0.10, position: 7 }
+    );
+
+    expect(result.positionEvidenceStrong).toBe(true);
+    expect(result.effect).toBe("POSITIVE");
+  });
+});
