@@ -166,15 +166,15 @@ export function createAhrefsClient(env = {}, fetchImpl = fetch) {
       return data?.metrics || {};
     },
 
-    async organicKeywords({ date = today(), limit = 100 } = {}) {
+    async organicKeywords({ date = today(), limit = 100, target = config.target, country = config.country, mode = "subdomains" } = {}) {
       const data = await get("/site-explorer/organic-keywords", {
         select: "keyword,best_position,best_position_url,keyword_difficulty,volume,sum_traffic,is_local,is_informational,is_commercial,is_transactional,is_navigational",
         order_by: "volume:desc",
         limit,
         date,
-        country: config.country,
-        mode: "subdomains",
-        target: config.target,
+        country: normalizeCountry(country),
+        mode,
+        target: normalizeTarget(target),
         protocol: "https",
         volume_mode: "monthly",
         traffic_mode: "adaptive",
@@ -272,6 +272,9 @@ export async function syncAhrefsMarketIntelligence({ db, env = {}, date = today(
   if (!config.enabled) return { status: "not_configured", snapshots: [] };
 
   const client = createAhrefsClient(env);
+  const competitorLimit = Math.min(5, Math.max(0, Number(env.AHREFS_COMPETITOR_KEYWORD_DOMAINS ?? 3) || 3));
+  const competitorKeywordLimit = Math.min(100, Math.max(10, Number(env.AHREFS_COMPETITOR_KEYWORD_LIMIT ?? 50) || 50));
+
   const tasks = [
     ["metrics", () => client.metrics({ date })],
     ["organic-competitors", () => client.organicCompetitors({ date })],
@@ -309,13 +312,69 @@ export async function syncAhrefsMarketIntelligence({ db, env = {}, date = today(
   const refdomainPayload = successful.find((item) => item.type === "refdomains")?.payload;
   const keywordPayload = successful.find((item) => item.type === "organic-keywords")?.payload;
 
+  // Organic competitors returns domains plus keyword-overlap counts, not the
+  // missing-keyword list itself. Fetch a bounded keyword slice for the top
+  // competitors so the downstream gap engine receives real competitor rows.
+  let competitorKeywordPayload = [];
+  if (Array.isArray(competitorPayload) && competitorLimit > 0) {
+    const targetKey = normalizeTarget(config.target).toLowerCase();
+    const domains = [...new Map(
+      competitorPayload
+        .filter((row) => row?.competitor_domain && row?.group_mode === "domains")
+        .filter((row) => Number(row?.keywords_competitor) > 0)
+        .map((row) => [String(row.competitor_domain).toLowerCase(), row])
+    ).values()]
+      .filter((row) => String(row.competitor_domain).toLowerCase() !== targetKey)
+      .sort((left, right) =>
+        Number(right?.keywords_competitor || 0) - Number(left?.keywords_competitor || 0) ||
+        Number(right?.keywords_common || 0) - Number(left?.keywords_common || 0)
+      )
+      .slice(0, competitorLimit);
+
+    const competitorResults = await Promise.all(domains.map(async (competitor) => {
+      try {
+        const rows = await client.organicKeywords({
+          target: String(competitor.competitor_domain),
+          country: config.country,
+          mode: "domain",
+          date,
+          limit: competitorKeywordLimit
+        });
+        const fetchedAt = new Date().toISOString();
+        return rows.map((row) => ({
+          ...row,
+          competitor_domain: String(competitor.competitor_domain),
+          fetched_at: fetchedAt
+        }));
+      } catch (error) {
+        return [{
+          competitor_domain: String(competitor.competitor_domain),
+          fetch_error: error instanceof Error ? error.message : String(error)
+        }];
+      }
+    }));
+    competitorKeywordPayload = competitorResults.flat();
+  }
+
+  const successfulTypes = successful.map((item) => item.type);
+  if (competitorKeywordPayload.length > 0) {
+    await db.prepare(
+      "INSERT INTO seo_market_snapshots (source, snapshot_type, target, country, snapshot_date, payload, fetched_at) " +
+      "VALUES ('ahrefs', 'competitor-keywords', ?, ?, ?, ?, datetime('now')) " +
+      "ON CONFLICT(source, snapshot_type, target, country, snapshot_date) DO UPDATE SET payload=excluded.payload, fetched_at=excluded.fetched_at"
+    ).bind(config.target, config.country, date, JSON.stringify(competitorKeywordPayload)).run();
+    successfulTypes.push("competitor-keywords");
+  }
+
   return {
     status: failed.length ? (successful.length ? "partial" : "failed") : "success",
-    snapshots: successful.map((item) => item.type),
+    snapshots: successfulTypes,
     failed: failed.map((item) => ({ type: item.type, error: item.error })),
     competitors: Array.isArray(competitorPayload) ? competitorPayload.length : 0,
     refdomains: Array.isArray(refdomainPayload) ? refdomainPayload.length : 0,
-    organicKeywords: Array.isArray(keywordPayload) ? keywordPayload.length : 0
+    organicKeywords: Array.isArray(keywordPayload) ? keywordPayload.length : 0,
+    competitorKeywordRows: competitorKeywordPayload.filter((row) => !row.fetch_error).length,
+    competitorDomainsAnalyzed: new Set(competitorKeywordPayload.map((row) => row.competitor_domain).filter(Boolean)).size
   };
 }
 
