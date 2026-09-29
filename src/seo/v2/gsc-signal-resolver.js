@@ -56,7 +56,7 @@ function positionBucket(position) {
 
 function buildCtrBenchmarks(rows = []) {
   const buckets = new Map();
-  for (const row of safeRows) {
+  for (const row of rows) {
     const bucket = positionBucket(row?.position);
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     const clicks = Math.max(0, Number(row?.clicks) || 0);
@@ -82,7 +82,7 @@ function buildCtrBenchmarks(rows = []) {
 
 function aggregate(rows = [], ctrBenchmarks = {}) {
   const groupBucketTotals = new Map();
-  for (const row of safeRows) {
+  for (const row of rows) {
     const bucket = positionBucket(row?.position);
     if (!bucket) continue;
     const current = groupBucketTotals.get(bucket) || { clicks: 0, impressions: 0 };
@@ -449,7 +449,7 @@ function queryRelevanceScore(item, query, cache = null, intentCache = null) {
 
 function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null, intentCache = null) {
   const byQuery = new Map();
-  for (const row of safeRows) {
+  for (const row of rows) {
     const query = normalizeText(row?.query);
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     if (!query || impressions <= 0) continue;
