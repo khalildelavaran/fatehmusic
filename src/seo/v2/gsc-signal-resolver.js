@@ -571,10 +571,18 @@ export function buildSemanticQueryClusters(rows = [], { minImpressions = 1, limi
       .map(([page, pageImpressions]) => ({
         page,
         impressions: pageImpressions,
-        share: impressions ? pageImpressions / impressions : 0
+        share: impressions ? pageImpressions / impressions : 0,
+        shareInterval95: wilsonInterval(pageImpressions, impressions)
       }))
       .sort((a, b) => b.impressions - a.impressions || a.page.localeCompare(b.page))
       .slice(0, 8);
+
+    const topOwner = pages[0] || null;
+    const ownerShareLower95 = topOwner?.shareInterval95?.lower ?? null;
+    const ownerDominanceEvidence =
+      ownerShareLower95 >= 0.5 ? "STRONG" :
+      ownerShareLower95 >= 0.35 ? "MODERATE" :
+      "WEAK";
 
     result.push(Object.freeze({
       key,
@@ -582,15 +590,18 @@ export function buildSemanticQueryClusters(rows = [], { minImpressions = 1, limi
       queryCount: cluster.queries.size,
       impressions,
       pageCount: cluster.pages.size,
-      topPage: pages[0]?.page || null,
-      topShare: pages[0]?.share || 0,
+      topPage: topOwner?.page || null,
+      topShare: topOwner?.share || 0,
       ownerStatus: !pages.length
         ? "NO_OWNER"
         : impressions < 20
           ? "EMERGING"
-          : (pages[0]?.share || 0) >= 0.7
+          : (topOwner?.share || 0) >= 0.7
             ? "STABLE"
             : "SPLIT",
+      ownerShareInterval95: topOwner?.shareInterval95 || null,
+      ownerShareLower95,
+      ownerDominanceEvidence,
       signalQuality: querySignalQuality(impressions),
       pages: Object.freeze(pages)
     }));
