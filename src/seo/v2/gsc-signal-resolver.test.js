@@ -150,6 +150,23 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBe(300);
   });
 
+  it("bounds page-pair cannibalization analysis while preserving total-query share", () => {
+    const rows = Array.from({ length: 25 }, (_, index) => ({
+      query: "آموزش گیتار شوشتر",
+      page: "https://fatehmusic.ir/blog/guitar-" + index,
+      impressions: index === 0 ? 40 : 2
+    }));
+    const conflicts = detectSearchCannibalization(rows, {
+      minImpressions: 10,
+      maxPagesPerQuery: 4
+    });
+
+    expect(conflicts).toHaveLength(1);
+    expect(conflicts[0].pages).toHaveLength(4);
+    expect(conflicts[0].pages[0].page).toBe("https://fatehmusic.ir/blog/guitar-0");
+    expect(conflicts[0].pages[0].share).toBeCloseTo(40 / 88);
+  });
+
   it("detects a potential conflict when multiple pages share a query", () => {
     const conflicts = detectSearchCannibalization(rows);
     expect(conflicts).toHaveLength(1);
