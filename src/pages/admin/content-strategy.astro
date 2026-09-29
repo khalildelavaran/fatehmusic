@@ -38,7 +38,7 @@ const intelligence = db
   : await getSeoDashboardIntelligence({ db, siteUrl: site.url, courses });
 
 const latestGscSync = intelligence.latestGscSync;
-const ahrefsMetrics = { payload: intelligence.ahrefsMetrics };
+const ahrefsMetrics = { payload: intelligence.ahrefsMetrics, snapshotDate: intelligence.ahrefsMetricsSnapshotDate };
 const ahrefsCompetitors = { payload: intelligence.ahrefsCompetitors };
 const ahrefsRefdomainsHistory = { payload: intelligence.ahrefsRefdomainsHistory };
 const ahrefsOrganicKeywords = intelligence.ahrefsOrganicKeywords;
@@ -165,7 +165,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.gsc.signalRowCount} سیگنال</span>
             <span>{intelligence.summary.searchBackedCount} فرصت search-backed</span>
             <span>{intelligence.summary.marketBackedCount} فرصت market-backed</span>
-            <span>{intelligence.summary.cannibalizationCount} تعارض</span>
+            <span>{intelligence.mode === "READ_MODEL" ? "تعارض لحظه‌ای در پنل خاموش" : String(intelligence.summary.cannibalizationCount) + " تعارض"}</span>
             <span>قدرت شواهد تصمیم: {intelligence.summary.evidenceStrengthAverage}%</span>
             <span>پوشش دریافت GSC: {intelligence.summary.gscCoverageStatus === "PARTIAL" ? "جزئی (به سقف ردیف رسیده)" : intelligence.summary.gscCoverageStatus === "COMPLETE" ? "کامل (گزارش‌شده)" : intelligence.summary.gscCoverageStatus === "OBSERVED" ? "دریافت‌شده (کامل بودن اثبات نشده)" : "نامشخص"}</span>
             {intelligence.summary.queryOwnershipTruncated && <span class="strategy-data-age is-stale">نقشه مالکیت Query در نمایش محدود شده: {intelligence.summary.queryOwnershipCount.toLocaleString("fa-IR")} از {intelligence.summary.queryOwnershipTotalCount.toLocaleString("fa-IR")}</span>}
@@ -224,12 +224,12 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                   ? Number(ahrefsRefdomainsHistory.payload.at(-1)?.refdomains || 0).toLocaleString("fa-IR")
                   : "0"
               }</span><small>تعداد کل دامنه‌های یکتای لینک‌دهنده</small></div>
-              <div><strong>Tracked keyword rows</strong><span>{Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload.length.toLocaleString("fa-IR") : "0"}</span><small>نمونه ردیف‌های کلمات ارگانیک دریافت‌شده</small></div>
+              <div><strong>Tracked keyword rows</strong><span>{Number(ahrefsOrganicKeywords?.totalCount || ahrefsOrganicKeywords?.payload?.length || 0).toLocaleString("fa-IR")}</span><small>نمونه ردیف‌های کلمات ارگانیک دریافت‌شده</small></div>
             </div>
           )}
           {ahrefsConfig.enabled && (
             <div class:list={["strategy-data-freshness", ahrefsStale && "is-stale"]}>
-              آخرین Snapshot Ahrefs: {ahrefsMetrics?.snapshotDate || "داده‌ای ثبت نشده"}
+              آخرین Snapshot Ahrefs: {ahrefsOrganicKeywords?.snapshotDate || "داده‌ای ثبت نشده"}
               {ahrefsAgeDays === null ? " · سن داده نامشخص" : ` · ${ahrefsAgeDays} روز قبل`}
             </div>
           )}
@@ -266,7 +266,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
         </section>
 
        <section class="strategy-section">
-          <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف نهایی تولید محتوا</h2></div><span class="strategy-count">{opportunityCount} فرصت</span></div>
+          <div class="strategy-section-head"><div><span class="admin-hero-label">Unified Production Queue</span><h2>صف تولید محتوا</h2><span class="strategy-count">تصمیمات ذخیره‌شده؛ اجرای کامل موتور در درخواست GET تکرار نمی‌شود.</span></div><span class="strategy-count">{opportunityCount} فرصت</span></div>
           {opportunities.length === 0 ? (
             <div class="strategy-empty"><strong>در حال حاضر فرصت محتوایی قابل اقدام شناسایی نشده است.</strong><span>با تولید موضوعات جدید یا انتشار مقاله‌های جدید، این صف خودکار به‌روزرسانی می‌شود.</span></div>
           ) : (
