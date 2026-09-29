@@ -83,6 +83,16 @@ function decisionConfidenceEvidence(item = {}) {
     const normalizedIntent = String(item.searchIntent || item.intent || "").toLowerCase();
     if (normalizedIntent && marketIntents.includes(normalizedIntent)) {
       points.push(["market and content intent agreement", 4]);
+    } else if (
+      normalizedIntent &&
+      marketIntents.length > 0 &&
+      !marketIntents.includes(normalizedIntent) &&
+      (
+        String(item.marketSignal.matchType || "EXACT").toUpperCase() === "EXACT" ||
+        Number(item.marketSignal.semanticSimilarity || 0) >= 0.7
+      )
+    ) {
+      points.push(["market and content intent conflict", -4]);
     }
 
     if (Number(item.marketSignal.estimatedVolume) > 0) points.push(["market volume available", 5]);
@@ -140,6 +150,25 @@ function decisionConfidenceEvidence(item = {}) {
       Number(item.marketSignal.semanticSimilarity || 0) >= 0.7
     ) {
       points.push(["GSC and market semantic agreement", 3]);
+    }
+
+    const gscIntent = String(item.searchSignal.queryIntentEvidence.primary || "").toLowerCase();
+    const marketIntents = item.marketSignal.intents && typeof item.marketSignal.intents === "object"
+      ? (
+          Array.isArray(item.marketSignal.intents)
+            ? item.marketSignal.intents.map((value) => String(value).toLowerCase())
+            : Object.entries(item.marketSignal.intents)
+                .filter(([, value]) => Boolean(value))
+                .map(([key]) => String(key).toLowerCase())
+        )
+      : [];
+    if (
+      gscIntent &&
+      marketIntents.length > 0 &&
+      !marketIntents.includes(gscIntent) &&
+      Number(item.searchSignal.queryIntentEvidence.confidence || 0) >= 0.75
+    ) {
+      points.push(["GSC and market intent conflict", -3]);
     }
   }
 
@@ -531,6 +560,44 @@ function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
   } else if (item.searchOwnership?.temporalOwnership?.status === "SHIFT") {
     cap = Math.min(cap, 88);
     reasons.push("GSC_QUERY_TEMPORAL_SHIFT");
+  }
+
+  const targetIntent = String(item.searchIntent || item.intent || "").trim().toLowerCase();
+  const marketIntents = item.marketSignal?.intents && typeof item.marketSignal.intents === "object"
+    ? (
+        Array.isArray(item.marketSignal.intents)
+          ? item.marketSignal.intents.map((value) => String(value).toLowerCase())
+          : Object.entries(item.marketSignal.intents)
+              .filter(([, value]) => Boolean(value))
+              .map(([key]) => String(key).toLowerCase())
+      )
+    : [];
+  const marketIntentConflict =
+    item.marketSignal?.available &&
+    targetIntent &&
+    marketIntents.length > 0 &&
+    !marketIntents.includes(targetIntent) &&
+    (
+      String(item.marketSignal.matchType || "EXACT").toUpperCase() === "EXACT" ||
+      Number(item.marketSignal.semanticSimilarity || 0) >= 0.7
+    );
+  if (marketIntentConflict) {
+    cap = Math.min(cap, 84);
+    reasons.push("MARKET_CONTENT_INTENT_CONFLICT");
+  }
+
+  if (item.searchSignal?.available && item.marketSignal?.available) {
+    const gscIntent = String(item.searchSignal.queryIntentEvidence?.primary || "").toLowerCase();
+    const gscConfidence = Number(item.searchSignal.queryIntentEvidence?.confidence || 0);
+    const strongCrossSourceConflict =
+      gscIntent &&
+      marketIntents.length > 0 &&
+      gscConfidence >= 0.75 &&
+      !marketIntents.includes(gscIntent);
+    if (strongCrossSourceConflict) {
+      cap = Math.min(cap, 80);
+      reasons.push("GSC_MARKET_INTENT_CONFLICT");
+    }
   }
 
   if (item.marketSignal?.matchType === "SEMANTIC") {
