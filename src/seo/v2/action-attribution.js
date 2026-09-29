@@ -4,6 +4,7 @@
  */
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, Number(value) || 0));
+const MIN_POSITION_IMPRESSIONS = 30;
 
 function ctrZScore(latestClicks, latestImpressions, previousClicks, previousImpressions) {
   if (latestImpressions <= 0 || previousImpressions <= 0) return null;
@@ -101,7 +102,12 @@ export function classifySeoActionMeasurement(latest, previous) {
   if (ctrStatisticallyStrong) confidence += 12;
   confidence = Math.round(clamp(confidence));
 
-  const positionEvidenceStrong = latestImpressions >= 10 && previousImpressions >= 10;
+  // Average position is much noisier than CTR when exposure is tiny.
+  // Require a larger impression sample before treating a one-position move
+  // as meaningful descriptive evidence.
+  const positionEvidenceStrong =
+    latestImpressions >= MIN_POSITION_IMPRESSIONS &&
+    previousImpressions >= MIN_POSITION_IMPRESSIONS;
   const positiveCtr = ctrLift != null && ctrLift >= 0.005 && ctrStatisticallyStrong && ctrZ > 0;
   const negativeCtr = ctrLift != null && ctrLift <= -0.005 && ctrStatisticallyStrong && ctrZ < 0;
   const positivePosition = positionEvidenceStrong && positionImprovement != null && positionImprovement >= 1;
@@ -118,6 +124,7 @@ export function classifySeoActionMeasurement(latest, previous) {
     ctrStatisticallyStrong,
     ctrLiftStatisticallyClear,
     positionEvidenceStrong,
+    positionEvidenceMinImpressions: MIN_POSITION_IMPRESSIONS,
     positionImprovement,
     impressionGrowth,
     exposureRatio,
