@@ -21,6 +21,27 @@ const base = {
   freshness: { status: "fresh" }
 };
 
+describe("SEO audit core rubric", () => {
+  it("does not award a perfect core score when required evidence is missing", () => {
+    const audit = auditPage(base);
+    expect(audit.coreScore).toBeLessThan(100);
+    expect(audit.coreCoverageScore).toBeLessThan(100);
+    expect(audit.missingCoreChecks).toEqual(["h1"]);
+  });
+
+  it("tracks core evidence separately from optional audit coverage", () => {
+    const audit = auditPage({
+      ...base,
+      h1Count: 1
+    });
+
+    expect(audit.coreScore).toBe(100);
+    expect(audit.coreCoverageScore).toBe(100);
+    expect(audit.coverageScore).toBeLessThan(100);
+    expect(audit.qualityScore).toBeLessThan(audit.score);
+  });
+});
+
 describe("SEO audit evidence coverage", () => {
   it("reports incomplete evidence coverage separately from quality score", () => {
     const audit = auditPage(base);
