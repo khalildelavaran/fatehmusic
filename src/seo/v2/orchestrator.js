@@ -209,7 +209,7 @@ function articleSemantics(posts = [], siteUrl = "") {
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
  * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], competitorKeywordRows?: object[], targetKeywordRows?: object[], targetQueries?: string[], siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "" } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "", gscIndex = null, maxQueryClusters = 5000, maxOwnershipQueries = 5000, includeKnowledgeGraph = true, includeSemanticLinks = true } = {}) {
   const resolvedSiteUrl = String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, "");
   const cluster = buildContentClusterReport(posts, { courses, siteUrl: resolvedSiteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
@@ -278,31 +278,38 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gscDataQuality,
     marketDataQuality,
     competitorGaps,
-    marketSignals: mergedMarketSignals
+    marketSignals: mergedMarketSignals,
+    gscIndex,
+    maxQueryClusters,
+    maxOwnershipQueries
   });
-  const articleNodes = pages.map((page) => ({
+  const articleNodes = includeSemanticLinks ? pages.map((page) => ({
     url: page.url,
     title: page.title,
     type: "Article",
     topics: page.topics,
     priority: 12,
     local: page.local ?? true
-  }));
-  const siteNodes = buildSiteLinkCandidates(
+  })) : [];
+  const siteNodes = includeSemanticLinks ? buildSiteLinkCandidates(
     {
       url: resolvedSiteUrl,
       name: "آموزشگاه موسیقی فاتح",
       keywords: ["آموزش موسیقی", "آموزشگاه موسیقی", "شوشتر"]
     },
     { courses, instructors }
-  );
+  ) : [];
   const currentGscRows = currentScoringRows(gscRows);
-  const gscIndex = buildGscSignalIndex(currentGscRows);
+  const effectiveGscIndex = search?.index || gscIndex || buildGscSignalIndex(currentGscRows, {
+    queryClusterLimit: maxQueryClusters
+  });
 
   const graphNodeMap = new Map();
-  for (const node of [...siteNodes, ...articleNodes]) {
-    if (!node?.url || graphNodeMap.has(node.url)) continue;
-    graphNodeMap.set(node.url, node);
+  if (includeSemanticLinks) {
+    for (const node of [...siteNodes, ...articleNodes]) {
+      if (!node?.url || graphNodeMap.has(node.url)) continue;
+      graphNodeMap.set(node.url, node);
+    }
   }
   const pageNodes = [...graphNodeMap.values()];
   const cannibalization = search.cannibalization || [];
@@ -315,18 +322,22 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     : 0;
   // Backward-compatible alias: this value is an evidence score, not a probability.
   const decisionConfidenceAverage = evidenceStrengthAverage;
-  const knowledgeGraph = buildKnowledgeGraph({
+  const knowledgeGraph = includeKnowledgeGraph ? buildKnowledgeGraph({
     siteUrl: resolvedSiteUrl,
     courses,
     instructors,
     posts
-  });
-  const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
-  const semanticLinks = buildLinkGraph(pageNodes, {
-    semanticGraph: knowledgeGraph,
-    gscSignals: gscIndex.byPageNonBrand,
-    gscOwnership: search.queryOwnership
-  });
+  }) : null;
+  const knowledgeGraphValidation = knowledgeGraph
+    ? validateKnowledgeGraph(knowledgeGraph)
+    : Object.freeze({ valid: true, errors: Object.freeze([]), skipped: true });
+  const semanticLinks = includeSemanticLinks && knowledgeGraph
+    ? buildLinkGraph(pageNodes, {
+        semanticGraph: knowledgeGraph,
+        gscSignals: effectiveGscIndex.byPageNonBrand,
+        gscOwnership: search.queryOwnership
+      })
+    : []; 
 
   return Object.freeze({
     cluster,
@@ -334,7 +345,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gsc: Object.freeze({
       connected: search.connected,
       signalRowCount: search.signalRowCount,
-      index: gscIndex,
+      index: effectiveGscIndex,
       cannibalization: freeze(cannibalization),
       semanticCannibalization: freeze(semanticCannibalization),
       temporalCannibalization: freeze(temporalCannibalization),
