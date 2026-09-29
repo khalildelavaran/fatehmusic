@@ -7,7 +7,7 @@ import Footer from "../components/Footer.astro";
 import PageHero from "../components/PageHero.astro";
 import Gallery from "../components/Gallery.astro";
 import CTA from "../components/CTA.astro";
-import { resolveSite } from "../seo/index.js";
+import { resolveSite, buildBreadcrumbSchema } from "../seo/index.js";
 import { galleryItems } from "../data/gallery.js";
 import { buildImageGallerySchema } from "../seo/schema/image-gallery.js";
 
@@ -20,6 +20,13 @@ const imageGallerySchema = buildImageGallerySchema({
     description: "گالری عکس کلاس موسیقی و فضای آموزشگاه موسیقی فاتح شوشتر؛ تصاویر کلاس‌های گیتار، پیانو، ویولون، موسیقی کودک، اجراهای هنرجویان و فعالیت‌های آموزشی.",
     items: galleryItems
 }) ?? [];
+const galleryBreadcrumbSchema = buildBreadcrumbSchema(
+    [
+        { name: "خانه", path: "/" },
+        { name: "گالری", path: "/gallery" }
+    ],
+    site
+);
 ---
 
 <MainLayout
@@ -32,7 +39,7 @@ const imageGallerySchema = buildImageGallerySchema({
     topics={["shushtar", "music-education", "gallery"]}
     entityType="ImageGallery"
     auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: 4 }}
-    schema={imageGallerySchema}
+    schema={[...(Array.isArray(imageGallerySchema) ? imageGallerySchema : [imageGallerySchema]), galleryBreadcrumbSchema].filter((item): item is object => item !== null && item !== undefined)}
 >
     <Header />
 

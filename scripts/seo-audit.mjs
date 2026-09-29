@@ -229,6 +229,13 @@ function validateSchema(route, scripts) {
     }
   }
 
+  // Inner pages must expose a BreadcrumbList; the home page and the
+  // transactional /register funnel are the only intentional exceptions.
+  const BREADCRUMB_EXEMPT = new Set(["/", "/register"]);
+  if (!BREADCRUMB_EXEMPT.has(route) && !types.has("BreadcrumbList")) {
+    error("BREADCRUMB_MISSING", route + ": inner page has no BreadcrumbList schema");
+  }
+
   if (route === "/locations/shushtar") {
     const localBusiness = nodes.find((node) =>
       schemaTypes(node).includes("LocalBusiness") && String(node["@id"] || "").endsWith("#localbusiness")
@@ -568,6 +575,16 @@ function validateLinks(pages, redirects, knownRoutes = new Set(), serverRoutePat
 
   for (const [route, count] of inbound) {
     if (route !== "/" && count === 0) error("ORPHAN_PAGE", "orphan rendered page: " + route);
+  }
+
+  // The local landing page carries the Shushtar local-SEO signal; it must be
+  // linked from shared chrome (header/footer), which shows up as a high
+  // inbound count comparable to other primary pages.
+  const KEY_PAGE_MIN_INBOUND = { "/locations/shushtar": 20 };
+  for (const [route, min] of Object.entries(KEY_PAGE_MIN_INBOUND)) {
+    if (inbound.has(route) && inbound.get(route) < min) {
+      error("KEY_PAGE_WEAK_INLINKS", route + ": only " + inbound.get(route) + " internal inbound links (expected sitewide link, >= " + min + ")");
+    }
   }
 }
 

@@ -8,7 +8,7 @@ import Courses from "../components/Courses.astro";
 import CTA from "../components/CTA.astro";
 import PageHero from "../components/PageHero.astro";
 import { courses } from "../data/courses";
-import { resolveSite, buildItemListSchema } from "../seo/index.js";
+import { resolveSite, buildItemListSchema, buildBreadcrumbSchema } from "../seo/index.js";
 import { courseEntityId } from "../seo/geo/entity.js";
 
 const site = resolveSite();
@@ -27,6 +27,13 @@ const courseListSchema = buildItemListSchema({
         provider: { "@id": `${site.url}/#organization` }
     }))
 });
+const courseBreadcrumbSchema = buildBreadcrumbSchema(
+    [
+        { name: "خانه", path: "/" },
+        { name: "دوره‌های آموزشی", path: "/courses" }
+    ],
+    site
+);
 ---
 
 <MainLayout
@@ -37,7 +44,7 @@ const courseListSchema = buildItemListSchema({
     topics={["shushtar", "music-education", "courses"]}
     entityType="ItemList"
     auditContext={{ h1Count: 1, missingImageAlt: 0, internalLinkCount: activeCourses.length }}
-    schema={courseListSchema ? [courseListSchema] : []}
+    schema={[courseListSchema, courseBreadcrumbSchema].filter((item): item is object => item !== null && item !== undefined)}
 >
     <Header />
     <PageHero
