@@ -69,3 +69,75 @@ export function isOwnershipEligibleQuery(query, minWords = 2) {
     queryTokens(normalized).size >= 1
   );
 }
+
+/**
+ * Conservative semantic modifier ontology shared by query clustering,
+ * competitive-gap matching and other SEO intelligence layers.
+ */
+export const SEMANTIC_QUERY_MODIFIER_FAMILIES = Object.freeze({
+  pricing: Object.freeze(["قیمت", "هزینه", "شهریه", "تعرفه"]),
+  enrollment: Object.freeze(["ثبت نام", "رزرو", "نام نویسی"]),
+  guidance: Object.freeze(["راهنما", "راهنمایی", "چگونه", "چطور", "شروع یادگیری"]),
+  curriculum: Object.freeze(["سرفصل", "مباحث آموزشی", "برنامه آموزشی"]),
+  comparison: Object.freeze(["تفاوت", "فرق", "مقایسه"]),
+  instructor: Object.freeze(["مدرس", "استاد"]),
+  audience: Object.freeze(["کودک", "نوجوان", "بزرگسال"]),
+  style: Object.freeze(["پاپ", "کلاسیک", "فلامنکو", "سنتی", "بختیاری", "شوشتری"]),
+  tips: Object.freeze(["نکات", "اشتباه", "اشتباهات", "خطا"])
+});
+
+const NORMALIZED_SEMANTIC_QUERY_MODIFIER_FAMILIES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(SEMANTIC_QUERY_MODIFIER_FAMILIES).map(([family, aliases]) => [
+      family,
+      Object.freeze(aliases.map(normalizeQuery).filter(Boolean))
+    ])
+  )
+);
+
+export function querySemanticDimensions(value) {
+  const normalized = normalizeQuery(value);
+  if (!normalized) {
+    return Object.freeze({
+      normalized: "",
+      modifierFamilies: Object.freeze([]),
+      consumedTokens: Object.freeze([]),
+      substantiveTokens: Object.freeze([]),
+      local: false
+    });
+  }
+
+  const modifierFamilies = [];
+  const consumedTokens = new Set();
+
+  for (const [family, aliases] of Object.entries(NORMALIZED_SEMANTIC_QUERY_MODIFIER_FAMILIES)) {
+    const matchedAliases = aliases.filter((alias) => containsSemanticPhrase(normalized, alias));
+    if (!matchedAliases.length) continue;
+
+    modifierFamilies.push(family);
+    for (const alias of matchedAliases) {
+      for (const token of semanticTokens(alias)) consumedTokens.add(token);
+    }
+  }
+
+  const substantiveTokens = [...queryTokens(normalized)]
+    .filter((token) => !consumedTokens.has(token))
+    .sort();
+
+  return Object.freeze({
+    normalized,
+    modifierFamilies: Object.freeze(modifierFamilies.sort()),
+    consumedTokens: Object.freeze([...consumedTokens].sort()),
+    substantiveTokens: Object.freeze(substantiveTokens),
+    local: containsSemanticPhrase(normalized, "شوشتر")
+  });
+}
+
+export function querySemanticFeatureSet(value) {
+  const dimensions = querySemanticDimensions(value);
+  return new Set([
+    ...dimensions.substantiveTokens,
+    ...dimensions.modifierFamilies.map((family) => "mod:" + family),
+    ...(dimensions.local ? ["scope:local"] : [])
+  ]);
+}
