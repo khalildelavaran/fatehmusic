@@ -42,7 +42,7 @@ export function buildKnowledgeGraph({
     }));
   };
 
-  const addEdge = (from, relation, to, confidence = 1) => {
+  const addEdge = (from, relation, to, confidence = 1, provenance = "DERIVED") => {
     if (!from || !to || !nodeIds.has(from) || !nodeIds.has(to)) return;
     const key = from + "|" + relation + "|" + to;
     if (edgeKeys.has(key)) return;
@@ -51,7 +51,8 @@ export function buildKnowledgeGraph({
       from,
       relation,
       to,
-      confidence: Math.max(0, Math.min(1, Number(confidence) || 0))
+      confidence: Math.max(0, Math.min(1, Number(confidence) || 0)),
+      provenance: String(provenance || "DERIVED")
     }));
   };
 
@@ -79,10 +80,10 @@ export function buildKnowledgeGraph({
   addNode({ id: organizationId, type: "Organization", name: "آموزشگاه موسیقی فاتح", url: base, topics: ["music-education", "shushtar"] });
   addNode({ id: websiteId, type: "WebSite", name: "آموزشگاه موسیقی فاتح", url: base });
   addNode({ id: locationId, type: "LocalBusiness", name: "آموزشگاه موسیقی فاتح شوشتر", url: absoluteUrl("/locations/shushtar", base), topics: ["shushtar"] });
-  addEdge(websiteId, "publisher", organizationId);
-  addEdge(organizationId, "location", locationId);
+  addEdge(websiteId, "publisher", organizationId, 1, "SITE_STRUCTURE");
+  addEdge(organizationId, "location", locationId, 1, "BUSINESS_LOCATION");
   const organizationTopics = resolveEntityTopics("آموزشگاه موسیقی فاتح شوشتر", ["آموزش موسیقی", "شوشتر"]);
-  for (const topic of organizationTopics) addEdge(organizationId, "about", ensureTopicNode(topic));
+  for (const topic of organizationTopics) addEdge(organizationId, "about", ensureTopicNode(topic), 0.9, "ORGANIZATION_TOPIC_MATCH");
 
   for (const instructor of instructors || []) {
     if (!instructor?.slug || !instructor?.name) continue;
@@ -94,9 +95,9 @@ export function buildKnowledgeGraph({
       url: absoluteUrl("/instructors/" + instructor.slug, base),
       topics: instructor.professional?.roles || []
     });
-    addEdge(instructorId, "worksFor", organizationId);
+    addEdge(instructorId, "worksFor", organizationId, 1, "ENTITY_RELATION");
     for (const topic of resolveEntityTopics(instructor.name, instructor.professional?.roles || [])) {
-      addEdge(instructorId, "knowsAbout", ensureTopicNode(topic), 0.8);
+      addEdge(instructorId, "knowsAbout", ensureTopicNode(topic), 0.8, "ROLE_TOPIC_MATCH");
     }
   }
 
@@ -110,9 +111,9 @@ export function buildKnowledgeGraph({
       url: absoluteUrl("/courses/" + course.slug, base),
       topics: [course.instrument, course.category].filter(Boolean)
     });
-    addEdge(courseId, "provider", organizationId);
+    addEdge(courseId, "provider", organizationId, 1, "COURSE_PROVIDER");
     for (const topic of resolveEntityTopics(course.title, [course.instrument, course.category])) {
-      addEdge(courseId, "about", ensureTopicNode(topic));
+      addEdge(courseId, "about", ensureTopicNode(topic), 0.9, "COURSE_TOPIC_MATCH");
     }
 
     const instructorIds = Array.isArray(course.instructors)
@@ -130,7 +131,7 @@ export function buildKnowledgeGraph({
         continue;
       }
       const instructorId = instructorEntityId(absoluteUrl("/instructors/" + instructor.slug, base));
-      addEdge(instructorId, "teaches", courseId);
+      addEdge(instructorId, "teaches", courseId, 1, "COURSE_INSTRUCTOR_REFERENCE");
     }
   }
 
@@ -145,9 +146,9 @@ export function buildKnowledgeGraph({
       url: postUrl,
       topics: [post.topic, post.related_course_slug].filter(Boolean)
     });
-    addEdge(articleId, "publisher", organizationId);
+    addEdge(articleId, "publisher", organizationId, 1, "ARTICLE_PUBLISHER");
     for (const topic of resolveEntityTopics(post.title, [post.topic])) {
-      addEdge(articleId, "about", ensureTopicNode(topic));
+      addEdge(articleId, "about", ensureTopicNode(topic), 0.85, "ARTICLE_TOPIC_MATCH");
     }
     if (post.related_course_slug) {
       const relatedCourse = (courses || []).find((course) => course?.slug === post.related_course_slug);
@@ -158,7 +159,7 @@ export function buildKnowledgeGraph({
           reference: post.related_course_slug
         }));
       } else {
-        addEdge(articleId, "about", courseEntityId(absoluteUrl("/courses/" + post.related_course_slug, base)), 0.95);
+        addEdge(articleId, "about", courseEntityId(absoluteUrl("/courses/" + post.related_course_slug, base)), 0.95, "ARTICLE_RELATED_COURSE_REFERENCE");
       }
     }
   }
@@ -171,7 +172,7 @@ export function buildKnowledgeGraph({
   }
 
   return Object.freeze({
-    version: "1.0",
+    version: "1.1",
     nodes: freezeArray(nodes),
     edges: freezeArray(edges),
     missingReferences: freezeArray(missingReferences),
@@ -186,7 +187,8 @@ export function buildKnowledgeGraph({
       connectedNodeCount: nodes.filter((node) =>
         (inbound.get(node.id) || 0) + (outbound.get(node.id) || 0) > 0
       ).length,
-      missingReferenceCount: missingReferences.length
+      missingReferenceCount: missingReferences.length,
+      edgeProvenanceCounts: Object.freeze(Object.fromEntries(provenanceCounts))
     })
   });
 }
@@ -224,6 +226,15 @@ export function validateKnowledgeGraph(graph) {
     if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
       errors.push("Invalid edge confidence: " + edge?.relation);
     }
+    if (!edge?.provenance || typeof edge.provenance !== "string") {
+      errors.push("Edge provenance is missing: " + edge?.relation);
+    }
+  }
+
+  const provenanceCounts = new Map();
+  for (const edge of graphEdges) {
+    const provenance = String(edge?.provenance || "UNKNOWN");
+    provenanceCounts.set(provenance, (provenanceCounts.get(provenance) || 0) + 1);
   }
 
   const outgoingRelations = new Map();
