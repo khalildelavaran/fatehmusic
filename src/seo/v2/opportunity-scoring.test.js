@@ -915,3 +915,36 @@ describe("decision guards", () => {
     expect(result.priority).toBeLessThanOrEqual(86);
   });
 });
+
+
+describe("market traffic-potential signal", () => {
+  it("uses Ahrefs traffic potential as a bounded secondary demand signal", () => {
+    const baseline = scoreOpportunity({
+      action: "NEW_CONTENT",
+      title: "آموزش گیتار",
+      priority: 70,
+      searchSignal: { available: false },
+      marketSignal: {
+        available: true,
+        estimatedVolume: 200,
+        difficulty: 30,
+        trafficPotential: 0
+      }
+    });
+    const enriched = scoreOpportunity({
+      action: "NEW_CONTENT",
+      title: "آموزش گیتار",
+      priority: 70,
+      searchSignal: { available: false },
+      marketSignal: {
+        available: true,
+        estimatedVolume: 200,
+        difficulty: 30,
+        trafficPotential: 1000
+      }
+    });
+
+    expect(enriched.scoreBreakdown.marketSignal).toBeGreaterThan(baseline.scoreBreakdown.marketSignal);
+    expect(enriched.priority).toBeGreaterThan(baseline.priority);
+  });
+});
