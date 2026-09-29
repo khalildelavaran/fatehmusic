@@ -17,6 +17,18 @@ describe("SEO action outcome classifier", () => {
     expect(result.evidenceType).toBe("DESCRIPTIVE_BEFORE_AFTER");
   });
 
+  it("exposes an uncertainty interval for the measured CTR lift", () => {
+    const result = classifySeoActionMeasurement(
+      { impressions: 500, clicks: 50, ctr: 0.10, position: 6 },
+      { impressions: 500, clicks: 25, ctr: 0.05, position: 7 }
+    );
+
+    expect(result.ctrLiftInterval95).not.toBeNull();
+    expect(result.ctrLiftInterval95.lower).toBeLessThan(0.05);
+    expect(result.ctrLiftInterval95.upper).toBeGreaterThan(0.05);
+    expect(result.ctrLiftStatisticallyClear).toBe(true);
+  });
+
   it("reports insufficient data when no non-overlapping baseline exists", () => {
     expect(classifySeoActionMeasurement(null, null).effect).toBe("INSUFFICIENT_DATA");
     expect(classifySeoActionMeasurement(null, null).confidence).toBe(0);
