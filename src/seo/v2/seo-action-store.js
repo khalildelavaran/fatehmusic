@@ -1,3 +1,5 @@
+import { isBrandNavigationQuery } from "../helpers/query.js";
+
 /** @param {D1Database} db @param {{actionType:string,targetUrl?:string|null,targetSlug?:string|null,targetTitle?:string|null,targetPostId?:number|null,relatedCourseSlug?:string|null,recommendationScore?:number|null,status?:string,source?:string,notes?:string|null}} [options] */
 export async function createSeoAction(db, {
   actionType,
@@ -102,48 +104,101 @@ export async function syncPublishedSeoActionMeasurements(db, {
   if (!db || !windowStart || !windowEnd) return { measured: 0 };
 
   const site = String(siteUrl).replace(/\/$/, "");
-  // Measure every published action that existed by the end of the reporting
-  // window. One INSERT...SELECT keeps the daily GSC job within D1's query
-  // budget and still records a zero-demand window as a real measurement.
   const result = await db.prepare(
-    "INSERT INTO seo_action_measurements " +
-    "(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
-    "SELECT a.id, ?, ?, ?, " +
-    "COALESCE(SUM(g.impressions), 0), COALESCE(SUM(g.clicks), 0), " +
-    "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN COALESCE(SUM(g.clicks), 0) / SUM(g.impressions) ELSE 0 END, " +
-    "CASE WHEN COALESCE(SUM(g.impressions), 0) > 0 THEN SUM(g.impressions * g.position) / SUM(g.impressions) ELSE NULL END, " +
-    "'google-search-console' " +
+    "SELECT a.id AS action_id, " +
+    "g.query, g.impressions, g.clicks, g.position " +
     "FROM seo_action_log a " +
     "LEFT JOIN gsc_search_signals_v2 g ON " +
     "g.site_url = ? AND g.start_date = ? AND g.end_date = ? AND g.snapshot_label = ? " +
     "AND g.country = '' AND g.device = '' AND g.search_appearance = '' " +
-    "AND lower(trim(COALESCE(g.query, ''))) NOT IN (" +
-      "'fatehmusic.ir', 'www.fatehmusic.ir', 'fateh music', 'fateh music academy', 'آموزشگاه موسیقی فاتح'" +
-    ") " +
     "AND lower(rtrim(g.page, '/')) = lower(rtrim(a.target_url, '/')) " +
-    // Full-window comparisons are valid only for content that was live
-    // from the beginning of the reporting window. Newly published content
-    // will become measurable once the next complete window is available.
     "WHERE a.status = 'published' AND a.target_url IS NOT NULL " +
-    "AND (a.published_at IS NULL OR date(a.published_at) <= ?) " +
-    "GROUP BY a.id, a.target_url " +
-    "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET " +
-    "measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, " +
-    "ctr=excluded.ctr, position=excluded.position"
+    "AND (a.published_at IS NULL OR date(a.published_at) <= ?)"
   ).bind(
-    measuredAt,
-    windowStart,
-    windowEnd,
     site,
     windowStart,
     windowEnd,
     snapshotLabel,
     windowStart
-  ).run();
+  ).all();
 
-  return { measured: Number(result.meta?.changes || 0) };
+  const grouped = new Map();
+  for (const row of result.results || []) {
+    const actionId = Number(row?.action_id);
+    if (!Number.isFinite(actionId) || actionId <= 0) continue;
+
+    const current = grouped.get(actionId) || {
+      actionId,
+      impressions: 0,
+      clicks: 0,
+      weightedPosition: 0,
+      positionImpressions: 0
+    };
+
+    // Use the canonical semantic Brand detector instead of a second SQL
+    // allow/deny list that can silently drift from the GSC query layer.
+    if (!isBrandNavigationQuery(row?.query)) {
+      const impressions = Math.max(0, Number(row?.impressions) || 0);
+      const clicks = Math.max(0, Number(row?.clicks) || 0);
+      const position = Number(row?.position);
+      current.impressions += impressions;
+      current.clicks += clicks;
+      if (impressions > 0 && Number.isFinite(position) && position > 0) {
+        current.weightedPosition += impressions * position;
+        current.positionImpressions += impressions;
+      }
+    }
+
+    grouped.set(actionId, current);
+  }
+
+  if (!grouped.size) return { measured: 0 };
+
+  const rows = [...grouped.values()].map((item) => ({
+    actionId: item.actionId,
+    impressions: item.impressions,
+    clicks: item.clicks,
+    ctr: item.impressions > 0 ? item.clicks / item.impressions : 0,
+    position: item.positionImpressions > 0
+      ? item.weightedPosition / item.positionImpressions
+      : null
+  }));
+
+  // One multi-row upsert per bounded chunk keeps D1 statement/parameter usage
+  // predictable while still recording zero-demand windows.
+  const CHUNK_SIZE = 80;
+  let measured = 0;
+  for (let offset = 0; offset < rows.length; offset += CHUNK_SIZE) {
+    const chunk = rows.slice(offset, offset + CHUNK_SIZE);
+    const placeholders = chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, 'google-search-console')").join(", ");
+    const sql =
+      "INSERT INTO seo_action_measurements " +
+      "(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source) " +
+      "VALUES " + placeholders + " " +
+      "ON CONFLICT(action_id, window_start, window_end) DO UPDATE SET " +
+      "measured_at=excluded.measured_at, impressions=excluded.impressions, clicks=excluded.clicks, " +
+      "ctr=excluded.ctr, position=excluded.position";
+
+    const bindings = [];
+    for (const item of chunk) {
+      bindings.push(
+        item.actionId,
+        measuredAt,
+        windowStart,
+        windowEnd,
+        item.impressions,
+        item.clicks,
+        item.ctr,
+        item.position
+      );
+    }
+
+    const write = await db.prepare(sql).bind(...bindings).run();
+    measured += Number(write.meta?.changes || 0);
+  }
+
+  return { measured };
 }
-import { classifySeoActionMeasurement } from "./action-attribution.js";
 
 /** @param {D1Database} db @param {{limit?:number}} [options] */
 export async function listSeoActions(db, { limit = 20 } = {}) {
