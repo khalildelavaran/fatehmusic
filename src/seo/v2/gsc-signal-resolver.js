@@ -687,25 +687,45 @@ function buildQuerySemanticProfile(query, cache = null) {
   const intent = classifyIntent({ title: query }).primary || "informational";
   const scope = hasLocalScope ? "local" : "global";
   const fallbackTokens = [...queryTokens(query)].sort();
-  const subjectSource = topicSlugs.length
-    ? "TOPIC"
-    : fallbackTokens.length
-      ? "TOKENS"
-      : "QUERY_ISOLATED";
+  // Keep topic identity, but do not discard meaningful modifiers that carry
+  // subtopic intent. Without this residual token layer, queries such as
+  // «راهنمای گیتار» and «تاریخچه گیتار» collapse into the same cluster simply
+  // because both resolve to the guitar topic and informational intent.
+  const topicFeatureTokens = new Set(
+    topics.flatMap((topic) => [
+      topic.name,
+      ...(topic.aliases || [])
+    ])
+      .filter(Boolean)
+      .flatMap((value) => queryTokens(value))
+  );
+  const residualTokens = fallbackTokens
+    .filter((token) => !topicFeatureTokens.has(token))
+    .slice(0, 6);
+  const semanticFeatures = [
+    ...topicSlugs,
+    ...residualTokens.map((token) => "token:" + token)
+  ];
+  const subjectSource = topicSlugs.length && residualTokens.length
+    ? "TOPIC+TOKENS"
+    : topicSlugs.length
+      ? "TOPIC"
+      : residualTokens.length
+        ? "TOKENS"
+        : "QUERY_ISOLATED";
   // A query with no specific topic or substantive token has no reliable
   // semantic fingerprint. Keep it isolated rather than collapsing every broad
   // local/informational query into one false cluster.
-  const subject = topicSlugs.length
-    ? topicSlugs.join("+")
-    : fallbackTokens.length
-      ? fallbackTokens.join("+")
-      : "query:" + normalized;
+  const subject = semanticFeatures.length
+    ? semanticFeatures.sort().join("+")
+    : "query:" + normalized;
 
   const profile = Object.freeze({
     key: ["scope:" + scope, "intent:" + intent, "subject:" + subject].join("|"),
     scope,
     intent,
     subjects: Object.freeze(topicSlugs),
+    semanticFeatures: Object.freeze(semanticFeatures),
     subjectSource
   });
   cache?.set(normalized, profile);
@@ -738,6 +758,7 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
       scope: profile.scope,
       intent: profile.intent,
       subjects: profile.subjects,
+      semanticFeatures: profile.semanticFeatures,
       subjectSource: profile.subjectSource
     };
 
@@ -790,6 +811,7 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
       scope: cluster.scope,
       intent: cluster.intent,
       subjects: Object.freeze(cluster.subjects),
+      semanticFeatures: Object.freeze(cluster.semanticFeatures || []),
       subjectSource: cluster.subjectSource,
       impressions,
       pageCount: cluster.pages.size,
