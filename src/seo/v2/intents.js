@@ -1,64 +1,80 @@
 /**
- * --------------------------------------------------------
- * Fateh Music Academy — SEO/GEO Engine v2
- * Deterministic search-intent classifier.
- * --------------------------------------------------------
+ * Fateh Music Academy — unified search intent engine.
+ * Title semantics are shared with the content engine; V2 adds contextual
+ * path/entity/local evidence without duplicating title rules.
  */
 
 import { containsSemanticPhrase, normalizeSemanticText } from "../helpers/text.js";
 
-const RULES = [
-    { intent: "transactional", weight: 70, tokens: ["ثبت نام", "ثبت‌نام", "قیمت", "هزینه", "رزرو", "خرید"] },
-    { intent: "local", weight: 65, tokens: ["شوشتر", "خوزستان", "نزدیک", "حضوری"] },
-    { intent: "informational", weight: 45, tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "تفاوت", "اشتباهات"] },
-    { intent: "commercial", weight: 40, tokens: ["بهترین", "مناسب", "مقایسه", "انتخاب"] },
-    { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "فاتح"] }
-];
-
 const TITLE_RULES = Object.freeze([
-    { intent: "transactional", tokens: ["ثبت‌نام", "ثبت نام", "هزینه", "شهریه", "قیمت", "تعرفه", "رزرو کلاس", "خرید"] },
-    { intent: "navigational", tokens: ["آموزشگاه فاتح", "آموزشگاه موسیقی فاتح", "فاتح موزیک", "خلیل دلاوران"] },
-    { intent: "commercial", tokens: ["بهترین", "مقایسه", "تفاوت", "راهنمای خرید", "کدام را انتخاب"] },
-    { intent: "informational", tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "اشتباهات"] }
+    { intent: "transactional", weight: 70, tokens: ["ثبت‌نام", "ثبت نام", "قیمت", "هزینه", "شهریه", "تعرفه", "رزرو", "خرید"] },
+    { intent: "local", weight: 65, tokens: ["شوشتر", "خوزستان", "نزدیک", "حضوری"] },
+    { intent: "informational", weight: 45, tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "اشتباهات"] },
+    { intent: "commercial", weight: 40, tokens: ["بهترین", "مناسب", "مقایسه", "تفاوت", "انتخاب", "کدام را انتخاب", "راهنمای خرید"] },
+    { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "آموزشگاه فاتح", "فاتح", "فاتح موزیک"] }
 ]);
 
 function normalize(value) { return normalizeSemanticText(value); }
 
-/**
- * Title-only intent classification shared with the content-engine.
- * Contextual path/entity boosts remain exclusive to classifyIntent().
- */
-export function classifyTitleIntent(title = "") {
+function scoreTitleIntents(title = "") {
     const corpus = normalize(title);
+    const scores = new Map();
+
     for (const rule of TITLE_RULES) {
         const matches = rule.tokens.filter((token) => containsSemanticPhrase(corpus, token));
-        if (matches.length) {
-            return Object.freeze({
-                primary: rule.intent,
-                confidence: Number(Math.min(0.99, 0.65 + Math.min(0.3, matches.length * 0.1)).toFixed(3)),
-                matches: Object.freeze(matches)
-            });
-        }
+        if (!matches.length) continue;
+        const current = scores.get(rule.intent) || { score: 0, reason: [] };
+        current.score += rule.weight + matches.length * 10;
+        current.reason.push(...matches);
+        scores.set(rule.intent, current);
     }
+
+    return [...scores.entries()]
+        .map(([intent, value]) => ({ intent, ...value }))
+        .sort((a, b) => b.score - a.score || a.intent.localeCompare(b.intent));
+}
+
+/**
+ * Title-only classifier shared with the AI content-engine.
+ */
+export function classifyTitleIntent(title = "") {
+    const intents = scoreTitleIntents(title);
+    if (!intents.length) {
+        return Object.freeze({
+            primary: "informational",
+            confidence: 0.65,
+            matches: Object.freeze([]),
+            intents: Object.freeze([])
+        });
+    }
+
+    const top = intents[0];
+    const second = intents[1]?.score || 0;
+    const gap = Math.max(0, top.score - second);
+    const confidence = intents.length === 1
+        ? Math.min(0.99, Math.max(0.35, top.score / 100))
+        : Math.min(0.99, Math.max(0.35, 0.55 + gap / 100));
+
     return Object.freeze({
-        primary: "informational",
-        confidence: 0.65,
-        matches: Object.freeze([])
+        primary: top.intent,
+        confidence: Number(confidence.toFixed(3)),
+        matches: Object.freeze([...(top.reason || [])]),
+        intents: Object.freeze(intents)
     });
 }
 
 /**
  * @param {{path?:string,title?:string,keywords?:string[],entityType?:string}} input
- * @returns {{primary:string, intents:{intent:string,score:number,reason:string[]}[]}}
+ * @returns {{primary:string,confidence:number,intents:{intent:string,score:number,reason:string[]}[]}}
  */
 export function classifyIntent({ path = "", title = "", keywords = [], entityType = "" } = {}) {
-    const corpus = normalize([path, title, ...(keywords || [])].join(" | "));
-    const scores = new Map();
-
-    for (const rule of RULES) {
-        const matches = rule.tokens.filter((token) => containsSemanticPhrase(corpus, token));
-        if (matches.length) add(scores, rule.intent, rule.weight + matches.length * 10, matches);
-    }
+    const titleResult = classifyTitleIntent(title);
+    const scores = new Map(
+        (titleResult.intents || []).map((item) => [
+            item.intent,
+            { score: item.score, reason: [...(item.reason || [])] }
+        ])
+    );
 
     if (normalize(path).startsWith("/blog")) add(scores, "informational", 25, ["blog"]);
     if (normalize(path).startsWith("/courses")) add(scores, "commercial", 20, ["course-path"]);
