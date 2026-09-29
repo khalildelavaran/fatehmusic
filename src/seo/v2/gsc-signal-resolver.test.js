@@ -643,6 +643,22 @@ describe("query ownership performance evidence", () => {
   });
 });
 
+describe("position-aware GSC opportunity priority", () => {
+  it("prioritizes CTR underperformance relative to the same rank bucket", () => {
+    const index = buildGscSignalIndex([
+      { query: "آموزش گیتار", page: "https://fatehmusic.ir/courses/guitar", clicks: 1, impressions: 100, ctr: 0.01, position: 6 },
+      { query: "آموزش سنتور", page: "https://fatehmusic.ir/courses/santur", clicks: 20, impressions: 100, ctr: 0.2, position: 7 },
+      { query: "آموزش ویولن", page: "https://fatehmusic.ir/courses/violin", clicks: 20, impressions: 100, ctr: 0.2, position: 8 }
+    ]);
+
+    const guitar = index.opportunities.find((item) => item.page.endsWith("/courses/guitar"));
+    const santur = index.opportunities.find((item) => item.page.endsWith("/courses/santur"));
+
+    expect(guitar.opportunitySignalScore).toBeGreaterThan(santur.opportunitySignalScore);
+  });
+});
+
+
 describe("position-aware CTR benchmarking", () => {
   it("derives a CTR benchmark from the same ranking bucket", () => {
     const index = buildGscSignalIndex([
