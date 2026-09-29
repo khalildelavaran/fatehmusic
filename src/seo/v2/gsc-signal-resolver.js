@@ -953,7 +953,11 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
 
   const semanticMap = normalizeSemanticMap(pageSemantics);
   return [...groups.entries()]
-    .filter(([, pages]) => pages.size > 1)
+    .filter(([, pages]) => {
+      if (pages.size <= 1) return false;
+      const totalImpressions = [...pages.values()].reduce((sum, value) => sum + value, 0);
+      return totalImpressions >= Math.max(1, Number(minImpressions) || 1);
+    })
     .map(([groupKey, pages]) => {
       const separator = groupKey.lastIndexOf("|");
       const query = separator >= 0 ? groupKey.slice(0, separator) : groupKey;
