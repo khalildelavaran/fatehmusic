@@ -209,7 +209,7 @@ function articleSemantics(posts = [], siteUrl = "") {
  * Compose all existing SEO/GEO intelligence into one dashboard-ready model.
  * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], competitorKeywordRows?: object[], targetKeywordRows?: object[], targetQueries?: string[], siteUrl?: string}} options
  */
-export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "", gscIndex = null, maxQueryClusters = 5000, maxOwnershipQueries = 5000, includeKnowledgeGraph = true, includeSemanticLinks = true, includeClusterLinks = true, includeClusterStrategy = true } = {}) {
+export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "", gscIndex = null, maxQueryClusters = 5000, maxOwnershipQueries = 5000, includeKnowledgeGraph = true, includeSemanticLinks = true, includeClusterLinks = true, includeClusterStrategy = true, includePageSemantics = true } = {}) {
   const resolvedSiteUrl = String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, "");
   const cluster = buildContentClusterReport(posts, {
     courses,
@@ -218,7 +218,9 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     includeStrategy: includeClusterStrategy
   });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
-  const pages = articleSemantics(posts, resolvedSiteUrl, cluster.profiles);
+  const pages = includePageSemantics
+    ? articleSemantics(posts, resolvedSiteUrl, cluster.profiles)
+    : [];
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
     gscRows: currentScoringRows(gscRows),
