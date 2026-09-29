@@ -18,7 +18,12 @@ describe("semantic query layer", () => {
   it("distinguishes brand navigation from substantive ownership queries", () => {
     expect(isBrandNavigationQuery("fatehmusic.ir")).toBe(true);
     expect(isBrandNavigationQuery("آموزشگاه موسیقی فاتح")).toBe(true);
+    expect(isBrandNavigationQuery("fateh music academy shushtar")).toBe(true);
+    expect(isBrandNavigationQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(true);
+    expect(isBrandNavigationQuery("ثبت نام آموزشگاه موسیقی فاتح")).toBe(true);
+    expect(isBrandNavigationQuery("کلاس گیتار در آموزشگاه فاتح")).toBe(false);
     expect(isOwnershipEligibleQuery("آموزش گیتار")).toBe(true);
     expect(isOwnershipEligibleQuery("گیتار")).toBe(false);
+    expect(isOwnershipEligibleQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(false);
   });
 });
