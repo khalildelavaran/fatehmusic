@@ -224,6 +224,8 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
     const inboundCounts = new Map();
     const selectedBySource = new Map();
     const assignedPairs = new Set();
+    const anchorUsage = new Map();
+    const maxSameAnchorPerTarget = 2;
 
     // Allocate links globally rather than letting every page independently
     // choose the same popular target. This makes maxInboundLinks a real cap.
@@ -248,11 +250,15 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
                 const saturationPenalty = Math.min(20, inboundBefore * 2);
                 const orphanBoost = inboundBefore === 0 ? 10 : 0;
                 const effectiveScore = link.score - saturationPenalty + orphanBoost;
+                const usageByAnchor = anchorUsage.get(target) || new Map();
+                const recommendedAnchor = chooseRecommendedAnchor(link, usageByAnchor, maxSameAnchorPerTarget);
+                const anchorReusePenalty = recommendedAnchor.reuseBefore >= maxSameAnchorPerTarget ? 4 : 0;
+                const anchorAwareScore = effectiveScore - anchorReusePenalty;
 
                 if (
                     !best ||
-                    effectiveScore > best.effectiveScore ||
-                    (effectiveScore === best.effectiveScore && String(link.title).localeCompare(String(best.link.title), "fa") < 0)
+                    anchorAwareScore > best.effectiveScore ||
+                    (anchorAwareScore === best.effectiveScore && String(link.title).localeCompare(String(best.link.title), "fa") < 0)
                 ) {
                     best = {
                         link,
@@ -261,7 +267,9 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
                         inboundBefore,
                         saturationPenalty,
                         orphanBoost,
-                        effectiveScore
+                        effectiveScore: anchorAwareScore,
+                        anchorReusePenalty,
+                        recommendedAnchor
                     };
                 }
             }
@@ -274,9 +282,17 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
                 inboundLinksBeforePlan: best.inboundBefore,
                 inboundLinksAfterPlan: best.inboundBefore + 1,
                 saturationPenalty: best.saturationPenalty,
-                orphanBoost: best.orphanBoost
+                orphanBoost: best.orphanBoost,
+                recommendedAnchor: best.recommendedAnchor.anchor,
+                anchorReuseBefore: best.recommendedAnchor.reuseBefore,
+                anchorReuseAfter: best.recommendedAnchor.reuseBefore + 1,
+                anchorReusePenalty: best.anchorReusePenalty
             });
             inboundCounts.set(best.target, best.inboundBefore + 1);
+            const usageByAnchor = anchorUsage.get(best.target) || new Map();
+            const anchorKey = best.recommendedAnchor.key || normalizeSemanticText(best.recommendedAnchor.anchor);
+            usageByAnchor.set(anchorKey, (usageByAnchor.get(anchorKey) || 0) + 1);
+            anchorUsage.set(best.target, usageByAnchor);
             assignedPairs.add(best.pairKey);
         }
 
@@ -316,10 +332,18 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
             inboundLinksBeforePlan: 0,
             inboundLinksAfterPlan: 1,
             saturationPenalty: 0,
-            orphanBoost: 14
+            orphanBoost: 14,
+            recommendedAnchor: bestAnchorForRecovery(best.candidate),
+            anchorReuseBefore: 0,
+            anchorReuseAfter: 1
         });
         selectedBySource.set(sourceKey, selected);
         inboundCounts.set(target, 1);
+        const usageByAnchor = anchorUsage.get(target) || new Map();
+        const recoveryAnchor = bestAnchorForRecovery(best.candidate);
+        const recoveryKey = normalizeSemanticText(recoveryAnchor);
+        usageByAnchor.set(recoveryKey, (usageByAnchor.get(recoveryKey) || 0) + 1);
+        anchorUsage.set(target, usageByAnchor);
         assignedPairs.add(sourceKey + "=>" + target);
     }
 
@@ -333,6 +357,11 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
                 inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics
             }))
     }));
+}
+
+function bestAnchorForRecovery(link) {
+    const chosen = chooseRecommendedAnchor(link, new Map(), 2);
+    return chosen.anchor || link?.title || "";
 }
 
 function findStrongOwnershipEvidence(candidateUrl, ownership = [], candidate = {}) {
@@ -393,11 +422,41 @@ function searchDemandBoost(signal = null) {
     return Math.min(12, boost);
 }
 
+const TOPIC_ANCHOR_LABELS = Object.freeze({
+    guitar: "گیتار",
+    piano: "پیانو",
+    violin: "ویولن",
+    kamancheh: "کمانچه",
+    tar: "تار",
+    setar: "سه‌تار",
+    santur: "سنتور",
+    keyboard: "ارگ و کیبورد",
+    daf: "دف",
+    tombak: "تنبک",
+    ney: "نی",
+    neyanban: "نی‌انبان",
+    vocal: "آواز",
+    solfege: "سلفژ",
+    "music-theory": "تئوری موسیقی",
+    rhythm: "ریتم و وزن‌خوانی",
+    "children-music": "موسیقی کودک",
+    shushtar: "شوشتر",
+    "music-education": "آموزش موسیقی"
+});
+
+function readableAnchor(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    const normalized = normalizeSemanticText(raw);
+    return TOPIC_ANCHOR_LABELS[normalized] || raw;
+}
+
 function buildAnchorHints(candidate, sharedTopics = [], relations = []) {
     const hints = [];
     if (candidate?.title) hints.push(String(candidate.title).trim());
     for (const topic of sharedTopics || []) {
-        if (topic) hints.push(String(topic).trim());
+        const label = readableAnchor(topic);
+        if (label) hints.push(label);
     }
     for (const relation of relations || []) {
         const relationText = String(relation || "").replace(/^reverse:/, "").replace(/^path:/, "").trim();
@@ -407,6 +466,33 @@ function buildAnchorHints(candidate, sharedTopics = [], relations = []) {
         else if (relationText === "location") hints.push("کلاس در شوشتر");
     }
     return [...new Set(hints.filter(Boolean))].slice(0, 4);
+}
+
+function chooseRecommendedAnchor(link, usageByAnchor = new Map(), maxSameAnchorPerTarget = 2) {
+    const hints = Array.isArray(link?.anchorHints) ? link.anchorHints : [];
+    if (!hints.length) return { anchor: link?.title || "", reuseBefore: 0 };
+
+    const ranked = hints
+        .map((hint, index) => {
+            const key = normalizeSemanticText(hint);
+            return {
+                hint,
+                key,
+                index,
+                reuseBefore: Number(usageByAnchor.get(key) || 0)
+            };
+        })
+        .filter((item) => item.key)
+        .sort((a, b) =>
+            Number(a.reuseBefore >= maxSameAnchorPerTarget) - Number(b.reuseBefore >= maxSameAnchorPerTarget) ||
+            a.reuseBefore - b.reuseBefore ||
+            a.index - b.index
+        );
+
+    const selected = ranked[0];
+    return selected
+        ? { anchor: selected.hint, reuseBefore: selected.reuseBefore, key: selected.key }
+        : { anchor: link?.title || "", reuseBefore: 0, key: normalizeSemanticText(link?.title || "") };
 }
 
 function findRelationEvidence(currentUrl, candidateUrl, semanticGraph) {
