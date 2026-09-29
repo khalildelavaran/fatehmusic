@@ -272,7 +272,7 @@ function recommendedLinks(row, baseUrl) {
 }
 
 /**
- * @param {{db:D1Database,siteUrl?:string,courses?:object[],topicLimit?:number,gscQueryLimit?:number,gscPageLimit?:number,gscOwnershipLimit?:number,marketLimit?:number,actionLimit?:number}} options
+ * @param {{db:D1Database,siteUrl?:string,courses?:object[],topicLimit?:number,gscQueryLimit?:number,gscPageLimit?:number,gscOwnershipLimit?:number,marketLimit?:number}} options
  */
 export async function getSeoDashboardIntelligence({
   db,
@@ -315,11 +315,22 @@ export async function getSeoDashboardIntelligence({
   const safeOwnershipLimit = Math.max(1, Math.min(Number(gscOwnershipLimit) || DEFAULT_GSC_OWNERSHIP_LIMIT, 200));
   const safeMarketLimit = Math.max(1, Math.min(Number(marketLimit) || DEFAULT_MARKET_LIMIT, 30));
 
-  const [topicResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, refdomainsResult, keywordsResult] = await Promise.all([
+  const [topicResult, topicCountResult, gscCountResult, ownershipCountResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, refdomainsResult, keywordsResult] = await Promise.all([
     db.prepare(
       "SELECT id, title, normalized_key, instrument_key, related_course_slug, related_course_title, category, audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, created_at, updated_at " +
       "FROM content_topics WHERE status IN ('approved','candidate') ORDER BY score_total DESC, created_at DESC LIMIT ?"
     ).bind(safeTopicLimit).all(),
+    db.prepare(
+      "SELECT SUM(CASE WHEN status='approved' THEN 1 ELSE 0 END) AS approvedCount, " +
+      "SUM(CASE WHEN status='candidate' THEN 1 ELSE 0 END) AS candidateCount, COUNT(*) AS activeCount " +
+      "FROM content_topics WHERE status IN ('approved','candidate')"
+    ).first(),
+    db.prepare(
+      "SELECT COUNT(*) AS signalCount FROM gsc_search_signals_v2 WHERE snapshot_label='current' AND country='' AND device='' AND search_appearance=''"
+    ).first(),
+    db.prepare(
+      "SELECT COUNT(DISTINCT query) AS queryCount FROM gsc_search_signals_v2 WHERE snapshot_label='current' AND country='' AND device='' AND search_appearance=''"
+    ).first(),
     db.prepare(
       "SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions, " +
       "CASE WHEN SUM(impressions) > 0 THEN SUM(position * impressions) / SUM(impressions) ELSE NULL END AS position " +
@@ -493,21 +504,22 @@ export async function getSeoDashboardIntelligence({
     ahrefsRefdomainsHistory: Object.freeze(refdomainsPayload),
     ahrefsOrganicKeywords: Object.freeze({
       payload: Object.freeze(marketKeywords),
+      totalCount: Array.isArray(JSON.parse(keywordsResult?.payload || "[]")) ? JSON.parse(keywordsResult?.payload || "[]").length : marketKeywords.length,
       snapshotDate: keywordsResult?.snapshotDate || null,
       fetchedAt: keywordsResult?.fetchedAt || null
     }),
     latestGscSync: syncResult || null,
     gsc: Object.freeze({
       connected: gscConnected,
-      signalRowCount: Math.max((queryResult.results || []).length, (pageResult.results || []).length),
+      signalRowCount: Number(gscCountResult?.signalCount || 0),
       index: {
         byQueryNonBrand,
         byPageNonBrand
       },
       queryOwnership: Object.freeze(ownership),
-      queryOwnershipTotalCount: ownership.length,
+      queryOwnershipTotalCount: Number(ownershipCountResult?.queryCount || 0),
       queryOwnershipLimit: safeOwnershipLimit,
-      queryOwnershipTruncated: ownership.length >= safeOwnershipLimit
+      queryOwnershipTruncated: (ownershipResult.results || []).length >= 600 || Number(ownershipCountResult?.queryCount || 0) > safeOwnershipLimit
     }),
     summary: Object.freeze({
       opportunityCount: opportunities.length,
@@ -519,11 +531,14 @@ export async function getSeoDashboardIntelligence({
       evidenceStrengthAverage: evidenceAverage,
       gscCoverageStatus: syncResult?.truncated ? "PARTIAL" : gscConnected ? "OBSERVED" : "EMPTY",
       queryOwnershipCount: ownership.length,
-      queryOwnershipTotalCount: ownership.length,
-      queryOwnershipTruncated: ownership.length >= safeOwnershipLimit,
+      queryOwnershipTotalCount: Number(ownershipCountResult?.queryCount || 0),
+      queryOwnershipTruncated: (ownershipResult.results || []).length >= 600 || Number(ownershipCountResult?.queryCount || 0) > safeOwnershipLimit,
+      activeTopicCount: Number(topicCountResult?.activeCount || 0),
+      approvedTopicCount: Number(topicCountResult?.approvedCount || 0),
+      candidateTopicCount: Number(topicCountResult?.candidateCount || 0),
       gscFreshness,
       marketFreshness
     }),
-    actions: Object.freeze(previousMetrics)
+    actions: Object.freeze([])
   });
 }
