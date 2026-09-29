@@ -1,4 +1,4 @@
-import { normalizeSemanticText, semanticTokens } from "./text.js";
+import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "./text.js";
 
 export const GENERIC_QUERY_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
