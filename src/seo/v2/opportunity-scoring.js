@@ -50,7 +50,15 @@ function decisionConfidenceEvidence(item = {}) {
   }
 
   if (item.competitorGap?.available) {
-    points.push(["competitor keyword gap", 8]);
+    const competitorMatchType = String(item.competitorGap.matchType || "EXACT").toUpperCase();
+    const competitorSimilarity = Number(item.competitorGap.semanticSimilarity);
+    if (competitorMatchType === "EXACT") {
+      points.push(["competitor keyword gap", 8]);
+    } else if (Number.isFinite(competitorSimilarity) && competitorSimilarity >= 0.75) {
+      points.push(["semantic competitor keyword gap", 5]);
+    } else {
+      points.push(["weak semantic competitor keyword gap", 3]);
+    }
     if (Number(item.competitorGap.competitorCount) >= 3) {
       points.push(["multiple competitors share gap", 4]);
     } else if (Number(item.competitorGap.competitorCount) >= 2) {
@@ -147,8 +155,13 @@ function decisionConfidenceEvidence(item = {}) {
   }
 
   if (item.gscDataQuality?.truncated) points.push(["GSC snapshot truncated", -12]);
-  if (item.gscDataQuality?.completeness != null && item.gscDataQuality.completeness < 0.8) {
-    points.push(["GSC completeness below 80%", -8]);
+  if (item.gscDataQuality?.completeness != null) {
+    const completeness = Number(item.gscDataQuality.completeness);
+    if (Number.isFinite(completeness) && completeness < 0.8) {
+      points.push(["GSC completeness below 80%", -8]);
+    } else if (Number.isFinite(completeness) && completeness < 0.95) {
+      points.push(["GSC completeness below 95%", -3]);
+    }
   }
   if (item.gscDataQuality?.freshness === "STALE") points.push(["GSC snapshot is stale", -10]);
   else if (item.gscDataQuality?.freshness === "AGING") points.push(["GSC snapshot is aging", -4]);
@@ -502,6 +515,26 @@ function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
   } else if (item.marketDataQuality?.freshness === "AGING") {
     cap = Math.min(cap, 92);
     reasons.push("MARKET_AGING");
+  }
+  if (item.marketSignal?.matchType === "SEMANTIC") {
+    const similarity = Number(item.marketSignal.semanticSimilarity);
+    if (Number.isFinite(similarity) && similarity < 0.65) {
+      cap = Math.min(cap, 78);
+      reasons.push("MARKET_SEMANTIC_MATCH_WEAK");
+    } else if (Number.isFinite(similarity) && similarity < 0.75) {
+      cap = Math.min(cap, 86);
+      reasons.push("MARKET_SEMANTIC_MATCH_MODERATE");
+    }
+  }
+  if (item.competitorGap?.matchType === "SEMANTIC") {
+    const similarity = Number(item.competitorGap.semanticSimilarity);
+    if (Number.isFinite(similarity) && similarity < 0.65) {
+      cap = Math.min(cap, 78);
+      reasons.push("COMPETITOR_SEMANTIC_MATCH_WEAK");
+    } else if (Number.isFinite(similarity) && similarity < 0.75) {
+      cap = Math.min(cap, 88);
+      reasons.push("COMPETITOR_SEMANTIC_MATCH_MODERATE");
+    }
   }
 
   if (item.competitorDataQuality?.freshness === "STALE") {
