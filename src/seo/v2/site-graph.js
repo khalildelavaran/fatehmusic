@@ -5,6 +5,10 @@
  */
 import { absoluteUrl } from "../helpers/url.js";
 
+/**
+ * @param {{ url: string }} site
+ * @param {{ courses?: Array<Record<string, any>>, instructors?: Array<Record<string, any>> }} [options]
+ */
 export function buildSiteLinkCandidates(site, { courses = [], instructors = [] } = {}) {
   const candidates = [];
   const courseList = Array.isArray(courses) ? courses : [];

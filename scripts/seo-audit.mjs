@@ -607,6 +607,46 @@ function validateSitemaps(pages, serverRoutePatterns = []) {
   }
 }
 
+function validateGeoAssets(pages) {
+  // AI-retrieval assets must exist and stay in sync with the rendered site.
+  const client = path.join(DIST, "client");
+  const readAsset = (name) => {
+    const file = path.join(client, name);
+    return fs.existsSync(file) ? fs.readFileSync(file, "utf8") : null;
+  };
+
+  const llms = readAsset("llms.txt");
+  const llmsFull = readAsset("llms-full.txt");
+  if (llms === null) error("LLMS_MISSING", "llms.txt is missing from the build output");
+  if (llmsFull === null) error("LLMS_FULL_MISSING", "llms-full.txt is missing from the build output");
+
+  const courseRoutes = [...pages.keys()].filter((route) => /^\/courses\/[^/]+$/.test(route));
+  for (const route of courseRoutes) {
+    const url = SITE_ORIGIN + route;
+    if (llms !== null && !llms.includes(url)) error("LLMS_COURSE_MISSING", "llms.txt does not list " + url);
+    if (llmsFull !== null && !llmsFull.includes(url)) error("LLMS_FULL_COURSE_MISSING", "llms-full.txt does not list " + url);
+  }
+
+  // IndexNow: exactly one public key file whose content equals its own name.
+  const keyFiles = fs.readdirSync(client).filter((name) => /^[a-f0-9]{32}\.txt$/.test(name));
+  if (keyFiles.length !== 1) {
+    warn("INDEXNOW_KEY", "expected exactly one IndexNow key file, found " + keyFiles.length);
+  } else if (fs.readFileSync(path.join(client, keyFiles[0]), "utf8").trim() !== keyFiles[0].replace(/\.txt$/, "")) {
+    error("INDEXNOW_KEY_MISMATCH", keyFiles[0] + " content must equal its filename");
+  }
+}
+
+function validateSocialPreview(pages) {
+  // Every page that declares og:image must also declare its dimensions.
+  for (const [route, page] of pages) {
+    const html = page.html;
+    if (typeof html !== "string") continue;
+    if (/property="og:image"/.test(html) && !(/property="og:image:width"/.test(html) && /property="og:image:height"/.test(html))) {
+      warn("OG_IMAGE_DIMENSIONS", route + ": og:image without width/height");
+    }
+  }
+}
+
 function report() {
   console.log("[SEO AUDIT] " + (errors.length ? "FAIL" : warnings.length ? "WARN" : "PASS"));
   console.log("Rendered pages: " + (globalThis.__SEO_PAGE_COUNT || 0));
@@ -643,6 +683,8 @@ function main() {
   validateCanonicalRedirectCoverage(pages, redirects);
   validateLinks(pages, redirects, dynamicRoutes, serverRoutePatterns);
   validateSitemaps(pages, serverRoutePatterns);
+  validateGeoAssets(pages);
+  validateSocialPreview(pages);
   report();
 }
 
