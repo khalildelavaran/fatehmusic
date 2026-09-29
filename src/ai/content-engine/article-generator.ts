@@ -17,7 +17,7 @@ import { courseContent } from "../../data/course-content.js";
 import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { slugifyArticleTitle } from "../../seo/v2/content-strategy/slug.js";
-import { semanticTokens } from "../../seo/helpers/text.js";
+import { containsSemanticPhrase, semanticTokens, normalizeSemanticText } from "../../seo/helpers/text.js";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, claimTopicById, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
@@ -384,15 +384,38 @@ function allowedInternalLinks(topic: SelectedTopic): Set<string> {
   ]);
 }
 
-function courseMatchesArticleTitle(title: string): any[] {
-  const normalizedTitle = String(title || "").normalize("NFKC").toLocaleLowerCase("fa");
-  return (courses as Array<any>)
+export function courseMatchesArticleTitle(title: string): any[] {
+  const normalizedTitle = normalizeSemanticText(title);
+  const comparisonTitle = /(?:تفاوت|فرق|مقایسه|\sو\s|\sیا\s)/u.test(normalizedTitle);
+  const matches = (courses as Array<any>)
     .filter((course) => course?.active && course?.slug && course?.title)
-    .filter((course) => {
-      const name = String(course.title).replace(/^آموزش\s+/u, "").replace(/^دوره\s+/u, "").normalize("NFKC").toLocaleLowerCase("fa");
-      return name && normalizedTitle.includes(name);
+    .map((course) => {
+      const name = normalizeSemanticText(
+        String(course.title)
+          .replace(/^آموزش\s+/u, "")
+          .replace(/^دوره\s+/u, "")
+      );
+      return { course, name, tokens: semanticTokens(name) };
     })
-    .sort((a, b) => String(b.title).length - String(a.title).length);
+    .filter((item) => item.name && containsSemanticPhrase(normalizedTitle, item.name))
+    .sort((a, b) =>
+      b.tokens.length - a.tokens.length ||
+      b.name.length - a.name.length ||
+      String(a.course.slug).localeCompare(String(b.course.slug))
+    );
+
+  if (comparisonTitle) return matches.map((item) => item.course);
+
+  // A specific compound course must suppress shorter parent matches such as
+  // «تار» inside «سه تار» or «نی» inside «نی انبان». Without this boundary,
+  // a normal article could accidentally become a multi-course/comparison brief.
+  return matches
+    .filter((candidate) => !matches.some((other) => (
+      other !== candidate &&
+      other.tokens.length > candidate.tokens.length &&
+      containsSemanticPhrase(other.name, candidate.name)
+    )))
+    .map((item) => item.course);
 }
 
 function appendCourseBrief(lines: string[], course: any, label = "دوره") {
