@@ -2,6 +2,7 @@ import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } from "./gsc-temporal.js";
 import { queryTokens } from "../helpers/query.js";
+import { normalizeSemanticText } from "../helpers/text.js";
 
 export function currentScoringRows(rows = []) {
   const current = rows.filter((row) => String(row?.snapshotLabel || row?.snapshot_label || "") === "current");
@@ -234,17 +235,17 @@ function normalizeMarketSignals(value) {
   if (value instanceof Map) {
     return new Map(
       [...value.entries()]
-        .map(([key, item]) => [normalizeText(key), item])
+        .map(([key, item]) => [normalizeSemanticText(key), item])
         .filter(([key]) => key)
     );
   }
   if (Array.isArray(value)) {
     return new Map(value
       .filter((item) => item && item.keyword)
-      .map((item) => [normalizeText(item.keyword), item]));
+      .map((item) => [normalizeSemanticText(item.keyword), item]));
   }
   if (value && typeof value === "object") {
-    return new Map(Object.entries(value).map(([key, item]) => [normalizeText(key), item]).filter(([key]) => key));
+    return new Map(Object.entries(value).map(([key, item]) => [normalizeSemanticText(key), item]).filter(([key]) => key));
   }
   return new Map();
 }
@@ -260,7 +261,7 @@ function resolveCompetitorGap(item, signals) {
   ].filter(Boolean);
 
   for (const value of candidates) {
-    const exact = signals.get(normalizeText(value));
+    const exact = signals.get(normalizeSemanticText(value));
     if (exact?.available) {
       return Object.freeze({
         ...exact,
@@ -325,7 +326,7 @@ function resolveMarketSignal(item, signals) {
   ].filter(Boolean);
 
   for (const value of candidates) {
-    const exact = signals.get(normalizeText(value));
+    const exact = signals.get(normalizeSemanticText(value));
     if (exact?.available) {
       return Object.freeze({
         ...exact,
