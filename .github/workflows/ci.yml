@@ -36,5 +36,5 @@ jobs:
       - name: SEO rendered-site audit
         run: npm run seo:audit
 
-      - name: Measured SEO score
+      - name: Measured SEO score report
         run: npm run seo:score
