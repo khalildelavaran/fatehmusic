@@ -66,9 +66,41 @@ export function buildCompetitiveGapReport({
   );
 
   const targetKeywords = [...targetSet];
-  const semanticallyCovered = (normalizedKeyword) => targetKeywords.some((target) =>
-    semanticSimilarity(normalizedKeyword, target) >= Math.max(0.8, Number(semanticMatchThreshold) || 0.9)
-  );
+  const normalizedThreshold = Math.max(0.8, Number(semanticMatchThreshold) || 0.9);
+
+  // Avoid a full N×M semantic comparison between every competitor keyword
+  // and every first-party query. Index target queries by their semantic
+  // features first, then compare only against candidates that share at least
+  // one meaningful feature. Exact matching still short-circuits immediately.
+  const targetFeatureIndex = new Map();
+  const targetFeatureCache = new Map();
+  for (const target of targetKeywords) {
+    const features = semanticGapFeatures(target);
+    targetFeatureCache.set(target, features);
+    for (const feature of features) {
+      const bucket = targetFeatureIndex.get(feature) || new Set();
+      bucket.add(target);
+      targetFeatureIndex.set(feature, bucket);
+    }
+  }
+
+  const semanticallyCovered = (normalizedKeyword) => {
+    const keywordFeatures = semanticGapFeatures(normalizedKeyword);
+    if (!keywordFeatures.size) return false;
+
+    const candidates = new Set();
+    for (const feature of keywordFeatures) {
+      for (const target of targetFeatureIndex.get(feature) || []) candidates.add(target);
+    }
+
+    for (const target of candidates) {
+      const targetFeatures = targetFeatureCache.get(target);
+      if (!targetFeatures?.size) continue;
+      if (semanticSimilarity(normalizedKeyword, target) >= normalizedThreshold) return true;
+    }
+
+    return false;
+  };
 
   const grouped = new Map();
 
