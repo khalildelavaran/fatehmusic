@@ -96,6 +96,7 @@ function decisionConfidenceEvidence(item = {}) {
     }
 
     if (Number(item.marketSignal.estimatedVolume) > 0) points.push(["market volume available", 5]);
+    if (Number(item.marketSignal.trafficPotential) > 0) points.push(["market traffic potential available", 3]);
     if (Number.isFinite(Number(item.marketSignal.difficulty))) points.push(["market difficulty available", 3]);
 
     const marketAgeDays = Number(item.marketDataQuality?.ageDays);
@@ -825,7 +826,6 @@ export function scoreOpportunity(item = {}) {
       independentEvidenceSources: evidence.independentSources,
       evidenceSignals: evidence.evidenceSignals,
       decisionGuard: guard,
-      evidenceSources: evidence.sources,
       crossSourceAgreement: crossSourceAgreement(item),
       confidenceEvidence: Object.freeze(confidenceEvidence),
       decisionTrace
