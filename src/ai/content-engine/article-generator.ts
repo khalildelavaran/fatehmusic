@@ -17,6 +17,7 @@ import { courseContent } from "../../data/course-content.js";
 import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { slugifyArticleTitle } from "../../seo/v2/content-strategy/slug.js";
+import { semanticTokens } from "../../seo/helpers/text.js";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, claimTopicById, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
@@ -304,8 +305,10 @@ function validateGeneratedArticle(
       .split(" ")
       .filter((token) => token.length >= 3)
       .slice(0, 8);
-    const contentHitCount = expectedTokens.filter((token) => normalizedContent.includes(token)).length;
-    const excerptHitCount = expectedTokens.filter((token) => normalizedExcerptKey.includes(token)).length;
+    const contentTokenSet = new Set(semanticTokens(normalizedContent));
+    const excerptTokenSet = new Set(semanticTokens(normalizedExcerptKey));
+    const contentHitCount = expectedTokens.filter((token) => contentTokenSet.has(token)).length;
+    const excerptHitCount = expectedTokens.filter((token) => excerptTokenSet.has(token)).length;
     const requiredHits = expectedTokens.length >= 4 ? 2 : 1;
     if (contentHitCount < requiredHits) {
       return "بدنه مقاله ارتباط کافی با Topic انتخاب‌شده ندارد.";
