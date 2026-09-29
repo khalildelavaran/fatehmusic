@@ -1,50 +1,9 @@
+import { classifyGscDimensionMix, sanitizeGscQueryPageRows } from "./gsc-dimensions.js";
 import { scoreOpportunities } from "./opportunity-scoring.js";
 import { buildGscSignalIndex, buildQueryOwnershipMapWithMeta, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } from "./gsc-temporal.js";
 import { queryTokens, querySemanticFeatureSet } from "../helpers/query.js";
 import { normalizeSemanticText } from "../helpers/text.js";
-
-function hasBreakdownDimensions(row = {}) {
-  return Boolean(
-    String(row?.country || "").trim() ||
-    String(row?.device || "").trim() ||
-    String(row?.searchAppearance || row?.search_appearance || "").trim()
-  );
-}
-
-/**
- * Describe the dimension contract present in an imported GSC row set.
- * Production syncs use snapshot labels, but callers may also supply historical
- * unlabelled exports. Scoring must never mix canonical query/page rows with
- * country/device/search-appearance breakdowns.
- */
-export function classifyGscDimensionMix(rows = []) {
-  const safeRows = Array.isArray(rows) ? rows : [];
-  let canonicalRows = 0;
-  let breakdownRows = 0;
-
-  for (const row of safeRows) {
-    if (hasBreakdownDimensions(row)) breakdownRows += 1;
-    else canonicalRows += 1;
-  }
-
-  const dimensionMode =
-    breakdownRows === 0 ? "QUERY_PAGE" :
-    canonicalRows === 0 ? "BREAKDOWN" :
-    "MIXED";
-
-  return Object.freeze({
-    canonicalRows,
-    breakdownRows,
-    totalRows: safeRows.length,
-    dimensionMode,
-    mixed: canonicalRows > 0 && breakdownRows > 0
-  });
-}
-
-function filterCanonicalGscRows(rows = []) {
-  return (Array.isArray(rows) ? rows : []).filter((row) => !hasBreakdownDimensions(row));
-}
 
 function selectCurrentGscInputRows(rows = []) {
   const safeRows = Array.isArray(rows) ? rows : [];
