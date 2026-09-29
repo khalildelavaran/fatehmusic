@@ -19,24 +19,25 @@ export function queryTokens(value) {
 
 const BRAND_GENERIC_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "آموزشگاه", "academy", "music",
-  "ir", "www", "در", "شوشتر", "فاتح", "fateh", "موزیک", "آدرس", "تماس", "ثبت", "نام"
-]);
+  "ir", "www", "در", "شوشتر", "shushtar", "خوزستان", "khuzestan",
+  "فاتح", "fateh", "موزیک", "آدرس", "تماس", "ثبت", "نام"
+].map(normalizeQuery));
+
+const BRAND_EXACT_QUERIES = new Set([
+  "fatehmusic.ir",
+  "www.fatehmusic.ir",
+  "fateh music",
+  "fateh music academy",
+  "آموزشگاه موسیقی فاتح",
+  "آموزشگاه فاتح",
+  "فاتح موزیک"
+].map(normalizeQuery));
 
 export function isBrandNavigationQuery(query) {
   const normalized = normalizeQuery(query);
   if (!normalized) return false;
 
-  if (
-    normalized === "fatehmusic.ir" ||
-    normalized === "www.fatehmusic.ir" ||
-    normalized === "fateh music" ||
-    normalized === "fateh music academy" ||
-    normalized === "آموزشگاه موسیقی فاتح" ||
-    normalized === "آموزشگاه فاتح" ||
-    normalized === "فاتح موزیک"
-  ) {
-    return true;
-  }
+  if (BRAND_EXACT_QUERIES.has(normalized)) return true;
 
   const tokens = semanticTokens(normalized);
   const tokenSet = new Set(tokens);
