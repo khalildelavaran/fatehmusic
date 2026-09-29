@@ -53,4 +53,18 @@ describe("SEO action outcome classifier", () => {
     expect(result.positionEvidenceStrong).toBe(false);
     expect(result.effect).toBe("NEUTRAL");
   });
+  it("exposes the statistical method, assumptions and exposure comparability", () => {
+    const result = classifySeoActionMeasurement(
+      { impressions: 300, clicks: 30, ctr: 0.10, position: 6 },
+      { impressions: 100, clicks: 5, ctr: 0.05, position: 8 }
+    );
+
+    expect(result.statisticalMethod).toBe("TWO_PROPORTION_Z_TEST");
+    expect(result.assumptions).toContain("observations_are_treated_as_independent_for_the_z_test");
+    expect(result.exposureRatio).toBeCloseTo(3);
+    expect(result.exposureComparability).toBe("MIX_SHIFT");
+    expect(result.limitations).toContain("LARGE_IMPRESSION_MIX_SHIFT");
+    expect(result.limitations).toContain("DESCRIPTIVE_NOT_CAUSAL");
+  });
+
 });
