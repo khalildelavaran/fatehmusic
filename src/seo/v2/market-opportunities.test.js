@@ -187,3 +187,51 @@ describe("market data quality hardening", () => {
     expect(result[0].gscSignalUsable).toBe(false);
   });
 });
+
+
+describe("market position sample gating", () => {
+  it("does not let trace-level GSC exposure override an Ahrefs position", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 22
+      }],
+      gscRows: [{
+        query: "آموزش گیتار",
+        impressions: 1,
+        clicks: 0,
+        position: 5
+      }],
+      gscFreshness: "FRESH"
+    });
+
+    expect(result[0].bestPosition).toBe(22);
+    expect(result[0].bestPositionSource).toBe("ahrefs");
+    expect(result[0].gscBestPosition).toBe(5);
+    expect(result[0].gscPositionEvidence).toBe("TRACE");
+  });
+
+  it("still uses GSC when it is the only ranking source", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: null
+      }],
+      gscRows: [{
+        query: "آموزش گیتار",
+        impressions: 1,
+        clicks: 0,
+        position: 17
+      }],
+      gscFreshness: "FRESH"
+    });
+
+    expect(result[0].bestPosition).toBe(17);
+    expect(result[0].bestPositionSource).toBe("gsc");
+    expect(result[0].gscPositionEvidence).toBe("TRACE");
+  });
+});
