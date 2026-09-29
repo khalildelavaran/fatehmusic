@@ -437,7 +437,7 @@ export function classifyOpportunityAction(item = {}) {
     item.semanticQueryCluster?.ownerStatus === "STABLE" &&
     Number(item.semanticQueryCluster.impressions || 0) >= 20 &&
     Number(item.semanticQueryCluster.topShare || 0) >= 0.75 &&
-    item.semanticQueryCluster.ownerDominanceEvidence !== "WEAK"
+    item.semanticQueryCluster.ownerDominanceEvidence === "STRONG"
   ) {
     return "LINK";
   }
@@ -449,7 +449,7 @@ export function classifyOpportunityAction(item = {}) {
     item.searchOwnership.ownerStatus === "STABLE" &&
     Number(item.searchOwnership.impressions || 0) >= 20 &&
     Number(item.searchOwnership.topShare || 0) >= 0.7 &&
-    item.searchOwnership.ownerDominanceEvidence !== "WEAK"
+    item.searchOwnership.ownerDominanceEvidence === "STRONG"
   ) {
     return "LINK";
   }
