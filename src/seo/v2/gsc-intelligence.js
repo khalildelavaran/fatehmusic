@@ -115,7 +115,10 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const queryClusterLimit = Number(index.queryClusterLimit || index.queryClusters?.length || 0);
   const queryClusterTruncated = Boolean(index.queryClusterTruncated);
   const conflicts = detectSearchCannibalization(scoringRows, options);
-  const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, options);
+  const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, {
+    ...options,
+    maxQueryClusters: Number(options.maxQueryClusters) > 0 ? Number(options.maxQueryClusters) : 5000
+  });
   const temporalRows = temporalAnalysisRows(rows);
   const temporal = detectTemporalCannibalization(temporalRows, options);
   const semanticTemporal = detectSemanticTemporalCannibalization(temporalRows, options);
