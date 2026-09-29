@@ -7,76 +7,45 @@ import "../../styles/admin/nav.css";
 import "../../styles/admin/dashboard.css";
 import "../../styles/admin/topics.css";
 import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
-import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
-import { instructors } from "../../data/instructors.js";
-import { buildSEOIntelligence, resolveSite } from "../../seo/index.js";
-import { listTopics } from "../../ai/content-engine/db";
-import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
+import { resolveSite } from "../../seo/index.js";
+import { getSeoDashboardIntelligence } from "../../seo/v2/dashboard-intelligence.js";
 import { listSeoActions } from "../../seo/v2/seo-action-store.js";
-import { buildAhrefsKeywordSignalMap, getAhrefsConfig, getLatestAhrefsMarketSnapshot } from "../../seo/v2/providers/ahrefs.js";
 import { getSearchConsoleConfig } from "../../seo/v2/providers/search-console-config.js";
-import { normalizeSemanticText } from "../../seo/helpers/text.js";
+import { getAhrefsConfig } from "../../seo/v2/providers/ahrefs.js";
 
 const session = await getAdminSession(Astro.request, env as AdminEnv);
 if (!session) return Astro.redirect("/login");
 if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 
-const posts = await getPublishedPosts();
 const site = resolveSite();
 const db = (env as AdminEnv).DB;
-const gscRows = db ? await getRecentSearchConsoleRows(db, site.url, { days: 90 }) : [];
-const latestGscSync = db ? await getLatestGscSyncRun(db, site.url) : null;
 const gscConfig = getSearchConsoleConfig(env as unknown as Record<string, unknown>);
 const gscConfigured = Boolean(gscConfig.clientEmail && gscConfig.privateKey && gscConfig.siteUrl);
-const seoActions: SeoAction[] = db ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[] : [];
 const ahrefsConfig = getAhrefsConfig(env as unknown as Record<string, unknown>);
-const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomainsHistory, ahrefsOrganicKeywords, ahrefsCompetitorKeywords] = ahrefsConfig.enabled && db ? await Promise.all([
-  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "metrics" }),
-  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-competitors" }),
-  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "refdomains-history" }),
-  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "organic-keywords" }),
-  getLatestAhrefsMarketSnapshot(db, { target: ahrefsConfig.target, country: ahrefsConfig.country, snapshotType: "competitor-keywords" })
-]) : [null, null, null, null, null, null];
-const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
-const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
-const marketSignals = buildAhrefsKeywordSignalMap(
-  Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : []
-);
-const intelligence = buildSEOIntelligence({
-  posts,
-  courses,
-  instructors,
-  topicCandidates: activeTopicCandidates,
-  gscRows,
-  gscDataQuality: {
-    truncated: Number(latestGscSync?.truncated) === 1,
-    rowsReceived: Number(latestGscSync?.rowsReceived),
-    finishedAt: latestGscSync?.snapshotSyncedAt || latestGscSync?.finishedAt || undefined,
-    maxRows: Number(latestGscSync?.maxRows || 0) || undefined
-  },
-  marketDataQuality: {
-    fetchedAt: ahrefsOrganicKeywords?.fetchedAt || undefined
-  },
-  marketSignals,
-  marketKeywordRows: Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : [],
-  competitorKeywordRows: Array.isArray(ahrefsCompetitorKeywords?.payload) ? ahrefsCompetitorKeywords.payload : [],
-  siteUrl: site.url,
-  maxQueryClusters: 1000,
-  maxOwnershipQueries: 1000,
-  includeKnowledgeGraph: false,
-  includeSemanticLinks: false,
-  includeClusterLinks: false,
-  includeClusterStrategy: false,
-  includePageSemantics: false
-});
 
-const normalizeText = (value: string) => normalizeSemanticText(value);
+const intelligence = db
+  ? await getSeoDashboardIntelligence({
+      db,
+      siteUrl: site.url,
+      courses,
+      topicLimit: 60,
+      gscQueryLimit: 100,
+      gscPageLimit: 100,
+      gscOwnershipLimit: 120,
+      marketLimit: 12
+    })
+  : await getSeoDashboardIntelligence({ db, siteUrl: site.url, courses });
 
-const normalizeSlug = (value: string) => String(value ?? "")
-  .trim()
-  .replace(/^\/+|\/+$/g, "")
-  .toLowerCase();
+const latestGscSync = intelligence.latestGscSync;
+const ahrefsMetrics = { payload: intelligence.ahrefsMetrics };
+const ahrefsCompetitors = { payload: intelligence.ahrefsCompetitors };
+const ahrefsRefdomainsHistory = { payload: intelligence.ahrefsRefdomainsHistory };
+const ahrefsOrganicKeywords = intelligence.ahrefsOrganicKeywords;
+
+const seoActions: SeoAction[] = db
+  ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[]
+  : [];
 
 const daysSince = (value: string | null | undefined) => {
   if (!value) return null;
@@ -85,22 +54,14 @@ const daysSince = (value: string | null | undefined) => {
   return Math.max(0, Math.floor((Date.now() - time) / 86_400_000));
 };
 
-const gscSyncMeta = latestGscSync as Record<string, unknown> | null;
-const ahrefsMeta = ahrefsMetrics as Record<string, unknown> | null;
 const gscAgeDays = daysSince(
-  typeof gscSyncMeta?.snapshotSyncedAt === "string" ? gscSyncMeta.snapshotSyncedAt :
-  typeof gscSyncMeta?.finishedAt === "string" ? gscSyncMeta.finishedAt :
-  typeof gscSyncMeta?.startedAt === "string" ? gscSyncMeta.startedAt : null
+  typeof latestGscSync?.snapshotSyncedAt === "string" ? latestGscSync.snapshotSyncedAt :
+  typeof latestGscSync?.finishedAt === "string" ? latestGscSync.finishedAt :
+  typeof latestGscSync?.startedAt === "string" ? latestGscSync.startedAt : null
 );
-const ahrefsAgeDays = daysSince(
-  typeof ahrefsMeta?.fetchedAt === "string" ? ahrefsMeta.fetchedAt :
-  typeof ahrefsMeta?.snapshotDate === "string" ? ahrefsMeta.snapshotDate : null
-);
+const ahrefsAgeDays = daysSince(ahrefsOrganicKeywords?.fetchedAt || null);
 const gscStale = gscAgeDays !== null && gscAgeDays > 3;
 const ahrefsStale = ahrefsAgeDays !== null && ahrefsAgeDays > 8;
-
-const publishedTitles = new Set(posts.map((post) => normalizeText(post.title)));
-const publishedSlugs = new Set(posts.map((post) => normalizeSlug(post.slug)));
 
 interface SeoActionMeasurement {
   measuredAt: string;
@@ -139,6 +100,7 @@ interface SeoAction {
   };
 }
 
+const opportunities = intelligence.opportunities;
 const opportunities = intelligence.opportunities.filter((item) => {
   // Existing URLs are the target of optimization/expansion/link/merge actions.
   // Only a genuine NEW_CONTENT opportunity should be hidden when its title or
