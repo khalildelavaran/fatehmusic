@@ -204,7 +204,7 @@ export function scorePage(m, ctx = {}) {
     const technical = [];
     check(technical, "canonical-single", 4, m.canonicalCount === 1 ? 4 : 0, `expected exactly 1 canonical, found ${m.canonicalCount}`);
     check(technical, "canonical-matches-route", 4, m.canonicalMatchesRoute ? 4 : 0, "canonical does not equal the rendered route");
-    check(technical, "indexable", 4, /(^|,)\s*index\b/.test(m.robots) && !/noindex/.test(m.robots) ? 4 : 0, `robots meta is "${m.robots}"`);
+    check(technical, "indexable", 4, !/\bnoindex\b/i.test(m.robots) ? 4 : 0, `robots meta is "${m.robots}"`);
     check(technical, "lang", 3, m.lang.startsWith("fa") ? 3 : 0, `html lang is "${m.lang}", expected fa`);
 
     const metadata = [];
