@@ -18,7 +18,6 @@ const DEFAULT_GSC_QUERY_LIMIT = 100;
 const DEFAULT_GSC_PAGE_LIMIT = 100;
 const DEFAULT_GSC_OWNERSHIP_LIMIT = 120;
 const DEFAULT_MARKET_LIMIT = 12;
-const DEFAULT_ACTION_LIMIT = 8;
 
 function normalizeSiteUrl(value) {
   return String(value || DEFAULT_SITE).replace(/\/$/, "");
@@ -283,8 +282,7 @@ export async function getSeoDashboardIntelligence({
   gscQueryLimit = DEFAULT_GSC_QUERY_LIMIT,
   gscPageLimit = DEFAULT_GSC_PAGE_LIMIT,
   gscOwnershipLimit = DEFAULT_GSC_OWNERSHIP_LIMIT,
-  marketLimit = DEFAULT_MARKET_LIMIT,
-  actionLimit = DEFAULT_ACTION_LIMIT
+  marketLimit = DEFAULT_MARKET_LIMIT
 } = {}) {
   const baseUrl = normalizeSiteUrl(siteUrl);
   if (!db) {
@@ -316,9 +314,8 @@ export async function getSeoDashboardIntelligence({
   const safePageLimit = Math.max(1, Math.min(Number(gscPageLimit) || DEFAULT_GSC_PAGE_LIMIT, 200));
   const safeOwnershipLimit = Math.max(1, Math.min(Number(gscOwnershipLimit) || DEFAULT_GSC_OWNERSHIP_LIMIT, 200));
   const safeMarketLimit = Math.max(1, Math.min(Number(marketLimit) || DEFAULT_MARKET_LIMIT, 30));
-  const safeActionLimit = Math.max(1, Math.min(Number(actionLimit) || DEFAULT_ACTION_LIMIT, 20));
 
-  const [topicResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, keywordsResult] = await Promise.all([
+  const [topicResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, refdomainsResult, keywordsResult] = await Promise.all([
     db.prepare(
       "SELECT id, title, normalized_key, instrument_key, related_course_slug, related_course_title, category, audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, created_at, updated_at " +
       "FROM content_topics WHERE status IN ('approved','candidate') ORDER BY score_total DESC, created_at DESC LIMIT ?"
@@ -355,6 +352,10 @@ export async function getSeoDashboardIntelligence({
     ).first(),
     db.prepare(
       "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
+      "WHERE source='ahrefs' AND snapshot_type='refdomains-history' ORDER BY snapshot_date DESC LIMIT 1"
+    ).first(),
+    db.prepare(
+      "SELECT snapshot_date AS snapshotDate, payload, fetched_at AS fetchedAt FROM seo_market_snapshots " +
       "WHERE source='ahrefs' AND snapshot_type='organic-keywords' ORDER BY snapshot_date DESC LIMIT 1"
     ).first(),
   ]);
@@ -381,7 +382,14 @@ export async function getSeoDashboardIntelligence({
       .map((course) => [String(course.slug), course])
   );
 
+  let refdomainsPayload = [];
   let marketKeywords = [];
+  try {
+    refdomainsPayload = JSON.parse(refdomainsResult?.payload || "[]");
+  } catch {
+    refdomainsPayload = [];
+  }
+  refdomainsPayload = Array.isArray(refdomainsPayload) ? refdomainsPayload : [];
   try {
     marketKeywords = JSON.parse(keywordsResult?.payload || "[]");
   } catch {
@@ -478,6 +486,12 @@ export async function getSeoDashboardIntelligence({
     marketOpportunities: Object.freeze(marketOpportunities),
     ahrefsMetrics: metricsPayload,
     ahrefsCompetitors: Object.freeze(competitorsPayload.slice(0, 12)),
+    ahrefsRefdomainsHistory: Object.freeze(refdomainsPayload),
+    ahrefsOrganicKeywords: Object.freeze({
+      payload: Object.freeze(marketKeywords),
+      snapshotDate: keywordsResult?.snapshotDate || null,
+      fetchedAt: keywordsResult?.fetchedAt || null
+    }),
     latestGscSync: syncResult || null,
     gsc: Object.freeze({
       connected: gscConnected,
