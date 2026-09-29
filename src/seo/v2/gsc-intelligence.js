@@ -1,5 +1,5 @@
 import { scoreOpportunities } from "./opportunity-scoring.js";
-import { buildGscSignalIndex, buildQueryOwnershipMap, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
+import { buildGscSignalIndex, buildQueryOwnershipMapWithMeta, detectSearchCannibalization, detectSemanticQueryCannibalization, resolveOpportunitySearchSignals, normalizeUrl } from "./gsc-signal-resolver.js";
 import { detectTemporalCannibalization, detectSemanticTemporalCannibalization } from "./gsc-temporal.js";
 import { queryTokens } from "../helpers/query.js";
 import { normalizeSemanticText } from "../helpers/text.js";
@@ -61,10 +61,11 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   // available to temporal analysis so historical ownership changes are not lost.
   const scoringRows = currentScoringRows(rows);
   const index = buildGscSignalIndex(scoringRows);
-  const queryOwnership = buildQueryOwnershipMap(scoringRows, {
+  const queryOwnershipResult = buildQueryOwnershipMapWithMeta(scoringRows, {
     minImpressions: Number(options.minOwnershipImpressions) > 0 ? Number(options.minOwnershipImpressions) : 1,
     limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 500
   });
+  const queryOwnership = queryOwnershipResult.items;
   const conflicts = detectSearchCannibalization(scoringRows, options);
   const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, options);
   const temporalRows = temporalAnalysisRows(rows);
@@ -215,6 +216,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       semanticCannibalizationCount: semanticConflicts.length,
       semanticCannibalizationActionableCount: semanticConflicts.filter((item) => item.actionable).length,
       queryOwnershipCount: queryOwnership.length,
+      queryOwnershipTotalCount: queryOwnershipResult.totalCount,
+      queryOwnershipLimit: queryOwnershipResult.limit,
+      queryOwnershipTruncated: queryOwnershipResult.truncated,
       queryClusterCount: index.queryClusters?.length || 0,
       gscCompleteness: gscDataQuality.completeness == null ? 0 : gscDataQuality.completeness,
       gscFreshness: gscDataQuality.freshness,
