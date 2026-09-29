@@ -22,6 +22,22 @@ const base = {
 };
 
 describe("SEO audit core rubric", () => {
+  it("treats a missing robots meta as indexable by default", () => {
+    const audit = auditPage({
+      ...base,
+      metadata: { ...base.metadata, robots: undefined }
+    });
+    expect(audit.errors.some((check) => check.id === "indexability")).toBe(false);
+  });
+
+  it("fails explicitly when noindex is present", () => {
+    const audit = auditPage({
+      ...base,
+      metadata: { ...base.metadata, robots: "noindex,follow" }
+    });
+    expect(audit.errors.some((check) => check.id === "indexability")).toBe(true);
+  });
+
   it("does not award a perfect core score when required evidence is missing", () => {
     const audit = auditPage(base);
     expect(audit.coreScore).toBeLessThan(100);
