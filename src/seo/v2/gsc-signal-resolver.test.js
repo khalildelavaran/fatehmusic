@@ -823,6 +823,36 @@ describe("semantic GSC cluster identity", () => {
     expect(clusters[0].subjects).toContain("guitar");
   });
 
+  it("keeps distinct subtopics separate when topic and intent are identical", () => {
+    const clusters = buildSemanticQueryClusters([
+      {
+        query: "راهنمای گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-guide",
+        impressions: 60
+      },
+      {
+        query: "تاریخچه گیتار",
+        page: "https://fatehmusic.ir/blog/guitar-history",
+        impressions: 60
+      },
+      {
+        query: "کلاس گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 40
+      },
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 30
+      }
+    ]);
+
+    expect(clusters).toHaveLength(3);
+    expect(clusters.find((cluster) => cluster.queries.some((query) => query.displayQuery === "راهنمای گیتار"))?.semanticFeatures)
+      .toEqual(expect.arrayContaining(["guitar", "token:راهنمای"]));
+    expect(clusters.find((cluster) => cluster.queries.some((query) => query.displayQuery === "کلاس گیتار"))?.queryCount).toBe(2);
+  });
+
   it("keeps distinct search intents in separate semantic clusters", () => {
     const clusters = buildSemanticQueryClusters([
       {
