@@ -854,3 +854,64 @@ describe("evidence match quality guards", () => {
     expect(result.scoreBreakdown.confidenceEvidence.join(" ")).toContain("GSC completeness below 95%");
   });
 });
+
+
+describe("decision guards", () => {
+  it("caps exact-query decisions when ownership is materially split", () => {
+    const result = scoreOpportunity({
+      title: "آموزش گیتار",
+      priority: 100,
+      action: "OPTIMIZE_EXISTING",
+      searchOwnership: {
+        available: true,
+        matchType: "EXACT",
+        ownerStatus: "SPLIT",
+        impressions: 200,
+        topShare: 0.55,
+        ownerDominanceEvidence: "WEAK"
+      },
+      searchSignal: {
+        available: true,
+        impressions: 500,
+        clicks: 10,
+        ctr: 0.02,
+        position: 6,
+        matchedQueries: ["آموزش گیتار"]
+      },
+      gscDataQuality: {
+        freshness: "FRESH",
+        truncated: false
+      }
+    });
+
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("GSC_QUERY_OWNER_SPLIT");
+    expect(result.priority).toBeLessThanOrEqual(84);
+  });
+
+  it("caps semantic-cluster decisions when the cluster owner is split", () => {
+    const result = scoreOpportunity({
+      title: "آموزش گیتار",
+      priority: 100,
+      action: "OPTIMIZE_EXISTING",
+      semanticQueryCluster: {
+        ownerStatus: "SPLIT",
+        impressions: 200,
+        ownerDominanceEvidence: "WEAK"
+      },
+      searchSignal: {
+        available: true,
+        impressions: 500,
+        clicks: 10,
+        ctr: 0.02,
+        position: 6
+      },
+      gscDataQuality: {
+        freshness: "FRESH",
+        truncated: false
+      }
+    });
+
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("GSC_SEMANTIC_OWNER_SPLIT");
+    expect(result.priority).toBeLessThanOrEqual(86);
+  });
+});
