@@ -18,7 +18,7 @@ import { buildFallbackCourseContent } from "../../data/course-content-fallback.j
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
 import { slugifyArticleTitle } from "../../seo/v2/content-strategy/slug.js";
 import { semanticTokens, normalizeSemanticText } from "../../seo/helpers/text.js";
-import { matchCoursesInTitle } from "../../seo/v2/content-strategy/course-matching.js";
+import { isComparisonCourseTitle, matchCoursesInTitle } from "../../seo/v2/content-strategy/course-matching.js";
 import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, claimTopicById, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
@@ -386,7 +386,9 @@ function allowedInternalLinks(topic: SelectedTopic): Set<string> {
 }
 
 export function courseMatchesArticleTitle(title: string, courseCatalog: Array<any> = courses as Array<any>): any[] {
-  return matchCoursesInTitle(title, courseCatalog);
+  return matchCoursesInTitle(title, courseCatalog, {
+    comparison: isComparisonCourseTitle(title)
+  });
 }
 
 function appendCourseBrief(lines: string[], course: any, label = "دوره") {
