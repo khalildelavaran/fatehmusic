@@ -36,8 +36,8 @@ describe("Ahrefs keyword signal normalization", () => {
 
 describe("Ahrefs competitor keyword discovery", () => {
   it("accepts a target override for competitor keyword snapshots", async () => {
-    const requests: Array<URL> = [];
-    const fetchImpl = async (url: URL) => {
+    const requests = [];
+    const fetchImpl = async (url) => {
       requests.push(url);
       return new Response(JSON.stringify({ keywords: [] }), {
         status: 200,
@@ -50,7 +50,7 @@ describe("Ahrefs competitor keyword discovery", () => {
       AHREFS_API_KEY: "test",
       AHREFS_COUNTRY: "IR",
       AHREFS_TARGET_URL: "https://fatehmusic.ir"
-    }, fetchImpl as typeof fetch);
+    }, fetchImpl);
 
     await client.organicKeywords({
       target: "https://competitor.example",
