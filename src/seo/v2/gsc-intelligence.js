@@ -59,10 +59,23 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       ? "COMPLETE"
       : "EMPTY";
 
+  const reportedCompleteness = Number(options.gscDataQuality?.completeness);
+  const normalizedReportedCompleteness =
+    Number.isFinite(reportedCompleteness)
+      ? Math.max(0, Math.min(1, reportedCompleteness))
+      : null;
+  const rowsReceived = Number(options.gscDataQuality?.rowsReceived);
+  const maxRows = Number(options.gscDataQuality?.maxRows);
   const gscDataQuality = Object.freeze({
     truncated,
     rows: currentRows.length,
-    completeness,
+    rowsReceived: Number.isFinite(rowsReceived) && rowsReceived >= 0 ? rowsReceived : currentRows.length,
+    maxRows: Number.isFinite(maxRows) && maxRows > 0 ? maxRows : null,
+    completeness: truncated
+      ? null
+      : normalizedReportedCompleteness != null
+        ? normalizedReportedCompleteness
+        : completeness,
     coverageStatus,
     ageDays,
     freshness
@@ -144,11 +157,16 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     keyword: item.keyword,
     source: "competitor-gap"
   })));
-  const marketAgeDays = resolveAgeDays(
+  const marketSignalTimestamps = [...marketSignals.values()]
+    .map((item) => item?.fetchedAt || item?.fetched_at || null)
+    .filter(Boolean)
+    .sort();
+  const marketTimestamp =
     options.marketDataQuality?.fetchedAt ||
     options.marketDataQuality?.finishedAt ||
-    null
-  );
+    marketSignalTimestamps.at(-1) ||
+    null;
+  const marketAgeDays = resolveAgeDays(marketTimestamp);
   const marketFreshness = marketAgeDays == null
     ? "UNKNOWN"
     : marketAgeDays <= 8
@@ -159,6 +177,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const marketDataQuality = Object.freeze({
     configured: marketSignals.size > 0,
     signalCount: marketSignals.size,
+    fetchedAt: marketTimestamp,
     ageDays: marketAgeDays,
     freshness: marketFreshness
   });
