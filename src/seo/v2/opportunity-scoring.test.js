@@ -99,6 +99,20 @@ describe("opportunity scoring", () => {
     expect(evidence.sources).toEqual(["GSC"]);
   });
 
+  it("labels heuristic evidence and exposes the limitations that cap interpretation", () => {
+    const evidence = evidenceStrength({
+      searchSignal: { available: true, impressions: 300, position: 6 },
+      gscDataQuality: { truncated: true, freshness: "STALE" },
+      searchOwnership: { ownerDominanceEvidence: "WEAK" }
+    });
+
+    expect(evidence.method).toBe("HEURISTIC_EVIDENCE_RUBRIC");
+    expect(evidence.probabilistic).toBe(false);
+    expect(evidence.limitations).toEqual(
+      expect.arrayContaining(["GSC_PARTIAL_COVERAGE", "GSC_STALE", "WEAK_QUERY_OWNERSHIP"])
+    );
+  });
+
   it("does not count GSC-derived cannibalization as an independent source", () => {
     const evidence = evidenceStrength({
       searchSignal: { available: true, impressions: 300, position: 6 },
