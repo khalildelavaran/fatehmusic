@@ -33,7 +33,7 @@ function semanticTopicSimilarity(left = [], right = []) {
     return shared / new Set([...a, ...b]).size;
 }
 
-export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, limit = 6 } = {}) {
+export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", currentTopics = [], currentType = "", candidates = /** @type {LinkCandidate[]} */ ([]), semanticGraph = null, gscSignals = null, limit = 6 } = {}) {
     const currentTopicSet = normalizedTopicSet(currentTopics);
     const resolvedCurrentTitle = currentTitle || (candidates || []).find((candidate) => normalizeUrl(candidate?.url) === normalizeUrl(currentUrl))?.title || "";
     const currentContext = [resolvedCurrentTitle, ...(currentTopics || [])].filter(Boolean).join(" ");
@@ -63,6 +63,14 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", curr
                 (currentType === "Course" && candidate.type === "Article")
             ) reasonCodes.push("ENTITY_COMPLEMENT");
             if (candidate.local) score += 8;
+
+            const demandSignal = getCandidateSearchSignal(candidate, gscSignals);
+            const demandBoost = searchDemandBoost(demandSignal);
+            if (demandBoost > 0) {
+                score += demandBoost;
+                reasonCodes.push("SEARCH_DEMAND");
+            }
+
             if (currentType === "Course" && candidate.type === "Instructor") score += 22;
             if (currentType === "Instructor" && candidate.type === "Course") score += 22;
             if (currentType === "Course" && candidate.type === "Article") score += 14;
@@ -76,7 +84,13 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", curr
                 topicalSimilarity: Number(topicalSimilarity.toFixed(3)),
                 relationEvidence: relationEvidence.relations,
                 reasonCodes: Object.freeze([...new Set(reasonCodes)]),
-                anchorHints: Object.freeze(anchorHints)
+                anchorHints: Object.freeze(anchorHints),
+                searchDemand: demandSignal?.available ? Object.freeze({
+                    impressions: Number(demandSignal.impressions) || 0,
+                    clicks: Number(demandSignal.clicks) || 0,
+                    ctr: Number(demandSignal.ctr) || 0,
+                    position: demandSignal.position ?? null
+                }) : null
             };
         })
         .sort((a, b) => b.score - a.score || String(a.title).localeCompare(String(b.title), "fa"))
@@ -86,7 +100,7 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", curr
 /**
  * Produce a compact graph used by templates or build-time tooling.
  */
-export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, maxInboundLinks = 12, maxOutboundLinks = limit } = {}) {
+export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = null, limit = 6, maxInboundLinks = 12, maxOutboundLinks = limit } = {}) {
     const normalizedLimit = Math.max(0, Number(maxOutboundLinks) || 0);
     const normalizedInboundCap = Math.max(0, Number(maxInboundLinks) || 0);
     const sourcePages = [...(pages || [])]
@@ -101,6 +115,7 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, ma
             currentType: page.type,
             candidates: pages,
             semanticGraph,
+            gscSignals,
             limit: pages.length
         });
         allEdges.set(
@@ -219,11 +234,35 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, limit = 6, ma
         links: (selectedBySource.get(normalizeUrl(page.url)) || [])
             .sort((a, b) => b.finalScore - a.finalScore || String(a.title).localeCompare(String(b.title), "fa"))
             .slice(0, normalizedLimit)
-            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics }) => ({
-                url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints,
+            .map(({ url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, searchDemand, inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics }) => ({
+                url, title, type, score, finalScore, topicalSimilarity, relationEvidence, reasonCodes, anchorHints, searchDemand,
                 inboundLinksBeforePlan, inboundLinksAfterPlan, saturationPenalty, orphanBoost, sharedTopics
             }))
     }));
+}
+
+function getCandidateSearchSignal(candidate, gscSignals) {
+    if (!gscSignals || !candidate?.url) return null;
+    if (gscSignals instanceof Map) return gscSignals.get(normalizeUrl(candidate.url)) || null;
+    if (typeof gscSignals === "object") return gscSignals[normalizeUrl(candidate.url)] || null;
+    return null;
+}
+
+function searchDemandBoost(signal = null) {
+    if (!signal?.available) return 0;
+    const impressions = Math.max(0, Number(signal.impressions) || 0);
+    const position = Number(signal.position);
+    if (impressions <= 0) return 0;
+
+    let boost =
+        impressions >= 1000 ? 10 :
+        impressions >= 300 ? 8 :
+        impressions >= 100 ? 6 :
+        impressions >= 20 ? 4 :
+        2;
+
+    if (Number.isFinite(position) && position > 10 && position <= 30) boost += 2;
+    return Math.min(12, boost);
 }
 
 function buildAnchorHints(candidate, sharedTopics = [], relations = []) {
