@@ -53,6 +53,7 @@ export async function fetchAllSearchAnalytics(client, {
   let startRow = 0;
   let pages = 0;
   let truncated = false;
+  let paginationComplete = false;
 
   while (rows.length < safeMaxRows) {
     const rowLimit = Math.min(safePageSize, safeMaxRows - rows.length);
@@ -69,7 +70,10 @@ export async function fetchAllSearchAnalytics(client, {
       toRow(row.keys, dimensions, row, { startDate, endDate, dataState })
     );
     rows.push(...batch);
-    if (batch.length < rowLimit) break;
+    if (batch.length < rowLimit) {
+      paginationComplete = true;
+      break;
+    }
     startRow += batch.length;
   }
 
@@ -87,9 +91,16 @@ export async function fetchAllSearchAnalytics(client, {
     });
     pages += 1;
     truncated = (probe.rows || []).length > 0;
+    paginationComplete = !truncated;
   }
 
-  return { configured: true, rows: rows.slice(0, safeMaxRows), pages, truncated };
+  return {
+    configured: true,
+    rows: rows.slice(0, safeMaxRows),
+    pages,
+    truncated,
+    paginationComplete
+  };
 }
 
 const SNAPSHOT_LABELS = new Set([
@@ -193,7 +204,7 @@ export async function syncSearchConsoleToD1({
     siteUrl: env.GSC_SITE_URL
   });
 
-  if (!client.configured) return { status: "not_configured", rowsReceived: 0, rowsStored: 0 };
+  if (!client.configured) return { status: "not_configured", rowsReceived: 0, rowsStored: 0, paginationComplete: false };
 
   const run = await db.prepare(
     "INSERT INTO gsc_sync_runs (site_url, start_date, end_date, status, truncated) VALUES (?, ?, ?, 'running', 0)"
@@ -225,6 +236,7 @@ export async function syncSearchConsoleToD1({
         rowsStored: 0,
         pages: fetched.pages,
         truncated: Boolean(fetched.truncated),
+        paginationComplete: Boolean(fetched.paginationComplete),
         dimensions,
         snapshotLabel
       };
@@ -277,6 +289,7 @@ export async function syncSearchConsoleToD1({
       rowsStored,
       pages: fetched.pages,
       truncated: Boolean(fetched.truncated),
+      paginationComplete: Boolean(fetched.paginationComplete),
       dimensions,
       snapshotLabel
     };
