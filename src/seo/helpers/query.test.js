@@ -19,6 +19,7 @@ describe("semantic query layer", () => {
     expect(isBrandNavigationQuery("fatehmusic.ir")).toBe(true);
     expect(isBrandNavigationQuery("آموزشگاه موسیقی فاتح")).toBe(true);
     expect(isBrandNavigationQuery("fateh music academy shushtar")).toBe(true);
+    expect(isBrandNavigationQuery("فاتح موزیک شوشتر")).toBe(true);
     expect(isBrandNavigationQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(true);
     expect(isBrandNavigationQuery("ثبت نام آموزشگاه موسیقی فاتح")).toBe(true);
     expect(isBrandNavigationQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(true);
