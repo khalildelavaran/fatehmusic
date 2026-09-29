@@ -1077,7 +1077,8 @@ export function detectSearchCannibalization(rows = [], { minImpressions = 50, si
 export function detectSemanticQueryCannibalization(rows = [], {
   minImpressions = 50,
   similarityThreshold = 0.55,
-  pageSemantics = []
+  pageSemantics = [],
+  maxQueryClusters = 5000
 } = {}) {
   const semanticMap = normalizeSemanticMap(pageSemantics);
   const periods = new Map();
@@ -1099,7 +1100,7 @@ export function detectSemanticQueryCannibalization(rows = [], {
   for (const [period, periodRows] of periods) {
     const clusters = buildSemanticQueryClusters(periodRows, {
       minImpressions,
-      limit: 5000
+      limit: Math.max(1, Number(maxQueryClusters) || 5000)
     });
 
     for (const cluster of clusters) {
