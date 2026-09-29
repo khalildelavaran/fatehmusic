@@ -646,6 +646,32 @@ describe("opportunity scoring", () => {
 
 
 
+  it("caps evidence strength when query ownership shifts across windows", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 100,
+      searchSignal: { available: false },
+      searchOwnership: {
+        available: true,
+        matchType: "EXACT",
+        impressions: 160,
+        topShare: 0.9,
+        ownerStatus: "STABLE",
+        ownerDominanceEvidence: "STRONG",
+        temporalOwnership: {
+          status: "SHIFT",
+          shiftCount: 1,
+          highActionable: true,
+          strongestSeverity: "HIGH",
+          strongestShareDelta: 0.4
+        }
+      }
+    });
+    expect(result.decisionConfidence).toBeLessThanOrEqual(72);
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("GSC_QUERY_TEMPORAL_SHIFT_HIGH");
+    expect(result.scoreBreakdown.decisionTrace.reasonCodes).toContain("GSC_QUERY_TEMPORAL_SHIFT_HIGH");
+  });
+
   it("prioritizes query-level temporal ownership conflicts over stable current ownership", () => {
     expect(classifyOpportunityAction({
       action: "NEW_CONTENT",
