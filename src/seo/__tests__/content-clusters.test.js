@@ -28,6 +28,18 @@ describe("Content Cluster Engine", () => {
     expect(global?.missingIntents).not.toContain("local");
   });
   it("builds a complete cluster report", () => { const report = buildContentClusterReport(posts, { courses }); expect(report.articleCount).toBe(3); expect(report.gaps.length).toBeGreaterThan(0); expect(report.strategy.briefCount).toBeGreaterThan(0); });
+
+  it("can skip expensive cluster extras without changing article or gap coverage", () => {
+    const report = buildContentClusterReport(posts, {
+      courses,
+      includeLinks: false,
+      includeStrategy: false
+    });
+    expect(report.articleCount).toBe(3);
+    expect(report.gaps.length).toBeGreaterThan(0);
+    expect(report.links).toEqual([]);
+    expect(report.strategy).toEqual([]);
+  });
   it("turns gaps into actionable production briefs", () => {
     const strategy = buildContentStrategy(findContentGaps(posts), courses);
     const item = strategy.briefs.find((brief) => brief.topic === "guitar" && brief.searchIntent === "transactional");
