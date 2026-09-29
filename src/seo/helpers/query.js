@@ -95,19 +95,29 @@ const NORMALIZED_SEMANTIC_QUERY_MODIFIER_FAMILIES = Object.freeze(
   )
 );
 
-function compactSemanticPhrase(value) {
-  return normalizeQuery(value).replace(/[\\s\\p{P}\\p{S}]+/gu, "");
+function containsJoinedTokenPhrase(source, alias) {
+  const sourceTokens = semanticTokens(source);
+  const aliasTokens = semanticTokens(alias);
+  if (aliasTokens.length < 2 || !sourceTokens.length) return false;
+
+  const joinedAlias = aliasTokens.join("");
+  if (!joinedAlias) return false;
+
+  // Accept both «ثبت‌نام» (one normalized token) and «ثبت نام»
+  // (two normalized tokens), but never use a raw substring match.
+  for (let index = 0; index < sourceTokens.length; index += 1) {
+    if (sourceTokens[index] === joinedAlias) return true;
+    if (index + aliasTokens.length <= sourceTokens.length &&
+        sourceTokens.slice(index, index + aliasTokens.length).join("") === joinedAlias) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function containsOntologyPhrase(source, alias) {
-  if (containsSemanticPhrase(source, alias)) return true;
-
-  const aliasTokens = semanticTokens(alias);
-  if (aliasTokens.length < 2) return false;
-
-  const compactAlias = compactSemanticPhrase(alias);
-  const compactSource = compactSemanticPhrase(source);
-  return Boolean(compactAlias && compactSource.includes(compactAlias));
+  return containsSemanticPhrase(source, alias) || containsJoinedTokenPhrase(source, alias);
 }
 
 export function querySemanticDimensions(value) {
@@ -132,7 +142,8 @@ export function querySemanticDimensions(value) {
     modifierFamilies.push(family);
     for (const alias of matchedAliases) {
       for (const token of semanticTokens(alias)) consumedTokens.add(token);
-      for (const token of semanticTokens(compactSemanticPhrase(alias))) consumedTokens.add(token);
+      const joinedAlias = semanticTokens(alias).join("");
+      if (joinedAlias) consumedTokens.add(joinedAlias);
     }
   }
 
