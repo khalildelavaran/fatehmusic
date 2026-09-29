@@ -65,7 +65,9 @@ const intelligence = buildSEOIntelligence({
   maxQueryClusters: 1000,
   maxOwnershipQueries: 1000,
   includeKnowledgeGraph: false,
-  includeSemanticLinks: false
+  includeSemanticLinks: false,
+  includeClusterLinks: false,
+  includeClusterStrategy: false
 });
 
 const normalizeText = (value: string) => normalizeSemanticText(value);
