@@ -17,6 +17,16 @@ describe("Content Cluster Engine", () => {
   it("strongly relates shared topic/course articles", () => { const profiles = buildArticleProfiles(posts); expect(scoreArticleRelation(profiles[0], profiles[1])).toBeGreaterThan(50); });
   it("creates non-self related links", () => { const links = buildArticleClusterLinks(posts, 2); expect(links[0].related.every((item) => item.slug !== links[0].slug)).toBe(true); });
   it("detects missing topic intent coverage", () => { const guitar = findContentGaps(posts).find((gap) => gap.topic === "guitar"); expect(guitar).toBeTruthy(); expect(guitar.missingIntents).toContain("transactional"); });
+  it("detects local intent only for locally scoped assets by default", () => {
+    const gaps = findContentGaps([
+      { slug: "local-guitar", title: "آموزش گیتار در شوشتر", topic: "گیتار", related_course_slug: "guitar-course" },
+      { slug: "global-piano", title: "آموزش پیانو", topic: "پیانو", related_course_slug: "piano-course" }
+    ]);
+    const local = gaps.find((gap) => gap.topic === "guitar" && gap.scope === "shushtar");
+    const global = gaps.find((gap) => gap.topic === "piano" && gap.scope === "global");
+    expect(local?.missingIntents).toContain("local");
+    expect(global?.missingIntents).not.toContain("local");
+  });
   it("builds a complete cluster report", () => { const report = buildContentClusterReport(posts, { courses }); expect(report.articleCount).toBe(3); expect(report.gaps.length).toBeGreaterThan(0); expect(report.strategy.briefCount).toBeGreaterThan(0); });
   it("turns gaps into actionable production briefs", () => {
     const strategy = buildContentStrategy(findContentGaps(posts), courses);
