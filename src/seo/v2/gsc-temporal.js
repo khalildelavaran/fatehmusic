@@ -2,7 +2,7 @@
  * Temporal cannibalization analysis built on top of the existing GSC resolver.
  * Detects changes in query ownership across dated Search Console windows.
  */
-import { buildSemanticQueryClusters, normalizeText, normalizeUrl, isOwnershipEligibleQuery } from "./gsc-signal-resolver.js";
+import { buildSemanticQueryClusters, normalizeText, normalizeUrl, isOwnershipEligibleQuery, isBrandNavigationQuery } from "./gsc-signal-resolver.js";
 
 function numeric(value) {
   return Math.max(0, Number(value) || 0);
@@ -43,7 +43,7 @@ export function detectTemporalCannibalization(rows = [], {
   for (const row of rows) {
     const query = normalizeText(row.query);
     const period = periodKey(row);
-    if (!query || !period || !isOwnershipEligibleQuery(query) || numeric(row.impressions) < minImpressions) continue;
+    if (!query || !period || !isOwnershipEligibleQuery(query) || isBrandNavigationQuery(query) || numeric(row.impressions) < minImpressions) continue;
     const periods = queryPeriods.get(query) || new Map();
     const bucket = periods.get(period) || [];
     bucket.push(row);
@@ -103,7 +103,7 @@ export function detectSemanticTemporalCannibalization(rows = [], {
   for (const row of rows) {
     const period = periodKey(row);
     const query = normalizeText(row?.query);
-    if (!period || !query || !isOwnershipEligibleQuery(query)) continue;
+    if (!period || !query || !isOwnershipEligibleQuery(query) || isBrandNavigationQuery(query)) continue;
 
     const bucket = byPeriod.get(period) || [];
     bucket.push(row);
