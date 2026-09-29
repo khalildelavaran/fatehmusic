@@ -684,9 +684,9 @@ describe("position-aware CTR benchmarking", () => {
     ]);
 
     const signal = index.byPageNonBrand.get("https://fatehmusic.ir/courses/guitar");
-    expect(signal.ctrBenchmark).toBeCloseTo(0.15);
-    expect(signal.ctrGap).toBeCloseTo(0.05);
-    expect(signal.ctrRatioToBenchmark).toBeCloseTo(2 / 3);
+    expect(signal.ctrBenchmark).toBeCloseTo(0.2);
+    expect(signal.ctrGap).toBeCloseTo(0.1);
+    expect(signal.ctrRatioToBenchmark).toBeCloseTo(0.5);
   });
 });
 
@@ -783,5 +783,47 @@ describe("semantic GSC cluster identity", () => {
     expect(new Set(clusters.map((cluster) => cluster.intent))).toEqual(
       new Set(["informational", "transactional"])
     );
+  });
+});
+
+
+describe("leave-one-out CTR benchmarking", () => {
+  it("does not benchmark a page against itself when it is the only page in its rank bucket", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        clicks: 5,
+        impressions: 100,
+        position: 6
+      }
+    ]);
+
+    const signal = index.byPageNonBrand.get("https://fatehmusic.ir/courses/guitar-course");
+    expect(signal.ctrBenchmark).toBeNull();
+    expect(signal.ctrBenchmarkImpressions).toBe(0);
+  });
+
+  it("excludes the target page while retaining same-rank peer evidence", () => {
+    const index = buildGscSignalIndex([
+      {
+        query: "آموزش گیتار",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        clicks: 5,
+        impressions: 100,
+        position: 6
+      },
+      {
+        query: "آموزش سنتور",
+        page: "https://fatehmusic.ir/courses/santur-course",
+        clicks: 20,
+        impressions: 100,
+        position: 7
+      }
+    ]);
+
+    const guitar = index.byPageNonBrand.get("https://fatehmusic.ir/courses/guitar-course");
+    expect(guitar.ctrBenchmark).toBeCloseTo(0.2);
+    expect(guitar.ctrBenchmarkImpressions).toBe(100);
   });
 });
