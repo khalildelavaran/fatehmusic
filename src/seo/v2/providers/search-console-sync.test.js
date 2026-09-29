@@ -57,4 +57,32 @@ describe("Search Console sync paging", () => {
     expect(calls).toHaveLength(2);
   });
 
+  it("confirms pagination completeness when the cap probe finds no additional rows", async () => {
+    const calls = [];
+    const client = {
+      configured: true,
+      async querySearchAnalytics(options) {
+        calls.push(options);
+        if (options.startRow === 2) return { rows: [] };
+        return {
+          rows: [
+            { keys: ["q1", "https://fatehmusic.ir/a"], impressions: 1 },
+            { keys: ["q2", "https://fatehmusic.ir/b"], impressions: 1 }
+          ]
+        };
+      }
+    };
+
+    const result = await fetchAllSearchAnalytics(client, {
+      startDate: "2026-08-01",
+      endDate: "2026-08-28",
+      pageSize: 2,
+      maxRows: 2
+    });
+
+    expect(result.truncated).toBe(false);
+    expect(result.paginationComplete).toBe(true);
+    expect(calls).toHaveLength(2);
+  });
+
 });
