@@ -58,7 +58,8 @@ export function scoreArticleRelation(source, target) {
 export function buildArticleClusterLinks(posts = [], limit = 4) {
   const profiles = buildArticleProfiles(posts);
   const topicIndex = new Map();
-  const scopeIntentIndex = new Map();
+  const scopeIndex = new Map();
+  const intentIndex = new Map();
   const courseIndex = new Map();
 
   const addToIndex = (index, key, profile) => {
@@ -72,7 +73,8 @@ export function buildArticleClusterLinks(posts = [], limit = 4) {
     for (const topic of profile.topics || []) {
       addToIndex(topicIndex, String(topic), profile);
     }
-    addToIndex(scopeIntentIndex, String(profile.scope || "") + "|" + String(profile.intent || ""), profile);
+    addToIndex(scopeIndex, String(profile.scope || ""), profile);
+    addToIndex(intentIndex, String(profile.intent || ""), profile);
     if (profile.relatedCourseSlug) addToIndex(courseIndex, String(profile.relatedCourseSlug), profile);
   }
 
@@ -86,8 +88,10 @@ export function buildArticleClusterLinks(posts = [], limit = 4) {
       }
     }
 
-    const scopeIntentKey = String(source.scope || "") + "|" + String(source.intent || "");
-    for (const profile of scopeIntentIndex.get(scopeIntentKey) || []) {
+    for (const profile of scopeIndex.get(String(source.scope || "")) || []) {
+      if (profile.slug !== source.slug) candidates.set(profile.slug, profile);
+    }
+    for (const profile of intentIndex.get(String(source.intent || "")) || []) {
       if (profile.slug !== source.slug) candidates.set(profile.slug, profile);
     }
 
