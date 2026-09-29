@@ -26,6 +26,9 @@ describe("SEO diagnostics engine", () => {
     expect(result.categories.metadata.available).toBe(true);
     expect(result.categories.metadata.score).toBe(100);
     expect(result.statistics.pagesAnalyzed).toBe(1);
+    expect(result.categories.security.available).toBe(false);
+    expect(result.categories.security.measured).toBe(false);
+    expect(result.unmeasuredCategories).toContain("security");
   });
 
   it("requires meaningful evidence coverage for the quality gate", () => {
@@ -88,3 +91,22 @@ describe("SEO diagnostics engine", () => {
     expect(result.categories.schema.score).toBe(100);
   });
 });
+
+
+  it("does not penalize evidence coverage for categories with no defined checks", () => {
+    const result = runDiagnostics({
+      audits: [{
+        checks: [
+          { id: "title", status: "pass", points: 10 },
+          { id: "description", status: "pass", points: 10 }
+        ],
+        errors: [],
+        warnings: []
+      }],
+      graphValidation: { valid: true, errors: [] }
+    });
+
+    expect(result.categories.security.measured).toBe(false);
+    expect(result.evidenceCoverage).toBe(100);
+    expect(result.qualityAdjustedScore).toBe(100);
+  });
