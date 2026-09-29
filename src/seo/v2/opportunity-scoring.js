@@ -171,9 +171,84 @@ function decisionConfidenceEvidence(item = {}) {
 }
 
 function decisionConfidenceScore(item = {}) {
-  return Math.round(clamp(
+  const raw = clamp(
     30 + decisionConfidenceEvidence(item).reduce((sum, [, value]) => sum + value, 0)
-  ));
+  );
+
+  // Evidence strength is explicitly non-probabilistic. Quality failures still
+  // need hard ceilings so stale/partial inputs cannot look "high confidence".
+  let ceiling = 100;
+  const reasons = [];
+
+  if (item.gscDataQuality?.truncated) {
+    ceiling = Math.min(ceiling, 78);
+    reasons.push("GSC_PARTIAL");
+  }
+  if (item.gscDataQuality?.freshness === "STALE") {
+    ceiling = Math.min(ceiling, 72);
+    reasons.push("GSC_STALE");
+  } else if (item.gscDataQuality?.freshness === "AGING") {
+    ceiling = Math.min(ceiling, 84);
+    reasons.push("GSC_AGING");
+  }
+
+  const marketFreshness = String(
+    item.marketDataQuality?.freshness || item.marketSignal?.dataFreshness || ""
+  ).toUpperCase();
+  if (item.marketSignal?.available && marketFreshness === "STALE") {
+    ceiling = Math.min(ceiling, 82);
+    reasons.push("MARKET_STALE");
+  }
+
+  const competitorFreshness = String(
+    item.competitorDataQuality?.freshness || item.competitorGap?.dataFreshness || ""
+  ).toUpperCase();
+  if (item.competitorGap?.available && competitorFreshness === "STALE") {
+    ceiling = Math.min(ceiling, 82);
+    reasons.push("COMPETITOR_STALE");
+  }
+
+  if (item.semanticQueryCluster?.ownerDominanceEvidence === "WEAK") {
+    ceiling = Math.min(ceiling, 76);
+    reasons.push("WEAK_SEMANTIC_OWNER");
+  }
+  if (item.searchOwnership?.ownerDominanceEvidence === "WEAK") {
+    ceiling = Math.min(ceiling, 76);
+    reasons.push("WEAK_QUERY_OWNER");
+  }
+
+  const intentEvidence = item.searchSignal?.queryIntentEvidence;
+  if (
+    intentEvidence?.primary &&
+    item.searchIntent &&
+    intentEvidence.primary !== item.searchIntent &&
+    Number(intentEvidence.confidence || 0) >= 0.70
+  ) {
+    ceiling = Math.min(ceiling, 78);
+    reasons.push("GSC_INTENT_CONFLICT");
+  }
+
+  const independentSourceCount = evidenceIndependentSourceCount(item);
+  if (independentSourceCount === 0) {
+    ceiling = Math.min(ceiling, 68);
+    reasons.push("NO_INDEPENDENT_SOURCE");
+  }
+
+  return Math.round(clamp(Math.min(raw, ceiling)));
+}
+
+function evidenceIndependentSourceCount(item = {}) {
+  let count = 0;
+  if (
+    item.searchSignal?.available ||
+    item.searchOwnership?.matchType === "EXACT" ||
+    item.cannibalization?.severity ||
+    item.temporalCannibalization?.actionable
+  ) count += 1;
+
+  if (item.marketSignal?.available || item.competitorGap?.available) count += 1;
+
+  return count;
 }
 
 function crossSourceAgreement(item = {}) {
