@@ -143,6 +143,13 @@ function decisionConfidenceEvidence(item = {}) {
     }
   }
 
+  const queryTemporal = ownership?.temporalOwnership;
+  if (queryTemporal?.highActionable) {
+    points.push(["high query-level temporal ownership shift", -8]);
+  } else if (queryTemporal?.status === "SHIFT") {
+    points.push(["query-level temporal ownership shift", -3]);
+  }
+
   if (ownership?.matchType === "EXACT") {
     points.push(["exact GSC query ownership", 12]);
     if (ownership.ownerStatus === "STABLE") points.push(["stable query owner", 10]);
@@ -518,6 +525,14 @@ function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
     cap = Math.min(cap, 92);
     reasons.push("MARKET_AGING");
   }
+  if (item.searchOwnership?.temporalOwnership?.highActionable) {
+    cap = Math.min(cap, 72);
+    reasons.push("GSC_QUERY_TEMPORAL_SHIFT_HIGH");
+  } else if (item.searchOwnership?.temporalOwnership?.status === "SHIFT") {
+    cap = Math.min(cap, 88);
+    reasons.push("GSC_QUERY_TEMPORAL_SHIFT");
+  }
+
   if (item.marketSignal?.matchType === "SEMANTIC") {
     const similarity = Number(item.marketSignal.semanticSimilarity);
     if (Number.isFinite(similarity) && similarity < 0.65) {
@@ -604,6 +619,12 @@ function buildDecisionTrace(item, action, evidence) {
     reasonCodes.push("STRIKING_DISTANCE");
   }
   if (item.internalLinkGap === true || item.linkGap === true) reasonCodes.push("INTERNAL_LINK_GAP");
+  if (item.searchOwnership?.temporalOwnership?.highActionable) {
+    reasonCodes.push("GSC_QUERY_TEMPORAL_SHIFT_HIGH");
+  } else if (item.searchOwnership?.temporalOwnership?.status === "SHIFT") {
+    reasonCodes.push("GSC_QUERY_TEMPORAL_SHIFT");
+  }
+
   const queryIntent = item.searchSignal?.queryIntentEvidence;
   const targetIntent = String(item.searchIntent || item.intent || "").toLowerCase();
   if (queryIntent?.primary) {
