@@ -9,6 +9,8 @@
  * --------------------------------------------------------
  */
 
+import { validateSchemaTypes } from "../schema/registry.js";
+
 const ABSOLUTE_ID = /^https?:\/\/[^\s#]+(?:\/|#[^\s]+|[^\s]*)$/;
 
 export function validateEntityGraph(graph) {
