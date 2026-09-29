@@ -287,6 +287,69 @@ describe("opportunity scoring", () => {
   });
 
 
+  it("penalizes a strong live search-intent conflict in priority", () => {
+    const aligned = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "informational",
+      priority: 80,
+      searchSignal: {
+        available: true,
+        impressions: 100,
+        position: 8,
+        ctr: 0.04,
+        queryIntentEvidence: {
+          primary: "informational",
+          confidence: 0.95,
+          sampleImpressions: 100,
+          queryCount: 1
+        }
+      }
+    });
+
+    const conflicting = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "informational",
+      priority: 80,
+      searchSignal: {
+        available: true,
+        impressions: 100,
+        position: 8,
+        ctr: 0.04,
+        queryIntentEvidence: {
+          primary: "transactional",
+          confidence: 0.95,
+          sampleImpressions: 100,
+          queryCount: 1
+        }
+      }
+    });
+
+    expect(conflicting.priority).toBeLessThan(aligned.priority);
+    expect(conflicting.scoreBreakdown.queryIntentPenalty).toBe(6);
+  });
+
+  it("uses a stronger penalty when several live queries agree on the conflicting intent", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      searchIntent: "informational",
+      priority: 80,
+      searchSignal: {
+        available: true,
+        impressions: 200,
+        position: 12,
+        ctr: 0.04,
+        queryIntentEvidence: {
+          primary: "transactional",
+          confidence: 0.90,
+          sampleImpressions: 200,
+          queryCount: 3
+        }
+      }
+    });
+
+    expect(result.scoreBreakdown.queryIntentPenalty).toBe(8);
+  });
+
   it("traces GSC query intent agreement and conflict", () => {
     const aligned = scoreOpportunity({
       action: "NEW_CONTENT",
