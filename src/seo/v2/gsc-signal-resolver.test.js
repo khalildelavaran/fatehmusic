@@ -264,6 +264,24 @@ describe("GSC signal resolver", () => {
     expect(result[0].searchSignal.impressions).toBe(50);
   });
 
+  it("excludes brand-navigation queries from semantic clusters", () => {
+    const clusters = buildSemanticQueryClusters([
+      {
+        query: "fatehmusic.ir",
+        page: "https://fatehmusic.ir/",
+        impressions: 1000
+      },
+      {
+        query: "آموزش گیتار شوشتر",
+        page: "https://fatehmusic.ir/courses/guitar-course",
+        impressions: 50
+      }
+    ]);
+
+    expect(clusters).toHaveLength(1);
+    expect(clusters[0].queries[0].displayQuery).toBe("آموزش گیتار شوشتر");
+  });
+
   it("does not collapse broad queries without a semantic fingerprint", () => {
     const clusters = buildSemanticQueryClusters([
       {
