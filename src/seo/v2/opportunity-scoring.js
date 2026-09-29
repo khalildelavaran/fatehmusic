@@ -619,17 +619,13 @@ export function scoreOpportunity(item = {}) {
     queryIntentPenalty +
     temporalBonus
   ));
-  const confidenceEvidence = decisionConfidenceEvidence({
+  const scoredItem = {
     ...item,
     marketSignal: market == null ? undefined : item.marketSignal
-  });
-  const decisionConfidence = Math.round(clamp(
-    30 + confidenceEvidence.reduce((sum, [, value]) => sum + value, 0)
-  ));
-  const evidence = evidenceStrength({
-    ...item,
-    marketSignal: market == null ? undefined : item.marketSignal
-  });
+  };
+  const confidenceEvidence = decisionConfidenceEvidence(scoredItem);
+  const decisionConfidence = decisionConfidenceScore(scoredItem);
+  const evidence = evidenceStrength(scoredItem);
   const guard = decisionGuard(item, evidence, score);
   const action = classifyOpportunityAction(item);
   const decisionTrace = buildDecisionTrace(item, action, evidence);
