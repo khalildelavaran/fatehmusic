@@ -52,3 +52,11 @@ describe("semantic modifier ontology", () => {
     expect(querySemanticFeatureSet("کلاس گیتار").has("scope:local")).toBe(false);
   });
 });
+
+
+describe("semantic modifier anchoring", () => {
+  it("does not create a reusable semantic feature set from modifier-only text", () => {
+    expect([...querySemanticFeatureSet("قیمت کلاس")]).toEqual([]);
+    expect([...querySemanticFeatureSet("هزینه دوره")]).toEqual([]);
+  });
+});
