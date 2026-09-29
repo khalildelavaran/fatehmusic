@@ -1,5 +1,6 @@
 import { findRelatedEntities, findRelationPaths } from "./knowledge-graph.js";
-import { normalizeSemanticText, semanticTokens } from "../helpers/text.js";
+import { normalizeSemanticText } from "../helpers/text.js";
+import { queryTokens } from "../helpers/query.js";
 
 /**
  * --------------------------------------------------------
@@ -25,8 +26,8 @@ function normalizedTopicSet(values = []) {
 }
 
 function semanticTopicSimilarity(left = [], right = []) {
-    const a = new Set(semanticTokens((left || []).join(" ")));
-    const b = new Set(semanticTokens((right || []).join(" ")));
+    const a = new Set(queryTokens((left || []).join(" ")));
+    const b = new Set(queryTokens((right || []).join(" ")));
     if (!a.size || !b.size) return 0;
     let shared = 0;
     for (const token of a) if (b.has(token)) shared += 1;
@@ -38,7 +39,7 @@ function buildCandidateTokenIndex(pages = []) {
     for (const page of pages) {
         if (!page?.url) continue;
         const tokens = new Set(
-            semanticTokens([
+            queryTokens([
                 page.title,
                 ...(page.topics || [])
             ].filter(Boolean).join(" "))
@@ -60,7 +61,7 @@ function buildCandidatePool(source, pages, tokenIndex, {
 
     const selected = new Map();
     const sourceTokens = new Set(
-        semanticTokens([
+        queryTokens([
             source?.title,
             ...(source?.topics || [])
         ].filter(Boolean).join(" "))
