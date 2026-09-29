@@ -64,19 +64,44 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     Number.isFinite(reportedCompleteness)
       ? Math.max(0, Math.min(1, reportedCompleteness))
       : null;
-  const rowsReceived = Number(options.gscDataQuality?.rowsReceived);
-  const maxRows = Number(options.gscDataQuality?.maxRows);
+  const rowsReceivedValue = Number(options.gscDataQuality?.rowsReceived);
+  const maxRowsValue = Number(options.gscDataQuality?.maxRows);
+  const rowsReceivedNormalized =
+    Number.isFinite(rowsReceivedValue) && rowsReceivedValue >= 0
+      ? rowsReceivedValue
+      : currentRows.length;
+  const maxRowsNormalized =
+    Number.isFinite(maxRowsValue) && maxRowsValue > 0
+      ? maxRowsValue
+      : null;
+
+  // A non-truncated API response proves that the requested snapshot returned
+  // data without hitting our configured row ceiling; it does NOT prove that
+  // every possible low-volume query was returned. Only an explicit provider
+  // completeness value can legitimately make completeness numeric.
+  const effectiveCoverageStatus = truncated
+    ? "PARTIAL"
+    : normalizedReportedCompleteness != null
+      ? "COMPLETE"
+      : currentRows.length
+        ? "OBSERVED"
+        : "EMPTY";
+
   const gscDataQuality = Object.freeze({
     truncated,
     rows: currentRows.length,
-    rowsReceived: Number.isFinite(rowsReceived) && rowsReceived >= 0 ? rowsReceived : currentRows.length,
-    maxRows: Number.isFinite(maxRows) && maxRows > 0 ? maxRows : null,
-    completeness: truncated
-      ? null
-      : normalizedReportedCompleteness != null
-        ? normalizedReportedCompleteness
-        : completeness,
-    coverageStatus,
+    rowsReceived: rowsReceivedNormalized,
+    maxRows: maxRowsNormalized,
+    completeness: normalizedReportedCompleteness,
+    coverageStatus: effectiveCoverageStatus,
+    coverageKnown: normalizedReportedCompleteness != null,
+    coverageBasis: normalizedReportedCompleteness != null
+      ? "PROVIDER_REPORTED"
+      : truncated
+        ? "ROW_CAP_REACHED"
+        : currentRows.length
+          ? "NON_EMPTY_SNAPSHOT"
+          : "NO_DATA",
     ageDays,
     freshness
   });
@@ -267,6 +292,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       queryClusterLimit,
       queryClusterTruncated,
       gscCompleteness: gscDataQuality.completeness == null ? 0 : gscDataQuality.completeness,
+      gscCoverageKnown: Boolean(gscDataQuality.coverageKnown),
+      gscCoverageBasis: gscDataQuality.coverageBasis || "NO_DATA",
+      gscCoverageStatus: gscDataQuality.coverageStatus || "EMPTY",
       gscFreshness: gscDataQuality.freshness,
       gscAgeDays: gscDataQuality.ageDays,
       marketFreshness: marketDataQuality.freshness,
