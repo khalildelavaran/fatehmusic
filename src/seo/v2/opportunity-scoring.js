@@ -187,6 +187,7 @@ function crossSourceAgreement(item = {}) {
 function evidenceStrength(item = {}) {
   const score = decisionConfidenceScore(item);
   const sourceFamilies = new Set();
+  const independentSources = new Set();
   const evidenceSignals = new Set();
 
   if (
@@ -196,6 +197,7 @@ function evidenceStrength(item = {}) {
     item.temporalCannibalization?.actionable
   ) {
     sourceFamilies.add("GSC");
+    independentSources.add("GSC");
   }
   if (item.searchSignal?.available) evidenceSignals.add("GSC_SIGNAL");
   if (item.searchOwnership?.matchType === "EXACT") evidenceSignals.add("GSC_OWNERSHIP");
@@ -204,10 +206,12 @@ function evidenceStrength(item = {}) {
 
   if (item.marketSignal?.available) {
     sourceFamilies.add("MARKET");
+    independentSources.add("MARKET");
     evidenceSignals.add("MARKET_SIGNAL");
   }
   if (item.competitorGap?.available) {
     sourceFamilies.add("COMPETITOR");
+    independentSources.add("COMPETITOR");
     evidenceSignals.add("COMPETITOR_GAP");
   }
   if (Number.isFinite(Number(item.intentConfidence)) && Number(item.intentConfidence) > 0) {
@@ -229,6 +233,8 @@ function evidenceStrength(item = {}) {
     score,
     quality,
     sourceCount: sourceFamilies.size,
+    independentSourceCount: independentSources.size,
+    independentSources: Object.freeze([...independentSources]),
     sources: Object.freeze([...sourceFamilies]),
     evidenceSignals: Object.freeze([...evidenceSignals]),
     independentMarketAndGsc: sourceFamilies.has("MARKET") && sourceFamilies.has("GSC")
@@ -433,10 +439,13 @@ function decisionGuard(item = {}, evidence = {}, rawScore = 0) {
     reasons.push("COMPETITOR_AGING");
   }
 
-  if (evidence.sourceCount <= 1 && evidence.quality === "INSUFFICIENT") {
-    cap = Math.min(cap, 58);
+  if (evidence.independentSourceCount === 0 && evidence.quality === "INSUFFICIENT") {
+    cap = Math.min(cap, 55);
     reasons.push("EVIDENCE_INSUFFICIENT");
-  } else if (evidence.sourceCount === 1 && evidence.quality === "WEAK") {
+  } else if (evidence.independentSourceCount === 0 && evidence.quality === "WEAK") {
+    cap = Math.min(cap, 68);
+    reasons.push("NO_INDEPENDENT_SOURCE");
+  } else if (evidence.independentSourceCount === 1 && evidence.quality === "WEAK") {
     cap = Math.min(cap, 72);
     reasons.push("SINGLE_SOURCE_WEAK");
   }
@@ -570,6 +579,9 @@ export function scoreOpportunity(item = {}) {
       evidenceStrengthScore: evidence.score,
       evidenceStrength: evidence.quality,
       evidenceSourceCount: evidence.sourceCount,
+      independentEvidenceSourceCount: evidence.independentSourceCount,
+      evidenceSources: evidence.sources,
+      independentEvidenceSources: evidence.independentSources,
       evidenceSignals: evidence.evidenceSignals,
       decisionGuard: guard,
       evidenceSources: evidence.sources,
