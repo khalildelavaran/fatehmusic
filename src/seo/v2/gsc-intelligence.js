@@ -571,3 +571,5 @@ function resolveAgeDays(value) {
   if (Number.isNaN(parsed.getTime())) return null;
   return Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 86400000));
 }
+
+export { classifyGscDimensionMix } from "./gsc-dimensions.js";
