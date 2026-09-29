@@ -209,9 +209,10 @@ function articleSemantics(posts = [], siteUrl = "") {
  * @param {{posts?: object[], courses?: object[], instructors?: object[], topicCandidates?: object[], gscRows?: object[], gscDataQuality?: object, marketDataQuality?: object, marketSignals?: object[]|Map|string, marketKeywordRows?: object[], competitorKeywordRows?: object[], targetKeywordRows?: object[], targetQueries?: string[], siteUrl?: string}} options
  */
 export function buildSEOIntelligence({ posts = [], courses = [], instructors = [], topicCandidates = [], gscRows = [], gscDataQuality = {}, marketDataQuality = {}, marketSignals = [], marketKeywordRows = [], competitorKeywordRows = [], targetKeywordRows = [], targetQueries = [], siteUrl = "" } = {}) {
-  const cluster = buildContentClusterReport(posts, { courses, siteUrl });
+  const resolvedSiteUrl = String(siteUrl || "https://fatehmusic.ir").replace(/\/$/, "");
+  const cluster = buildContentClusterReport(posts, { courses, siteUrl: resolvedSiteUrl });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
-  const pages = articleSemantics(posts, siteUrl);
+  const pages = articleSemantics(posts, resolvedSiteUrl);
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
     gscRows: currentScoringRows(gscRows),
@@ -222,7 +223,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gaps: cluster.gaps,
     topicCandidates: cleanCandidates,
     courses,
-    siteUrl
+    siteUrl: resolvedSiteUrl
   });
   const marketAdjustedBase = mergeMarketAnglesIntoExistingOpportunities(
     preliminaryBase.opportunities,
@@ -232,13 +233,13 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     marketOpportunities,
     marketAdjustedBase,
     courses,
-    siteUrl
+    siteUrl: resolvedSiteUrl
   );
   const marketDerived = buildUnifiedContentOpportunities({
     gaps: [],
     topicCandidates: marketCandidates,
     courses,
-    siteUrl
+    siteUrl: resolvedSiteUrl
   });
   const base = Object.freeze({
     opportunities: Object.freeze([
@@ -289,7 +290,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   }));
   const siteNodes = buildSiteLinkCandidates(
     {
-      url: siteUrl,
+      url: resolvedSiteUrl,
       name: "آموزشگاه موسیقی فاتح",
       keywords: ["آموزش موسیقی", "آموزشگاه موسیقی", "شوشتر"]
     },
@@ -313,7 +314,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     ? Math.round(opportunities.reduce((sum, item) => sum + Number(item.decisionConfidence || 0), 0) / opportunities.length)
     : 0;
   const knowledgeGraph = buildKnowledgeGraph({
-    siteUrl,
+    siteUrl: resolvedSiteUrl,
     courses,
     instructors,
     posts
