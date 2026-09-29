@@ -4,8 +4,10 @@ import { syncPublishedSeoActionMeasurements } from "../../src/seo/v2/seo-action-
 describe("SEO action GSC measurement", () => {
   it("records a semantic query cohort alongside page totals", async () => {
     let insertArgs: unknown[] = [];
+    let insertedSql = "";
     const db = {
       prepare(statement: string) {
+        insertedSql = statement;
         if (statement.includes("SELECT a.id AS action_id")) {
           return {
             bind() {
@@ -50,6 +52,8 @@ describe("SEO action GSC measurement", () => {
       windowEnd: "2026-09-28"
     })).resolves.toEqual({ measured: 1 });
 
+    expect(insertedSql).toContain("(action_id, measured_at, window_start, window_end, impressions, clicks, ctr, position, source, metadata)");
+    expect(insertedSql).toContain("metadata=excluded.metadata");
     const metadata = JSON.parse(String(insertArgs[insertArgs.length - 1]));
     expect(metadata.attributionModel).toBe("PAGE_PLUS_QUERY_COHORT");
     expect(metadata.cohort.impressions).toBe(80);
