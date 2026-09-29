@@ -136,3 +136,54 @@ describe("market ranking source precedence", () => {
     expect(result[0].bestPositionSource).toBe("ahrefs");
   });
 });
+
+
+describe("market data quality hardening", () => {
+  it("aggregates duplicate normalized market rows deterministically", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [
+        {
+          keyword: "آموزش گیتار",
+          volume_monthly: 80,
+          keyword_difficulty: 35,
+          best_position: 20
+        },
+        {
+          keyword: "اموزش گیتار",
+          volume_monthly: 120,
+          keyword_difficulty: 30,
+          best_position: 14
+        }
+      ]
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].volume).toBe(120);
+    expect(result[0].difficulty).toBe(30);
+    expect(result[0].bestPosition).toBe(14);
+    expect(result[0].keyword).toBe("اموزش گیتار");
+  });
+
+  it("does not let stale GSC impressions masquerade as live first-party evidence", () => {
+    const result = buildMarketOpportunityReport({
+      keywordRows: [{
+        keyword: "آموزش گیتار",
+        volume_monthly: 200,
+        keyword_difficulty: 30,
+        best_position: 5
+      }],
+      gscRows: [{
+        query: "آموزش گیتار",
+        impressions: 100,
+        clicks: 2,
+        position: 8
+      }],
+      gscFreshness: "STALE"
+    });
+
+    expect(result[0].bestPosition).toBe(5);
+    expect(result[0].bestPositionSource).toBe("ahrefs");
+    expect(result[0].classification).toBe("MARKET_ONLY");
+    expect(result[0].gscSignalUsable).toBe(false);
+  });
+});
