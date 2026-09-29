@@ -643,6 +643,23 @@ describe("query ownership performance evidence", () => {
   });
 });
 
+describe("semantic cluster retrieval coverage", () => {
+  it("reports when the semantic cluster display is capped", () => {
+    const rows = Array.from({ length: 5001 }, (_, index) => ({
+      query: "آموزش ساز " + index,
+      page: "https://fatehmusic.ir/courses/course-" + index,
+      impressions: 5
+    }));
+    const index = buildGscSignalIndex(rows);
+
+    expect(index.queryClusters.length).toBe(5000);
+    expect(index.queryClusterTotalCount).toBe(5001);
+    expect(index.queryClusterLimit).toBe(5000);
+    expect(index.queryClusterTruncated).toBe(true);
+  });
+});
+
+
 describe("position-aware GSC opportunity priority", () => {
   it("prioritizes CTR underperformance relative to the same rank bucket", () => {
     const index = buildGscSignalIndex([
