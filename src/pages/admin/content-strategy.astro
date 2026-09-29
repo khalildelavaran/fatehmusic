@@ -101,21 +101,12 @@ interface SeoAction {
 }
 
 const opportunities = intelligence.opportunities;
-const opportunities = intelligence.opportunities.filter((item) => {
-  // Existing URLs are the target of optimization/expansion/link/merge actions.
-  // Only a genuine NEW_CONTENT opportunity should be hidden when its title or
-  // canonical slug already belongs to a published article.
-  if (item.action !== "NEW_CONTENT") return true;
-  const sameTitle = publishedTitles.has(normalizeText(item.title));
-  const sameSlug = publishedSlugs.has(normalizeSlug(item.suggestedSlug));
-  return !sameTitle && !sameSlug;
-});
 
 const opportunityCount = opportunities.length;
 const highPriorityCount = opportunities.filter((item) => item.priority >= 85).length;
 const newContentCount = opportunities.filter((item) => item.action === "NEW_CONTENT").length;
-const approvedTopicCount = storedTopics.filter((item) => item.status === "approved").length;
-const candidateTopicCount = storedTopics.filter((item) => item.status === "candidate").length;
+const approvedTopicCount = Number(intelligence.summary.approvedTopicCount || 0);
+const candidateTopicCount = Number(intelligence.summary.candidateTopicCount || 0);
 
 const topicCounts = new Map<string, number>();
 for (const item of opportunities) topicCounts.set(item.topicName, (topicCounts.get(item.topicName) ?? 0) + 1);
