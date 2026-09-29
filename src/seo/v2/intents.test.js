@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyIntent } from "./intents.js";
+import { classifyIntent, classifyTitleIntent } from "./intents.js";
 
 describe("intent phrase matching", () => {
   it("matches complete intent phrases", () => {
@@ -48,5 +48,15 @@ describe("intent phrase matching", () => {
       entityType: "Article"
     });
     expect(result.intents.find((item) => item.intent === "transactional")).toBeUndefined();
+  });
+});
+
+
+describe("shared title-only intent classifier", () => {
+  it("keeps content-engine title intent precedence deterministic", () => {
+    expect(classifyTitleIntent("هزینه ثبت‌نام در آموزشگاه فاتح").primary).toBe("transactional");
+    expect(classifyTitleIntent("چرا آموزشگاه موسیقی فاتح را انتخاب کنیم").primary).toBe("navigational");
+    expect(classifyTitleIntent("تفاوت تار و سه‌تار؛ کدام را انتخاب کنیم").primary).toBe("commercial");
+    expect(classifyTitleIntent("چگونه گیتار را از صفر یاد بگیریم").primary).toBe("informational");
   });
 });
