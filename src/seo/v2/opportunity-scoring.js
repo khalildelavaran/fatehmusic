@@ -443,6 +443,13 @@ export function classifyOpportunityAction(item = {}) {
   const competition = item.cannibalization?.severity || item.competition?.severity || "NONE";
   const temporal = item.temporalCannibalization || null;
   const hasExistingTarget = Number(item.articleCount) > 0 || Boolean(item.existingArticleSlugs?.length);
+  // Hard conflicts must be resolved before creation or link reinforcement.
+  // A current owner is not enough to justify LINK when the same query/topic is
+  // simultaneously in a severe conflict or has materially changed ownership
+  // across reporting windows.
+  if (competition === "HIGH") return "MERGE_CONTENT";
+  if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
+
   // When GSC already attributes a matching non-brand query to one dominant
   // URL, reinforce that owner rather than creating a competing article.
   if (
@@ -466,12 +473,6 @@ export function classifyOpportunityAction(item = {}) {
   ) {
     return "LINK";
   }
-
-  // Hard conflicts must be resolved before creation. A page with strong
-  // simultaneous competition should not bypass the merge decision merely
-  // because its upstream candidate action was NEW_CONTENT.
-  if (competition === "HIGH") return "MERGE_CONTENT";
-  if (temporal?.severity === "HIGH" && temporal.actionable) return "MERGE_CONTENT";
 
   // Search demand can justify creating a new article, but it cannot turn a
   // non-existent article into an "optimize existing" task when no established
