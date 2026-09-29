@@ -322,7 +322,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
   const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
   const semanticLinks = buildLinkGraph(pageNodes, {
     semanticGraph: knowledgeGraph,
-    gscSignals: gscIndex.byPageNonBrand
+    gscSignals: gscIndex.byPageNonBrand,
+    gscOwnership: search.queryOwnership
   });
 
   return Object.freeze({
