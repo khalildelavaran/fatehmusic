@@ -10,7 +10,7 @@ import { getAdminSession, ROLES, type AdminEnv } from "../../server/admin-auth";
 import { getPublishedPosts } from "../../server/blog";
 import { courses } from "../../data/courses.js";
 import { instructors } from "../../data/instructors.js";
-import { buildSEOIntelligence, buildGscSignalIndex, resolveSite } from "../../seo/index.js";
+import { buildSEOIntelligence, resolveSite } from "../../seo/index.js";
 import { listTopics } from "../../ai/content-engine/db";
 import { getRecentSearchConsoleRows, getLatestGscSyncRun } from "../../seo/v2/providers/search-console-store.js";
 import { listSeoActions } from "../../seo/v2/seo-action-store.js";
@@ -40,10 +40,6 @@ const [ahrefsMetrics, ahrefsCompetitors, ahrefsRefdomainsHistory, ahrefsOrganicK
 ]) : [null, null, null, null, null, null];
 const storedTopics = db ? await listTopics(db, { limit: 500 }) : [];
 const activeTopicCandidates = storedTopics.filter((item) => item.status === "approved" || item.status === "candidate");
-const currentGscRows = (gscRows as Array<Record<string, unknown>>).filter((row) =>
-  String(row.snapshotLabel || row.snapshot_label || "") === "current"
-);
-const currentGscIndex = buildGscSignalIndex(currentGscRows);
 const marketSignals = buildAhrefsKeywordSignalMap(
   Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : []
 );
@@ -56,7 +52,8 @@ const intelligence = buildSEOIntelligence({
   gscDataQuality: {
     truncated: Number(latestGscSync?.truncated) === 1,
     rowsReceived: Number(latestGscSync?.rowsReceived),
-    finishedAt: latestGscSync?.snapshotSyncedAt || latestGscSync?.finishedAt || undefined
+    finishedAt: latestGscSync?.snapshotSyncedAt || latestGscSync?.finishedAt || undefined,
+    maxRows: Number(latestGscSync?.maxRows || 0) || undefined
   },
   marketDataQuality: {
     fetchedAt: ahrefsOrganicKeywords?.fetchedAt || undefined
@@ -64,7 +61,11 @@ const intelligence = buildSEOIntelligence({
   marketSignals,
   marketKeywordRows: Array.isArray(ahrefsOrganicKeywords?.payload) ? ahrefsOrganicKeywords.payload : [],
   competitorKeywordRows: Array.isArray(ahrefsCompetitorKeywords?.payload) ? ahrefsCompetitorKeywords.payload : [],
-  siteUrl: site.url
+  siteUrl: site.url,
+  maxQueryClusters: 1000,
+  maxOwnershipQueries: 1000,
+  includeKnowledgeGraph: false,
+  includeSemanticLinks: false
 });
 
 const normalizeText = (value: string) => normalizeSemanticText(value);
@@ -243,10 +244,10 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
           )}
           {intelligence.gsc.connected && <div class="strategy-gsc-grid">
             <div><strong>Queryهای برتر غیر برندی</strong><div class="strategy-gsc-list">
-              {[...currentGscIndex.byQueryNonBrand.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
+              {[...intelligence.gsc.index.byQueryNonBrand.entries()].slice(0, 8).map(([query, signal]) => <span><code>{query}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · رتبه {signal.position?.toFixed(1) ?? "-"}</span>)}
             </div></div>
             <div><strong>صفحات برتر غیر برندی</strong><div class="strategy-gsc-list">
-              {[...currentGscIndex.byPageNonBrand.entries()].slice(0, 8).map(([page, signal]) => <span><code>{page.replace(site.url, "") || "/"}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · CTR {(signal.ctr * 100).toFixed(1)}%</span>)}
+              {[...intelligence.gsc.index.byPageNonBrand.entries()].slice(0, 8).map(([page, signal]) => <span><code>{page.replace(site.url, "") || "/"}</code> · {Math.round(signal.impressions).toLocaleString("fa-IR")} impression · CTR {(signal.ctr * 100).toFixed(1)}%</span>)}
             </div></div>
           </div>}
         </section>
