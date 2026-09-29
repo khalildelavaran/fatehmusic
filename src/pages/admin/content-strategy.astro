@@ -55,7 +55,7 @@ const intelligence = buildSEOIntelligence({
   gscRows,
   gscDataQuality: {
     truncated: Number(latestGscSync?.truncated) === 1,
-    finishedAt: latestGscSync?.finishedAt || undefined
+    finishedAt: latestGscSync?.snapshotSyncedAt || latestGscSync?.finishedAt || undefined
   },
   marketDataQuality: {
     fetchedAt: ahrefsOrganicKeywords?.fetchedAt || undefined
@@ -83,6 +83,7 @@ const daysSince = (value: string | null | undefined) => {
 const gscSyncMeta = latestGscSync as Record<string, unknown> | null;
 const ahrefsMeta = ahrefsMetrics as Record<string, unknown> | null;
 const gscAgeDays = daysSince(
+  typeof gscSyncMeta?.snapshotSyncedAt === "string" ? gscSyncMeta.snapshotSyncedAt :
   typeof gscSyncMeta?.finishedAt === "string" ? gscSyncMeta.finishedAt :
   typeof gscSyncMeta?.startedAt === "string" ? gscSyncMeta.startedAt : null
 );
