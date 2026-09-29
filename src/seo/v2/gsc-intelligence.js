@@ -119,7 +119,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const rowsReceivedNormalized =
     Number.isFinite(rowsReceivedValue) && rowsReceivedValue >= 0
       ? rowsReceivedValue
-      : currentRows.length;
+      : selectedCurrentRows.length;
   const maxRowsNormalized =
     Number.isFinite(maxRowsValue) && maxRowsValue > 0
       ? maxRowsValue
