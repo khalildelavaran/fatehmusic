@@ -218,7 +218,7 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     includeStrategy: includeClusterStrategy
   });
   const cleanCandidates = filterStaleBroadCourseCandidates(topicCandidates, courses);
-  const pages = articleSemantics(posts, resolvedSiteUrl);
+  const pages = articleSemantics(posts, resolvedSiteUrl, cluster.profiles);
   const marketOpportunities = buildMarketOpportunityReport({
     keywordRows: marketKeywordRows,
     gscRows: currentScoringRows(gscRows),
