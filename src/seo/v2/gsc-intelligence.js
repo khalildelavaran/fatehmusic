@@ -74,7 +74,7 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
   const index = buildGscSignalIndex(scoringRows);
   const queryOwnershipResult = buildQueryOwnershipMapWithMeta(scoringRows, {
     minImpressions: Number(options.minOwnershipImpressions) > 0 ? Number(options.minOwnershipImpressions) : 1,
-    limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 500
+    limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 5000
   });
   const queryOwnership = queryOwnershipResult.items;
   const queryClusterTotalCount = Number(index.queryClusterTotalCount || index.queryClusters?.length || 0);
