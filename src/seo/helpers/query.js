@@ -19,7 +19,7 @@ export function queryTokens(value) {
 
 const BRAND_GENERIC_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "آموزشگاه", "academy", "music",
-  "ir", "www", "در", "شوشتر", "فاتح", "fateh", "آدرس", "تماس", "ثبت", "نام"
+  "ir", "www", "در", "شوشتر", "فاتح", "fateh", "موزیک", "آدرس", "تماس", "ثبت", "نام"
 ]);
 
 export function isBrandNavigationQuery(query) {
@@ -32,7 +32,8 @@ export function isBrandNavigationQuery(query) {
     normalized === "fateh music" ||
     normalized === "fateh music academy" ||
     normalized === "آموزشگاه موسیقی فاتح" ||
-    normalized === "آموزشگاه فاتح"
+    normalized === "آموزشگاه فاتح" ||
+    normalized === "فاتح موزیک"
   ) {
     return true;
   }
