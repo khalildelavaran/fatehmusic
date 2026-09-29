@@ -14,7 +14,7 @@ export function matchCoursesInTitle(title, courses = [], {
   const normalizedTitle = normalizeSemanticText(title);
   const catalog = Array.isArray(courses) ? courses : [];
   const matches = catalog
-    .filter((course) => course?.active !== false && course?.slug && course?.title)
+    .filter((course) => course?.active && course?.slug && course?.title)
     .map((course, index) => ({
       course,
       index,
