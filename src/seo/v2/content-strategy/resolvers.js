@@ -2,6 +2,7 @@ import { COMPARISON_PAIRS } from "../../../data/content-engine-seeds.ts";
 import { TOPICS } from "../topics.js";
 import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from "../../helpers/text.js";
 import { SCOPE_ONLY_TOPICS } from "./policy.js";
+import { matchCoursesInTitle } from "./course-matching.js";
 
 function normalize(value) {
   return normalizeSemanticText(value);
@@ -88,20 +89,7 @@ export function normalizeBaseUrl(siteUrl) {
 }
 
 export function findCourseFromTitle(title, courses = []) {
-  const exact = courses.filter(
-    (course) => course?.slug &&
-      course?.title &&
-      containsSemanticPhrase(title || "", course.title)
-  );
-  if (exact.length === 1) return exact[0];
-  if (exact.length > 1) {
-    return exact.sort(
-      (a, b) =>
-        semanticTokens(b.title).length - semanticTokens(a.title).length ||
-        String(a.slug).localeCompare(String(b.slug))
-    )[0];
-  }
-  return null;
+  return matchCoursesInTitle(title, courses)[0] || null;
 }
 
 export function containsTokenSequence(title, phrase) {
@@ -118,9 +106,10 @@ export function findComparisonCourses(candidate, courses = []) {
       .filter(Boolean);
     if (pairCourses.length === 2) return pairCourses;
   }
-  return courses
-    .filter((course) => course?.slug && course?.title && containsTokenSequence(candidate?.title || "", course.title))
-    .slice(0, 2);
+  return matchCoursesInTitle(candidate?.title || "", courses, {
+    comparison: true,
+    limit: 2
+  });
 }
 
 export function findCourseForTopic(topic, courses = [], title = "") {
