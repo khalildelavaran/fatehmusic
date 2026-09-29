@@ -106,11 +106,24 @@ export function findContentGaps(posts = [], requiredIntents = DEFAULT_INTENTS) {
     .sort((a, b) => b.missingIntents.length - a.missingIntents.length || a.articleCount - b.articleCount || a.topic.localeCompare(b.topic, "fa"));
 }
 
-export function buildContentClusterReport(posts = [], { courses = [], siteUrl } = {}) {
+export function buildContentClusterReport(posts = [], {
+  courses = [],
+  siteUrl,
+  includeLinks = true,
+  includeStrategy = true
+} = {}) {
   const profiles = buildArticleProfiles(posts);
   const topics = [...new Set(profiles.flatMap((item) => item.topics))];
   const gaps = findContentGaps(posts);
-  return Object.freeze({ articleCount: profiles.length, topicCount: topics.length, topics, profiles, links: buildArticleClusterLinks(posts), gaps, strategy: buildContentStrategy(gaps, courses, { siteUrl }) });
+  return Object.freeze({
+    articleCount: profiles.length,
+    topicCount: topics.length,
+    topics,
+    profiles,
+    links: includeLinks ? buildArticleClusterLinks(posts) : [],
+    gaps,
+    strategy: includeStrategy ? buildContentStrategy(gaps, courses, { siteUrl }) : []
+  });
 }
 
 export function buildArticleLinkCandidates(posts = [], siteUrl) {
