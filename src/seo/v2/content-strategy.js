@@ -27,23 +27,21 @@ import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from ".
 function canonicalAssetKey(item) {
   const topic = findTopic(item.topic);
   const local = Boolean(item.scope === "shushtar" || item.modifierType === "local_shushtar" || item.searchIntent === "local" || item.isLocal || isShushtarTopic(topic));
-  const audience = normalize(item.audience || "");
-  const level = normalize(item.level || "");
+  const audience = normalizeSemanticText(item.audience || "");
+  const level = normalizeSemanticText(item.level || "");
   const angle = canonicalContentAngle({ ...item, scope: local ? "shushtar" : item.scope });
 
   // Comparison articles are multi-course assets. Their identity must include
   // the actual comparison title, otherwise every comparison with the same
   // audience/level collapses into one queue item.
   if (item.modifierType === "comparison" || angle === "comparison") {
-    return ["comparison-v1", normalize(item.title), audience, level].join("|");
+    return ["comparison-v1", normalizeSemanticText(item.title), audience, level].join("|");
   }
 
   const courseKey = item.course?.slug || item.courseSlug || "general";
   return [topic?.slug || item.topic, canonicalScope(topic, local), courseKey, angle, audience, level].join("|");
 }
-export { areIntentsCompatible };
-function mergeQueryAngles(topic, intents, course) { return Object.freeze([...new Set(intents.flatMap((intent) => buildQueryAngles(topic, intent, course)))].slice(0, 15)); }
-function makeCourseRef(course, baseUrl) { return course ? Object.freeze({ slug: course.slug, title: course.title, url: `${baseUrl}/courses/${course.slug}` }) : null; }
+export { areIntentsCompatible, suggestedArticleSlug };
 function buildBrief(gap, courses = [], siteUrl) {
   const topic = findTopic(gap.topic); const intent = gap.missingIntents?.[0]; if (!topic || !intent) return null; const baseUrl = normalizeBaseUrl(siteUrl); const isLocal = gap.scope === "shushtar" || intent === "local" || isShushtarTopic(topic);
   const course = gap.courseSlug ? courses.find((item) => item?.slug === gap.courseSlug) || null : isLocal && isShushtarTopic(topic) ? null : findCourseForTopic(topic, courses, gap.title || "");
@@ -59,7 +57,7 @@ function buildBrief(gap, courses = [], siteUrl) {
 function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)); }
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const baseUrl = normalizeBaseUrl(siteUrl);
-  const normalizedTitle = normalize(candidate.title);
+  const normalizedTitle = normalizeSemanticText(candidate.title);
   const comparisonCourses = candidate.modifierType === "comparison"
     ? findComparisonCourses(candidate, courses)
     : [];
