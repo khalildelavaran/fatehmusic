@@ -3,6 +3,7 @@
  * Detects changes in query ownership across dated Search Console windows.
  */
 import { buildSemanticQueryClusters, normalizeText, normalizeUrl, isOwnershipEligibleQuery, isBrandNavigationQuery } from "./gsc-signal-resolver.js";
+import { sanitizeGscQueryPageRows } from "./gsc-dimensions.js";
 
 function numeric(value) {
   return Math.max(0, Number(value) || 0);
@@ -40,7 +41,8 @@ export function detectTemporalCannibalization(rows = [], {
   minShareDelta = 0.15
 } = {}) {
   const queryPeriods = new Map();
-  for (const row of rows) {
+  const safeRows = sanitizeGscQueryPageRows(rows);
+  for (const row of safeRows) {
     const query = normalizeText(row.query);
     const period = periodKey(row);
     if (!query || !period || !isOwnershipEligibleQuery(query) || isBrandNavigationQuery(query) || numeric(row.impressions) < minImpressions) continue;
@@ -99,8 +101,9 @@ export function detectSemanticTemporalCannibalization(rows = [], {
   minShareDelta = 0.15
 } = {}) {
   const byPeriod = new Map();
+  const safeRows = sanitizeGscQueryPageRows(rows);
 
-  for (const row of rows) {
+  for (const row of safeRows) {
     const period = periodKey(row);
     const query = normalizeText(row?.query);
     if (!period || !query || !isOwnershipEligibleQuery(query) || isBrandNavigationQuery(query)) continue;
