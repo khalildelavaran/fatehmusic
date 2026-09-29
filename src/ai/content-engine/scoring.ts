@@ -1,6 +1,7 @@
 // Transparent topic scoring. Search Console impressions are an observed-demand signal.
 import { classifyIntent } from "./intent";
 import { LOCAL_ANCHOR_TERMS } from "../../data/content-engine-seeds";
+import { containsSemanticPhrase } from "../../seo/helpers/text.js";
 import type { KeywordSignal } from "./providers/keyword-provider";
 import type { ScoreBreakdown, ScoredCandidate, TopicCandidate } from "./types";
 
@@ -25,7 +26,7 @@ function scoreContentGap(candidate: TopicCandidate, ctx: ScoringContext): number
 
 function scoreLocalRelevance(candidate: TopicCandidate): number {
   if (candidate.modifierType === "local_shushtar") return 15;
-  if (LOCAL_ANCHOR_TERMS.some((term) => candidate.title.includes(term))) return 12;
+  if (LOCAL_ANCHOR_TERMS.some((term) => containsSemanticPhrase(candidate.title, term))) return 12;
   return 5;
 }
 
