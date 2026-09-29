@@ -11,7 +11,8 @@ const RULES = [
     { intent: "transactional", weight: 70, tokens: ["ثبت نام", "ثبت‌نام", "قیمت", "هزینه", "رزرو", "خرید"] },
     { intent: "local", weight: 65, tokens: ["شوشتر", "خوزستان", "نزدیک", "حضوری"] },
     { intent: "informational", weight: 45, tokens: ["چیست", "چگونه", "چطور", "راهنما", "آموزش", "سرفصل", "تفاوت", "اشتباهات"] },
-    { intent: "commercial", weight: 55, tokens: ["بهترین", "مناسب", "مقایسه", "انتخاب"] },
+    { intent: "commercial", weight: 40, tokens: ["بهترین", "مناسب", "مقایسه", "انتخاب"] },
+    { intent: "commercial", weight: 55, tokens: ["بهترین"] },
     { intent: "navigational", weight: 35, tokens: ["درباره", "تماس", "آموزشگاه موسیقی فاتح", "فاتح"] }
 ];
 
