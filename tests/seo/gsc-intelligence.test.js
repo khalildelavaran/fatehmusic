@@ -106,6 +106,71 @@ describe("GSC snapshot isolation", () => {
 });
 
 describe("GSC query intent evidence", () => {
+  it("recognizes intent-bearing modifiers around a subject-specific topic", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "گیتار در شوشتر",
+        topicName: "گیتار",
+        topic: "guitar",
+        searchIntent: "local",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [
+      {
+        query: "هزینه کلاس گیتار",
+        page: "https://fatehmusic.ir/courses/guitar",
+        impressions: 50,
+        clicks: 2,
+        position: 7,
+        snapshotLabel: "current"
+      },
+      {
+        query: "چگونه گیتار یاد بگیریم",
+        page: "https://fatehmusic.ir/blog/guitar",
+        impressions: 50,
+        clicks: 2,
+        position: 10,
+        snapshotLabel: "current"
+      },
+      {
+        query: "هزینه کلاس پیانو",
+        page: "https://fatehmusic.ir/courses/piano",
+        impressions: 300,
+        clicks: 4,
+        position: 8,
+        snapshotLabel: "current"
+      }
+    ]);
+
+    const evidence = result.opportunities[0].searchSignal.queryIntentEvidence;
+    expect(evidence.queryCount).toBe(2);
+    expect(evidence.rawSampleImpressions).toBe(100);
+    expect(evidence.sampleImpressions).toBeGreaterThan(0);
+  });
+
+  it("rejects a query mixing a competing specific instrument", () => {
+    const result = enrichOpportunitiesWithSearchConsole([
+      {
+        title: "آموزش گیتار",
+        topicName: "گیتار",
+        topic: "guitar",
+        action: "NEW_CONTENT",
+        priority: 70
+      }
+    ], [
+      {
+        query: "آموزش گیتار و پیانو",
+        page: "https://fatehmusic.ir/blog/mixed",
+        impressions: 100,
+        snapshotLabel: "current"
+      }
+    ]);
+
+    expect(result.opportunities[0].searchSignal.available).toBe(false);
+  });
+
+
   it("reports impression-weighted intent from matching queries", () => {
     const result = enrichOpportunitiesWithSearchConsole([
       {
