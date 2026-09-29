@@ -1,12 +1,9 @@
 /** Resolve GSC query/page rows into actionable SEO/GEO search intelligence. */
 
 import { isBrandNavigationQuery, isOwnershipEligibleQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
+import { normalizeUrl } from "../helpers/url.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
-
-function normalizeUrl(value) {
-  return String(value || "").replace(/#.*$/, "").replace(/\/$/, "").trim().toLowerCase();
-}
 
 function normalizeText(value) { return normalizeQuery(value); }
 
