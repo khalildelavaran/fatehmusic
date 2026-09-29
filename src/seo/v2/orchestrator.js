@@ -9,6 +9,7 @@ import { buildGscSignalIndex } from "./gsc-signal-resolver.js";
 import { buildLinkGraph } from "./internal-links.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
+import { areIntentsCompatible } from "./content-strategy/policy.js";
 import { buildKnowledgeGraph, validateKnowledgeGraph } from "./knowledge-graph.js";
 import { buildMarketOpportunityReport, buildMarketSignalMap } from "./market-opportunities.js";
 import { buildCompetitiveGapReport } from "./competitive-gaps.js";
