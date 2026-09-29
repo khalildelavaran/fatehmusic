@@ -9,6 +9,18 @@ describe("intent phrase matching", () => {
     }).primary).toBe("informational");
   });
 
+  it("classifies strong commercial modifiers without overriding a guide intent", () => {
+    expect(classifyIntent({
+      title: "بهترین دوره گیتار برای مبتدیان",
+      entityType: "Article"
+    }).primary).toBe("commercial");
+
+    expect(classifyIntent({
+      title: "راهنمای انتخاب کلاس گیتار",
+      entityType: "Article"
+    }).primary).toBe("informational");
+  });
+
   it("reports confidence from the separation between top intents", () => {
     const result = classifyIntent({
       path: "/register",
