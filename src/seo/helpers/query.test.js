@@ -24,6 +24,7 @@ describe("semantic query layer", () => {
     expect(isBrandNavigationQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(true);
     expect(isBrandNavigationQuery("کلاس گیتار در آموزشگاه فاتح")).toBe(false);
     expect(isBrandNavigationQuery("آموزشگاه گیتار فاتح")).toBe(false);
+    expect(isBrandNavigationQuery("آموزشگاه موسیقی فاتح برای کودکان")).toBe(false);
     expect(isOwnershipEligibleQuery("آموزش گیتار")).toBe(true);
     expect(isOwnershipEligibleQuery("گیتار")).toBe(false);
     expect(isOwnershipEligibleQuery("آدرس آموزشگاه فاتح شوشتر")).toBe(false);
