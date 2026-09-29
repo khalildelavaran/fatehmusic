@@ -111,7 +111,7 @@ export function buildInternalLinkPlan({ currentUrl = "", currentTitle = "", curr
 
             const relationEvidence = findRelationEvidence(currentUrl, candidate.url, semanticGraph);
             score += relationEvidence.score;
-            const ownerEvidence = findStrongOwnershipEvidence(candidate.url, gscOwnership);
+            const ownerEvidence = findStrongOwnershipEvidence(candidate.url, gscOwnership, candidate);
             if (ownerEvidence.status === "STRONG") score += 8;
             else if (ownerEvidence.status === "MODERATE") score += 3;
             else if (ownerEvidence.status === "SPLIT") score -= 4;
@@ -311,10 +311,26 @@ export function buildLinkGraph(pages = [], { semanticGraph = null, gscSignals = 
     }));
 }
 
-function findStrongOwnershipEvidence(candidateUrl, ownership = []) {
+function findStrongOwnershipEvidence(candidateUrl, ownership = [], candidate = {}) {
     const normalized = normalizeUrl(candidateUrl);
+    const candidateTokens = queryTokens([
+        candidate?.title,
+        ...(candidate?.topics || [])
+    ].filter(Boolean).join(" "));
     const matches = (Array.isArray(ownership) ? ownership : [])
-        .filter((item) => normalizeUrl(item?.topPage) === normalized);
+        .filter((item) => normalizeUrl(item?.topPage) === normalized)
+        .filter((item) => {
+            const querySet = queryTokens(item?.query || item?.displayQuery || "");
+            if (!querySet.size || !candidateTokens.size) return false;
+            let shared = 0;
+            for (const token of querySet) if (candidateTokens.has(token)) shared += 1;
+            const queryCoverage = shared / querySet.size;
+            const candidateCoverage = shared / candidateTokens.size;
+            const overlap = shared / new Set([...querySet, ...candidateTokens]).size;
+            return querySet.size === 1
+                ? queryCoverage === 1
+                : queryCoverage >= 0.5 && candidateCoverage >= 0.2 && overlap >= 0.2;
+        });
 
     if (!matches.length) return { status: "NONE" };
     const strongest = matches
