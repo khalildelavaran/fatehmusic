@@ -1,4 +1,4 @@
-import { isBrandNavigationQuery, normalizeQuery, queryTokens, querySemanticFeatureSet } from "../helpers/query.js";
+import { isBrandNavigationQuery, normalizeQuery, querySemanticFeatureSet } from "../helpers/query.js";
 
 const GENERIC_GAP_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "در", "به", "از", "برای",
