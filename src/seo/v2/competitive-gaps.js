@@ -1,4 +1,13 @@
-import { isBrandNavigationQuery, normalizeQuery } from "../helpers/query.js";
+import { isBrandNavigationQuery, normalizeQuery, queryTokens } from "../helpers/query.js";
+
+function semanticSimilarity(left, right) {
+  const a = queryTokens(left);
+  const b = queryTokens(right);
+  if (!a.size || !b.size) return 0;
+  let intersection = 0;
+  for (const token of a) if (b.has(token)) intersection += 1;
+  return intersection / (a.size + b.size - intersection);
+}
 
 function scoreGap(volume, difficulty, competitorCount) {
   const normalizedVolume = Math.max(0, Number(volume) || 0);
@@ -31,6 +40,7 @@ export function buildCompetitiveGapReport({
   targetKeywordRows = [],
   targetQueries = [],
   minVolume = 1,
+  semanticMatchThreshold = 0.9,
   limit = 100
 } = {}) {
   const targetSet = new Set(
@@ -38,6 +48,11 @@ export function buildCompetitiveGapReport({
       .map((row) => typeof row === "string" ? row : row?.keyword || row?.query)
       .map(normalizeQuery)
       .filter(Boolean)
+  );
+
+  const targetKeywords = [...targetSet];
+  const semanticallyCovered = (normalizedKeyword) => targetKeywords.some((target) =>
+    semanticSimilarity(normalizedKeyword, target) >= Math.max(0.8, Number(semanticMatchThreshold) || 0.9)
   );
 
   const grouped = new Map();
@@ -62,6 +77,7 @@ export function buildCompetitiveGapReport({
       !normalizedKeyword ||
       volume < Math.max(1, Number(minVolume) || 1) ||
       targetSet.has(normalizedKeyword) ||
+      semanticallyCovered(normalizedKeyword) ||
       isBrandNavigationQuery(keyword)
     ) continue;
 
@@ -100,7 +116,8 @@ export function buildCompetitiveGapReport({
       competitorDomains: Object.freeze([...item.competitorDomains].sort()),
       fetchedAt: item.fetchedAt,
       gapScore: scoreGap(volume, difficulty, competitorCount),
-      source: "competitor-gap"
+      source: "competitor-gap",
+      coverageMode: "UNMATCHED_TARGET_SEMANTICALLY"
     });
   });
 
