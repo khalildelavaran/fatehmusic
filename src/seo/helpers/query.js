@@ -19,7 +19,7 @@ export function queryTokens(value) {
 
 const BRAND_GENERIC_TOKENS = new Set([
   "آموزش", "کلاس", "دوره", "موسیقی", "آموزشگاه", "academy", "music",
-  "ir", "www", "در", "شوشتر", "فاتح", "fateh"
+  "ir", "www", "در", "شوشتر", "فاتح", "fateh", "آدرس", "تماس", "ثبت", "نام"
 ]);
 
 export function isBrandNavigationQuery(query) {
