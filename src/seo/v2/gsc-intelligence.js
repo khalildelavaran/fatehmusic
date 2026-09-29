@@ -278,6 +278,8 @@ function resolveCompetitorGap(item, signals) {
     item.title,
     item.topicName,
     item.topic,
+    ...(item.queryAngles || []),
+    ...(item.marketQueryAngles || []),
     ...(item.searchSignal?.matchedQueries || [])
   ].filter(Boolean);
 
@@ -357,7 +359,14 @@ function resolveMarketSignal(item, signals) {
     }
   }
 
-  const targetText = [item.title, item.topicName, item.topic, ...(item.searchSignal?.matchedQueries || [])]
+  const targetText = [
+    item.title,
+    item.topicName,
+    item.topic,
+    ...(item.queryAngles || []),
+    ...(item.marketQueryAngles || []),
+    ...(item.searchSignal?.matchedQueries || [])
+  ]
     .filter(Boolean)
     .join(" ");
   const targetTokens = queryTokens(targetText);
