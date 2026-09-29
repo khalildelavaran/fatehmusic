@@ -280,22 +280,13 @@ export function buildMarketOpportunityReport({
             : "TRACE"
           : "NONE",
       bestPositionSource:
-        Number.isFinite(gscPosition) && gscPosition > 0 && (
-          Math.max(0, Number(gscSignal?.impressions) || 0) >= Math.max(1, Number(minGscPositionImpressions) || 20) &&
-          !Number.isFinite(ahrefsPosition) ||
-          ahrefsPosition <= 0 ||
-          gscFreshnessNormalized !== "STALE"
-        )
+        hasUsableGscPosition
           ? "gsc"
-          : (Number.isFinite(ahrefsPosition) && ahrefsPosition > 0 ? "ahrefs" : "gsc"),
+          : (hasAhrefsPosition ? "ahrefs" : (hasGscPosition ? "gsc_trace" : null)),
       bestPositionUrl:
-        Number.isFinite(gscPosition) && gscPosition > 0 && (
-          !Number.isFinite(ahrefsPosition) ||
-          ahrefsPosition <= 0 ||
-          gscFreshnessNormalized !== "STALE"
-        )
+        hasUsableGscPosition
           ? (gscSignal?.bestPage || row?.best_position_url || null)
-          : (row?.best_position_url || gscSignal?.bestPage || null),
+          : (row?.best_position_url || null),
       classification,
       action,
       topic: semanticTopicHint(keyword),
