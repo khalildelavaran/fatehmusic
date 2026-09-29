@@ -124,7 +124,19 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
     keywords: [topic.name, course?.title || ""],
     entityType: "Article"
   }).confidence;
-  const targetEntity = buildTargetEntity(topic, course, isLocal, baseUrl);
+
+  const initialAction = ["NEW_CONTENT", "OPTIMIZE_EXISTING", "EXPAND", "LINK", "MERGE_CONTENT", "MONITOR"]
+    .includes(String(candidate.initialAction || ""))
+    ? String(candidate.initialAction)
+    : "NEW_CONTENT";
+  const articleCount = Math.max(0, Number(candidate.initialArticleCount) || 0);
+  const existingArticleSlugs = Array.isArray(candidate.initialExistingArticleSlugs)
+    ? candidate.initialExistingArticleSlugs.filter(Boolean)
+    : [];
+  const targetEntity = candidate.initialTargetEntity?.url
+    ? Object.freeze(candidate.initialTargetEntity)
+    : buildTargetEntity(topic, course, isLocal, baseUrl);
+
   const recommendedLinks = isComparison
     ? Object.freeze([...new Set([
         ...comparisonCourses.map((item) => baseUrl + "/courses/" + item.slug),
@@ -138,9 +150,14 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
         ...buildQueryAngles(topic, intent, course)
       ].slice(0, 6))
     : buildQueryAngles(topic, intent, course);
+
+  const marketAngles = Array.isArray(candidate.marketQueryAngles)
+    ? candidate.marketQueryAngles.filter(Boolean)
+    : [];
+
   return Object.freeze({
-    source: "topic-engine",
-    action: "NEW_CONTENT",
+    source: candidate.source || "topic-engine",
+    action: initialAction,
     topic: topic.slug,
     topicName: topic.name,
     searchIntent: intent,
@@ -149,23 +166,41 @@ function buildCandidateBrief(candidate, courses = [], siteUrl) {
     isLocal,
     scope: canonicalScope(topic, isLocal),
     title: candidate.title,
-    suggestedSlug: isComparison ? "comparison-" + slugifyArticleTitle(candidate.title).slice(0, 70).replace(/-+$/g, "") : suggestedArticleSlug({ topic: topic.slug, scope: canonicalScope(topic, isLocal), isLocal, modifierType: candidate.modifierType || intent, searchIntent: intent, course, audience: candidate.audience || "", level: candidate.level || "", articleCount: 0, existingArticleSlugs: [] }),
+    suggestedSlug: isComparison
+      ? "comparison-" + slugifyArticleTitle(candidate.title).slice(0, 70).replace(/-+$/g, "")
+      : suggestedArticleSlug({
+          topic: topic.slug,
+          scope: canonicalScope(topic, isLocal),
+          isLocal,
+          modifierType: candidate.modifierType || intent,
+          searchIntent: intent,
+          course,
+          audience: candidate.audience || "",
+          level: candidate.level || "",
+          articleCount,
+          existingArticleSlugs
+        }),
     targetEntity,
     course: makeCourseRef(course, baseUrl),
     comparisonCourses: comparisonCourses.map((item) => makeCourseRef(item, baseUrl)).filter(Boolean),
     courseSlug: course?.slug || null,
     priority: Math.max(0, Math.min(100, Number(candidate.scoreTotal) || 0)),
-    articleCount: 0,
-    existingArticleSlugs: [],
-    rationale: candidate.reasoning || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.",
-    queryAngles,
+    articleCount,
+    existingArticleSlugs,
+    rationale: candidate.rationale || "این موضوع توسط موتور تولید موضوعات کشف و امتیازدهی شده است.",
+    queryAngles: Object.freeze([...new Set([...queryAngles, ...marketAngles])].slice(0, 15)),
     recommendedLinks,
     modifierType: candidate.modifierType || null,
     audience: candidate.audience || "",
     level: candidate.level || "",
     scoreBreakdown: candidate.scoreBreakdown || null,
     topicId: candidate.id ?? null,
-    topicStatus: candidate.status || null
+    topicStatus: candidate.status || null,
+    marketDiscovery: Boolean(candidate.marketDiscovery),
+    marketClassification: candidate.marketClassification || null,
+    marketBestPosition: Number.isFinite(Number(candidate.marketBestPosition)) ? Number(candidate.marketBestPosition) : null,
+    marketBestPositionUrl: candidate.marketBestPositionUrl || null,
+    marketScore: Number.isFinite(Number(candidate.marketScore)) ? Number(candidate.marketScore) : null
   });
 }
 function mergeOpportunity(candidate, gap, siteUrl) {
