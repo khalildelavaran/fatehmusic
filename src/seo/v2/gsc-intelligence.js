@@ -5,11 +5,22 @@ import { queryTokens } from "../helpers/query.js";
 import { normalizeSemanticText } from "../helpers/text.js";
 
 export function currentScoringRows(rows = []) {
-  const current = rows.filter((row) => String(row?.snapshotLabel || row?.snapshot_label || "") === "current");
-  if (current.length) return current;
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const snapshotLabels = safeRows
+    .map((row) => String(row?.snapshotLabel || row?.snapshot_label || "").trim())
+    .filter(Boolean);
 
-  const datedRows = rows.filter((row) => row?.startDate || row?.start_date || row?.endDate || row?.end_date);
-  if (!datedRows.length) return rows;
+  // Once snapshot labels are present, scoring must use the explicit current
+  // snapshot only. Never silently score with "previous" or dimensional
+  // breakdown rows when current data is missing.
+  if (snapshotLabels.length) {
+    return safeRows.filter((row) =>
+      String(row?.snapshotLabel || row?.snapshot_label || "") === "current"
+    );
+  }
+
+  const datedRows = safeRows.filter((row) => row?.startDate || row?.start_date || row?.endDate || row?.end_date);
+  if (!datedRows.length) return safeRows;
 
   const latestPeriod = datedRows
     .map((row) => `${String(row.startDate || row.start_date || "")}|${String(row.endDate || row.end_date || "")}`)
