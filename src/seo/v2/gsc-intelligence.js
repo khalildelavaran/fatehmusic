@@ -52,13 +52,6 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
         ? "AGING"
         : "STALE";
   const truncated = Boolean(options.gscDataQuality?.truncated);
-  const completeness = truncated ? null : (currentRows.length ? 1 : 0);
-  const coverageStatus = truncated
-    ? "PARTIAL"
-    : currentRows.length
-      ? "COMPLETE"
-      : "EMPTY";
-
   const reportedCompleteness = Number(options.gscDataQuality?.completeness);
   const normalizedReportedCompleteness =
     Number.isFinite(reportedCompleteness)
