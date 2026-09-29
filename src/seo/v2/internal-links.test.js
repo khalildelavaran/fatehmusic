@@ -124,6 +124,37 @@ describe("semantic internal links", () => {
     }
   });
 
+  it("keeps semantic targets discoverable without scanning every page in large graphs", () => {
+    const pages = [
+      {
+        url: "https://fatehmusic.ir/blog/source",
+        title: "راهنمای ساز هدف",
+        type: "Article",
+        topics: ["target-instrument"],
+        priority: 12
+      },
+      ...Array.from({ length: 220 }, (_, index) => ({
+        url: "https://fatehmusic.ir/blog/noise-" + index,
+        title: "مقاله عمومی " + index,
+        type: "Article",
+        topics: ["noise-" + index],
+        priority: 5
+      })),
+      {
+        url: "https://fatehmusic.ir/courses/target-course",
+        title: "کلاس ساز هدف",
+        type: "Course",
+        topics: ["target-instrument"],
+        priority: 10
+      }
+    ];
+
+    const graph = buildLinkGraph(pages, { limit: 2, maxInboundLinks: 4 });
+    const source = graph.find((page) => page.url.endsWith("/blog/source"));
+    expect(source.links.some((link) => link.url.endsWith("/courses/target-course"))).toBe(true);
+  });
+
+
   it("applies saturation penalty as inbound demand accumulates", () => {
     const sharedTargetPages = [
       {
