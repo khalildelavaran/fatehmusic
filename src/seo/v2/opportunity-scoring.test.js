@@ -238,6 +238,55 @@ describe("opportunity scoring", () => {
   });
 
 
+  it("enforces centralized evidence ceilings in the returned score", () => {
+    const result = scoreOpportunity({
+      action: "OPTIMIZE_EXISTING",
+      priority: 100,
+      searchIntent: "commercial",
+      intentConfidence: 0.99,
+      searchSignal: {
+        available: true,
+        impressions: 5000,
+        clicks: 20,
+        ctr: 0.004,
+        position: 6,
+        matchedQueries: ["کلاس گیتار"],
+        ctrBenchmark: 0.04,
+        ctrBenchmarkImpressions: 2000,
+        ctrInterval95: { lower: 0.003, upper: 0.005 }
+      },
+      searchOwnership: {
+        matchType: "EXACT",
+        available: true,
+        ownerStatus: "STABLE",
+        impressions: 5000,
+        topShare: 0.95,
+        ownerDominanceEvidence: "STRONG"
+      },
+      semanticQueryCluster: {
+        impressions: 5000,
+        queryCount: 4,
+        ownerStatus: "STABLE",
+        topShare: 0.95,
+        ownerDominanceEvidence: "STRONG"
+      },
+      marketSignal: {
+        available: true,
+        estimatedVolume: 1000,
+        difficulty: 10,
+        matchType: "EXACT",
+        matchedKeyword: "کلاس گیتار",
+        intents: { commercial: true }
+      },
+      marketDataQuality: { freshness: "FRESH" },
+      gscDataQuality: { truncated: false, freshness: "STALE" }
+    });
+
+    expect(result.decisionConfidence).toBe(72);
+    expect(result.evidenceStrengthScore).toBe(72);
+    expect(result.scoreBreakdown.decisionConfidence).toBe(72);
+  });
+
   it("caps evidence strength when GSC is partial or stale", () => {
     const partial = scoreOpportunity({
       action: "OPTIMIZE_EXISTING",
