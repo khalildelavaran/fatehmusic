@@ -23,6 +23,7 @@ import {
 import SeoInternalLinks from "../../components/SeoInternalLinks.astro";
 import { getPublishedPost, getPublishedPosts } from "../../server/blog";
 import { courses as runtimeCourses } from "../../data/courses.js";
+import { instructors as runtimeInstructors } from "../../data/instructors.js";
 import { findComparisonCourses } from "../../seo/v2/comparison-courses.js";
 import { formatJalaliDate } from "../../utils/format-date";
 import "../../styles/blog.css";
@@ -86,7 +87,10 @@ const internalLinkCandidates: Array<{
   local?: boolean;
 }> = [
   ...buildArticleLinkCandidates(allPosts, site.url),
-  ...buildSiteLinkCandidates(site)
+  ...buildSiteLinkCandidates(site, {
+    courses: runtimeCourses,
+    instructors: runtimeInstructors
+  })
 ];
 const semanticInternalLinks = buildInternalLinkPlan({
   currentUrl: canonicalUrl,
