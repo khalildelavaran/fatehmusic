@@ -405,7 +405,16 @@ function queryMatches(item, query, cache = null) {
   return false;
 }
 
-function queryRelevanceScore(item, query, cache = null) {
+function queryIntentResult(query, cache = null) {
+  const normalized = normalizeText(query);
+  if (!normalized) return { primary: "informational", confidence: 0 };
+  if (cache?.has(normalized)) return cache.get(normalized);
+  const result = classifyIntent({ title: query });
+  cache?.set(normalized, result);
+  return result;
+}
+
+function queryRelevanceScore(item, query, cache = null, intentCache = null) {
   const haystack = normalizeText(candidateSemanticText(item));
   const normalizedQuery = normalizeText(query);
   if (!haystack || !normalizedQuery) return 0;
@@ -421,7 +430,7 @@ function queryRelevanceScore(item, query, cache = null) {
 
   const targetIntent = String(item?.searchIntent || item?.intent || "").trim().toLowerCase();
   if (targetIntent) {
-    const queryIntent = classifyIntent({ title: query, keywords: [query] }).primary;
+    const queryIntent = queryIntentResult(query, intentCache).primary;
     if (queryIntent === targetIntent) score += 20;
     else if (
       (targetIntent === "commercial" && queryIntent === "transactional") ||
@@ -436,7 +445,7 @@ function queryRelevanceScore(item, query, cache = null) {
   return score;
 }
 
-function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null) {
+function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null, intentCache = null) {
   const byQuery = new Map();
   for (const row of rows) {
     const query = normalizeText(row?.query);
@@ -452,9 +461,9 @@ function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null) 
   const queryEvidence = [];
 
   for (const item of byQuery.values()) {
-    const result = classifyIntent({ title: item.query });
+    const result = queryIntentResult(item.query, intentCache);
     const primary = result.primary;
-    const relevance = Math.max(0, Math.min(1, queryRelevanceScore(opportunity, item.query, cache) / 100));
+    const relevance = Math.max(0, Math.min(1, queryRelevanceScore(opportunity, item.query, cache, intentCache) / 100));
     if (relevance < 0.34) continue;
     const weight = item.impressions * relevance;
     distribution.set(primary, (distribution.get(primary) || 0) + weight);
@@ -915,6 +924,7 @@ function classifySearchOpportunity(signal) {
 export function resolveOpportunitySearchSignals(opportunities = [], index) {
   if (!index) return opportunities;
   const queryTopicAlignmentCache = new Map();
+  const queryIntentCache = new Map();
   return opportunities.map((item) => {
     const pageSignals = item.action === "NEW_CONTENT"
       ? []
@@ -929,13 +939,13 @@ export function resolveOpportunitySearchSignals(opportunities = [], index) {
     const querySignals = matchedQueryRows
       .slice()
       .sort((a, b) => {
-        const relevanceDelta = queryRelevanceScore(item, b?.query, queryTopicAlignmentCache) - queryRelevanceScore(item, a?.query, queryTopicAlignmentCache);
+        const relevanceDelta = queryRelevanceScore(item, b?.query, queryTopicAlignmentCache, queryIntentCache) - queryRelevanceScore(item, a?.query, queryTopicAlignmentCache, queryIntentCache);
         if (relevanceDelta !== 0) return relevanceDelta;
         return Number(b.impressions || 0) - Number(a.impressions || 0);
       })
       .slice(0, 20);
     const relevantQuerySignal = aggregate(querySignals, index.ctrBenchmarks || {});
-    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows, item, queryTopicAlignmentCache);
+    const queryIntentEvidence = buildGscQueryIntentEvidence(matchedQueryRows, item, queryTopicAlignmentCache, queryIntentCache);
     if (queryIntentEvidence) {
       relevantQuerySignal.queryIntentEvidence = queryIntentEvidence;
     }
