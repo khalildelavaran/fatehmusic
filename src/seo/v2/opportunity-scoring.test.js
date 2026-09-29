@@ -93,6 +93,35 @@ describe("opportunity scoring", () => {
     expect(evidence.sources).toEqual(["GSC"]);
   });
 
+  it("separates independent evidence sources from derived evidence dimensions", () => {
+    const evidence = evidenceStrength({
+      searchSignal: { available: true, impressions: 100, position: 8 },
+      searchOwnership: { matchType: "EXACT", ownerStatus: "STABLE" },
+      cannibalization: { severity: "HIGH" },
+      temporalCannibalization: { actionable: true, severity: "MEDIUM" },
+      intentConfidence: 0.9,
+      gapDetected: true
+    });
+
+    expect(evidence.sourceCount).toBeGreaterThan(evidence.independentSourceCount);
+    expect(evidence.independentSourceCount).toBe(1);
+    expect(evidence.independentSources).toEqual(["GSC"]);
+  });
+
+  it("does not treat internal intent/content dimensions as independent evidence", () => {
+    const result = scoreOpportunity({
+      action: "NEW_CONTENT",
+      priority: 100,
+      intentConfidence: 0.9,
+      gapDetected: true,
+      searchSignal: { available: false }
+    });
+
+    expect(result.scoreBreakdown.independentEvidenceSourceCount).toBe(0);
+    expect(result.scoreBreakdown.decisionGuard.reasons).toContain("NO_INDEPENDENT_SOURCE");
+    expect(result.priority).toBeLessThanOrEqual(68);
+  });
+
   it("exposes evidence strength separately from priority", () => {
     const evidence = evidenceStrength({
       searchSignal: { available: true, impressions: 300, position: 6, matchedQueries: ["آموزش گیتار"] },
