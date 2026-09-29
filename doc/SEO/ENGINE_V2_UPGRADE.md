@@ -58,6 +58,8 @@
 - `src/seo/v2/action-attribution.js`
 - تفسیر before/after برای CTR، position و impressions
 - تفکیک `POSITIVE`, `NEGATIVE`, `NEUTRAL`, `INSUFFICIENT_DATA`
+- برای هر action علاوه بر ترافیک کل صفحه، یک semantic query cohort از Queryهای هم‌موضوع با هدف action ثبت می‌شود.
+- cohort با همان semantic normalization و featureهای Query engine ساخته می‌شود و outcome مستقل خود را دارد.
 - این خروجی causal attribution آماری ادعا نمی‌کند.
 
 ### 9. Evidence-aware decision guardrails
@@ -77,16 +79,17 @@
 - intent واقعی جستجو با searchIntent محتوای پیشنهادی مقایسه می‌شود.
 - توافق intent confidence را افزایش و conflict قوی confidence را کاهش می‌دهد.
 - mixed intent به‌عنوان ambiguity سیگنال داده می‌شود.
-### 13. Competitive keyword gap intelligence
+### 12. Competitive keyword gap intelligence
 - competitor keyword gaps از دادهٔ واقعی رقیب استخراج می‌شوند و keywordهای موجود در target GSC/organic set حذف می‌شوند.
 - gapScore فقط بر اساس volume، difficulty و تعداد competitor domains موجود محاسبه می‌شود و دادهٔ مصنوعی تولید نمی‌کند.
 - competitor evidence به‌صورت source family مستقل وارد evidenceStrength می‌شود.
 - freshness رقابتی نیز می‌تواند decisionGuard را محدود کند.
 
-### 12. Coverage & freshness hardening
+### 13. Coverage & freshness hardening
 - سقف ingestion استاندارد GSC افزایش یافته و truncation همچنان صریح ثبت می‌شود.
 - Query Ownership از محدودیت نمایشی داشبورد جدا شده و برای long-tail ظرفیت بیشتری دارد.
 - freshness داده market در evidence و priority لحاظ می‌شود.
+- rendered-site measured score اکنون در CI اجرا می‌شود تا کیفیت خروجی build نیز کنار unit/integration checks قابل مشاهده باشد.
 
 ## Decision model
 
