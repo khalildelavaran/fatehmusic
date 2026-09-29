@@ -395,6 +395,7 @@ export async function getSeoDashboardIntelligence({
 
   let refdomainsPayload = [];
   let marketKeywords = [];
+  let marketKeywordTotalCount = 0;
   try {
     refdomainsPayload = JSON.parse(refdomainsResult?.payload || "[]");
   } catch {
@@ -406,7 +407,9 @@ export async function getSeoDashboardIntelligence({
   } catch {
     marketKeywords = [];
   }
-  marketKeywords = Array.isArray(marketKeywords) ? marketKeywords.slice(0, safeMarketLimit) : [];
+  marketKeywords = Array.isArray(marketKeywords) ? marketKeywords : [];
+  marketKeywordTotalCount = marketKeywords.length;
+  marketKeywords = marketKeywords.slice(0, safeMarketLimit);
 
   const marketOpportunities = marketKeywords.map((row) => {
     const key = normalizeQuery(row?.keyword);
@@ -504,7 +507,7 @@ export async function getSeoDashboardIntelligence({
     ahrefsRefdomainsHistory: Object.freeze(refdomainsPayload),
     ahrefsOrganicKeywords: Object.freeze({
       payload: Object.freeze(marketKeywords),
-      totalCount: Array.isArray(JSON.parse(keywordsResult?.payload || "[]")) ? JSON.parse(keywordsResult?.payload || "[]").length : marketKeywords.length,
+      totalCount: marketKeywordTotalCount,
       snapshotDate: keywordsResult?.snapshotDate || null,
       fetchedAt: keywordsResult?.fetchedAt || null
     }),
