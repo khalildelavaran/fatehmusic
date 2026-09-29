@@ -5,6 +5,7 @@ import { normalizeUrl } from "../helpers/url.js";
 import { containsSemanticPhrase, semanticTokens } from "../helpers/text.js";
 import { resolveTopics } from "./topics.js";
 import { classifyIntent } from "./intents.js";
+import { sanitizeGscQueryPageRows } from "./gsc-dimensions.js";
 
 function normalizeText(value) { return normalizeQuery(value); }
 
@@ -55,7 +56,7 @@ function positionBucket(position) {
 
 function buildCtrBenchmarks(rows = []) {
   const buckets = new Map();
-  for (const row of rows) {
+  for (const row of safeRows) {
     const bucket = positionBucket(row?.position);
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     const clicks = Math.max(0, Number(row?.clicks) || 0);
@@ -81,7 +82,7 @@ function buildCtrBenchmarks(rows = []) {
 
 function aggregate(rows = [], ctrBenchmarks = {}) {
   const groupBucketTotals = new Map();
-  for (const row of rows) {
+  for (const row of safeRows) {
     const bucket = positionBucket(row?.position);
     if (!bucket) continue;
     const current = groupBucketTotals.get(bucket) || { clicks: 0, impressions: 0 };
@@ -196,6 +197,7 @@ function scoreRow(row, ctrBenchmarks = {}, benchmarkRows = []) {
 }
 
 export function buildGscSignalIndex(rows = [], { queryClusterLimit = 5000, queryClusterMinImpressions = 1 } = {}) {
+  const safeRows = sanitizeGscQueryPageRows(rows);
   const pageRows = new Map();
   const nonBrandPageRows = new Map();
   const queryRows = new Map();
@@ -203,7 +205,7 @@ export function buildGscSignalIndex(rows = [], { queryClusterLimit = 5000, query
   const queryTokenRows = new Map();
   const rawOpportunityItems = [];
   const nonBrandItems = [];
-  for (const row of rows) {
+  for (const row of safeRows) {
     const page = normalizeUrl(row.page);
     const query = normalizeText(row.query);
     if (!page && !query) continue;
@@ -241,7 +243,7 @@ export function buildGscSignalIndex(rows = [], { queryClusterLimit = 5000, query
     }))
     .filter((item) => !item.brandNavigation)
     .sort((a, b) => b.opportunitySignalScore - a.opportunitySignalScore);
-  const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(rows, {
+  const semanticQueryClustersResult = buildSemanticQueryClustersWithMeta(safeRows, {
     minImpressions: Math.max(1, Number(queryClusterMinImpressions) || 1),
     limit: Math.max(1, Number(queryClusterLimit) || 5000)
   });
@@ -447,7 +449,7 @@ function queryRelevanceScore(item, query, cache = null, intentCache = null) {
 
 function buildGscQueryIntentEvidence(rows = [], opportunity = {}, cache = null, intentCache = null) {
   const byQuery = new Map();
-  for (const row of rows) {
+  for (const row of safeRows) {
     const query = normalizeText(row?.query);
     const impressions = Math.max(0, Number(row?.impressions) || 0);
     if (!query || impressions <= 0) continue;
@@ -641,7 +643,7 @@ export function buildQueryOwnershipMapWithMeta(rows = [], { minImpressions = 1, 
   const queryStats = new Map();
   const displayQueries = new Map();
 
-  for (const row of rows) {
+  for (const row of safeRows) {
     const query = normalizeText(row?.query);
     const rawQuery = String(row?.query || "").trim();
     const impressions = Math.max(0, Number(row?.impressions) || 0);
@@ -804,7 +806,7 @@ export function buildSemanticQueryClustersWithMeta(rows = [], { minImpressions =
   const displayQueries = new Map();
   const semanticProfileCache = new Map();
 
-  for (const row of rows) {
+  for (const row of safeRows) {
     const query = normalizeText(row?.query);
     const page = normalizeUrl(row?.page);
     const impressions = Math.max(0, Number(row?.impressions) || 0);
@@ -1024,7 +1026,7 @@ export function detectSearchCannibalization(rows = [], {
   // reporting window. A page switching ownership between windows is a
   // temporal transition, not simultaneous cannibalization.
   const groups = new Map();
-  for (const row of rows) {
+  for (const row of safeRows) {
     const query = normalizeText(row.query);
     const page = normalizeUrl(row.page);
     const startDate = String(row.startDate || row.start_date || "").trim();
@@ -1096,7 +1098,7 @@ export function detectSemanticQueryCannibalization(rows = [], {
   const semanticMap = normalizeSemanticMap(pageSemantics);
   const periods = new Map();
 
-  for (const row of rows) {
+  for (const row of safeRows) {
     const query = normalizeText(row?.query);
     const page = normalizeUrl(row?.page);
     const startDate = String(row?.startDate || row?.start_date || "").trim();
