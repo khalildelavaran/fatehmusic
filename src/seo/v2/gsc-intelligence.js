@@ -66,6 +66,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
     limit: Number(options.maxOwnershipQueries) > 0 ? Number(options.maxOwnershipQueries) : 500
   });
   const queryOwnership = queryOwnershipResult.items;
+  const queryClusterTotalCount = Number(index.queryClusterTotalCount || index.queryClusters?.length || 0);
+  const queryClusterLimit = Number(index.queryClusterLimit || index.queryClusters?.length || 0);
+  const queryClusterTruncated = Boolean(index.queryClusterTruncated);
   const conflicts = detectSearchCannibalization(scoringRows, options);
   const semanticConflicts = detectSemanticQueryCannibalization(scoringRows, options);
   const temporalRows = temporalAnalysisRows(rows);
@@ -220,6 +223,9 @@ export function enrichOpportunitiesWithSearchConsole(opportunities = [], rows = 
       queryOwnershipLimit: queryOwnershipResult.limit,
       queryOwnershipTruncated: queryOwnershipResult.truncated,
       queryClusterCount: index.queryClusters?.length || 0,
+      queryClusterTotalCount,
+      queryClusterLimit,
+      queryClusterTruncated,
       gscCompleteness: gscDataQuality.completeness == null ? 0 : gscDataQuality.completeness,
       gscFreshness: gscDataQuality.freshness,
       gscAgeDays: gscDataQuality.ageDays,
