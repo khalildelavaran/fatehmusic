@@ -10,6 +10,22 @@ import type { ExistingTitleIndex } from "./dedup";
 import { toDedupKey } from "./normalize";
 import { canonicalAssetKey } from "./canonical-identity";
 
+/** Remove active topic rows whose local Shushtar course article already exists. */
+export async function cleanupCoveredLocalTopics(db: D1Database): Promise<number> {
+  const result = await db.prepare(
+    "DELETE FROM content_topics " +
+    "WHERE status IN ('candidate','approved') " +
+    "AND related_course_slug IS NOT NULL " +
+    "AND title LIKE '%شوشتر%' " +
+    "AND EXISTS (" +
+    "SELECT 1 FROM blog_posts p " +
+    "WHERE p.related_course_slug = content_topics.related_course_slug " +
+    "AND p.title LIKE '%شوشتر%'" +
+    ")"
+  ).run();
+  return Number(result.meta?.changes || 0);
+}
+
 export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTitleIndex> {
   const [topics, posts] = await Promise.all([
     db.prepare(
