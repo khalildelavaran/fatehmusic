@@ -34,6 +34,9 @@ export interface ExistingTitleIndex {
   normalizedKeys: Set<string>;
   canonicalKeys: Set<string>;
   titles: string[];
+  /** Published/drafted blog posts that already occupy the local_shushtar
+   * angle for a course. The key is the related course slug. */
+  localShushtarCourseSlugs: Set<string>;
 }
 
 /** Filters out candidates that already exist (exact normalized key or
@@ -45,6 +48,21 @@ export function filterAgainstExisting(
   return candidates.filter((candidate) => {
     if (existing.normalizedKeys.has(candidate.normalizedKey)) return false;
     if (existing.canonicalKeys.has(canonicalAssetKey(candidate))) return false;
+
+    // blog_posts historically did not store modifier_type, so the DB layer
+    // derives this narrowly from the local title/URL semantics. Reserve only
+    // the local_shushtar angle for the same course; other editorial angles
+    // (how_to, mistakes, benefits, etc.) must remain independently discoverable.
+    if (
+      candidate.modifierType === "local_shushtar" &&
+      !candidate.audience &&
+      !candidate.level &&
+      candidate.relatedCourseSlug &&
+      existing.localShushtarCourseSlugs.has(candidate.relatedCourseSlug)
+    ) {
+      return false;
+    }
+
     for (const title of existing.titles) {
       if (titleSimilarity(candidate.title, title) >= NEAR_DUPLICATE_THRESHOLD) return false;
     }
