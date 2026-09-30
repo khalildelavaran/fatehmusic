@@ -24,6 +24,7 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
 
   try {
     generated = dedupWithinBatch(generateCandidates());
+    await cleanupCoveredLocalTopics(db);
     const [existingIndex, coverageByCourse, recentlyUsedCourses] = await Promise.all([
       getExistingTitleIndex(db),
       getCoverageByCourse(db),
