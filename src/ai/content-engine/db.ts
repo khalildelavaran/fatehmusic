@@ -214,15 +214,28 @@ export interface TopicListFilters {
 
 export async function listTopics(db: D1Database, filters: TopicListFilters = {}): Promise<ContentTopicRow[]> {
   const limit = filters.limit ?? 200;
+  // A local Shushtar article already occupies this editorial angle.
+  // Hide stale topic rows from admin lists as well as blocking future discovery.
+  const occupiedLocalShushtar = `
+    NOT (
+      modifier_type = 'local_shushtar'
+      AND related_course_slug IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM blog_posts p
+        WHERE p.related_course_slug = content_topics.related_course_slug
+          AND p.title LIKE '%شوشتر%'
+      )
+    )`;
   if (filters.status) {
     const result = await db
-      .prepare("SELECT * FROM content_topics WHERE status = ? ORDER BY score_total DESC, created_at DESC LIMIT ?")
+      .prepare("SELECT * FROM content_topics WHERE status = ? AND " + occupiedLocalShushtar + " ORDER BY score_total DESC, created_at DESC LIMIT ?")
       .bind(filters.status, limit)
       .all<ContentTopicRow>();
     return result.results;
   }
   const result = await db
-    .prepare("SELECT * FROM content_topics ORDER BY score_total DESC, created_at DESC LIMIT ?")
+    .prepare("SELECT * FROM content_topics WHERE " + occupiedLocalShushtar + " ORDER BY score_total DESC, created_at DESC LIMIT ?")
     .bind(limit)
     .all<ContentTopicRow>();
   return result.results;
