@@ -15,6 +15,32 @@ describe("content strategy deduplication", () => {
     expect(result.briefs[0].suggestedSlug).toBe("music-education-local");
   });
 
+  it("maps an existing exact-title article to optimization instead of new content", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      existingPosts: [{
+        slug: "guitar-from-zero",
+        title: "چگونه گیتار را از صفر یاد بگیریم؟",
+        topic: "guitar",
+        related_course_slug: "guitar-course"
+      }],
+      topicCandidates: [{
+        title: "چگونه گیتار را از صفر یاد بگیریم؟",
+        intent: "informational",
+        modifierType: "how_to",
+        relatedCourseSlug: "guitar-course",
+        scoreTotal: 80
+      }],
+      siteUrl: "https://fatehmusic.ir"
+    });
+
+    expect(result.opportunityCount).toBe(1);
+    expect(result.opportunities[0].action).toBe("OPTIMIZE_EXISTING");
+    expect(result.opportunities[0].articleCount).toBe(1);
+    expect(result.opportunities[0].existingArticleSlugs).toEqual(["guitar-from-zero"]);
+    expect(result.opportunities[0].suggestedSlug).toBe("guitar-from-zero");
+  });
+
   it("deduplicates equivalent topic-engine candidates instead of using intent as the URL identity", () => {
     const result = buildUnifiedContentOpportunities({
       topicCandidates: [

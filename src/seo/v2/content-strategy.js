@@ -55,6 +55,52 @@ function buildBrief(gap, courses = [], siteUrl) {
   return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], intentConfidence, isLocal, scope: gap.scope || canonicalScope(topic, isLocal), title: buildTitle(topic, intent, course), suggestedSlug: suggestedArticleSlug({ topic: topic.slug, scope: gap.scope, isLocal, modifierType: isLocal ? "local_shushtar" : intent, searchIntent: intent, course, courseSlug: course?.slug || gap.courseSlug || null, articleCount, existingArticleSlugs: gap.articleSlugs || [] }), targetEntity, course: makeCourseRef(course, baseUrl), courseSlug: gap.courseSlug || course?.slug || null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: isLocal ? "local_shushtar" : null, audience: "", level: "" });
 }
 function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)); }
+function findExistingArticleForCandidate(candidate = {}, courses = [], existingPosts = []) {
+  if (!Array.isArray(existingPosts) || !existingPosts.length) return null;
+
+  const candidateTitle = normalizeSemanticText(candidate.title || "");
+  if (!candidateTitle) return null;
+
+  const explicitCourseSlug = candidate.relatedCourseSlug
+    || candidate.courseSlug
+    || candidate.course?.slug
+    || null;
+  const course = explicitCourseSlug
+    ? courses.find((item) => item?.slug === explicitCourseSlug) || null
+    : findCourseFromTitle(candidate.title, courses);
+  const courseSlug = course?.slug || explicitCourseSlug || null;
+  const topic = resolveCandidateTopic(candidate, course);
+  const topicSlug = topic?.slug || null;
+
+  const sameContext = (post) => {
+    if (!post?.slug) return false;
+
+    const postCourseSlug = String(post.related_course_slug || "").trim() || null;
+    if (courseSlug && postCourseSlug && postCourseSlug !== courseSlug) return false;
+
+    if (topicSlug) {
+      const postTopic = findTopic(post.topic);
+      if (postTopic?.slug && postTopic.slug !== topicSlug) return false;
+    }
+
+    return true;
+  };
+
+  const exact = existingPosts.find((post) =>
+    sameContext(post) &&
+    normalizeSemanticText(post.title || "") === candidateTitle
+  );
+  if (exact) {
+    return {
+      articleCount: 1,
+      articleSlugs: [String(exact.slug)],
+      action: "OPTIMIZE_EXISTING"
+    };
+  }
+
+  return null;
+}
+
 function hasCoveredLocalCourseArticle(item, existingPosts = []) {
   const localTitle = hasLocalSignal(item?.title || "");
   if (!localTitle || item?.audience || item?.level) return false;
@@ -254,7 +300,24 @@ function mergeCompatibleOpportunities(items, siteUrl) {
 export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl, existingPosts = [] } = {}) {
   const candidateItems = topicCandidates
     .filter((candidate) => !hasCoveredLocalCourseArticle(candidate, existingPosts))
-    .map((candidate) => candidate?.title ? buildCandidateBrief(candidate, courses, siteUrl) : null)
+    .map((candidate) => {
+      if (!candidate?.title) return null;
+
+      const existing = findExistingArticleForCandidate(candidate, courses, existingPosts);
+      const enrichedCandidate = existing
+        ? {
+            ...candidate,
+            initialAction: existing.action,
+            initialArticleCount: Math.max(Number(candidate.initialArticleCount) || 0, existing.articleCount),
+            initialExistingArticleSlugs: [
+              ...(Array.isArray(candidate.initialExistingArticleSlugs) ? candidate.initialExistingArticleSlugs : []),
+              ...existing.articleSlugs
+            ]
+          }
+        : candidate;
+
+      return buildCandidateBrief(enrichedCandidate, courses, siteUrl);
+    })
     .filter(Boolean)
     .filter((candidate) => !hasCoveredLocalCourseArticle(candidate, existingPosts));
   const mergedCandidates = mergeCompatibleOpportunities(candidateItems, siteUrl); const mergedByKey = new Map(mergedCandidates.map((item) => [canonicalAssetKey(item), item])); const unmatchedGaps = [];
