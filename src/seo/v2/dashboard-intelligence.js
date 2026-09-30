@@ -324,12 +324,32 @@ export async function getSeoDashboardIntelligence({
   const [topicResult, topicCountResult, gscCountResult, ownershipCountResult, queryResult, pageResult, ownershipResult, syncResult, metricsResult, competitorsResult, refdomainsResult, keywordsResult] = await Promise.all([
     db.prepare(
       "SELECT id, title, normalized_key, instrument_key, related_course_slug, related_course_title, category, audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, created_at, updated_at " +
-      "FROM content_topics WHERE status IN ('approved','candidate') ORDER BY score_total DESC, created_at DESC LIMIT ?"
+      "FROM content_topics WHERE status IN ('approved','candidate') " +
+      "AND NOT (" +
+      "modifier_type = 'local_shushtar' " +
+      "AND related_course_slug IS NOT NULL " +
+      "AND EXISTS (" +
+      "SELECT 1 FROM blog_posts p " +
+      "WHERE p.related_course_slug = content_topics.related_course_slug " +
+      "AND p.title LIKE '%شوشتر%'" +
+      ")" +
+      ") " +
+      "ORDER BY score_total DESC, created_at DESC LIMIT ?"
     ).bind(safeTopicLimit).all(),
     db.prepare(
       "SELECT SUM(CASE WHEN status='approved' THEN 1 ELSE 0 END) AS approvedCount, " +
       "SUM(CASE WHEN status='candidate' THEN 1 ELSE 0 END) AS candidateCount, COUNT(*) AS activeCount " +
-      "FROM content_topics WHERE status IN ('approved','candidate')"
+      "FROM content_topics " +
+      "WHERE status IN ('approved','candidate') " +
+      "AND NOT (" +
+      "modifier_type = 'local_shushtar' " +
+      "AND related_course_slug IS NOT NULL " +
+      "AND EXISTS (" +
+      "SELECT 1 FROM blog_posts p " +
+      "WHERE p.related_course_slug = content_topics.related_course_slug " +
+      "AND p.title LIKE '%شوشتر%'" +
+      ")" +
+      ")"
     ).first(),
     db.prepare(
       "SELECT COUNT(*) AS signalCount FROM gsc_search_signals_v2 WHERE snapshot_label='current' AND country='' AND device='' AND search_appearance=''"
