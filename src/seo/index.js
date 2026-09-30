@@ -41,6 +41,7 @@ import { buildSiteLinkCandidates } from "./v2/site-graph.js";
 import { buildArticleLinkCandidates, buildContentClusterReport, buildArticleProfiles, findContentGaps, buildArticleClusterLinks } from "./v2/content-clusters.js";
 import { buildContentStrategy, buildUnifiedContentOpportunities } from "./v2/content-strategy.js";
 import { enrichOpportunitiesWithSearchConsole } from "./v2/gsc-intelligence.js";
+import { classifyGscDimensionMix } from "./v2/gsc-dimensions.js";
 import { buildGscSignalIndex, buildQueryOwnershipMap, buildQueryOwnershipMapWithMeta, buildSemanticQueryClusters, buildSemanticQueryClustersWithMeta, detectSearchCannibalization, resolveOpportunitySearchSignals } from "./v2/gsc-signal-resolver.js";
 import { detectTemporalCannibalization } from "./v2/gsc-temporal.js";
 import { scoreOpportunity, scoreOpportunities, classifyOpportunityAction, decisionConfidenceScore, decisionConfidenceEvidence, SCORE_FORMULA_VERSION, SCORE_COMPONENT_WEIGHTS } from "./v2/opportunity-scoring.js";
