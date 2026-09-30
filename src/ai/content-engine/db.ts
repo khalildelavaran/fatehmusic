@@ -251,7 +251,20 @@ export async function deleteTopic(db: D1Database, id: number): Promise<void> {
 
 export async function getNextApprovedTopic(db: D1Database): Promise<ContentTopicRow | null> {
   const row = await db
-    .prepare("SELECT * FROM content_topics WHERE status = 'approved' ORDER BY score_total DESC, created_at ASC LIMIT 1")
+    .prepare(
+      "SELECT * FROM content_topics " +
+      "WHERE status = 'approved' " +
+      "AND NOT (" +
+      "modifier_type = 'local_shushtar' " +
+      "AND related_course_slug IS NOT NULL " +
+      "AND EXISTS (" +
+      "SELECT 1 FROM blog_posts p " +
+      "WHERE p.related_course_slug = content_topics.related_course_slug " +
+      "AND p.title LIKE '%شوشتر%'" +
+      ")" +
+      ") " +
+      "ORDER BY score_total DESC, created_at ASC LIMIT 1"
+    )
     .first<ContentTopicRow>();
   return row ?? null;
 }
@@ -296,7 +309,19 @@ export async function claimNextApprovedTopic(db: D1Database, attempts = 3): Prom
 export async function claimTopicById(db: D1Database, id: number): Promise<ContentTopicRow | null> {
   await resetStaleGeneratingTopics(db);
   const row = await db
-    .prepare("SELECT * FROM content_topics WHERE id = ? AND status IN ('approved','candidate')")
+    .prepare(
+      "SELECT * FROM content_topics " +
+      "WHERE id = ? AND status IN ('approved','candidate') " +
+      "AND NOT (" +
+      "modifier_type = 'local_shushtar' " +
+      "AND related_course_slug IS NOT NULL " +
+      "AND EXISTS (" +
+      "SELECT 1 FROM blog_posts p " +
+      "WHERE p.related_course_slug = content_topics.related_course_slug " +
+      "AND p.title LIKE '%شوشتر%'" +
+      ")" +
+      ")"
+    )
     .bind(id)
     .first<ContentTopicRow>();
   if (!row) return null;
