@@ -41,7 +41,8 @@ describe("dedupWithinBatch", () => {
 describe("filterAgainstExisting", () => {
   it("removes an existing local Shushtar article even when the title is a shorter seed variant", () => {
     const c = candidate("آموزش گیتار در شوشتر؛ چه انتظاری داشته باشیم", {
-      modifierType: "local_shushtar"
+      // Regression: legacy rows can carry the wrong modifier classification.
+      modifierType: "how_to"
     });
     const out = filterAgainstExisting([c], {
       normalizedKeys: new Set(),
