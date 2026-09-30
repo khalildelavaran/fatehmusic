@@ -313,8 +313,8 @@ export async function claimTopicById(db: D1Database, id: number): Promise<Conten
       "SELECT * FROM content_topics " +
       "WHERE id = ? AND status IN ('approved','candidate') " +
       "AND NOT (" +
-      "modifier_type = 'local_shushtar' " +
-      "AND related_course_slug IS NOT NULL " +
+      "related_course_slug IS NOT NULL " +
+      "AND title LIKE '%شوشتر%' " +
       "AND EXISTS (" +
       "SELECT 1 FROM blog_posts p " +
       "WHERE p.related_course_slug = content_topics.related_course_slug " +
