@@ -49,12 +49,11 @@ export function filterAgainstExisting(
     if (existing.normalizedKeys.has(candidate.normalizedKey)) return false;
     if (existing.canonicalKeys.has(canonicalAssetKey(candidate))) return false;
 
-    // blog_posts historically did not store modifier_type, so the DB layer
-    // derives this narrowly from the local title/URL semantics. Reserve only
-    // the local_shushtar angle for the same course; other editorial angles
-    // (how_to, mistakes, benefits, etc.) must remain independently discoverable.
+    // Legacy rows may have an incorrect modifier_type. A local title tied
+    // to a course with an existing local Shushtar article is the stronger
+    // duplicate signal, so do not depend on the old classification.
     if (
-      candidate.modifierType === "local_shushtar" &&
+      /شوشتر/u.test(candidate.title) &&
       !candidate.audience &&
       !candidate.level &&
       candidate.relatedCourseSlug &&
