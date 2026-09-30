@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getSeoDashboardIntelligence } from "./dashboard-intelligence.js";
 
-function makeDb() {
+function makeDb({ existingExactArticle = false } = {}) {
   const topic = {
     id: 1,
     title: "آموزش گیتار در شوشتر",
@@ -71,7 +71,10 @@ function makeDb() {
           return statement;
         },
         async all() {
-          if (sql.includes("FROM content_topics")) return { results: [topic] };
+          if (sql.includes("FROM content_topics")) {
+            if (existingExactArticle && sql.includes("p.title = content_topics.title")) return { results: [] };
+            return { results: [topic] };
+          }
           if (sql.includes("SELECT query, SUM(clicks)")) return { results: queryRows };
           if (sql.includes("SELECT page, SUM(clicks)")) return { results: pageRows };
           if (sql.includes("SELECT query, page, SUM(impressions)")) return { results: ownershipRows };
@@ -122,6 +125,21 @@ function makeDb() {
 }
 
 describe("SEO dashboard read model", () => {
+  it("suppresses a topic when a published article already has the exact title", async () => {
+    const result = await getSeoDashboardIntelligence({
+      db: makeDb({ existingExactArticle: true }),
+      siteUrl: "https://fatehmusic.ir",
+      courses: [{ slug: "guitar-course", title: "دوره آموزش گیتار", active: true }],
+      topicLimit: 60,
+      gscQueryLimit: 100,
+      gscPageLimit: 100,
+      gscOwnershipLimit: 120,
+      marketLimit: 1
+    });
+
+    expect(result.opportunities).toHaveLength(0);
+  });
+
   it("reads persisted decisions and bounded signals without invoking the full engine", async () => {
     const result = await getSeoDashboardIntelligence({
       db: makeDb(),
