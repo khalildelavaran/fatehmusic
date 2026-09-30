@@ -39,9 +39,40 @@ describe("dedupWithinBatch", () => {
 });
 
 describe("filterAgainstExisting", () => {
+  it("removes an existing local Shushtar article even when the title is a shorter seed variant", () => {
+    const c = candidate("آموزش گیتار در شوشتر؛ چه انتظاری داشته باشیم", {
+      modifierType: "local_shushtar"
+    });
+    const out = filterAgainstExisting([c], {
+      normalizedKeys: new Set(),
+      canonicalKeys: new Set(),
+      titles: ["آموزش گیتار در شوشتر؛ از کجا شروع کنیم و چه انتظاری داشته باشیم؟"],
+      localShushtarCourseSlugs: new Set(["guitar-course"])
+    });
+    expect(out).toHaveLength(0);
+  });
+
+  it("keeps another editorial angle for the same course", () => {
+    const c = candidate("اشتباهات رایج در آموزش گیتار", {
+      modifierType: "mistakes"
+    });
+    const out = filterAgainstExisting([c], {
+      normalizedKeys: new Set(),
+      canonicalKeys: new Set(),
+      titles: ["آموزش گیتار در شوشتر؛ از کجا شروع کنیم و چه انتظاری داشته باشیم؟"],
+      localShushtarCourseSlugs: new Set(["guitar-course"])
+    });
+    expect(out).toHaveLength(1);
+  });
+
   it("removes an exact normalized-key match", () => {
     const c = candidate("چگونه گیتار یاد بگیریم؟");
-    const out = filterAgainstExisting([c], { normalizedKeys: new Set([c.normalizedKey]), canonicalKeys: new Set(), titles: [] });
+    const out = filterAgainstExisting([c], {
+      normalizedKeys: new Set([c.normalizedKey]),
+      canonicalKeys: new Set(),
+      titles: [],
+      localShushtarCourseSlugs: new Set()
+    });
     expect(out).toHaveLength(0);
   });
 
@@ -50,7 +81,8 @@ describe("filterAgainstExisting", () => {
     const out = filterAgainstExisting([c], {
       normalizedKeys: new Set(),
       canonicalKeys: new Set([canonicalAssetKey(c)]),
-      titles: []
+      titles: [],
+      localShushtarCourseSlugs: new Set()
     });
     expect(out).toHaveLength(0);
   });
@@ -60,7 +92,8 @@ describe("filterAgainstExisting", () => {
     const out = filterAgainstExisting([c], {
       normalizedKeys: new Set(),
       canonicalKeys: new Set(),
-      titles: ["چگونه یادگیری گیتار را از صفر شروع کنیم؟"]
+      titles: ["چگونه یادگیری گیتار را از صفر شروع کنیم؟"],
+      localShushtarCourseSlugs: new Set()
     });
     // Deliberately not asserting a specific outcome here -- see the
     // dedicated similarity-threshold assertions in normalize.test.ts.
@@ -73,7 +106,8 @@ describe("filterAgainstExisting", () => {
     const out = filterAgainstExisting([c], {
       normalizedKeys: new Set(["چیزی کاملا متفاوت"]),
       canonicalKeys: new Set(["v1|other-course|how_to|general|general"]),
-      titles: ["فواید یادگیری تنبک برای رشد ذهنی"]
+      titles: ["فواید یادگیری تنبک برای رشد ذهنی"],
+      localShushtarCourseSlugs: new Set()
     });
     expect(out).toHaveLength(1);
   });
