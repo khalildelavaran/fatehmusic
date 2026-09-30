@@ -55,6 +55,18 @@ function buildBrief(gap, courses = [], siteUrl) {
   return Object.freeze({ source: "gap", action, topic: topic.slug, topicName: topic.name, searchIntent: intent, searchIntents: [intent], intentConfidence, isLocal, scope: gap.scope || canonicalScope(topic, isLocal), title: buildTitle(topic, intent, course), suggestedSlug: suggestedArticleSlug({ topic: topic.slug, scope: gap.scope, isLocal, modifierType: isLocal ? "local_shushtar" : intent, searchIntent: intent, course, courseSlug: course?.slug || gap.courseSlug || null, articleCount, existingArticleSlugs: gap.articleSlugs || [] }), targetEntity, course: makeCourseRef(course, baseUrl), courseSlug: gap.courseSlug || course?.slug || null, priority: buildPriority(intent, articleCount, course, isLocal), articleCount, existingArticleSlugs: gap.articleSlugs || [], rationale: action === "OPTIMIZE_EXISTING" ? `intent «${intent}» برای خوشه «${topic.name}» ناقص است؛ محتوای موجود باید برای پوشش این intent تقویت شود.` : `پوشش intent «${intent}» برای خوشه «${topic.name}» وجود ندارد؛ ایجاد یک محتوای هدفمند این شکاف را پوشش می‌دهد.`, queryAngles: buildQueryAngles(topic, intent, course), recommendedLinks: buildRecommendedLinks(targetEntity, baseUrl), modifierType: isLocal ? "local_shushtar" : null, audience: "", level: "" });
 }
 function buildContentStrategyFromGaps(gaps = [], courses = [], siteUrl) { return gaps.flatMap((gap) => (gap.missingIntents || []).map((intent) => buildBrief({ ...gap, missingIntents: [intent] }, courses, siteUrl)).filter(Boolean)); }
+function hasCoveredLocalCourseArticle(item, existingPosts = []) {
+  const localTitle = hasLocalSignal(item?.title || "");
+  if (!localTitle || item?.audience || item?.level) return false;
+  const courseSlug = item?.relatedCourseSlug || item?.courseSlug || item?.course?.slug || null;
+  if (!courseSlug) return false;
+  return existingPosts.some((post) => (
+    String(post?.related_course_slug || "") === courseSlug &&
+    hasLocalSignal(post?.title || "")
+  ));
+}
+
+
 function buildCandidateBrief(candidate, courses = [], siteUrl) {
   const baseUrl = normalizeBaseUrl(siteUrl);
   const normalizedTitle = normalizeSemanticText(candidate.title);
@@ -239,9 +251,14 @@ function mergeCompatibleOpportunities(items, siteUrl) {
   return [...groups.values()];
 }
 /** @param {{gaps?: object[], topicCandidates?: object[], courses?: object[], siteUrl?: string}} options */
-export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl } = {}) {
-  const candidateItems = topicCandidates.map((candidate) => candidate?.title ? buildCandidateBrief(candidate, courses, siteUrl) : null).filter(Boolean); const mergedCandidates = mergeCompatibleOpportunities(candidateItems, siteUrl); const mergedByKey = new Map(mergedCandidates.map((item) => [canonicalAssetKey(item), item])); const unmatchedGaps = [];
-  for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl)) { const key = canonicalAssetKey(gap); const candidate = mergedByKey.get(key); if (candidate) { const candidateIntents = candidate.searchIntents || [candidate.searchIntent]; const gapIntents = gap.searchIntents || [gap.searchIntent]; const compatible = candidateIntents.every((a) => gapIntents.some((b) => areIntentsCompatible(a, b))); if (compatible && (!candidate.courseSlug || !gap.courseSlug || candidate.courseSlug === gap.courseSlug)) { mergedByKey.set(key, mergeOpportunity(candidate, gap, siteUrl)); continue; } } unmatchedGaps.push(gap); }
+export function buildUnifiedContentOpportunities({ gaps = [], topicCandidates = [], courses = [], siteUrl, existingPosts = [] } = {}) {
+  const candidateItems = topicCandidates
+    .filter((candidate) => !hasCoveredLocalCourseArticle(candidate, existingPosts))
+    .map((candidate) => candidate?.title ? buildCandidateBrief(candidate, courses, siteUrl) : null)
+    .filter(Boolean)
+    .filter((candidate) => !hasCoveredLocalCourseArticle(candidate, existingPosts));
+  const mergedCandidates = mergeCompatibleOpportunities(candidateItems, siteUrl); const mergedByKey = new Map(mergedCandidates.map((item) => [canonicalAssetKey(item), item])); const unmatchedGaps = [];
+  for (const gap of buildContentStrategyFromGaps(gaps, courses, siteUrl).filter((item) => !hasCoveredLocalCourseArticle(item, existingPosts))) { const key = canonicalAssetKey(gap); const candidate = mergedByKey.get(key); if (candidate) { const candidateIntents = candidate.searchIntents || [candidate.searchIntent]; const gapIntents = gap.searchIntents || [gap.searchIntent]; const compatible = candidateIntents.every((a) => gapIntents.some((b) => areIntentsCompatible(a, b))); if (compatible && (!candidate.courseSlug || !gap.courseSlug || candidate.courseSlug === gap.courseSlug)) { mergedByKey.set(key, mergeOpportunity(candidate, gap, siteUrl)); continue; } } unmatchedGaps.push(gap); }
   const opportunities = mergeCompatibleOpportunities([...mergedByKey.values(), ...unmatchedGaps], siteUrl).sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title, "fa"));
   return Object.freeze({ opportunityCount: opportunities.length, highPriorityCount: opportunities.filter((item) => item.priority >= 85).length, newContentCount: opportunities.filter((item) => item.action === "NEW_CONTENT").length, optimizeCount: opportunities.filter((item) => item.action === "OPTIMIZE_EXISTING").length, mergeCount: opportunities.filter((item) => item.action === "MERGE_CONTENT").length, opportunities: Object.freeze(opportunities) });
 }
