@@ -218,8 +218,8 @@ export async function listTopics(db: D1Database, filters: TopicListFilters = {})
   // Hide stale topic rows from admin lists as well as blocking future discovery.
   const occupiedLocalShushtar = `
     NOT (
-      modifier_type = 'local_shushtar'
-      AND related_course_slug IS NOT NULL
+      related_course_slug IS NOT NULL
+      AND title LIKE '%شوشتر%'
       AND EXISTS (
         SELECT 1
         FROM blog_posts p
@@ -255,8 +255,8 @@ export async function getNextApprovedTopic(db: D1Database): Promise<ContentTopic
       "SELECT * FROM content_topics " +
       "WHERE status = 'approved' " +
       "AND NOT (" +
-      "modifier_type = 'local_shushtar' " +
-      "AND related_course_slug IS NOT NULL " +
+      "related_course_slug IS NOT NULL " +
+      "AND title LIKE '%شوشتر%' " +
       "AND EXISTS (" +
       "SELECT 1 FROM blog_posts p " +
       "WHERE p.related_course_slug = content_topics.related_course_slug " +
