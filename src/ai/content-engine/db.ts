@@ -23,7 +23,9 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
       level: string;
       modifier_type: ContentTopicRow["modifier_type"];
     }>(),
-    db.prepare("SELECT title FROM blog_posts WHERE title IS NOT NULL AND title != ''").all<{ title: string }>()
+    db.prepare(
+      "SELECT title, related_course_slug FROM blog_posts WHERE title IS NOT NULL AND title != ''"
+    ).all<{ title: string; related_course_slug: string | null }>()
   ]);
 
   const normalizedKeys = new Set<string>(topics.results.map((r) => r.normalized_key));
@@ -41,11 +43,25 @@ export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTit
     ...topics.results.map((r) => r.title),
     ...posts.results.map((r) => r.title)
   ];
+
+  // Legacy blog_posts rows do not have modifier_type. For the one angle where
+  // title semantics are stable and intentionally generated from a seed family,
+  // reserve the course when an existing post is explicitly local to Shushtar.
+  // This avoids suppressing unrelated course articles.
+  const localShushtarCourseSlugs = new Set<string>();
+  for (const post of posts.results) {
+    if (
+      post.related_course_slug &&
+      /شوشتر/u.test(post.title)
+    ) {
+      localShushtarCourseSlugs.add(post.related_course_slug);
+    }
+  }
   // blog_posts has no normalized_key/canonical metadata, so derive the exact
   // normalized title key from every retained post. Drafts matter here too:
   // a human-edited draft must reserve its title just like an AI-generated draft.
   for (const post of posts.results) normalizedKeys.add(toDedupKey(post.title));
-  return { normalizedKeys, canonicalKeys, titles };
+  return { normalizedKeys, canonicalKeys, titles, localShushtarCourseSlugs };
 }
 
 export async function getCoverageByCourse(db: D1Database): Promise<Map<string, number>> {
