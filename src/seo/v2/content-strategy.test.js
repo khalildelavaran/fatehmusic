@@ -28,6 +28,25 @@ describe("content strategy deduplication", () => {
     expect(result.opportunities[0].suggestedSlug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
   });
 
+  it("removes a covered local course topic even when its legacy modifier is wrong", () => {
+    const result = buildUnifiedContentOpportunities({
+      courses,
+      existingPosts: [{
+        slug: "guitar-course-shushtar",
+        title: "آموزش گیتار در شوشتر؛ از کجا شروع کنیم و چه انتظاری داشته باشیم؟",
+        related_course_slug: "guitar-course"
+      }],
+      topicCandidates: [{
+        title: "آموزش گیتار در شوشتر؛ چه انتظاری داشته باشیم",
+        intent: "informational",
+        modifierType: "how_to",
+        relatedCourseSlug: "guitar-course",
+        scoreTotal: 90
+      }]
+    });
+    expect(result.opportunityCount).toBe(0);
+  });
+
   it("does not map the broad music-education topic to a child-music course", () => {
     const result = buildContentStrategy([{ topic: "music-education", missingIntents: ["transactional"], articleCount: 3, articleSlugs: ["music-education-local"] }], courses);
     expect(result.briefCount).toBe(1);
