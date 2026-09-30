@@ -326,8 +326,8 @@ export async function getSeoDashboardIntelligence({
       "SELECT id, title, normalized_key, instrument_key, related_course_slug, related_course_title, category, audience, level, modifier_type, intent, score_total, score_breakdown, reasoning, status, source, created_at, updated_at " +
       "FROM content_topics WHERE status IN ('approved','candidate') " +
       "AND NOT (" +
-      "modifier_type = 'local_shushtar' " +
-      "AND related_course_slug IS NOT NULL " +
+      "related_course_slug IS NOT NULL " +
+      "AND title LIKE '%شوشتر%' " +
       "AND EXISTS (" +
       "SELECT 1 FROM blog_posts p " +
       "WHERE p.related_course_slug = content_topics.related_course_slug " +
@@ -342,8 +342,8 @@ export async function getSeoDashboardIntelligence({
       "FROM content_topics " +
       "WHERE status IN ('approved','candidate') " +
       "AND NOT (" +
-      "modifier_type = 'local_shushtar' " +
-      "AND related_course_slug IS NOT NULL " +
+      "related_course_slug IS NOT NULL " +
+      "AND title LIKE '%شوشتر%' " +
       "AND EXISTS (" +
       "SELECT 1 FROM blog_posts p " +
       "WHERE p.related_course_slug = content_topics.related_course_slug " +
