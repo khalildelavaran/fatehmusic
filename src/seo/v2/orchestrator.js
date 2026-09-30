@@ -231,7 +231,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gaps: cluster.gaps,
     topicCandidates: cleanCandidates,
     courses,
-    siteUrl: resolvedSiteUrl
+    siteUrl: resolvedSiteUrl,
+    existingPosts: posts
   });
   const marketAdjustedBase = mergeMarketAnglesIntoExistingOpportunities(
     preliminaryBase.opportunities,
@@ -247,7 +248,8 @@ export function buildSEOIntelligence({ posts = [], courses = [], instructors = [
     gaps: [],
     topicCandidates: marketCandidates,
     courses,
-    siteUrl: resolvedSiteUrl
+    siteUrl: resolvedSiteUrl,
+    existingPosts: posts
   });
   const base = Object.freeze({
     opportunities: Object.freeze([
