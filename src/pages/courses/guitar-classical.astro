@@ -10,7 +10,7 @@ const parentInstructor = resolveInstructor("khalil-delavaran", site);
 const style = {
   ...baseStyle,
   schema: [
-    buildGuitarStyleSchema(baseStyle),
+    buildGuitarStyleSchema(baseStyle, { site }),
     ...(parentCourse ? [buildCourseSchema(parentCourse, { site })] : []),
     ...(parentInstructor ? [buildPersonSchema(parentInstructor, { site })] : []),
     buildBreadcrumbSchema([
