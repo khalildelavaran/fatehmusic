@@ -157,7 +157,7 @@ export const instructors = [
   },
 
   social: {
-    instagram: "@khalildelavaran",
+    instagram: "@khalil.delavaran",
     telegram: "",
     whatsapp: "",
     youtube: "",
