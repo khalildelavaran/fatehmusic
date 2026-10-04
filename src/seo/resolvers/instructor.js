@@ -90,5 +90,36 @@ function getInstructorIds(course) {
 }
 
 function dedupeSameAs(social) {
-    return [...new Set(Object.values(social || {}).filter(Boolean))];
+    const values = Object.entries(social || {})
+        .map(([network, value]) => normalizeSocialUrl(network, value))
+        .filter(Boolean);
+
+    return [...new Set(values)];
+}
+
+function normalizeSocialUrl(network, value) {
+    if (typeof value !== "string") {
+        return undefined;
+    }
+
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+        return undefined;
+    }
+
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+
+    if (network === "instagram") {
+        const handle = trimmed.replace(/^@/, "");
+        return handle
+            ? `https://www.instagram.com/${handle}/`
+            : undefined;
+    }
+
+    // Schema.org sameAs must contain URLs. Ignore bare handles for
+    // networks whose canonical URL cannot be inferred safely.
+    return undefined;
 }
