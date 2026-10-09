@@ -88,5 +88,14 @@
 /instructors/majid-jafarizade/ /instructors/majid-jafarizade 301
 /instructors/reza-bashir/ /instructors/reza-bashir 301
 
+# Legacy course/category and article URLs reported as 404 by Ahrefs.
+# Keep these exact aliases above the generic trailing-slash rule.
+/courses/vocal-shushtar/ /courses/vocal 301
+/courses/vocal-shushtar /courses/vocal 301
+/courses/music-education/ /courses 301
+/courses/music-education /courses 301
+/blog/how-to-choose-music-course-in-shushtar/ /blog/music-education-local 301
+/blog/how-to-choose-music-course-in-shushtar /blog/music-education-local 301
+
 # Dynamic blog routes use one placeholder rule so every trailing-slash article URL converges.
 /blog/:slug/ /blog/:slug 301
