@@ -12,29 +12,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Dependency security audit
-        run: npm audit --audit-level=moderate
+        run: bun audit --audit-level=moderate
 
       - name: Type check
-        run: npm run check
+        run: bun run check
 
       - name: Unit tests
-        run: npm test
+        run: bun run test
 
       - name: Production build
-        run: npm run build
+        run: bun run build
 
       - name: SEO rendered-site audit
-        run: npm run seo:audit
+        run: bun run seo:audit
 
       - name: Measured SEO score report
-        run: npm run seo:score
+        run: bun run seo:score
