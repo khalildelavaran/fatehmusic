@@ -90,6 +90,7 @@
 
 # Legacy course/category and article URLs reported as 404 by Ahrefs.
 # Keep these exact aliases above the generic trailing-slash rule.
+/courses/vocal/ /courses/vocal 301
 /courses/vocal-shushtar/ /courses/vocal 301
 /courses/vocal-shushtar /courses/vocal 301
 /courses/music-education/ /courses 301
