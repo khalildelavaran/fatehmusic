@@ -74,9 +74,10 @@ import { runDiagnostics } from "./v2/diagnostics.js";
  *  articlePosts?: object[];
  *  courses?: object[];
  *  instructors?: object[];
+ *  includeIntelligence?: boolean; // Enable expensive semantic graph, link planning and diagnostics.
  * }} options
  */
-export function buildSEO({ path, title, description, image, imageWidth, imageHeight, imageType, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [], courses = defaultCourses, instructors = defaultInstructors } = {}) {
+export function buildSEO({ path, title, description, image, imageWidth, imageHeight, imageType, canonical, noindex = false, keywords = [], topics = [], entityType = "", lastModified, answerBlocks = [], linkCandidates, auditContext = {}, extraSchema = [], articlePosts = [], courses = defaultCourses, instructors = defaultInstructors, includeIntelligence = true } = {}) {
     const site = resolveSite();
     const effectiveNoindex = Boolean(noindex || isPrivateRoute(path));
     const metadata = buildMetadata({ site, title, description, keywords, noindex: effectiveNoindex });
@@ -88,31 +89,41 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
     const ogImageWidth = imageWidth ?? (usesDefaultCover ? 1200 : undefined);
     const ogImageHeight = imageHeight ?? (usesDefaultCover ? 630 : undefined);
     const topicsResolved = resolveTopics({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics });
-    const intent = classifyIntent({ path, title: metadata.title, keywords: metadata.keywords, entityType });
-    const freshness = getFreshness(lastModified);
-    const knowledgeGraph = buildKnowledgeGraph({
-        siteUrl: site.url,
-        courses,
-        instructors,
-        posts: articlePosts
-    });
-    const knowledgeGraphValidation = validateKnowledgeGraph(knowledgeGraph);
-    const candidates = linkCandidates?.length
-        ? linkCandidates
-        : [
-            ...buildSiteLinkCandidates(site, { courses, instructors }),
-            ...buildArticleLinkCandidates(articlePosts, site.url)
-        ];
-    const links = buildInternalLinkPlan({
-        currentUrl: canonicalUrl,
-        currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }),
-        currentType: entityType,
-        candidates,
-        semanticGraph: knowledgeGraph
-    });
+
+    // Full semantic analysis is useful for audits and planning tools, but should not
+    // run on every HTML request where Cloudflare Workers CPU budgets are restrictive.
+    const intent = includeIntelligence
+        ? classifyIntent({ path, title: metadata.title, keywords: metadata.keywords, entityType })
+        : null;
+    const freshness = includeIntelligence ? getFreshness(lastModified) : null;
+    const knowledgeGraph = includeIntelligence
+        ? buildKnowledgeGraph({ siteUrl: site.url, courses, instructors, posts: articlePosts })
+        : null;
+    const knowledgeGraphValidation = knowledgeGraph ? validateKnowledgeGraph(knowledgeGraph) : null;
+    const candidates = includeIntelligence
+        ? (linkCandidates?.length
+            ? linkCandidates
+            : [
+                ...buildSiteLinkCandidates(site, { courses, instructors }),
+                ...buildArticleLinkCandidates(articlePosts, site.url)
+            ])
+        : [];
+    const links = includeIntelligence
+        ? buildInternalLinkPlan({
+            currentUrl: canonicalUrl,
+            currentTopics: topicSlugs({ title: metadata.title, keywords: metadata.keywords, path, explicit: topics }),
+            currentType: entityType,
+            candidates,
+            semanticGraph: knowledgeGraph
+        })
+        : [];
     const answers = buildAnswerBlocks(answerBlocks);
-    const clusterReport = articlePosts.length ? buildContentClusterReport(articlePosts, { courses, siteUrl: site.url }) : null;
-    const contentStrategy = clusterReport ? clusterReport.strategy : buildContentStrategy([], courses, { siteUrl: site.url });
+    const clusterReport = includeIntelligence && articlePosts.length
+        ? buildContentClusterReport(articlePosts, { courses, siteUrl: site.url })
+        : null;
+    const contentStrategy = !includeIntelligence
+        ? []
+        : clusterReport ? clusterReport.strategy : buildContentStrategy([], courses, { siteUrl: site.url });
     const openGraph = buildOpenGraph({
         site,
         metadata,
@@ -133,7 +144,7 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         ...buildTopicSchemas(topicsResolved, { site }),
         ...extraSchema
     ], { knowledgeGraph });
-    const audit = auditPage({
+    const audit = includeIntelligence ? auditPage({
         metadata,
         url: canonicalUrl,
         canonical: canonicalUrl,
@@ -146,12 +157,12 @@ export function buildSEO({ path, title, description, image, imageWidth, imageHei
         answerBlockSourceCount: answers.filter((block) => block?.sourceUrl).length,
         knowledgeGraphStats: knowledgeGraph.statistics,
         ...auditContext
-    });
-    const diagnostics = runDiagnostics({
+    }) : null;
+    const diagnostics = includeIntelligence ? runDiagnostics({
         audits: [audit],
         graphValidation: knowledgeGraphValidation,
         knowledgeGraph
-    });
+    }) : null;
     return Object.freeze({
         metadata,
         canonical: canonicalUrl,
