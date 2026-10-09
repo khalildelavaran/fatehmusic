@@ -21,6 +21,8 @@ export interface Props {
   answerBlocks?: { question: string; answer: string; sourceUrl?: string; entityId?: string; priority?: number }[];
   linkCandidates?: object[];
   auditContext?: object;
+  /** Enable expensive runtime semantic SEO diagnostics only when needed. */
+  includeIntelligence?: boolean;
 }
 
 const {
@@ -39,7 +41,8 @@ const {
   lastModified,
   answerBlocks = [],
   linkCandidates,
-  auditContext = {}
+  auditContext = {},
+  includeIntelligence = false
 } = Astro.props as Props;
 
 const seo = buildSEO({
@@ -59,7 +62,8 @@ const seo = buildSEO({
   answerBlocks,
   linkCandidates,
   auditContext,
-  extraSchema: schema
+  extraSchema: schema,
+  includeIntelligence
 });
 
 const openGraph = seo.openGraph as Record<string, string>;
