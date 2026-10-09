@@ -39,11 +39,12 @@ const intelligence = db
     })
   : await getSeoDashboardIntelligence({ db, siteUrl: site.url, courses });
 
-const latestGscSync = intelligence.latestGscSync;
-const ahrefsMetrics = { payload: intelligence.ahrefsMetrics };
-const ahrefsCompetitors = { payload: intelligence.ahrefsCompetitors };
-const ahrefsRefdomainsHistory = { payload: intelligence.ahrefsRefdomainsHistory };
-const ahrefsOrganicKeywords = intelligence.ahrefsOrganicKeywords;
+const intelAny = intelligence as any;
+const latestGscSync = intelAny.latestGscSync;
+const ahrefsMetrics = { payload: intelAny.ahrefsMetrics };
+const ahrefsCompetitors = { payload: intelAny.ahrefsCompetitors };
+const ahrefsRefdomainsHistory = { payload: intelAny.ahrefsRefdomainsHistory };
+const ahrefsOrganicKeywords = intelAny.ahrefsOrganicKeywords;
 
 const seoActions: SeoAction[] = db
   ? await listSeoActions(db, { limit: 8 }) as unknown as SeoAction[]
@@ -169,7 +170,7 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
             <span>{intelligence.summary.marketBackedCount} فرصت market-backed</span>
             <span>{intelligence.mode === "READ_MODEL" ? "تعارض لحظه‌ای در پنل خاموش" : String(intelligence.summary.cannibalizationCount) + " تعارض"}</span>
             <span>قدرت شواهد تصمیم: {intelligence.summary.evidenceStrengthAverage}%</span>
-            <span>پوشش دریافت GSC: {intelligence.summary.gscCoverageStatus === "PARTIAL" ? "جزئی (به سقف ردیف رسیده)" : intelligence.summary.gscCoverageStatus === "COMPLETE" ? "کامل (گزارش‌شده)" : intelligence.summary.gscCoverageStatus === "OBSERVED" ? "دریافت‌شده (کامل بودن اثبات نشده)" : "نامشخص"}</span>
+            <span>پوشش دریافت GSC: {intelAny.summary?.gscCoverageStatus === "PARTIAL" ? "جزئی (به سقف ردیف رسیده)" : intelAny.summary?.gscCoverageStatus === "COMPLETE" ? "کامل (گزارش‌شده)" : intelAny.summary?.gscCoverageStatus === "OBSERVED" ? "دریافت‌شده (کامل بودن اثبات نشده)" : "نامشخص"}</span>
             {intelligence.summary.queryOwnershipTruncated && <span class="strategy-data-age is-stale">نقشه مالکیت Query در نمایش محدود شده: {intelligence.summary.queryOwnershipCount.toLocaleString("fa-IR")} از {intelligence.summary.queryOwnershipTotalCount.toLocaleString("fa-IR")}</span>}
             <span>تازگی GSC: {intelligence.summary.gscFreshness === "FRESH" ? "تازه" : intelligence.summary.gscFreshness === "AGING" ? "در حال کهنگی" : intelligence.summary.gscFreshness === "STALE" ? "قدیمی" : "نامشخص"}</span>
             <span>تازگی Market: {intelligence.summary.marketFreshness === "FRESH" ? "تازه" : intelligence.summary.marketFreshness === "AGING" ? "در حال کهنگی" : intelligence.summary.marketFreshness === "STALE" ? "قدیمی" : "نامشخص"}</span>
@@ -293,9 +294,8 @@ const sourceLabel: Record<string, string> = { "topic-engine": "موتور موض
                       {item.searchSignal?.available && <div><strong>داده جستجو:</strong> {Math.round(Number(item.searchSignal.impressions || 0)).toLocaleString("fa-IR")} impression · CTR {(Number(item.searchSignal.ctr || 0) * 100).toFixed(1)}% · رتبه {item.searchSignal.position != null ? Number(item.searchSignal.position).toFixed(1) : "-"}{item.searchSignal.ctrBenchmark != null ? ` · benchmark CTR ${(Number(item.searchSignal.ctrBenchmark) * 100).toFixed(1)}%` : ""}</div>}
                       {item.marketSignal?.available && <div><strong>داده بازار:</strong> حجم برآوردی {Number(item.marketSignal.estimatedVolume || 0).toLocaleString("fa-IR")} · سختی {item.marketSignal.difficulty == null ? "-" : Number(item.marketSignal.difficulty).toFixed(0)}{item.marketDataQuality?.freshness ? ` · ${item.marketDataQuality.freshness}` : ""}</div>}
                     </div>
-                    {(item.evidenceStrengthScore ?? item.decisionConfidence) != null && <div><strong>قدرت شواهد تصمیم:</strong> {item.evidenceStrengthScore ?? item.decisionConfidence}%</div>}
                     {item.scoreBreakdown?.decisionGuard?.guarded && <div><strong>Guard تصمیم:</strong> سقف {item.scoreBreakdown.decisionGuard.cap} · {item.scoreBreakdown.decisionGuard.reasons.join("، ")}</div>}
-                    {item.searchSignal?.queryIntentEvidence?.primary && <div><strong>Intent واقعی Query:</strong> {item.searchSignal.queryIntentEvidence.primary} · سهم {(Number(item.searchSignal.queryIntentEvidence.primaryShare || 0) * 100).toFixed(0)}% · confidence {(Number(item.searchSignal.queryIntentEvidence.confidence || 0) * 100).toFixed(0)}%</div>}
+                    {(item.searchSignal as any)?.queryIntentEvidence?.primary && <div><strong>Intent واقعی Query:</strong> {(item.searchSignal as any).queryIntentEvidence.primary} · سهم {(Number((item.searchSignal as any).queryIntentEvidence.primaryShare || 0) * 100).toFixed(0)}% · confidence {(Number((item.searchSignal as any).queryIntentEvidence.confidence || 0) * 100).toFixed(0)}%</div>}
                     {item.searchSignal?.available && item.searchSignal.matchedQueries?.length > 0 && (
                       <div class="strategy-search-evidence">
                         <strong>Queryهای مؤثر</strong>

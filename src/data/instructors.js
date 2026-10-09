@@ -898,7 +898,7 @@ export const instructors = [
   },
 
   social: {
-    instagram: "@malakeviolon68",
+    instagram: "",
     telegram: "",
     whatsapp: "",
     youtube: "",
@@ -989,7 +989,7 @@ export const instructors = [
   },
 
   social: {
-    instagram: "@nargesfateh8",
+    instagram: "",
     telegram: "",
     whatsapp: "",
     youtube: "",

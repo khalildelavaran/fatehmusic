@@ -100,3 +100,42 @@ export interface DiscoveryRunSummary {
   status: "success" | "failed";
   errorMessage?: string;
 }
+
+export type AiProvider = "gemini" | "claude" | "openai";
+
+export interface GeneratedArticle {
+  slug: string;
+  excerpt: string;
+  content: string;
+  topic: string;
+  meta_title: string;
+  meta_description: string;
+}
+
+export interface AiEngineSettings {
+  id: number;
+  provider: AiProvider;
+  model: string;
+  auto_generation_enabled: boolean;
+  daily_count: number;
+  schedule_time: string;
+  timezone: string;
+  save_mode: "draft" | "published";
+  max_retries: number;
+  last_test_at: string | null;
+  last_test_status: "success" | "failed" | null;
+  last_test_message: string | null;
+  last_run_at: string | null;
+  last_run_status: "success" | "failed" | null;
+  last_run_message: string | null;
+  last_article_slug: string | null;
+  updated_at: string;
+}
+
+export interface AiModelInfo {
+  id: string;
+  name: string;
+  description: string;
+  recommended?: boolean;
+}
+

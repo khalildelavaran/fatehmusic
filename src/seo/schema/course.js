@@ -114,6 +114,9 @@ export function buildCourseStyleSchemas(course, { site }) {
 
 /**
  * Build the Course entity for an individual guitar style landing page.
+ * @param {any} style
+ * @param {{ site?: any; instructorSlug?: string }} [options]
+ * @returns {any}
  */
 export function buildGuitarStyleSchema(style, { site, instructorSlug = "khalil-delavaran" } = {}) {
     const url = `${site.url}/courses/${style.slug}`;

@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "astro dev --host 0.0.0.0 --port 3000",
     "build": "astro build",
     "preview": "astro build && wrangler dev",
     "deploy": "npm run db:migrate:remote && astro build && wrangler deploy",
@@ -19,6 +19,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
     "@astrojs/sitemap": "^3.7.3",
+    "@google/genai": "^2.28.0",
     "@lucide/astro": "^1.37.0",
     "astro": "^7.3.4"
   },

@@ -23,12 +23,16 @@ import { derivePlainName } from "./candidates";
 import { toDedupKey, titleSimilarity } from "./normalize";
 import { claimNextApprovedTopic, claimTopicById, getExistingTitleIndex, getRecentlyUsedCourses, releaseGeneratingTopic } from "./db";
 import { NEAR_DUPLICATE_THRESHOLD } from "./dedup";
-import { callClaudeArticle } from "./providers/anthropic";
-import type { ContentTopicRow } from "./types";
+import { generateArticleWithProvider } from "./providers/multi-provider";
+import { getAiEngineSettings, recordAiEngineRun } from "./settings";
+import type { ContentTopicRow, AiProvider } from "./types";
 
-interface ArticleEnv {
+export interface ArticleEnv {
   DB: D1Database;
+  GEMINI_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
+  OPENAI_API_KEY?: string;
+  [key: string]: unknown;
 }
 
 export interface GenerateResult {
@@ -139,6 +143,9 @@ export interface GenerateOptions {
     relatedCourseTitle?: string | null;
     topicLabel?: string | null;
   };
+  provider?: AiProvider;
+  model?: string;
+  saveMode?: "draft" | "published";
 }
 
 async function selectTopic(db: D1Database, options: GenerateOptions = {}): Promise<SelectedTopic> {
@@ -494,9 +501,24 @@ export async function runDailyArticleGeneration(env: ArticleEnv, options: Genera
   console.log("runDailyArticleGeneration: topic selected ->", topic.title, topic.topicRowId ? `(queue #${topic.topicRowId})` : "(fallback)");
 
   try {
-    const result = await callClaudeArticle(env.ANTHROPIC_API_KEY, SYSTEM_PROMPT, buildBrief(topic));
+    const settings = await getAiEngineSettings(env.DB).catch(() => null);
+    const provider: AiProvider = (settings?.provider && ["gemini", "claude", "openai"].includes(settings.provider))
+      ? settings.provider
+      : (env.GEMINI_API_KEY ? "gemini" : env.ANTHROPIC_API_KEY ? "claude" : "openai");
+    const model = settings?.model;
+    const result = await generateArticleWithProvider({
+      provider,
+      model,
+      systemPrompt: SYSTEM_PROMPT,
+      userPrompt: buildBrief(topic),
+      env
+    });
     if (!result.success) {
       await releaseClaim();
+      await recordAiEngineRun(env.DB, {
+        status: "failed",
+        message: result.message
+      }).catch(() => {});
       console.error("runDailyArticleGeneration:", result.message);
       return { success: false, message: result.message };
     }
@@ -599,7 +621,13 @@ export async function runDailyArticleGeneration(env: ArticleEnv, options: Genera
     }
 
     console.log(`runDailyArticleGeneration: created draft "${topic.title}" (${slug})`);
-    return { success: true, message: `پیش‌نویس «${topic.title}» با Claude ساخته شد.`, slug };
+    await recordAiEngineRun(env.DB, {
+      status: "success",
+      message: `پیش‌نویس «${topic.title}» با ${result.provider} ساخته شد.`,
+      articleSlug: slug
+    }).catch(() => {});
+
+    return { success: true, message: `پیش‌نویس «${topic.title}» با ${result.provider} ساخته شد.`, slug };
   } catch (err) {
     await releaseClaim();
     const message = err instanceof Error ? err.message : String(err);

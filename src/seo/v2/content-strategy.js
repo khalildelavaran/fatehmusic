@@ -23,6 +23,7 @@ import {
   makeCourseRef
 } from "./content-strategy/builders.js";
 import { normalizeSemanticText } from "../helpers/text.js";
+import { slugifyArticleTitle } from "./content-strategy/slug.js";
 
 function canonicalAssetKey(item) {
   const topic = findTopic(item.topic);

@@ -2,8 +2,7 @@ import { containsSemanticPhrase, normalizeSemanticText, semanticTokens } from ".
 
 function normalizeCourseName(title) {
   return normalizeSemanticText(title)
-    .replace(/^آموزش\s+/u, "")
-    .replace(/^دوره\s+/u, "")
+    .replace(/^(?:اموزش|آموزش|دوره)\s+/u, "")
     .trim();
 }
 
@@ -33,7 +32,14 @@ export function matchCoursesInTitle(title, courses = [], {
 
   if (comparison) {
     const max = limit > 0 ? limit : matches.length;
-    return matches.slice(0, max).map((item) => item.course);
+    return matches
+      .slice(0)
+      .sort((a, b) =>
+        b.tokens.length - a.tokens.length ||
+        a.index - b.index
+      )
+      .slice(0, max)
+      .map((item) => item.course);
   }
 
   return matches

@@ -10,10 +10,13 @@ export default defineConfig({
 
   trailingSlash: "never",
 
+  devToolbar: {
+    enabled: false
+  },
+
   adapter: cloudflare({
-    // CI must build without authenticating to Cloudflare remote bindings.
-    // Local development keeps remote bindings enabled for production parity.
-    remoteBindings: process.env.CI !== "true"
+    // Remote bindings require CLOUDFLARE_API_TOKEN. In local/preview environments, use local bindings.
+    remoteBindings: process.env.REMOTE_BINDINGS === "true"
   }),
 
   integrations: [

@@ -42,14 +42,26 @@ export function applySecurityHeaders(request: Request, response: Response): Resp
   // WebSocket upgrades and redirects-with-null-body edge cases: leave untouched.
   if (response.status === 101) return response;
 
+  let isLocalOrPreview = false;
+  try {
+    const url = new URL(request.url);
+    isLocalOrPreview = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname.endsWith(".run.app");
+  } catch {}
+
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(BASE_HEADERS)) {
+    if (isLocalOrPreview && (name === "X-Frame-Options" || name === "Cross-Origin-Opener-Policy")) {
+      continue;
+    }
     if (!headers.has(name)) headers.set(name, value);
   }
 
   const contentType = headers.get("Content-Type") || "";
   if (/text\/html/i.test(contentType) && !headers.has("Content-Security-Policy")) {
-    headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+    const csp = isLocalOrPreview
+      ? CONTENT_SECURITY_POLICY.replace("; frame-ancestors 'self'", "")
+      : CONTENT_SECURITY_POLICY;
+    headers.set("Content-Security-Policy", csp);
   }
 
   // Belt-and-braces for private application areas (robots.txt + meta already cover pages).
