@@ -17,6 +17,20 @@ export interface BlogPost {
   published_at?: string | null;
 }
 
+/** Lightweight fields needed for article cards, related-link planning, RSS and sitemaps. */
+export interface BlogPostSummary {
+  id?: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  topic: string;
+  related_course_slug?: string | null;
+  related_course_title?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string | null;
+}
+
 const localMusicEducationContent = `# آموزش موسیقی در شوشتر | راهنمای کامل انتخاب کلاس و دوره موسیقی
 
 اگر به دنبال آموزش موسیقی در شوشتر هستید، احتمالاً پرسش‌هایی درباره انتخاب ساز، کلاس مناسب، مدرس، شهریه، سطح آموزشی و مسیر یادگیری دارید. انتخاب کلاس موسیقی فقط به انتخاب یک ساز محدود نمی‌شود؛ سن هنرجو، هدف از یادگیری، سبک موسیقی مورد علاقه، سطح فعلی، برنامه تمرین و شیوه تدریس مدرس همگی در کیفیت این مسیر اثر دارند.
@@ -199,6 +213,46 @@ export const fallbackBlogPosts: BlogPost[] = [
   }
 ];
 
+/**
+ * Read only article metadata for listings and link planning. Article bodies can
+ * be large; deserializing every body for a card grid wastes Workers CPU.
+ */
+export async function getPublishedPostSummaries(): Promise<BlogPostSummary[]> {
+  const db = env.DB;
+
+  if (!db) {
+    if (!import.meta.env.DEV) return [];
+    return fallbackBlogPosts.map((post) => ({
+      id: post.id,
+      slug: post.slug,
+      title: post.title,
+      excerpt: post.excerpt,
+      topic: post.topic,
+      related_course_slug: post.related_course_slug,
+      related_course_title: post.related_course_title,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      published_at: post.published_at
+    }));
+  }
+
+  try {
+    const result = await db
+      .prepare(`SELECT id, slug, title, excerpt, topic,
+                      related_course_slug, related_course_title,
+                      created_at, updated_at, published_at
+               FROM blog_posts
+               WHERE status = 'published'
+               ORDER BY COALESCE(published_at, created_at) DESC, id DESC`)
+      .all<BlogPostSummary>();
+
+    return result.results;
+  } catch (error) {
+    console.error("[blog] failed to load published post summaries from D1:", error);
+    return [];
+  }
+}
+
 export async function getPublishedPosts(): Promise<BlogPost[]> {
   const db = env.DB;
 
@@ -219,15 +273,20 @@ export async function getPublishedPosts(): Promise<BlogPost[]> {
 }
 
 /** Strict variant for endpoints such as sitemaps where a database outage must not be mistaken for valid empty content. */ 
-export async function getPublishedPostsStrict(): Promise<BlogPost[]> {
+export async function getPublishedPostsStrict(): Promise<BlogPostSummary[]> {
   const db = env.DB;
   if (!db) {
     throw new Error("D1 binding 'DB' is required for strict published-content reads");
   }
 
   const result = await db
-    .prepare("SELECT * FROM blog_posts WHERE status = 'published' ORDER BY COALESCE(published_at, created_at) DESC")
-    .all<BlogPost>();
+    .prepare(`SELECT id, slug, title, excerpt, topic,
+                    related_course_slug, related_course_title,
+                    created_at, updated_at, published_at
+             FROM blog_posts
+             WHERE status = 'published'
+             ORDER BY COALESCE(published_at, created_at) DESC, id DESC`)
+    .all<BlogPostSummary>();
 
   return result.results;
 }

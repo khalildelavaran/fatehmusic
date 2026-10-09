@@ -7,6 +7,26 @@ import { auditPage } from "../v2/audit.js";
 
 
 describe("SEO/GEO Engine v2", () => {
+  it("keeps page metadata and JSON-LD when runtime intelligence is disabled", () => {
+    const result = buildSEO({
+      path: "/blog",
+      title: "وبلاگ آموزش موسیقی در شوشتر | آموزشگاه موسیقی فاتح",
+      description: "مقالات آموزشی موسیقی برای انتخاب ساز و تمرین در آموزشگاه موسیقی فاتح.",
+      answerBlocks: [{
+        question: "چطور ساز مناسب را انتخاب کنم؟",
+        answer: "با توجه به علاقه، هدف و شرایط آموزشی."
+      }],
+      includeIntelligence: false
+    });
+
+    expect(result.canonical).toBe("https://fatehmusic.ir/blog");
+    expect(result.geo.answerBlocks).toHaveLength(1);
+    expect(result.geo.internalLinks).toEqual([]);
+    expect(result.geo.knowledgeGraph).toBeNull();
+    expect(result.geo.diagnostics).toBeNull();
+    expect(result.schemaGraph["@graph"].length).toBeGreaterThanOrEqual(3);
+  });
+
   it("resolves local and course topics", () => {
     const topics = resolveTopics({
       title: "آموزش گیتار در شوشتر",
