@@ -1,0 +1,189 @@
+---
+export const prerender = true;
+
+import MainLayout from "../../layouts/MainLayout.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import CTA from "../../components/CTA.astro";
+import PageHero from "../../components/PageHero.astro";
+import { courses } from "../../data/courses.js";
+import { instructors } from "../../data/instructors.js";
+import { resolveSite, buildItemListSchema, buildBreadcrumbSchema } from "../../seo/index.js";
+import { courseEntityId } from "../../seo/geo/entity.js";
+import "../../styles/courses.css";
+
+const site = resolveSite();
+const canonical = `${site.url}/courses/vocal`;
+const vocalCourses = courses.filter(
+  (course) => course.active !== false && (course.category === "آواز" || course.instrument === "voice")
+);
+
+const courseListSchema = buildItemListSchema({
+  name: "دوره‌های آموزش آواز در آموزشگاه موسیقی فاتح شوشتر",
+  url: canonical,
+  itemType: "Course",
+  items: vocalCourses.map((course) => ({
+    name: course.title,
+    url: `${site.url}/courses/${course.slug}`,
+    id: courseEntityId(`${site.url}/courses/${course.slug}`),
+    description: course.content?.description || course.content?.excerpt || undefined,
+    provider: { "@id": `${site.url}/#organization` }
+  }))
+});
+
+const breadcrumbSchema = buildBreadcrumbSchema(
+  [
+    { name: "خانه", path: "/" },
+    { name: "دوره‌های آموزشی", path: "/courses" },
+    { name: "آموزش آواز", path: "/courses/vocal" }
+  ],
+  site
+);
+
+const pageIntro = "آموزشگاه موسیقی فاتح در شوشتر چند مسیر آموزشی برای آواز و مهارت‌های صوتی ارائه می‌کند؛ از آواز سنتی و آواز پاپ تا آواز محلی شوشتری و بختیاری و دوره صداسازی. هر دوره صفحه مستقل خود را دارد تا بتوانید محتوای آموزشی، سطح، مدرس و شرایط ثبت‌نام را بررسی کنید.";
+const pageSupport = "برای انتخاب دوره، به سبک موسیقی مورد علاقه، تجربه فعلی، هدف آموزشی و برنامه تمرین خود توجه کنید. اگر هنوز درباره سبک یا مسیر مناسب مطمئن نیستید، می‌توانید پیش از ثبت‌نام از آموزشگاه مشاوره بگیرید.";
+const wordCount = [
+  pageIntro,
+  pageSupport,
+  ...vocalCourses.map((course) => `${course.title} ${course.content?.description || course.content?.excerpt || ""}`)
+].join(" ").split(/\s+/).filter(Boolean).length;
+
+const answerBlocks = [
+  {
+    question: "در آموزشگاه موسیقی فاتح چه دوره‌های آوازی ارائه می‌شود؟",
+    answer: "دوره‌های آواز سنتی، آواز پاپ، آواز محلی شوشتری، آواز محلی بختیاری و صداسازی ارائه می‌شوند. جزئیات و شرایط هر دوره در صفحه اختصاصی آن آمده است.",
+    sourceUrl: canonical,
+    entityId: `${canonical}#itemlist`
+  },
+  {
+    question: "برای انتخاب کلاس آواز در شوشتر از کجا شروع کنم؟",
+    answer: "ابتدا سبک مورد علاقه و هدف آموزشی خود را مشخص کنید، سپس سطح، مدرس و محتوای دوره‌های مرتبط را مقایسه کنید و در صورت نیاز پیش از ثبت‌نام مشاوره بگیرید.",
+    sourceUrl: canonical,
+    entityId: `${canonical}#itemlist`
+  }
+];
+---
+
+<MainLayout
+  title="دوره‌های آموزش آواز در شوشتر | آموزشگاه موسیقی فاتح"
+  description="مقایسه دوره‌های آواز سنتی، پاپ، محلی شوشتری و بختیاری و صداسازی در آموزشگاه موسیقی فاتح شوشتر؛ همراه با معرفی سرفصل‌ها و مدرس‌ها."
+  canonical={canonical}
+  keywords={["آموزش آواز در شوشتر", "کلاس آواز شوشتر", "آواز سنتی شوشتر", "آواز پاپ شوشتر", "آواز محلی شوشتری", "آواز بختیاری", "کلاس صداسازی"]}
+  topics={["vocal", "shushtar", "music-education"]}
+  entityType="ItemList"
+  answerBlocks={answerBlocks}
+  auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount: vocalCourses.length + 5 }}
+  schema={[courseListSchema, breadcrumbSchema].filter((item): item is object => item !== null && item !== undefined)}
+>
+  <Header />
+  <PageHero
+    badge="دوره‌های آواز"
+    title="دوره‌های آموزش آواز در شوشتر"
+    description="آشنایی با مسیرهای آواز و صداسازی در آموزشگاه موسیقی فاتح؛ از موسیقی سنتی و پاپ تا آوازهای محلی."
+  />
+
+  <main>
+    <section class="container vocal-hub-intro">
+      <p>{pageIntro}</p>
+      <p>{pageSupport}</p>
+      <p>
+        برای آشنایی با همه رشته‌ها، <a href="/courses">فهرست کامل دوره‌های آموزشی</a> را ببینید؛
+        برای شناخت محل برگزاری و دسترسی، صفحه <a href="/locations/shushtar">آموزش موسیقی در شوشتر</a> در دسترس است.
+      </p>
+    </section>
+
+    <section class="courses" aria-labelledby="vocal-courses-title">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">انتخاب مسیر آواز</span>
+          <h2 id="vocal-courses-title" class="section-title">مقایسه دوره‌های آواز و صداسازی</h2>
+          <p>برای هر مسیر، صفحه دوره را باز کنید تا اطلاعات اختصاصی و راه ثبت‌نام را ببینید.</p>
+        </div>
+
+        <div class="courses-grid">
+          {vocalCourses.map((course) => {
+            const linkedInstructors = instructors.filter((teacher) =>
+              (course.instructors ?? []).includes(teacher.id)
+            );
+            const displayTitle = /^دوره\s+/.test(course.title)
+              ? `آموزش ${course.title.replace(/^دوره\s+/, "")}`
+              : course.title;
+
+            return (
+              <article class="course-card">
+                <div class="course-image">
+                  <a href={`/courses/${course.slug}`} class="course-image-link">
+                    <img
+                      src={course.media.cover || course.media.image}
+                      alt={`${displayTitle} در آموزشگاه موسیقی فاتح شوشتر`}
+                      width="800"
+                      height="450"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
+                  <a
+                    href={`/register?course=${course.slug}`}
+                    rel="nofollow"
+                    class="card-register-badge"
+                    aria-label={`ثبت‌نام در ${displayTitle}`}
+                  >ثبت‌نام</a>
+                </div>
+
+                <div class="course-content">
+                  <a href={`/courses/${course.slug}`} class="course-title-link">
+                    <h3 class="course-title">{displayTitle}</h3>
+                  </a>
+                  <p class="course-subtitle">{course.content?.description || course.content?.excerpt}</p>
+                  <p><strong>سطح:</strong> {course.level.join("، ")}</p>
+                  {linkedInstructors.length > 0 && (
+                    <div class="course-instructors">
+                      {linkedInstructors.map((teacher) => (
+                        <a class="course-instructor" href={`/instructors/${teacher.slug}`}>{teacher.name}</a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <CTA />
+  <Footer />
+</MainLayout>
+
+<style>
+  .vocal-hub-intro {
+    padding: 28px 0 8px;
+    line-height: 2;
+  }
+
+  .vocal-hub-intro p {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+    line-height: 2;
+  }
+
+  .vocal-hub-intro a {
+    color: var(--gold-light);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .vocal-hub-intro a:hover {
+    color: var(--gold);
+  }
+
+  .courses .section-header {
+    padding-top: 20px;
+  }
+
+  .course-content > p {
+    margin: 8px 0;
+    line-height: 1.9;
+  }
+</style>
