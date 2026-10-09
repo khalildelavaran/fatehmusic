@@ -21,7 +21,7 @@ import {
   topicSlugs
 } from "../../seo/index.js";
 import SeoInternalLinks from "../../components/SeoInternalLinks.astro";
-import { getPublishedPost, getPublishedPosts } from "../../server/blog";
+import { getPublishedPost, getPublishedPostSummaries } from "../../server/blog";
 import { courses as runtimeCourses } from "../../data/courses.js";
 import { instructors as runtimeInstructors } from "../../data/instructors.js";
 import { findComparisonCourses } from "../../seo/v2/comparison-courses.js";
@@ -33,7 +33,7 @@ if (!post) return Astro.rewrite("/404");
 
 const site = resolveSite();
 const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
-const allPosts = await getPublishedPosts();
+const allPosts = await getPublishedPostSummaries();
 const clusterEntry = buildArticleClusterLinks(allPosts, 4).find((item) => item.slug === post.slug);
 const relatedPosts = clusterEntry?.related ?? [];
 const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
@@ -218,6 +218,7 @@ const articleHtml = renderArticleContent(post.content);
   answerBlocks={answerBlocks}
   auditContext={{ h1Count: 1, missingImageAlt: 0, wordCount, internalLinkCount }}
   schema={schema}
+  includeIntelligence={false}
 >
   <Header />
   <main class="blog-article">
