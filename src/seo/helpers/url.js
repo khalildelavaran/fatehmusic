@@ -32,6 +32,29 @@ export function absoluteUrl(path, baseUrl) {
 }
 
 /**
+ * Normalizes a public absolute HTTP(S) URL, returning undefined for
+ * malformed URLs, other schemes, or URLs containing credentials.
+ * This is used for external identity links such as Schema.org sameAs.
+ *
+ * @param {unknown} value
+ * @returns {string|undefined}
+ */
+export function normalizeHttpUrl(value) {
+    if (typeof value !== "string") return undefined;
+    const raw = value.trim();
+    if (!raw) return undefined;
+
+    try {
+        const parsed = new URL(raw);
+        if (!["http:", "https:"].includes(parsed.protocol)) return undefined;
+        if (!parsed.hostname || parsed.username || parsed.password) return undefined;
+        return parsed.href;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
  * Strips query strings, fragments, and trailing slashes so the
  * same page never produces two different canonical URLs.
  *
