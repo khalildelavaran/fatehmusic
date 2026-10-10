@@ -8,7 +8,7 @@
 import { instructors } from "../../data/instructors.js";
 import { courses } from "../../data/courses.js";
 import { instructorContent } from "../../data/instructor-content.js";
-import { absoluteUrl } from "../helpers/url.js";
+import { absoluteUrl, normalizeHttpUrl } from "../helpers/url.js";
 
 /**
  * @typedef {Object} ResolvedInstructor
@@ -108,15 +108,15 @@ function normalizeSocialUrl(network, value) {
         return undefined;
     }
 
+    // Do not reinterpret malformed absolute URLs as usernames.
     if (/^https?:\/\//i.test(trimmed)) {
-        return trimmed;
+        return normalizeHttpUrl(trimmed);
     }
 
     if (network === "instagram") {
         const handle = trimmed.replace(/^@/, "");
-        return handle
-            ? `https://www.instagram.com/${handle}/`
-            : undefined;
+        if (!/^[a-zA-Z0-9._]+$/.test(handle)) return undefined;
+        return normalizeHttpUrl(`https://www.instagram.com/${handle}/`);
     }
 
     // Schema.org sameAs must contain URLs. Ignore bare handles for
