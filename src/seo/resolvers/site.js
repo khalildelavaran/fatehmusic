@@ -11,7 +11,7 @@
 
 import { site } from "../../data/site.js";
 import { contact } from "../../data/contact.js";
-import { absoluteUrl } from "../helpers/url.js";
+import { absoluteUrl, normalizeHttpUrl } from "../helpers/url.js";
 
 import {
     toLatinDigits,
@@ -169,11 +169,8 @@ function dedupeSameAs(socials) {
         socials.telegram,
         socials.aparat
     ]
-        .filter(
-            (value) =>
-                typeof value === "string" &&
-                value.trim().length > 0
-        )
+        .map(normalizeHttpUrl)
+        .filter(Boolean)
         .filter(
             (value, index, array) =>
                 array.indexOf(value) === index
