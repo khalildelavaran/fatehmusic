@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { webPageEntityId, normalizeUrl } from "./url.js";
+import { webPageEntityId, normalizeHttpUrl, normalizeUrl } from "./url.js";
 
 describe("webPageEntityId", () => {
   it("keeps the root slash but removes trailing slashes from non-root paths", () => {
@@ -21,5 +21,21 @@ describe("normalizeUrl", () => {
     expect(normalizeUrl("/")).toBe("/");
     expect(normalizeUrl("/about/")).toBe("/about");
     expect(normalizeUrl("/courses/guitar-course/?x=1")).toBe("/courses/guitar-course");
+  });
+});
+
+
+describe("normalizeHttpUrl", () => {
+  it("normalizes valid absolute HTTP and HTTPS URLs", () => {
+    expect(normalizeHttpUrl(" https://EXAMPLE.com/profile ")).toBe("https://example.com/profile");
+    expect(normalizeHttpUrl("http://example.com")).toBe("http://example.com/");
+  });
+
+  it("rejects relative URLs, non-HTTP schemes, malformed URLs, and credentials", () => {
+    expect(normalizeHttpUrl("/profile")).toBeUndefined();
+    expect(normalizeHttpUrl("javascript:alert(1)")).toBeUndefined();
+    expect(normalizeHttpUrl("https://bad url")).toBeUndefined();
+    expect(normalizeHttpUrl("https://user:pass@example.com/profile")).toBeUndefined();
+    expect(normalizeHttpUrl("")).toBeUndefined();
   });
 });

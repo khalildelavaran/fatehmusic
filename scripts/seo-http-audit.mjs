@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { normalizeHttpUrl } from "../src/seo/helpers/url.js";
+
 const SITE_ORIGIN = (process.env.SEO_SITE_URL || "https://fatehmusic.ir").replace(/\/$/, "");
 const CONCURRENCY = Number(process.env.SEO_HTTP_CONCURRENCY || 6);
 const HTTP_TIMEOUT_MS = Math.max(1000, Number(process.env.SEO_HTTP_TIMEOUT_MS || 15000));
@@ -80,6 +82,12 @@ function jsonLdIsValidGraph(html) {
     for (const node of graph["@graph"]) {
       if (!node || typeof node !== "object" || !node["@id"]) {
         return { ok: false, reason: "JSON-LD node is invalid or missing @id" };
+      }
+      if (Object.prototype.hasOwnProperty.call(node, "sameAs")) {
+        const links = Array.isArray(node.sameAs) ? node.sameAs : [node.sameAs];
+        if (!links.length || links.some((link) => !normalizeHttpUrl(link))) {
+          return { ok: false, reason: "sameAs must contain non-empty absolute HTTP(S) URLs" };
+        }
       }
       if (ids.has(node["@id"])) {
         return { ok: false, reason: "duplicate JSON-LD @id: " + node["@id"] };
