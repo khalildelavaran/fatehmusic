@@ -898,7 +898,7 @@ export const instructors = [
   },
 
   social: {
-    instagram: "",
+    instagram: "@farnazmoradi.ir",
     telegram: "",
     whatsapp: "",
     youtube: "",

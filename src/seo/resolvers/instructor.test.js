@@ -25,8 +25,10 @@ describe("resolveInstructor sameAs", () => {
     ]);
   });
 
-  it("does not publish sameAs on the two profiles from the Search Console report when no social URLs exist", () => {
-    expect(resolveInstructor("farnaz-kadkhoda-moradi", site).sameAs).toEqual([]);
+  it("uses Farnaz Moradi's Instagram identity and leaves Narges Fateh without sameAs", () => {
+    expect(resolveInstructor("farnaz-kadkhoda-moradi", site).sameAs).toEqual([
+      "https://www.instagram.com/farnazmoradi.ir/"
+    ]);
     expect(resolveInstructor("narges-fateh", site).sameAs).toEqual([]);
   });
 });
