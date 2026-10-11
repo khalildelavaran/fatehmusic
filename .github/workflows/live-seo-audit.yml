@@ -16,12 +16,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
-
+      # The live audit uses only Node.js built-ins; installing dependencies
+      # is unnecessary. Avoid npm lockfile/cache assumptions in this workflow.
       - name: Run production SEO audit
         env:
           SEO_SITE_URL: https://fatehmusic.ir
-        run: npm run seo:live-audit
+        run: node scripts/seo-http-audit.mjs
