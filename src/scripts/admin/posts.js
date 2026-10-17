@@ -493,6 +493,9 @@ function setVisibleSelectValue(select, value, label) {
 
 function updateToolbarControlsFromSelection(range = savedSelection) {
   if (currentEditorMode !== "visual") return;
+  // Native selects momentarily blur the contenteditable selection; don't let
+  // selectionchange events reselect the previous value while the menu is open.
+  if (editorToolbar.contains(document.activeElement) && document.activeElement.matches("select")) return;
   if (!range || !visualEditor.contains(range.commonAncestorContainer)) {
     const activeSelection = window.getSelection();
     if (!activeSelection?.rangeCount) return;
@@ -537,44 +540,59 @@ function updateToolbarControlsFromSelection(range = savedSelection) {
   }
 }
 
-function saveSelection() {
+function captureSelectionBeforeToolbarFocus() {
   const selection = window.getSelection();
-  if (!selection || !selection.rangeCount) return;
+  if (!selection || !selection.rangeCount) return false;
   const range = selection.getRangeAt(0);
-  if (!visualEditor.contains(range.commonAncestorContainer)) return;
-  // Some browsers collapse the DOM selection while focusing a native select.
-  // Keep the actual text range captured on pointerdown instead of overwriting it.
-  if (range.collapsed && document.activeElement !== visualEditor && savedSelection && !savedSelection.collapsed) {
-    updateToolbarControlsFromSelection(savedSelection);
-    return;
-  }
+  if (!visualEditor.contains(range.commonAncestorContainer)) return false;
+  // Do not replace a useful text range with the collapsed range many browsers
+  // expose after a native <select> receives focus.
+  if (range.collapsed && savedSelection && !savedSelection.collapsed) return true;
   savedSelection = range.cloneRange();
+  return true;
+}
+
+function saveSelection() {
+  if (!captureSelectionBeforeToolbarFocus()) return;
+  // A selection can remain live in the editor while the native select is open.
+  // Never reset that select's displayed option until its change handler finishes.
+  if (editorToolbar.contains(document.activeElement) && document.activeElement.matches("select")) return;
   updateToolbarControlsFromSelection(savedSelection);
 }
 
 function restoreSelection() {
-  visualEditor.focus();
-  if (!savedSelection) return false;
+  // Clone before focusing: focus can synchronously/asynchronously collapse the
+  // document selection and trigger selectionchange handlers in some browsers.
+  const rangeToRestore = savedSelection?.cloneRange();
+  if (!rangeToRestore || !visualEditor.contains(rangeToRestore.commonAncestorContainer)) return false;
   try {
+    visualEditor.focus({ preventScroll: true });
     const selection = window.getSelection();
     if (!selection) return false;
     selection.removeAllRanges();
-    selection.addRange(savedSelection);
+    selection.addRange(rangeToRestore);
+    savedSelection = rangeToRestore.cloneRange();
     return true;
   } catch {
-    savedSelection = null;
     return false;
   }
 }
 
 function applyInlineStyle(property, value) {
-  restoreSelection();
+  if (!restoreSelection()) {
+    if (editorStatus) editorStatus.textContent = "ابتدا بخشی از متن را در ویرایشگر انتخاب کنید؛ سپس قلم، اندازه یا ضخامت را تغییر دهید.";
+    return false;
+  }
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) {
     if (editorStatus) editorStatus.textContent = "ابتدا بخشی از متن را در ویرایشگر انتخاب کنید.";
     return false;
   }
   const sourceRange = selection.getRangeAt(0).cloneRange();
+  if (!visualEditor.contains(sourceRange.commonAncestorContainer)) {
+    if (editorStatus) editorStatus.textContent = "انتخاب متن از دست رفته است؛ متن را دوباره انتخاب کنید.";
+    return false;
+  }
   if (sourceRange.collapsed) {
     if (editorStatus) editorStatus.textContent = "برای تغییر قلم یا اندازه، ابتدا بخشی از متن را انتخاب کنید.";
     updateToolbarControlsFromSelection(sourceRange);
@@ -682,12 +700,11 @@ editorToolbar.addEventListener("click", (event) => {
 
 for (const selector of ["[data-editor-font]", "[data-editor-size]", "[data-editor-weight]", "[data-editor-block]"]) {
   editorToolbar.querySelectorAll(selector).forEach((select) => {
-    select.addEventListener("pointerdown", saveSelection);
-    select.addEventListener("mousedown", saveSelection);
-    select.addEventListener("focus", () => {
-      // Keyboard users may enter a dropdown without a mouse event.
-      if (window.getSelection()?.rangeCount) saveSelection();
-    });
+    // Capture the editor range before the browser moves focus to its native menu.
+    select.addEventListener("pointerdown", captureSelectionBeforeToolbarFocus);
+    select.addEventListener("mousedown", captureSelectionBeforeToolbarFocus);
+    select.addEventListener("focus", captureSelectionBeforeToolbarFocus);
+    select.addEventListener("keydown", captureSelectionBeforeToolbarFocus);
   });
 }
 
@@ -750,12 +767,13 @@ editorToolbar.querySelectorAll("[data-editor-color]").forEach((input) => {
 });
 
 document.addEventListener("selectionchange", () => {
+  // Leave selector values alone until the user commits a choice. Some native
+  // dropdowns generate a collapsed selection while their menu is being used.
+  if (editorToolbar.contains(document.activeElement) && document.activeElement.matches("select")) return;
   const selection = window.getSelection();
   if (!selection?.rangeCount) return;
   const range = selection.getRangeAt(0);
   if (!visualEditor.contains(range.commonAncestorContainer)) return;
-  // Don't overwrite a saved text range with a transient collapsed range when
-  // focus moves from the editor into a native dropdown.
   if (range.collapsed && document.activeElement !== visualEditor) return;
   savedSelection = range.cloneRange();
   updateToolbarControlsFromSelection(savedSelection);
