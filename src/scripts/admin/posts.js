@@ -541,7 +541,8 @@ editorToolbar.querySelectorAll("[data-editor-font]").forEach((select) => {
   select.addEventListener("mousedown", saveSelection);
   select.addEventListener("change", () => {
     if (select.value) applyInlineStyle("font-family", select.value);
-    select.value = "";
+    // Vazirmatn stays selected because it is the editor's default font.
+    select.value = "Vazirmatn";
   });
 });
 
@@ -550,6 +551,15 @@ editorToolbar.querySelectorAll("[data-editor-size]").forEach((select) => {
   select.addEventListener("change", () => {
     if (select.value) applyInlineStyle("font-size", select.value);
     select.value = "";
+  });
+});
+
+editorToolbar.querySelectorAll("[data-editor-weight]").forEach((select) => {
+  select.addEventListener("mousedown", saveSelection);
+  select.addEventListener("change", () => {
+    if (select.value) applyInlineStyle("font-weight", select.value);
+    // Return to normal weight after applying a one-off weight to the selection.
+    select.value = "400";
   });
 });
 
