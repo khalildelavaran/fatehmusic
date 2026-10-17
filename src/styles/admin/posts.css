@@ -784,3 +784,45 @@
     background:rgba(201,162,39,.1);border-color:rgba(201,162,39,.27);color:var(--gold-light,#f4d46b);
 }
 .rich-editor .code-tool-button.code-tool-primary:hover{background:rgba(201,162,39,.17);}
+
+
+/* Keep paragraph, font, size and all formatting actions on one compact row. */
+.rich-editor-toolbar{padding:0 8px;overflow:hidden;}
+.rich-toolbar-row{
+    display:flex;align-items:center;flex-wrap:nowrap!important;justify-content:flex-start;
+    gap:5px;min-height:43px;padding:5px 0;width:100%;
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;
+    scrollbar-color:rgba(201,162,39,.35) transparent;
+}
+.rich-toolbar-row::-webkit-scrollbar{height:4px;}
+.rich-toolbar-row::-webkit-scrollbar-thumb{background:rgba(201,162,39,.32);border-radius:4px;}
+.rich-tool-group{flex:0 0 auto;flex-wrap:nowrap!important;gap:2px;}
+.rich-toolbar-separator{display:block!important;flex:0 0 1px;height:22px;margin:0 2px;}
+.rich-editor-toolbar select{
+    min-width:0;width:84px;height:30px;min-height:30px;padding:4px 19px 4px 6px;
+    flex:0 0 auto;font-size:11px;border-radius:7px;
+}
+.rich-editor-toolbar select[data-editor-block]{width:91px;}
+.rich-editor-toolbar select[data-editor-font]{width:79px;}
+.rich-editor-toolbar select[data-editor-size]{width:61px;}
+.rich-editor .rich-tool-button,.rich-color-tool{
+    min-width:27px;width:27px;height:29px;min-height:29px;flex:0 0 27px;
+    padding:3px;border-radius:6px;font-size:12px;
+}
+.rich-tool-group-compact .rich-tool-button{min-width:27px;width:27px;padding:3px;font-size:13px;}
+.rich-color-tool{position:relative;}
+.rich-color-tool>span{font-size:13px;}
+.toolbar-icon-detail{display:none;}
+@media(max-width:760px){
+    .rich-editor-toolbar{padding:0 7px;}
+    .rich-toolbar-row{flex-wrap:nowrap!important;gap:4px;}
+    .rich-toolbar-separator{display:block!important;}
+    .rich-editor-toolbar select[data-editor-block]{width:86px;}
+    .rich-editor-toolbar select[data-editor-font]{width:75px;}
+    .rich-editor-toolbar select[data-editor-size]{width:58px;}
+    .rich-editor .rich-tool-button,.rich-color-tool{min-width:27px;width:27px;flex-basis:27px;}
+}
+@media(max-width:480px){
+    .rich-toolbar-row{justify-content:flex-start;}
+    .rich-toolbar-separator{margin:0 1px;}
+}
