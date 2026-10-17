@@ -24,15 +24,28 @@ function escapeAttribute(value: string): string {
 
 function safeUrl(value: string, image = false): string | null {
   const candidate = value.trim().replace(/[\u0000-\u0020\u007f]+/g, "");
-  if (!candidate || /^(?:javascript|vbscript|data|file):/i.test(candidate)) return null;
-  if (/^https?:\/\//i.test(candidate)) return candidate;
-  if (!image && /^(?:mailto|tel):/i.test(candidate)) return candidate;
-  if (candidate.startsWith("/") && !candidate.startsWith("//")) return candidate;
-  if (candidate.startsWith("#")) return candidate;
-  if (/^\.\.?\//.test(candidate)) return candidate;
+  const decoded = candidate
+    .replace(/&#(?:x([0-9a-f]+)|(\d+));?/gi, (_entity, hex, decimal) => {
+      const codePoint = Number.parseInt(hex || decimal, hex ? 16 : 10);
+      return codePoint > 0 && codePoint <= 0x10ffff ? String.fromCodePoint(codePoint) : "";
+    })
+    .replace(/&colon;/gi, ":")
+    .replace(/&tab;/gi, "\t")
+    .replace(/&newline;/gi, "\n")
+    .replace(/&sol;/gi, "/")
+    .replace(/[\u0000-\u0020\u007f]+/g, "");
+
+  if (!candidate || !decoded || /^(?:javascript|vbscript|data|file):/i.test(decoded)) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(decoded)) {
+    if (/^https?:\/\//i.test(decoded) && /^https?:\/\//i.test(candidate)) return candidate;
+    if (!image && /^(?:mailto|tel):/i.test(decoded) && /^(?:mailto|tel):/i.test(candidate)) return candidate;
+    return null;
+  }
+  if (candidate.startsWith("/") && !candidate.startsWith("//") && decoded.startsWith("/") && !decoded.startsWith("//")) return candidate;
+  if (candidate.startsWith("#") && decoded.startsWith("#")) return candidate;
+  if (/^\.\.?\//.test(candidate) && /^\.\.?\//.test(decoded)) return candidate;
   return null;
 }
-
 function safeColor(value: string): boolean {
   return /^(?:#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([\d\s.,%+-]+\)|[a-z]{1,24})$/i.test(value.trim());
 }
