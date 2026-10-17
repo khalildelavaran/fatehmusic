@@ -1,6 +1,6 @@
 const ALLOWED_TAGS = new Set([
   "p", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6",
-  "strong", "b", "em", "i", "u", "s", "del", "mark", "small",
+  "strong", "b", "em", "i", "u", "s", "strike", "del", "mark", "small",
   "sub", "sup", "br", "hr", "blockquote", "pre", "code",
   "ul", "ol", "li", "a", "img", "table", "caption", "thead",
   "tbody", "tfoot", "tr", "th", "td", "font"
@@ -8,7 +8,7 @@ const ALLOWED_TAGS = new Set([
 
 const VOID_TAGS = new Set(["br", "hr", "img"]);
 const DROP_CONTENT_TAGS = new Set(["script", "style", "iframe", "object", "embed", "svg", "math", "template", "noscript"]);
-const HTML_LEADING_TAG = /^\s*<(?:!doctype\b|!--|\/?(?:html|body|p|div|span|h[1-6]|strong|b|em|i|u|s|del|mark|small|sub|sup|br|hr|blockquote|pre|code|ul|ol|li|a|img|table|caption|thead|tbody|tfoot|tr|th|td|font|script|style|iframe|object|embed|svg|math|template|noscript)\b)/i;
+const HTML_LEADING_TAG = /^\s*<(?:!doctype\b|!--|\/?(?:html|body|p|div|span|h[1-6]|strong|b|em|i|u|s|strike|del|mark|small|sub|sup|br|hr|blockquote|pre|code|ul|ol|li|a|img|table|caption|thead|tbody|tfoot|tr|th|td|font|script|style|iframe|object|embed|svg|math|template|noscript)\b)/i;
 
 export function isHtmlArticleContent(value: unknown): boolean {
   return HTML_LEADING_TAG.test(String(value ?? ""));
