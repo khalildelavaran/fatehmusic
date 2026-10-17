@@ -4,7 +4,7 @@ import { dedupWithinBatch, filterAgainstExisting } from "./dedup";
 import { scoreCandidates } from "./scoring";
 import {
   createRun, finishRun, getCoverageByCourse, getExistingTitleIndex, cleanupCoveredLocalTopics,
-  getRecentlyUsedCourses, insertScoredCandidates
+  cleanupTopicsCoveredByExistingPosts, getRecentlyUsedCourses, insertScoredCandidates
 } from "./db";
 import { D1SearchConsoleKeywordProvider } from "./providers/gsc-keyword";
 import { HybridKeywordProvider } from "./providers/hybrid-keyword";
@@ -25,6 +25,7 @@ export async function runTopicDiscovery(db: D1Database, options: RunDiscoveryOpt
   try {
     generated = dedupWithinBatch(generateCandidates());
     await cleanupCoveredLocalTopics(db);
+    await cleanupTopicsCoveredByExistingPosts(db);
     const [existingIndex, coverageByCourse, recentlyUsedCourses] = await Promise.all([
       getExistingTitleIndex(db),
       getCoverageByCourse(db),

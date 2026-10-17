@@ -6,8 +6,8 @@
 // repositories/ folder that doesn't exist yet).
 
 import type { ContentTopicRow, ScoredCandidate, TopicStatus } from "./types";
-import type { ExistingTitleIndex } from "./dedup";
-import { toDedupKey } from "./normalize";
+import { NEAR_DUPLICATE_THRESHOLD, type ExistingTitleIndex } from "./dedup";
+import { titleSimilarity, toDedupKey } from "./normalize";
 import { canonicalAssetKey } from "./canonical-identity";
 
 /** Remove active topic rows whose local Shushtar course article already exists. */
@@ -24,6 +24,87 @@ export async function cleanupCoveredLocalTopics(db: D1Database): Promise<number>
     ")"
   ).run();
   return Number(result.meta?.changes || 0);
+}
+
+
+/**
+ * Reconcile stale pending topics against content that already exists.
+ *
+ * Discovery already filters candidates against blog_posts, but older topics
+ * persisted before that filter was introduced can remain in the approved queue.
+ * Use the same normalized-title and near-duplicate rules here, linking a match
+ * to the existing draft/published post instead of deleting its history.
+ */
+export async function cleanupTopicsCoveredByExistingPosts(db: D1Database): Promise<number> {
+  type PendingTopic = { id: number; title: string };
+  type ExistingPost = {
+    id: number;
+    title: string;
+    status: "draft" | "published";
+    published_at: string | null;
+  };
+
+  const [topics, posts] = await Promise.all([
+    db.prepare(
+      "SELECT id, title FROM content_topics WHERE status IN ('candidate','approved')"
+    ).all<PendingTopic>(),
+    db.prepare(
+      "SELECT id, title, status, published_at FROM blog_posts " +
+      "WHERE title IS NOT NULL AND title != '' AND status IN ('draft','published')"
+    ).all<ExistingPost>()
+  ]);
+
+  if (topics.results.length === 0 || posts.results.length === 0) return 0;
+
+  const indexedPosts = posts.results
+    .map((post) => ({ ...post, normalizedKey: toDedupKey(post.title) }))
+    .filter((post) => post.normalizedKey.length > 0);
+
+  const statements: D1PreparedStatement[] = [];
+  for (const topic of topics.results) {
+    const normalizedKey = toDedupKey(topic.title);
+    if (!normalizedKey) continue;
+
+    let bestMatch: {
+      post: (typeof indexedPosts)[number];
+      exact: boolean;
+      similarity: number;
+    } | null = null;
+
+    for (const post of indexedPosts) {
+      const exact = normalizedKey === post.normalizedKey;
+      const similarity = exact ? 1 : titleSimilarity(topic.title, post.title);
+      if (!exact && similarity < NEAR_DUPLICATE_THRESHOLD) continue;
+
+      const isBetter =
+        !bestMatch ||
+        (exact && !bestMatch.exact) ||
+        (exact === bestMatch.exact &&
+          (similarity > bestMatch.similarity ||
+            (similarity === bestMatch.similarity &&
+              post.status === "published" &&
+              bestMatch.post.status !== "published")));
+
+      if (isBetter) bestMatch = { post, exact, similarity };
+    }
+
+    if (!bestMatch) continue;
+
+    const status = bestMatch.post.status === "published" ? "used" : "drafted";
+    statements.push(
+      db.prepare(
+        "UPDATE content_topics " +
+        "SET status = ?, used_by_post_id = ?, " +
+        "used_at = CASE WHEN ? = 'used' THEN COALESCE(?, datetime('now')) ELSE NULL END, " +
+        "updated_at = datetime('now') " +
+        "WHERE id = ? AND status IN ('candidate','approved')"
+      ).bind(status, bestMatch.post.id, status, bestMatch.post.published_at, topic.id)
+    );
+  }
+
+  if (statements.length === 0) return 0;
+  const results = await db.batch(statements);
+  return results.reduce((sum, result) => sum + Number(result.meta?.changes || 0), 0);
 }
 
 export async function getExistingTitleIndex(db: D1Database): Promise<ExistingTitleIndex> {
@@ -229,6 +310,8 @@ export interface TopicListFilters {
 }
 
 export async function listTopics(db: D1Database, filters: TopicListFilters = {}): Promise<ContentTopicRow[]> {
+  // Repair legacy duplicates before exposing the pending queue to the admin UI.
+  await cleanupTopicsCoveredByExistingPosts(db);
   const limit = filters.limit ?? 200;
   // A local Shushtar article already occupies this editorial angle.
   // Hide stale topic rows from admin lists as well as blocking future discovery.
@@ -300,6 +383,7 @@ export async function resetStaleGeneratingTopics(db: D1Database, maxAgeHours = 6
 
 export async function claimNextApprovedTopic(db: D1Database, attempts = 3): Promise<ContentTopicRow | null> {
   await resetStaleGeneratingTopics(db);
+  await cleanupTopicsCoveredByExistingPosts(db);
 
   for (let attempt = 0; attempt < Math.max(1, attempts); attempt += 1) {
     const candidate = await getNextApprovedTopic(db);
@@ -324,6 +408,7 @@ export async function claimNextApprovedTopic(db: D1Database, attempts = 3): Prom
  */
 export async function claimTopicById(db: D1Database, id: number): Promise<ContentTopicRow | null> {
   await resetStaleGeneratingTopics(db);
+  await cleanupTopicsCoveredByExistingPosts(db);
   const row = await db
     .prepare(
       "SELECT * FROM content_topics " +

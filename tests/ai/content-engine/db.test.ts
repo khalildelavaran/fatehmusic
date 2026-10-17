@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getExistingTitleIndex, getRunApprovedCount, markTopicPublished, markTopicDraftPost, releaseTopicForDeletedPost } from "../../../src/ai/content-engine/db";
+import { cleanupTopicsCoveredByExistingPosts, getExistingTitleIndex, getRunApprovedCount, markTopicPublished, markTopicDraftPost, releaseTopicForDeletedPost } from "../../../src/ai/content-engine/db";
 
 describe("content intelligence title index", () => {
   it("does not let rejected topics permanently block a title", async () => {
@@ -118,5 +118,71 @@ describe("content intelligence post transitions", () => {
     } as unknown as D1Database;
 
     await expect(markTopicDraftPost(db, 99)).resolves.toBe(1);
+  });
+});
+
+
+describe("content intelligence existing-post reconciliation", () => {
+  it("moves stale duplicate suggestions to the lifecycle state of their matching post", async () => {
+    const updates: unknown[][] = [];
+    let batchedStatementCount = 0;
+    const db = {
+      prepare(sql: string) {
+        if (sql.includes("FROM content_topics WHERE status IN ('candidate','approved')")) {
+          return {
+            all: async <T>() => ({
+              results: [
+                { id: 41, title: "چرا دانستن تئوری موسیقی برای نواختن گیتار مهم است" },
+                { id: 42, title: "تمرین روزانه گیتار برای هنرجویان" },
+                { id: 43, title: "اشتباهات رایج هنرجویان گیتار" }
+              ] as T[]
+            })
+          };
+        }
+
+        if (sql.includes("FROM blog_posts")) {
+          return {
+            all: async <T>() => ({
+              results: [
+                {
+                  id: 701,
+                  title: "چرا دانستن تئوری موسیقی برای نواختن گیتار مهم است؟",
+                  status: "published",
+                  published_at: "2026-10-10 08:00:00"
+                },
+                {
+                  id: 702,
+                  title: "تمرین روزانه گیتار برای هنرجویان؟",
+                  status: "draft",
+                  published_at: null
+                }
+              ] as T[]
+            })
+          };
+        }
+
+        if (sql.startsWith("UPDATE content_topics")) {
+          return {
+            bind: (...args: unknown[]) => {
+              updates.push(args);
+              return { sql };
+            }
+          };
+        }
+
+        throw new Error("Unexpected SQL in reconciliation test: " + sql);
+      },
+      batch: async (statements: unknown[]) => {
+        batchedStatementCount = statements.length;
+        return statements.map(() => ({ meta: { changes: 1 } }));
+      }
+    } as unknown as D1Database;
+
+    await expect(cleanupTopicsCoveredByExistingPosts(db)).resolves.toBe(2);
+    expect(batchedStatementCount).toBe(2);
+    expect(updates).toEqual([
+      ["used", 701, "used", "2026-10-10 08:00:00", 41],
+      ["drafted", 702, "drafted", null, 42]
+    ]);
   });
 });
