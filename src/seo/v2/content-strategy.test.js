@@ -124,7 +124,7 @@ describe("content strategy deduplication", () => {
     expect(result.opportunities[0].isLocal).toBe(true);
     expect(result.opportunities[0].targetEntity.type).toBe("Course");
     expect(result.opportunities[0].course.slug).toBe("traditional-vocal-course");
-    expect(result.opportunities[0].suggestedSlug).toBe("هزینه-کلاس-آواز-در-شوشتر");
+    expect(result.opportunities[0].suggestedSlug).toBe("cost-of-singing-lessons-in-shushtar");
   });
 
   it("uses the canonical Course entity ID from the schema graph", () => {
