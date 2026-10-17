@@ -17,7 +17,7 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 
     <div class="posts-tabs" role="tablist" aria-label="بخش‌های مدیریت نوشته‌ها">
       <button type="button" id="postsTab" class="posts-tab is-active" role="tab" aria-selected="true" aria-controls="postsPanel" data-posts-tab="posts">نوشته‌ها</button>
-      <button type="button" id="writeTab" class="posts-tab" role="tab" aria-selected="false" aria-controls="writePanel" data-posts-tab="write">نوشتن</button>
+      <button type="button" id="writeTab" class="posts-tab" role="tab" aria-selected="false" aria-controls="writePanel" data-posts-tab="write" tabindex="-1">نوشتن</button>
     </div>
 
     <section id="postsPanel" class="posts-tab-panel is-active" role="tabpanel" aria-labelledby="postsTab">
@@ -32,9 +32,99 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
       <p id="generateStatus" role="status" class="admin-ai-status"></p>
       <section class="admin-write-panel">
         <form id="postForm" class="admin-form">
-          <input type="hidden" name="id" /><label>عنوان<input name="title" required /></label><label>اسلاگ انگلیسی<input name="slug" dir="ltr" required /></label><label>موضوع<input name="topic" required /></label><label>خلاصه<textarea name="excerpt" required></textarea></label><label class="form-full">متن مقاله<textarea name="content" rows="14" required></textarea></label><label>اسلاگ دوره مرتبط<input name="related_course_slug" dir="ltr" /></label><label>عنوان دوره مرتبط<input name="related_course_title" /></label><label>Meta Title<input name="meta_title" /></label><label class="form-full">Meta Description<textarea name="meta_description"></textarea></label>
+          <input type="hidden" name="id" />
+          <label>عنوان<input name="title" required /></label>
+          <label>اسلاگ انگلیسی<input name="slug" dir="ltr" required /></label>
+          <label>موضوع<input name="topic" required /></label>
+          <label>خلاصه<textarea name="excerpt" required></textarea></label>
+
+          <div class="form-full rich-editor-field">
+            <label for="contentEditor">متن مقاله</label>
+            <div class="rich-editor" id="richEditor">
+              <div class="rich-editor-toolbar" role="toolbar" aria-label="ابزارهای ویرایش متن">
+                <div class="rich-editor-tool-group">
+                  <button type="button" class="rich-tool-button" data-editor-command="undo" title="واگرد" aria-label="واگرد">↶</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="redo" title="ازنو" aria-label="ازنو">↷</button>
+                  <select data-editor-font aria-label="نوع قلم" title="نوع قلم">
+                    <option value="">نوع قلم</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="'Times New Roman'">Times New Roman</option>
+                    <option value="'Courier New'">Courier New</option>
+                  </select>
+                  <select data-editor-size aria-label="اندازه قلم" title="اندازه قلم">
+                    <option value="">اندازه</option>
+                    <option value="10px">۱۰</option>
+                    <option value="12px">۱۲</option>
+                    <option value="14px">۱۴</option>
+                    <option value="16px">۱۶</option>
+                    <option value="18px">۱۸</option>
+                    <option value="20px">۲۰</option>
+                    <option value="24px">۲۴</option>
+                    <option value="28px">۲۸</option>
+                    <option value="32px">۳۲</option>
+                  </select>
+                  <select data-editor-block aria-label="سبک متن" title="سبک متن">
+                    <option value="p">پاراگراف</option>
+                    <option value="h2">تیتر ۲</option>
+                    <option value="h3">تیتر ۳</option>
+                    <option value="h4">تیتر ۴</option>
+                    <option value="blockquote">نقل‌قول</option>
+                    <option value="pre">متن کد</option>
+                  </select>
+                </div>
+                <div class="rich-editor-tool-group">
+                  <button type="button" class="rich-tool-button" data-editor-command="bold" title="ضخیم" aria-label="ضخیم"><strong>B</strong></button>
+                  <button type="button" class="rich-tool-button" data-editor-command="italic" title="ایتالیک" aria-label="ایتالیک"><em>I</em></button>
+                  <button type="button" class="rich-tool-button" data-editor-command="underline" title="زیرخط" aria-label="زیرخط"><u>U</u></button>
+                  <button type="button" class="rich-tool-button" data-editor-command="strikeThrough" title="خط‌خورده" aria-label="خط‌خورده"><s>S</s></button>
+                  <label class="rich-color-tool" title="رنگ متن">رنگ <input type="color" data-editor-color="foreColor" aria-label="رنگ متن" value="#202020" /></label>
+                  <label class="rich-color-tool" title="رنگ پس‌زمینه متن">هایلایت <input type="color" data-editor-color="hiliteColor" aria-label="رنگ پس‌زمینه متن" value="#fff176" /></label>
+                </div>
+                <div class="rich-editor-tool-group">
+                  <button type="button" class="rich-tool-button" data-editor-command="justifyRight">راست‌چین</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="justifyCenter">وسط</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="justifyLeft">چپ‌چین</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="justifyFull">تراز کامل</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="insertUnorderedList">فهرست نقطه‌ای</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="insertOrderedList">فهرست شماره‌ای</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="outdent" title="کاهش تورفتگی">←</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="indent" title="افزایش تورفتگی">→</button>
+                </div>
+                <div class="rich-editor-tool-group">
+                  <button type="button" class="rich-tool-button" data-editor-insert="link">افزودن لینک</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="unlink">حذف لینک</button>
+                  <button type="button" class="rich-tool-button" data-editor-insert="image">افزودن تصویر</button>
+                  <button type="button" class="rich-tool-button" data-editor-insert="table">جدول</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="insertHorizontalRule">خط جداکننده</button>
+                  <button type="button" class="rich-tool-button" data-editor-command="removeFormat">پاک‌کردن قالب</button>
+                </div>
+              </div>
+
+              <div class="rich-editor-modebar" role="tablist" aria-label="حالت ویرایش متن">
+                <button type="button" class="rich-editor-mode is-active" data-editor-mode="visual" role="tab" aria-selected="true">ویرایش دیداری</button>
+                <button type="button" class="rich-editor-mode" data-editor-mode="html" role="tab" aria-selected="false">ویرایش HTML</button>
+                <button type="button" class="rich-editor-mode" data-editor-mode="preview" role="tab" aria-selected="false">پیش‌نمایش</button>
+                <span id="editorWordCount" class="rich-editor-word-count">۰ کلمه</span>
+              </div>
+
+              <div id="contentEditor" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true" aria-label="متن مقاله" aria-required="true" dir="rtl" data-placeholder="متن مقاله را بنویسید یا از ابزارهای بالا برای قالب‌بندی استفاده کنید."></div>
+              <textarea id="contentSource" class="rich-editor-source" aria-label="کد HTML متن مقاله" dir="ltr" spellcheck="false" hidden></textarea>
+              <div id="contentPreview" class="rich-editor-preview article-content" dir="rtl" hidden></div>
+              <textarea id="contentValue" name="content" hidden></textarea>
+              <p id="editorStatus" class="rich-editor-status" role="status">قالب‌بندی از ابزارها اعمال می‌شود؛ از بخش «ویرایش HTML» هم می‌توانید کد را مستقیم اصلاح کنید.</p>
+            </div>
+          </div>
+
+          <label>اسلاگ دوره مرتبط<input name="related_course_slug" dir="ltr" /></label>
+          <label>عنوان دوره مرتبط<input name="related_course_title" /></label>
+          <label>Meta Title<input name="meta_title" /></label>
+          <label class="form-full">Meta Description<textarea name="meta_description"></textarea></label>
           <label>وضعیت<select name="status"><option value="draft">پیش‌نویس</option><option value="published">منتشر شده</option></select></label>
-          <div class="admin-form-actions"><button type="submit">ذخیره نوشته</button><button type="button" class="secondary" id="clearForm">فرم خالی / نوشته جدید</button></div><p id="adminMessage" role="status"></p>
+          <div class="admin-form-actions"><button type="submit">ذخیره نوشته</button><button type="button" class="secondary" id="clearForm">فرم خالی / نوشته جدید</button></div>
+          <p id="adminMessage" role="status"></p>
         </form>
       </section>
     </section>
