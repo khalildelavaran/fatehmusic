@@ -80,7 +80,10 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
                           <option value="p">پاراگراف</option><option value="h2">عنوان ۲</option><option value="h3">عنوان ۳</option><option value="h4">عنوان ۴</option><option value="blockquote">نقل‌قول</option><option value="pre">کد</option>
                         </select>
                         <select data-editor-font aria-label="نوع قلم" title="نوع قلم">
-                          <option value="">قلم</option><option value="Vazirmatn">وزیر</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="'Times New Roman'">Times New Roman</option><option value="'Courier New'">Courier New</option>
+                          <option value="Vazirmatn" selected>وزیر</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="'Times New Roman'">Times New Roman</option><option value="'Courier New'">Courier New</option>
+                        </select>
+                        <select data-editor-weight aria-label="ضخامت قلم وزیر" title="ضخامت قلم وزیر — وزن ۱۰۰ تا ۹۰۰">
+                          <option value="100">نازک</option><option value="200">خیلی سبک</option><option value="300">سبک</option><option value="400" selected>عادی</option><option value="500">متوسط</option><option value="600">نیمه‌ضخیم</option><option value="700">ضخیم</option><option value="800">خیلی ضخیم</option><option value="900">سیاه</option>
                         </select>
                         <select data-editor-size aria-label="اندازه قلم" title="اندازه قلم">
                           <option value="">اندازه</option><option value="12px">۱۲</option><option value="14px">۱۴</option><option value="16px">۱۶</option><option value="18px">۱۸</option><option value="20px">۲۰</option><option value="24px">۲۴</option><option value="28px">۲۸</option><option value="32px">۳۲</option>

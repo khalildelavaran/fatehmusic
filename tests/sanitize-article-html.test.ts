@@ -37,6 +37,15 @@ describe("article HTML sanitizer", () => {
     expect(result).toContain("&lt;img");
   });
 
+  it("preserves variable Vazirmatn font weights from 100 through 900", () => {
+    for (const weight of [100, 200, 300, 400, 500, 600, 700, 800, 900]) {
+      const result = sanitizeArticleHtml(
+        '<p style="font-family:Vazirmatn;font-weight:' + weight + '">متن فارسی</p>'
+      );
+      expect(result).toContain('font-family:Vazirmatn;font-weight:' + weight);
+    }
+  });
+
   it("distinguishes legacy Markdown from rich HTML content", () => {
     expect(isHtmlArticleContent("## عنوان مقاله\\n\\nمتن")).toBe(false);
     expect(isHtmlArticleContent("<div><p>متن</p></div>")).toBe(true);
