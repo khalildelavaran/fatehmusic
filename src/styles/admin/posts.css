@@ -831,3 +831,15 @@
     .rich-toolbar-row{justify-content:flex-start;}
     .rich-toolbar-separator{margin:0 1px;}
 }
+
+
+/* Vazirmatn is the default writing font. Its self-hosted variable font supports weights 100–900. */
+.rich-editor .rich-editor-surface,
+.rich-editor .rich-editor-preview{
+    font-family:"Vazirmatn",Tahoma,"Segoe UI",sans-serif;
+    font-weight:400;
+}
+.rich-editor-toolbar select[data-editor-weight]{width:77px;}
+@media(max-width:760px){
+    .rich-editor-toolbar select[data-editor-weight]{width:74px;}
+}
