@@ -452,44 +452,182 @@ formatHtmlButton.addEventListener("click", () => {
   editorStatus.textContent = "کد HTML مرتب‌سازی شد؛ ساختار را قبل از ذخیره بررسی کنید.";
 });
 
+function getRangeElement(range) {
+  let node = range?.startContainer;
+  if (!node) return visualEditor;
+  if (node.nodeType === Node.TEXT_NODE) return node.parentElement || visualEditor;
+  if (node instanceof Element && (node === visualEditor || node.childNodes.length)) {
+    const child = node.childNodes[range.startOffset] || node.childNodes[Math.max(0, range.startOffset - 1)];
+    if (child?.nodeType === Node.TEXT_NODE) return child.parentElement || node;
+    if (child instanceof Element) return child;
+  }
+  return node instanceof Element ? node : visualEditor;
+}
+
+function closestEditorElement(element, selector) {
+  let current = element;
+  while (current && current !== visualEditor) {
+    if (current.matches(selector)) return current;
+    current = current.parentElement;
+  }
+  return visualEditor;
+}
+
+function setVisibleSelectValue(select, value, label) {
+  if (!select || value === undefined || value === null) return;
+  const text = String(value);
+  let option = [...select.options].find((item) => item.value === text);
+  if (!option) {
+    for (const previous of [...select.options]) {
+      if (previous.dataset.generatedSelectionOption === "true") previous.remove();
+    }
+    option = document.createElement("option");
+    option.value = text;
+    option.textContent = String(label ?? text);
+    option.dataset.generatedSelectionOption = "true";
+    select.add(option);
+  }
+  select.value = text;
+  select.title = String(label ?? option.textContent ?? text);
+}
+
+function updateToolbarControlsFromSelection(range = savedSelection) {
+  if (currentEditorMode !== "visual") return;
+  if (!range || !visualEditor.contains(range.commonAncestorContainer)) {
+    const activeSelection = window.getSelection();
+    if (!activeSelection?.rangeCount) return;
+    const activeRange = activeSelection.getRangeAt(0);
+    if (!visualEditor.contains(activeRange.commonAncestorContainer)) return;
+    range = activeRange;
+  }
+
+  const selectedElement = getRangeElement(range);
+  const block = closestEditorElement(selectedElement, "p,div,h1,h2,h3,h4,h5,h6,blockquote,pre,li");
+  const rawTag = block === visualEditor ? "p" : block.tagName.toLowerCase();
+  const blockTag = rawTag === "div" || rawTag === "li" ? "p" : rawTag;
+  const blockLabels = {
+    p: "پاراگراف", h1: "عنوان ۱", h2: "عنوان ۲", h3: "عنوان ۳",
+    h4: "عنوان ۴", h5: "عنوان ۵", h6: "عنوان ۶", blockquote: "نقل‌قول", pre: "کد"
+  };
+  const blockSelect = editorToolbar.querySelector("[data-editor-block]");
+  setVisibleSelectValue(blockSelect, blockTag, blockLabels[blockTag] || "پاراگراف");
+
+  const computed = window.getComputedStyle(selectedElement);
+  const fontSelect = editorToolbar.querySelector("[data-editor-font]");
+  const computedFamily = String(computed.fontFamily || "Vazirmatn");
+  const primaryFamily = computedFamily.split(",")[0].trim().replace(/^["']|["']$/g, "");
+  const normalizedFamily = (value) => String(value).toLowerCase().replace(/["']/g, "").trim();
+  const matchingFamily = [...fontSelect.options].find((option) =>
+    option.value && normalizedFamily(option.value) === normalizedFamily(primaryFamily)
+  );
+  setVisibleSelectValue(fontSelect, matchingFamily?.value || primaryFamily || "Vazirmatn", matchingFamily?.textContent || primaryFamily || "وزیر");
+
+  const weightSelect = editorToolbar.querySelector("[data-editor-weight]");
+  const weight = String(Number.parseInt(computed.fontWeight, 10) || 400);
+  setVisibleSelectValue(weightSelect, weight, weight);
+
+  const sizeSelect = editorToolbar.querySelector("[data-editor-size]");
+  const size = Number.parseFloat(computed.fontSize);
+  if (Number.isFinite(size) && size > 0) {
+    const sizeValue = String(Number(size.toFixed(2))) + "px";
+    const matchingSize = [...sizeSelect.options].find((option) => Math.abs(Number.parseFloat(option.value) - size) < 0.1);
+    const selectedSize = matchingSize?.value || sizeValue;
+    const sizeLabel = matchingSize?.textContent || new Intl.NumberFormat("fa-IR", { maximumFractionDigits: 1 }).format(size) + "px";
+    setVisibleSelectValue(sizeSelect, selectedSize, sizeLabel);
+  }
+}
+
 function saveSelection() {
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return;
   const range = selection.getRangeAt(0);
-  if (visualEditor.contains(range.commonAncestorContainer)) savedSelection = range.cloneRange();
+  if (visualEditor.contains(range.commonAncestorContainer)) {
+    savedSelection = range.cloneRange();
+    updateToolbarControlsFromSelection(savedSelection);
+  }
 }
 
 function restoreSelection() {
   visualEditor.focus();
-  if (!savedSelection) return;
+  if (!savedSelection) return false;
   try {
     const selection = window.getSelection();
+    if (!selection) return false;
     selection.removeAllRanges();
     selection.addRange(savedSelection);
+    return true;
   } catch {
     savedSelection = null;
+    return false;
   }
 }
 
 function applyInlineStyle(property, value) {
   restoreSelection();
   const selection = window.getSelection();
-  if (!selection || !selection.rangeCount) return;
-  const range = selection.getRangeAt(0);
-  if (range.collapsed) {
-    if (editorStatus) editorStatus.textContent = "برای تغییر اندازه یا قلم، ابتدا بخشی از متن را انتخاب کنید.";
-    return;
+  if (!selection || !selection.rangeCount) {
+    if (editorStatus) editorStatus.textContent = "ابتدا بخشی از متن را در ویرایشگر انتخاب کنید.";
+    return false;
   }
-  const span = document.createElement("span");
-  span.style.setProperty(property, value);
-  span.append(range.extractContents());
-  range.insertNode(span);
-  selection.removeAllRanges();
+  const sourceRange = selection.getRangeAt(0).cloneRange();
+  if (sourceRange.collapsed) {
+    if (editorStatus) editorStatus.textContent = "برای تغییر قلم یا اندازه، ابتدا بخشی از متن را انتخاب کنید.";
+    updateToolbarControlsFromSelection(sourceRange);
+    return false;
+  }
+
+  const textNodes = [];
+  const walker = document.createTreeWalker(visualEditor, NodeFilter.SHOW_TEXT);
+  let node;
+  while ((node = walker.nextNode())) {
+    if (!node.nodeValue || !node.nodeValue.length || !sourceRange.intersectsNode(node)) continue;
+    const startOffset = node === sourceRange.startContainer ? sourceRange.startOffset : 0;
+    const endOffset = node === sourceRange.endContainer ? sourceRange.endOffset : node.nodeValue.length;
+    if (endOffset > startOffset) textNodes.push({ node, start: startOffset, end: endOffset });
+  }
+
+  if (!textNodes.length) {
+    if (editorStatus) editorStatus.textContent = "متن انتخاب‌شده قابل قالب‌بندی نیست.";
+    return false;
+  }
+
+  // Wrap text nodes from end to start so offsets in earlier nodes remain valid
+  // and never place inline spans around block-level elements.
+  const wrapped = [];
+  for (const part of textNodes.reverse()) {
+    const segment = document.createRange();
+    try {
+      segment.setStart(part.node, part.start);
+      segment.setEnd(part.node, part.end);
+      const fragment = segment.extractContents();
+      if (!fragment.textContent) continue;
+      const span = document.createElement("span");
+      span.style.setProperty(property, value);
+      span.append(fragment);
+      segment.insertNode(span);
+      wrapped.push(span);
+    } catch {
+      // Continue with other valid fragments rather than dropping selected content.
+    }
+  }
+
+  if (!wrapped.length) {
+    if (editorStatus) editorStatus.textContent = "اعمال قالب‌بندی روی این انتخاب ممکن نشد.";
+    return false;
+  }
+
+  const first = wrapped[wrapped.length - 1];
+  const last = wrapped[0];
   const nextRange = document.createRange();
-  nextRange.selectNodeContents(span);
+  nextRange.setStartBefore(first);
+  nextRange.setEndAfter(last);
+  selection.removeAllRanges();
   selection.addRange(nextRange);
   savedSelection = nextRange.cloneRange();
   syncContent();
+  updateToolbarControlsFromSelection(savedSelection);
+  if (editorStatus) editorStatus.textContent = "قالب‌بندی روی متن انتخاب‌شده اعمال شد.";
+  return true;
 }
 
 editorToolbar.addEventListener("mousedown", (event) => {
@@ -537,39 +675,63 @@ editorToolbar.addEventListener("click", (event) => {
   syncContent();
 });
 
+for (const selector of ["[data-editor-font]", "[data-editor-size]", "[data-editor-weight]", "[data-editor-block]"]) {
+  editorToolbar.querySelectorAll(selector).forEach((select) => {
+    select.addEventListener("pointerdown", saveSelection);
+    select.addEventListener("mousedown", saveSelection);
+    select.addEventListener("focus", () => {
+      // Keyboard users may enter a dropdown without a mouse event.
+      if (window.getSelection()?.rangeCount) saveSelection();
+    });
+  });
+}
+
 editorToolbar.querySelectorAll("[data-editor-font]").forEach((select) => {
-  select.addEventListener("mousedown", saveSelection);
   select.addEventListener("change", () => {
-    if (select.value) applyInlineStyle("font-family", select.value);
-    // Vazirmatn stays selected because it is the editor's default font.
-    select.value = "Vazirmatn";
+    const selectedValue = select.value;
+    applyInlineStyle("font-family", selectedValue);
+    // Retain the actual chosen font in the control.
+    select.value = selectedValue;
   });
 });
 
 editorToolbar.querySelectorAll("[data-editor-size]").forEach((select) => {
-  select.addEventListener("mousedown", saveSelection);
   select.addEventListener("change", () => {
-    if (select.value) applyInlineStyle("font-size", select.value);
-    select.value = "";
+    const selectedValue = select.value;
+    if (selectedValue) applyInlineStyle("font-size", selectedValue);
+    select.value = selectedValue;
   });
 });
 
 editorToolbar.querySelectorAll("[data-editor-weight]").forEach((select) => {
-  select.addEventListener("mousedown", saveSelection);
   select.addEventListener("change", () => {
-    if (select.value) applyInlineStyle("font-weight", select.value);
-    // Return to normal weight after applying a one-off weight to the selection.
-    select.value = "400";
+    const selectedValue = select.value;
+    applyInlineStyle("font-weight", selectedValue);
+    select.value = selectedValue;
   });
 });
 
 editorToolbar.querySelectorAll("[data-editor-block]").forEach((select) => {
-  select.addEventListener("mousedown", saveSelection);
   select.addEventListener("change", () => {
-    restoreSelection();
-    if (select.value) document.execCommand("formatBlock", false, "<" + select.value + ">");
-    select.value = "p";
+    const selectedValue = select.value;
+    const hasSavedRange = restoreSelection();
+    const selection = window.getSelection();
+    if (!hasSavedRange && (!selection || !selection.rangeCount)) {
+      if (editorStatus) editorStatus.textContent = "ابتدا مکان‌نما را داخل پاراگراف یا متن موردنظر قرار دهید.";
+      select.value = selectedValue;
+      return;
+    }
+    if (selectedValue) {
+      const formatted = document.execCommand("formatBlock", false, "<" + selectedValue + ">");
+      if (!formatted && editorStatus) editorStatus.textContent = "مرورگر این قالب پاراگراف را نپذیرفت.";
+    }
+    const activeSelection = window.getSelection();
+    if (activeSelection?.rangeCount && visualEditor.contains(activeSelection.getRangeAt(0).commonAncestorContainer)) {
+      savedSelection = activeSelection.getRangeAt(0).cloneRange();
+    }
     syncContent();
+    updateToolbarControlsFromSelection(savedSelection);
+    if (!savedSelection) select.value = selectedValue;
   });
 });
 
@@ -582,11 +744,24 @@ editorToolbar.querySelectorAll("[data-editor-color]").forEach((input) => {
   });
 });
 
+document.addEventListener("selectionchange", () => {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) return;
+  const range = selection.getRangeAt(0);
+  if (!visualEditor.contains(range.commonAncestorContainer)) return;
+  // Don't overwrite a saved text range with a transient collapsed range when
+  // focus moves from the editor into a native dropdown.
+  if (range.collapsed && document.activeElement !== visualEditor) return;
+  savedSelection = range.cloneRange();
+  updateToolbarControlsFromSelection(savedSelection);
+});
+
 visualEditor.addEventListener("mouseup", saveSelection);
 visualEditor.addEventListener("keyup", saveSelection);
 visualEditor.addEventListener("input", () => {
   saveSelection();
   syncContent();
+  updateToolbarControlsFromSelection(savedSelection);
   if (editorStatus) editorStatus.textContent = "تغییرات و قالب‌بندی در فرم ذخیره‌نشده‌اند؛ برای ثبت مقاله روی «ذخیره نوشته» بزنید.";
 });
 
