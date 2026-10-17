@@ -141,7 +141,7 @@ function renderEmmetNode(node, depth = 0) {
  */
 export function expandEmmetAbbreviation(value) {
   const source = String(value ?? "").trim();
-  if (!source || source.length > 300 || /[<>\n]/.test(source)) return null;
+  if (!source || source.length > 300 || /[<\n]/.test(source)) return null;
   const state = { index: 0 };
   const nodes = parseEmmetList(source, state);
   if (!nodes?.length || state.index !== source.length) return null;
