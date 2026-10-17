@@ -32,6 +32,7 @@ function isComparisonTopic(value) {
 /**
  * Deterministic SEO metadata suggestions for a blog post.
  * The canonical course catalog is injected by the caller, never duplicated here.
+ * @param {{ title?: string, topic?: string, courses?: Array<{ active?: boolean, slug?: string, title?: string }> }} [options]
  */
 export function buildArticleSeoFields({ title = "", topic = "", courses = [] } = {}) {
   const articleTitle = clean(title);
