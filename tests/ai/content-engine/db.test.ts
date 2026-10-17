@@ -1,28 +1,3 @@
-
-describe("content topic listing performance", () => {
-  it("keeps the admin read path to one bounded topic query", async () => {
-    const statements: string[] = [];
-    const db = {
-      prepare(sql: string) {
-        statements.push(sql);
-        return {
-          bind: (...args: unknown[]) => {
-            expect(args).toEqual(["approved", 30]);
-            return {
-              all: async <T>() => ({ results: [] as T[] })
-            };
-          }
-        };
-      }
-    } as unknown as D1Database;
-
-    await expect(listTopics(db, { status: "approved", limit: 30 })).resolves.toEqual([]);
-    expect(statements).toHaveLength(1);
-    expect(statements[0]).toContain("SELECT * FROM content_topics");
-    expect(statements[0]).toContain("ORDER BY score_total DESC");
-  });
-});
-
 import { describe, expect, it } from "vitest";
 import { cleanupTopicsCoveredByExistingPosts, getExistingTitleIndex, getRunApprovedCount, listTopics, markTopicPublished, markTopicDraftPost, releaseTopicForDeletedPost } from "../../../src/ai/content-engine/db";
 
@@ -209,5 +184,30 @@ describe("content intelligence existing-post reconciliation", () => {
       ["used", 701, "used", "2026-10-10 08:00:00", 41],
       ["drafted", 702, "drafted", null, 42]
     ]);
+  });
+});
+
+
+describe("content topic listing performance", () => {
+  it("keeps the admin read path to one bounded topic query", async () => {
+    const statements: string[] = [];
+    const db = {
+      prepare(sql: string) {
+        statements.push(sql);
+        return {
+          bind: (...args: unknown[]) => {
+            expect(args).toEqual(["approved", 30]);
+            return {
+              all: async <T>() => ({ results: [] as T[] })
+            };
+          }
+        };
+      }
+    } as unknown as D1Database;
+
+    await expect(listTopics(db, { status: "approved", limit: 30 })).resolves.toEqual([]);
+    expect(statements).toHaveLength(1);
+    expect(statements[0]).toContain("SELECT * FROM content_topics");
+    expect(statements[0]).toContain("ORDER BY score_total DESC");
   });
 });
