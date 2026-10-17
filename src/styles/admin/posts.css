@@ -175,3 +175,77 @@
         font-size:10px;
     }
 }
+
+
+/* Separate the editorial list from the composition workspace. */
+.posts-tabs{
+    display:flex;
+    gap:6px;
+    padding:5px;
+    margin:0 0 20px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:14px;
+}
+.posts-tabs .posts-tab{
+    flex:1;
+    border:0;
+    background:transparent;
+    color:var(--text);
+    padding:11px 14px;
+    border-radius:10px;
+    font:inherit;
+    font-weight:800;
+    cursor:pointer;
+}
+.posts-tabs .posts-tab:hover{background:rgba(212,175,55,.08);}
+.posts-tabs .posts-tab.is-active{background:var(--primary);color:#111;}
+.posts-tab-panel[hidden]{display:none!important;}
+.posts-tab-panel{min-width:0;}
+.admin-panel.posts-list-panel{
+    direction:rtl;
+    grid-template-columns:minmax(0,1fr);
+}
+.admin-write-panel{min-width:0;}
+.admin-write-panel form#postForm.admin-form{
+    direction:rtl;
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-content:start;
+    row-gap:10px;
+    column-gap:18px;
+}
+.admin-write-panel form#postForm.admin-form>label{
+    display:grid;
+    align-content:start;
+    gap:4px;
+    margin:0;
+    min-height:0;
+}
+.admin-write-panel form#postForm.admin-form>.form-full,
+.admin-write-panel form#postForm.admin-form>label:has(textarea[name="excerpt"]),
+.admin-write-panel form#postForm.admin-form>label:has(textarea[name="content"]),
+.admin-write-panel form#postForm.admin-form>label:has(textarea[name="meta_description"]){
+    grid-column:1/-1;
+}
+.admin-write-panel form#postForm.admin-form textarea[name="content"]{min-height:320px;}
+.admin-write-panel form#postForm.admin-form .admin-form-actions{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+}
+.admin-write-panel .admin-form-actions button{flex:1;}
+
+@media(max-width:900px){
+    .admin-panel.posts-list-panel{direction:rtl;grid-template-columns:minmax(0,1fr);}
+    .admin-write-panel form#postForm.admin-form{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:640px){
+    .posts-tabs .posts-tab{padding:10px 8px;}
+    .admin-write-panel form#postForm.admin-form{
+        grid-template-columns:1fr;
+        row-gap:10px;
+        column-gap:0;
+    }
+}
