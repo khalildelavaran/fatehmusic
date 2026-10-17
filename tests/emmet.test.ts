@@ -4,6 +4,7 @@ import { expandEmmetAbbreviation, formatHtmlSource } from "../src/utils/emmet";
 describe("Emmet helpers for the article HTML editor", () => {
   it("expands nested elements, classes, and repeated siblings", () => {
     const html = expandEmmetAbbreviation("ul.nav>li.nav-item$*4>a");
+    if (html === null) throw new Error("Emmet abbreviation should expand successfully");
 
     expect(html).toContain('<ul class="nav">');
     expect(html).toContain('<li class="nav-item1">');
