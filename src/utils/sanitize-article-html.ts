@@ -167,12 +167,44 @@ function sanitizeAttributes(tag: string, source: string): string {
   return attrs.length ? " " + attrs.join(" ") : "";
 }
 
+function tokenizeHtml(source: string): string[] {
+  const tokens: string[] = [];
+  let index = 0;
+  while (index < source.length) {
+    if (source[index] !== "<") {
+      const nextTag = source.indexOf("<", index);
+      const end = nextTag < 0 ? source.length : nextTag;
+      tokens.push(source.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    const start = index;
+    let quote: string | null = null;
+    index += 1;
+    while (index < source.length) {
+      const char = source[index];
+      if (quote) {
+        if (char === quote && source[index - 1] !== "\\") quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === ">") {
+        index += 1;
+        break;
+      }
+      index += 1;
+    }
+    tokens.push(source.slice(start, index));
+  }
+  return tokens;
+}
+
 export function sanitizeArticleHtml(value: unknown): string {
   let source = String(value ?? "");
   source = source.replace(/<!--[\s\S]*?-->/g, "");
   source = source.replace(/<(script|style|iframe|object|embed|svg|math|template|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
 
-  const tokens = source.match(/<\/?[a-z][^>]*>|[^<]+|</gi) ?? [];
+  const tokens = tokenizeHtml(source);
   const output: string[] = [];
   const stack: string[] = [];
   let dropTag: string | null = null;
@@ -181,7 +213,7 @@ export function sanitizeArticleHtml(value: unknown): string {
     const tagMatch = token.match(/^<\s*(\/?)\s*([a-z][a-z0-9:-]*)\b([^>]*)>$/i);
     if (!tagMatch) {
       if (dropTag) continue;
-      output.push(token === "<" ? "&lt;" : token);
+      output.push(token.startsWith("<") ? token.replace(/</g, "&lt;") : token);
       continue;
     }
 
