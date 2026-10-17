@@ -165,11 +165,12 @@ export function formatHtmlSource(source) {
     }
     const closeTag = token.match(/^<\/([a-z][\w:-]*)/i);
     const openTag = token.match(/^<([a-z][\w:-]*)\b/i);
+    const sameLineElement = openTag && new RegExp("^<" + openTag[1] + "\\b[^>]*>[\\s\\S]*</" + openTag[1] + "\\s*>$", "i").test(token);
     if (closeTag) depth = Math.max(0, depth - 1);
     output.push("  ".repeat(depth) + token);
     if (openTag && /^(?:pre|textarea|script|style)$/i.test(openTag[1]) && !closeTag) {
       inPreformatted = true;
-    } else if (openTag && !closeTag && !VOID_TAGS.has(openTag[1].toLowerCase()) && !/\/>$/.test(token)) {
+    } else if (openTag && !closeTag && !sameLineElement && !VOID_TAGS.has(openTag[1].toLowerCase()) && !/\/>$/.test(token)) {
       depth += 1;
     }
   }
