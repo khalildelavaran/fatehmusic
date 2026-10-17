@@ -6,6 +6,12 @@ const generateStatus = document.querySelector("#generateStatus");
 const form = document.querySelector("#postForm");
 const clearFormButton = document.querySelector("#clearForm");
 const list = document.querySelector("#postsList");
+const postsStatus = document.querySelector("#postsStatus");
+const tabButtons = [...document.querySelectorAll("[data-posts-tab]")];
+const tabPanels = {
+  posts: document.querySelector("#postsPanel"),
+  write: document.querySelector("#writePanel")
+};
 let posts = [];
 
 const headers = () => ({ "Content-Type": "application/json" });
@@ -13,14 +19,38 @@ const setMessage = (text) => { message.textContent = text; };
 const statusLabel = (status) => (status === "published" ? "منتشر شده" : "پیش‌نویس");
 const formatDate = (value) => formatJalaliDateTime(value);
 
+function activateTab(name) {
+  if (!Object.hasOwn(tabPanels, name)) return;
+  for (const button of tabButtons) {
+    const active = button.dataset.postsTab === name;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  }
+  for (const [panelName, panel] of Object.entries(tabPanels)) {
+    const active = panelName === name;
+    panel.hidden = !active;
+    panel.classList.toggle("is-active", active);
+  }
+}
+
+tabButtons.forEach((button) => {
+  button.addEventListener("click", () => activateTab(button.dataset.postsTab));
+});
+
 async function loadPosts() {
   const response = await fetch("/api/admin/posts", { credentials: "same-origin", headers: headers() });
   if (response.status === 401) { window.location.assign("/admin/login"); return; }
   const data = await response.json();
-  if (!data.success) { setMessage(data.message); return; }
+  if (!data.success) {
+    postsStatus.textContent = data.message || "بارگذاری نوشته‌ها ناموفق بود.";
+    postsStatus.className = "admin-ai-status is-error";
+    return;
+  }
   posts = data.posts;
   renderPosts();
-  setMessage(`${posts.length} نوشته بارگذاری شد.`);
+  postsStatus.textContent = `${posts.length} نوشته بارگذاری شد.`;
+  postsStatus.className = "admin-ai-status";
 }
 
 function renderPosts() {
@@ -104,6 +134,7 @@ list.addEventListener("click", async (event) => {
       Object.entries(post).forEach(([key, value]) => {
         if (form.elements[key]) form.elements[key].value = value ?? "";
       });
+      activateTab("write");
       form.scrollIntoView({ behavior: "smooth", block: "start" });
       setMessage(`در حال ویرایش: ${post.title}`);
     }
