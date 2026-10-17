@@ -75,12 +75,12 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
 
                   <div class="rich-editor-toolbar" role="toolbar" aria-label="ابزارهای قالب‌بندی متن">
                     <div class="rich-toolbar-row">
-                      <div class="rich-tool-group">
+                      <div class="rich-tool-group rich-tool-group-selects">
                         <select data-editor-block aria-label="نوع پاراگراف" title="نوع پاراگراف">
                           <option value="p">پاراگراف</option><option value="h2">عنوان ۲</option><option value="h3">عنوان ۳</option><option value="h4">عنوان ۴</option><option value="blockquote">نقل‌قول</option><option value="pre">کد</option>
                         </select>
                         <select data-editor-font aria-label="نوع قلم" title="نوع قلم">
-                          <option value="">نوع قلم</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="'Times New Roman'">Times New Roman</option><option value="'Courier New'">Courier New</option>
+                          <option value="">قلم</option><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="'Times New Roman'">Times New Roman</option><option value="'Courier New'">Courier New</option>
                         </select>
                         <select data-editor-size aria-label="اندازه قلم" title="اندازه قلم">
                           <option value="">اندازه</option><option value="12px">۱۲</option><option value="14px">۱۴</option><option value="16px">۱۶</option><option value="18px">۱۸</option><option value="20px">۲۰</option><option value="24px">۲۴</option><option value="28px">۲۸</option><option value="32px">۳۲</option>
@@ -96,27 +96,26 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
                         <label class="rich-color-tool rich-highlight-tool" title="هایلایت"><span aria-hidden="true">▰</span><input type="color" data-editor-color="hiliteColor" aria-label="رنگ پس‌زمینه متن" value="#fff09a" /></label>
                       </div>
                       <span class="rich-toolbar-separator" aria-hidden="true"></span>
-                      <div class="rich-tool-group">
-                        <button type="button" class="rich-tool-button" data-editor-command="justifyRight" title="راست‌چین" aria-label="راست‌چین">⇥</button>
+                      <div class="rich-tool-group rich-tool-group-compact">
+                        <button type="button" class="rich-tool-button" data-editor-command="justifyRight" title="راست‌چین" aria-label="راست‌چین">≡<span class="toolbar-icon-detail">R</span></button>
                         <button type="button" class="rich-tool-button" data-editor-command="justifyCenter" title="وسط‌چین" aria-label="وسط‌چین">≡</button>
-                        <button type="button" class="rich-tool-button" data-editor-command="justifyLeft" title="چپ‌چین" aria-label="چپ‌چین">⇤</button>
+                        <button type="button" class="rich-tool-button" data-editor-command="justifyLeft" title="چپ‌چین" aria-label="چپ‌چین"><span class="toolbar-icon-left">≡</span></button>
                         <button type="button" class="rich-tool-button" data-editor-command="justifyFull" title="تراز کامل" aria-label="تراز کامل">☷</button>
                       </div>
-                    </div>
-                    <div class="rich-toolbar-row rich-toolbar-row-secondary">
-                      <div class="rich-tool-group">
-                        <button type="button" class="rich-tool-button" data-editor-command="insertUnorderedList">• فهرست</button>
-                        <button type="button" class="rich-tool-button" data-editor-command="insertOrderedList">۱. شماره‌گذاری</button>
-                        <button type="button" class="rich-tool-button" data-editor-command="outdent" title="کاهش تورفتگی">کاهش تورفتگی</button>
-                        <button type="button" class="rich-tool-button" data-editor-command="indent" title="افزایش تورفتگی">افزایش تورفتگی</button>
+                      <span class="rich-toolbar-separator" aria-hidden="true"></span>
+                      <div class="rich-tool-group rich-tool-group-compact">
+                        <button type="button" class="rich-tool-button" data-editor-command="insertUnorderedList" title="فهرست نقطه‌ای" aria-label="فهرست نقطه‌ای">•≡</button>
+                        <button type="button" class="rich-tool-button" data-editor-command="insertOrderedList" title="فهرست شماره‌ای" aria-label="فهرست شماره‌ای">1≡</button>
+                        <button type="button" class="rich-tool-button" data-editor-command="outdent" title="کاهش تورفتگی" aria-label="کاهش تورفتگی">⇤</button>
+                        <button type="button" class="rich-tool-button" data-editor-command="indent" title="افزایش تورفتگی" aria-label="افزایش تورفتگی">⇥</button>
                       </div>
                       <span class="rich-toolbar-separator" aria-hidden="true"></span>
-                      <div class="rich-tool-group">
-                        <button type="button" class="rich-tool-button" data-editor-insert="link">↗ لینک</button>
-                        <button type="button" class="rich-tool-button" data-editor-command="unlink">حذف لینک</button>
-                        <button type="button" class="rich-tool-button" data-editor-insert="image">▧ تصویر</button>
-                        <button type="button" class="rich-tool-button" data-editor-insert="table">▦ جدول</button>
-                        <button type="button" class="rich-tool-button" data-editor-command="insertHorizontalRule">جداکننده</button>
+                      <div class="rich-tool-group rich-tool-group-compact">
+                        <button type="button" class="rich-tool-button" data-editor-insert="link" title="افزودن لینک" aria-label="افزودن لینک">↗</button>
+                        <button type="button" class="rich-tool-button" data-editor-command="unlink" title="حذف لینک" aria-label="حذف لینک">⌁</button>
+                        <button type="button" class="rich-tool-button" data-editor-insert="image" title="افزودن تصویر" aria-label="افزودن تصویر">▧</button>
+                        <button type="button" class="rich-tool-button" data-editor-insert="table" title="افزودن جدول" aria-label="افزودن جدول">▦</button>
+                        <button type="button" class="rich-tool-button" data-editor-command="insertHorizontalRule" title="خط جداکننده" aria-label="خط جداکننده">―</button>
                       </div>
                       <span class="rich-toolbar-separator" aria-hidden="true"></span>
                       <div class="rich-tool-group rich-tool-group-compact">
