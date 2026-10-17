@@ -45,8 +45,14 @@ const {
   includeIntelligence = true
 } = Astro.props as Props;
 
+// Private app pages are noindex and do not need runtime semantic graph analysis.
+// Avoid spending the small per-request Workers CPU budget on diagnostics that
+// are not rendered to private users or search engines.
+const pathname = Astro.url.pathname;
+const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?:\/|$)/.test(pathname);
+
 const seo = buildSEO({
-  path: Astro.url.pathname,
+  path: pathname,
   title,
   description,
   image,
@@ -63,7 +69,7 @@ const seo = buildSEO({
   linkCandidates,
   auditContext,
   extraSchema: schema,
-  includeIntelligence
+  includeIntelligence: includeIntelligence && !isPrivateAppRoute
 });
 
 const openGraph = seo.openGraph as Record<string, string>;
@@ -77,8 +83,6 @@ const safeSchemaJson = JSON.stringify(seo.schemaGraph)
   .replace(/>/g, "\\u003e")
   .replace(/&/g, "\\u0026");
 
-const pathname = Astro.url.pathname;
-const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?:\/|$)/.test(pathname);
 ---
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">

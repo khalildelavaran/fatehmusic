@@ -310,8 +310,9 @@ export interface TopicListFilters {
 }
 
 export async function listTopics(db: D1Database, filters: TopicListFilters = {}): Promise<ContentTopicRow[]> {
-  // Repair legacy duplicates before exposing the pending queue to the admin UI.
-  await cleanupTopicsCoveredByExistingPosts(db);
+  // This is a hot read path used by the admin UI and export endpoint.
+  // Keep it bounded to indexed SQL reads; full title-similarity reconciliation
+  // belongs in topic discovery and claim/generation flows, not every GET.
   const limit = filters.limit ?? 200;
   // A local Shushtar article already occupies this editorial angle.
   // Hide stale topic rows from admin lists as well as blocking future discovery.
