@@ -533,11 +533,9 @@ export async function runDailyArticleGeneration(env: ArticleEnv, options: Genera
     // The Topic title is the canonical editorial identity. Do not let the
     // language model invent a divergent URL slug; only collision suffixes
     // are added when an existing post already uses the deterministic slug.
-    const baseSlug = slugifyArticleTitle(topic.title);
-    if (!baseSlug) {
-      await releaseClaim();
-      return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
-    }
+    const semanticSlug = slugifyArticleTitle(topic.title);
+    const baseSlug = semanticSlug ||
+      (topic.relatedCourseSlug ? topic.relatedCourseSlug + "-guide" : "music-education-guide");
 
     // Keep clean, durable slugs. Resolve all existing numeric collisions
     // with one indexed query instead of one round-trip per suffix.
