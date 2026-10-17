@@ -5,6 +5,7 @@ import { env } from "cloudflare:workers";
 import { json, requireRole, ROLES } from "../../../server/admin-auth";
 import { markSeoActionPublished, markSeoActionUnpublished } from "../../../seo/v2/seo-action-store.js";
 import { submitToIndexNow } from "../../../server/indexnow";
+import { isHtmlArticleContent, sanitizeArticleHtml } from "../../../utils/sanitize-article-html";
 import { markTopicPublished, markTopicDraftPost, releaseTopicForDeletedPost } from "../../../ai/content-engine/db";
 
 const fields = `id, slug, title, excerpt, content, topic, related_course_slug, related_course_title, status, meta_title, meta_description, created_at, updated_at, published_at, is_ai_generated`;
@@ -52,6 +53,9 @@ export const POST: APIRoute = async ({ request }) => {
   const db = env.DB;
   if (!db) return json({ success: false, message: "دیتابیس در دسترس نیست." }, 503);
   const post = await request.json() as Record<string, string>;
+  const incomingContent = String(post.content ?? "");
+  const content = isHtmlArticleContent(incomingContent) ? sanitizeArticleHtml(incomingContent) : incomingContent;
+  if (!content.trim()) return json({ success: false, message: "متن مقاله الزامی است." }, 422);
   const slugError = validatePostSlug(post.slug);
   if (slugError) return json({ success: false, message: slugError }, 422);
 
@@ -69,7 +73,7 @@ export const POST: APIRoute = async ({ request }) => {
       ? (existing?.published_at || publishedAt)
       : null;
     await db.prepare(`UPDATE blog_posts SET slug=?, title=?, excerpt=?, content=?, topic=?, related_course_slug=?, related_course_title=?, status=?, meta_title=?, meta_description=?, updated_at=datetime('now'), published_at=? WHERE id=?`)
-      .bind(slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, nextPublishedAt, post.id).run();
+      .bind(slug, post.title, post.excerpt, content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, nextPublishedAt, post.id).run();
     if (status === "published") {
       await markTopicPublished(db, Number(post.id));
       await markSeoActionPublished(db, {
@@ -90,7 +94,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
   } else {
     const inserted = await db.prepare(`INSERT INTO blog_posts (slug,title,excerpt,content,topic,related_course_slug,related_course_title,status,meta_title,meta_description,published_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(slug, post.title, post.excerpt, post.content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, publishedAt).run();
+      .bind(slug, post.title, post.excerpt, content, post.topic, post.related_course_slug || null, post.related_course_title || null, status, post.meta_title || null, post.meta_description || null, publishedAt).run();
     if (status === "published") {
       await markSeoActionPublished(db, {
         targetPostId: Number(inserted.meta?.last_row_id || 0) || null,
