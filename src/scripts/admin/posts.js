@@ -711,25 +711,33 @@ for (const selector of ["[data-editor-font]", "[data-editor-size]", "[data-edito
 editorToolbar.querySelectorAll("[data-editor-font]").forEach((select) => {
   select.addEventListener("change", () => {
     const selectedValue = select.value;
-    applyInlineStyle("font-family", selectedValue);
-    // Retain the actual chosen font in the control.
-    select.value = selectedValue;
+    if (applyInlineStyle("font-family", selectedValue)) {
+      select.value = selectedValue;
+    } else {
+      updateToolbarControlsFromSelection(savedSelection);
+    }
   });
 });
 
 editorToolbar.querySelectorAll("[data-editor-size]").forEach((select) => {
   select.addEventListener("change", () => {
     const selectedValue = select.value;
-    if (selectedValue) applyInlineStyle("font-size", selectedValue);
-    select.value = selectedValue;
+    if (selectedValue && applyInlineStyle("font-size", selectedValue)) {
+      select.value = selectedValue;
+    } else {
+      updateToolbarControlsFromSelection(savedSelection);
+    }
   });
 });
 
 editorToolbar.querySelectorAll("[data-editor-weight]").forEach((select) => {
   select.addEventListener("change", () => {
     const selectedValue = select.value;
-    applyInlineStyle("font-weight", selectedValue);
-    select.value = selectedValue;
+    if (applyInlineStyle("font-weight", selectedValue)) {
+      select.value = selectedValue;
+    } else {
+      updateToolbarControlsFromSelection(savedSelection);
+    }
   });
 });
 
@@ -738,14 +746,19 @@ editorToolbar.querySelectorAll("[data-editor-block]").forEach((select) => {
     const selectedValue = select.value;
     const hasSavedRange = restoreSelection();
     const selection = window.getSelection();
-    if (!hasSavedRange && (!selection || !selection.rangeCount)) {
+    if (!hasSavedRange || !selection?.rangeCount ||
+        !visualEditor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
       if (editorStatus) editorStatus.textContent = "ابتدا مکان‌نما را داخل پاراگراف یا متن موردنظر قرار دهید.";
-      select.value = selectedValue;
+      updateToolbarControlsFromSelection(savedSelection);
       return;
     }
     if (selectedValue) {
       const formatted = document.execCommand("formatBlock", false, "<" + selectedValue + ">");
-      if (!formatted && editorStatus) editorStatus.textContent = "مرورگر این قالب پاراگراف را نپذیرفت.";
+      if (!formatted) {
+        if (editorStatus) editorStatus.textContent = "مرورگر این قالب پاراگراف را نپذیرفت.";
+        updateToolbarControlsFromSelection(savedSelection);
+        return;
+      }
     }
     const activeSelection = window.getSelection();
     if (activeSelection?.rangeCount && visualEditor.contains(activeSelection.getRangeAt(0).commonAncestorContainer)) {
