@@ -541,10 +541,15 @@ function saveSelection() {
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return;
   const range = selection.getRangeAt(0);
-  if (visualEditor.contains(range.commonAncestorContainer)) {
-    savedSelection = range.cloneRange();
+  if (!visualEditor.contains(range.commonAncestorContainer)) return;
+  // Some browsers collapse the DOM selection while focusing a native select.
+  // Keep the actual text range captured on pointerdown instead of overwriting it.
+  if (range.collapsed && document.activeElement !== visualEditor && savedSelection && !savedSelection.collapsed) {
     updateToolbarControlsFromSelection(savedSelection);
+    return;
   }
+  savedSelection = range.cloneRange();
+  updateToolbarControlsFromSelection(savedSelection);
 }
 
 function restoreSelection() {
