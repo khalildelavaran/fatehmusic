@@ -46,8 +46,8 @@ const {
 } = Astro.props as Props;
 
 // Private app pages are noindex and do not need runtime semantic graph analysis.
- // Avoid spending the small per-request Workers CPU budget on diagnostics that
- // are not rendered to private users or search engines.
+// Avoid spending the small per-request Workers CPU budget on diagnostics that
+// are not rendered to private users or search engines.
 const pathname = Astro.url.pathname;
 const isPrivateAppRoute = /^(?:\/(?:admin|student|instructor|dashboard|login))(?:\/|$)/.test(pathname);
 
