@@ -16,7 +16,7 @@ import { instructors } from "../../data/instructors.js";
 import { courseContent } from "../../data/course-content.js";
 import { buildFallbackCourseContent } from "../../data/course-content-fallback.js";
 import { GENERAL_EVERGREEN_TOPICS } from "../../data/content-engine-seeds";
-import { slugifyArticleTitle } from "../../seo/v2/content-strategy/slug.js";
+import { canonicalSlug, slugifyArticleTitle } from "../../seo/v2/content-strategy/slug.js";
 import { semanticTokens, normalizeSemanticText } from "../../seo/helpers/text.js";
 import { isComparisonCourseTitle, matchCoursesInTitle } from "../../seo/v2/content-strategy/course-matching.js";
 import { derivePlainName } from "./candidates";
@@ -533,11 +533,13 @@ export async function runDailyArticleGeneration(env: ArticleEnv, options: Genera
     // The Topic title is the canonical editorial identity. Do not let the
     // language model invent a divergent URL slug; only collision suffixes
     // are added when an existing post already uses the deterministic slug.
-    const baseSlug = slugifyArticleTitle(topic.title);
-    if (!baseSlug) {
-      await releaseClaim();
-      return { success: false, message: "slug معنادار برای مقاله تولید نشد؛ ذخیره متوقف شد." };
-    }
+    const semanticSlug = slugifyArticleTitle(topic.title);
+    const baseSlug = semanticSlug || canonicalSlug(
+      { slug: "music-education" },
+      false,
+      topic.relatedCourseSlug ? { slug: topic.relatedCourseSlug } : null,
+      "guide"
+    );
 
     // Keep clean, durable slugs. Resolve all existing numeric collisions
     // with one indexed query instead of one round-trip per suffix.
