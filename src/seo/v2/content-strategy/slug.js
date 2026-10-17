@@ -30,20 +30,20 @@ export function slugToken(value) {
  */
 const SEMANTIC_PHRASES = Object.freeze({
   "چرا دانستن تئوری موسیقی برای نواختن گیتار مهم است": "why-music-theory-matters-for-guitar",
-  "آموزش گیتار برای مبتدیان": "guitar-lessons-for-beginners",
-  "آموزش گیتار برای مبتدیها": "guitar-lessons-for-beginners",
-  "آموزش پیانو": "piano-lessons",
-  "آموزش گیتار": "guitar-lessons",
-  "آموزش تار": "tar-lessons",
-  "آموزش سه تار": "setar-lessons",
-  "آموزش سنتور": "santur-lessons",
-  "آموزش ویولن": "violin-lessons",
-  "آموزش کمانچه": "kamancheh-lessons",
-  "آموزش دف": "daf-lessons",
-  "آموزش تنبک": "tonbak-lessons",
-  "آموزش موسیقی کودک": "music-lessons-for-children",
-  "آموزش صداسازی": "vocal-training",
-  "آواز سنتی": "traditional-singing",
+  "اموزش گیتار برای مبتدیان": "guitar-lessons-for-beginners",
+  "اموزش گیتار برای مبتدیها": "guitar-lessons-for-beginners",
+  "اموزش پیانو": "piano-lessons",
+  "اموزش گیتار": "guitar-lessons",
+  "اموزش تار": "tar-lessons",
+  "اموزش سه تار": "setar-lessons",
+  "اموزش سنتور": "santur-lessons",
+  "اموزش ویولن": "violin-lessons",
+  "اموزش کمانچه": "kamancheh-lessons",
+  "اموزش دف": "daf-lessons",
+  "اموزش تنبک": "tonbak-lessons",
+  "اموزش موسیقی کودک": "music-lessons-for-children",
+  "اموزش صداسازی": "vocal-training",
+  "اواز سنتی": "traditional-singing",
   "موسیقی سنتی": "traditional-music",
   "تئوری موسیقی": "music-theory",
   "موسیقی کودک": "music-for-children",
@@ -52,7 +52,7 @@ const SEMANTIC_PHRASES = Object.freeze({
 });
 
 const SUBJECT_PHRASES = Object.freeze({
-  "آواز سنتی": "traditional-singing",
+  "اواز سنتی": "traditional-singing",
   "صداسازی": "vocal-training",
   "تئوری موسیقی": "music-theory",
   "موسیقی سنتی": "traditional-music",
@@ -77,9 +77,9 @@ const SUBJECT_PHRASES = Object.freeze({
   "درامز": "drums",
   "ساکسیفون": "saxophone",
   "کلارینت": "clarinet",
-  "آکاردئون": "accordion",
+  "اکاردئون": "accordion",
   "موسیقی": "music",
-  "آواز": "singing",
+  "اواز": "singing",
   "خوانندگی": "singing",
   "ساز": "instrument",
   "موسیقیدان": "musician",
@@ -89,8 +89,8 @@ const SUBJECT_PHRASES = Object.freeze({
 const WORD_TRANSLATIONS = Object.freeze({
   "چرا": "why",
   "چگونه": "how-to",
-  "آموزش": "lessons",
-  "آموزشگاه": "academy",
+  "اموزش": "lessons",
+  "اموزشگاه": "academy",
   "کلاس": "lessons",
   "دوره": "course",
   "یادگیری": "learning",
@@ -163,7 +163,7 @@ const WORD_TRANSLATIONS = Object.freeze({
   "مقایسه": "comparison",
   "تفاوتها": "differences",
   "سریع": "quickly",
-  "آسان": "easy",
+  "اسان": "easy",
   "ساده": "simple",
   "سن": "age",
   "برنامه": "plan",
@@ -183,7 +183,7 @@ const WORD_TRANSLATIONS = Object.freeze({
   "شوشتر": "shushtar"
 });
 
-const PERSIAN_PREFIXES = /^(?:آموزشگاه|آموزش|کلاس|دوره|یادگیری|شروع یادگیری|نواختن|یاد گرفتن)\s+/u;
+const PERSIAN_PREFIXES = /^(?:اموزشگاه|اموزش|کلاس|دوره|یادگیری|شروع یادگیری|نواختن|یاد گرفتن)\s+/u;
 const PERSIAN_SUFFIXES = /\s+(?:در شوشتر|برای مبتدی(?:ها|ان)?|برای کودکان|برای کودک|مناسب مبتدیان)$/u;
 
 function finishSlug(value) {
@@ -257,16 +257,16 @@ function translateByTitlePattern(title) {
     [/^هزینه کلاس (.+?) در شوشتر$/u, (m) => `cost-of-${translateSubject(m[1])}-lessons-in-shushtar`],
     [/^قیمت کلاس (.+?) در شوشتر$/u, (m) => `price-of-${translateSubject(m[1])}-lessons-in-shushtar`],
     [/^کلاس (.+?) در شوشتر$/u, (m) => `${translateSubject(m[1])}-lessons-in-shushtar`],
-    [/^آموزش (.+?) در شوشتر$/u, (m) => `${translateSubject(m[1])}-lessons-in-shushtar`],
-    [/^آموزش (.+?) برای مبتدی(?:ها|ان)$/u, (m) => `${translateSubject(m[1])}-lessons-for-beginners`],
-    [/^آموزش (.+?) برای کودکان$/u, (m) => `${translateSubject(m[1])}-lessons-for-children`],
+    [/^اموزش (.+?) در شوشتر$/u, (m) => `${translateSubject(m[1])}-lessons-in-shushtar`],
+    [/^اموزش (.+?) برای مبتدی(?:ها|ان)$/u, (m) => `${translateSubject(m[1])}-lessons-for-beginners`],
+    [/^اموزش (.+?) برای کودکان$/u, (m) => `${translateSubject(m[1])}-lessons-for-children`],
     [/^هزینه کلاس (.+)$/u, (m) => `cost-of-${translateSubject(m[1])}-lessons`],
     [/^قیمت دوره (.+)$/u, (m) => `price-of-${translateSubject(m[1])}-course`],
     [/^بهترین دوره (.+)$/u, (m) => `best-${translateSubject(m[1])}-course`],
     [/^بهترین روش (.+)$/u, (m) => `best-way-to-${translateSubject(m[1])}`],
     [/^چگونه (.+?) را یاد بگیریم$/u, (m) => `how-to-learn-${translateSubject(m[1])}`],
     [/^راهنمای (.+)$/u, (m) => `${translateSubject(m[1])}-guide`],
-    [/^آموزش (.+)$/u, (m) => `${translateSubject(m[1])}-lessons`],
+    [/^اموزش (.+)$/u, (m) => `${translateSubject(m[1])}-lessons`],
     [/^بهترین (.+)$/u, (m) => `best-${translateSubject(m[1])}`],
     [/^تفاوت (.+?) و (.+?)(?: در چیست)?(?: کدام را انتخاب کنیم)?$/u, (m) => `difference-between-${translateSubject(m[1])}-and-${translateSubject(m[2])}`]
   ];
