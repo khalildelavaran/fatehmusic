@@ -7,7 +7,7 @@ describe("article HTML sanitizer", () => {
       '<div onclick="alert(1)"><p style="color:#aabbcc;font-size:18px;background-image:url(javascript:alert(1))">متن <strong>مهم</strong></p>' +
       '<a href="https://example.com/?a=1&amp;b=2" onmouseover="alert(1)">پیوند</a>' +
       '<script>alert(1)</script><iframe src="https://evil.example"></iframe>' +
-      '<img src="data:image/svg+xml,<svg onload=alert(1)>" onerror="alert(1)" alt="تصویر"></div>'
+      '<img src="data:image/png;base64,AAAA" onerror="alert(1)" alt="تصویر"></div>'
     );
 
     expect(result).toContain("<strong>مهم</strong>");
@@ -27,6 +27,14 @@ describe("article HTML sanitizer", () => {
     expect(result).not.toMatch(/href="java|href="javascript/i);
     expect(result).toContain('href="/courses/guitar"');
     expect(result).toContain('rel="noopener noreferrer"');
+  });
+
+  it("escapes malformed tags whose quoted attributes contain angle brackets", () => {
+    const result = sanitizeArticleHtml(
+      '<div><img src="data:image/svg+xml,<svg onload=alert(1)>" onerror="alert(1)" alt="تصویر"></div>'
+    );
+    expect(result).not.toContain("<img");
+    expect(result).toContain("&lt;img");
   });
 
   it("distinguishes legacy Markdown from rich HTML content", () => {
