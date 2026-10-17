@@ -18,6 +18,14 @@ const htmlSource = document.querySelector("#contentSource");
 const preview = document.querySelector("#contentPreview");
 const contentValue = document.querySelector("#contentValue");
 const editorToolbar = document.querySelector(".rich-editor-toolbar");
+const codeEditorView = document.querySelector("#codeEditorView");
+const sourceHighlight = document.querySelector("#contentSourceHighlight");
+const sourceHighlightCode = document.querySelector("#contentSourceHighlightCode");
+const codeLineNumbers = document.querySelector("#codeLineNumbers");
+const editorCursorPosition = document.querySelector("#editorCursorPosition");
+const editorLineCount = document.querySelector("#editorLineCount");
+const expandEmmetButton = document.querySelector("#expandEmmetButton");
+const formatHtmlButton = document.querySelector("#formatHtmlButton");
 const editorModeButtons = [...document.querySelectorAll("[data-editor-mode]")];
 const editorWordCount = document.querySelector("#editorWordCount");
 const editorStatus = document.querySelector("#editorStatus");
@@ -139,6 +147,201 @@ function updateEditorWordCount(html) {
   editorWordCount.textContent = count.toLocaleString("fa-IR") + " کلمه";
 }
 
+
+function highlightHtml(source) {
+  let highlighted = escapeHtml(source);
+  highlighted = highlighted.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="code-token-comment">$1</span>');
+  highlighted = highlighted.replace(/(&lt;\/?)([a-z][\w:-]*)([\s\S]*?)(\/?&gt;)/gi, (_all, open, tag, attributes, close) => {
+    const styledAttributes = attributes.replace(/(\s)([a-z_:][\w:.-]*)(\s*=\s*)(&quot;.*?&quot;|&#39;.*?&#39;)/gi, '$1<span class="code-token-attribute">$2</span>$3<span class="code-token-string">$4</span>');
+    return '<span class="code-token-punctuation">' + open + '</span><span class="code-token-tag">' + tag + '</span>' + styledAttributes + '<span class="code-token-punctuation">' + close + '</span>';
+  });
+  highlighted = highlighted.replace(/(&amp;#(?:x[0-9a-f]+|\d+);|&amp;(?:nbsp|amp|lt|gt|quot);)/gi, '<span class="code-token-entity">$1</span>');
+  return highlighted || " ";
+}
+
+function updateCodeEditor(source = htmlSource.value) {
+  if (!sourceHighlightCode) return;
+  const lines = String(source ?? "").split("\n");
+  sourceHighlightCode.innerHTML = highlightHtml(source);
+  codeLineNumbers.textContent = lines.map((_line, index) => String(index + 1)).join("\n");
+  editorLineCount.textContent = lines.length.toLocaleString("fa-IR") + " خط";
+  syncCodeScroll();
+  updateCursorPosition();
+}
+
+function syncCodeScroll() {
+  if (!sourceHighlight || !htmlSource) return;
+  sourceHighlight.scrollTop = htmlSource.scrollTop;
+  sourceHighlight.scrollLeft = htmlSource.scrollLeft;
+  codeLineNumbers.style.transform = "translateY(" + (-htmlSource.scrollTop) + "px)";
+}
+
+function updateCursorPosition() {
+  if (!editorCursorPosition) return;
+  const position = htmlSource.selectionStart || 0;
+  const beforeCaret = htmlSource.value.slice(0, position);
+  const lines = beforeCaret.split("\n");
+  const line = lines.length;
+  const column = lines[lines.length - 1].length + 1;
+  editorCursorPosition.textContent = "سطر " + line.toLocaleString("fa-IR") + "، ستون " + column.toLocaleString("fa-IR");
+}
+
+function parseEmmetTerm(source, state) {
+  let index = state.index;
+  const start = index;
+  while (index < source.length && !/[.#[{*+>]/.test(source[index])) index += 1;
+  const rawTag = source.slice(start, index).trim();
+  const node = { tag: /^[a-z][a-z0-9-]*$/i.test(rawTag) ? rawTag.toLowerCase() : "div", id: "", classes: [], attributes: [], text: "", repeat: 1, children: [] };
+
+  while (index < source.length) {
+    const char = source[index];
+    if (char === ".") {
+      index += 1;
+      const classStart = index;
+      while (index < source.length && !/[.#\[{*+>]/.test(source[index])) index += 1;
+      const className = source.slice(classStart, index).trim();
+      if (className) node.classes.push(className);
+      continue;
+    }
+    if (char === "#") {
+      index += 1;
+      const idStart = index;
+      while (index < source.length && !/[.#\[{*+>]/.test(source[index])) index += 1;
+      node.id = source.slice(idStart, index).trim();
+      continue;
+    }
+    if (char === "[") {
+      const end = source.indexOf("]", index + 1);
+      if (end < 0) return null;
+      const rawAttributes = source.slice(index + 1, end);
+      const expression = /([a-z_:][\w:.-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s]+)))?/gi;
+      let match;
+      while ((match = expression.exec(rawAttributes))) {
+        node.attributes.push([match[1], match[2] ?? match[3] ?? match[4] ?? ""]);
+      }
+      index = end + 1;
+      continue;
+    }
+    if (char === "{") {
+      const end = source.indexOf("}", index + 1);
+      if (end < 0) return null;
+      node.text = source.slice(index + 1, end);
+      index = end + 1;
+      continue;
+    }
+    if (char === "*") {
+      index += 1;
+      const countStart = index;
+      while (index < source.length && /\d/.test(source[index])) index += 1;
+      node.repeat = Math.max(1, Math.min(100, Number(source.slice(countStart, index)) || 1));
+      continue;
+    }
+    break;
+  }
+
+  state.index = index;
+  return node;
+}
+
+function parseEmmetList(source, state) {
+  const nodes = [];
+  while (state.index < source.length) {
+    const term = parseEmmetTerm(source, state);
+    if (!term) return null;
+    if (source[state.index] === ">") {
+      state.index += 1;
+      term.children = parseEmmetList(source, state);
+      if (!term.children) return null;
+    }
+    for (let i = 0; i < term.repeat; i += 1) {
+      nodes.push({ ...term, repeat: 1, id: term.id.replace(/\$/g, String(i + 1)), classes: term.classes.map((value) => value.replace(/\$/g, String(i + 1))), attributes: term.attributes.map(([name, value]) => [name, value.replace(/\$/g, String(i + 1))]), text: term.text.replace(/\$/g, String(i + 1)), children: term.children.map((child) => ({ ...child })) });
+    }
+    if (source[state.index] === "+") {
+      state.index += 1;
+      continue;
+    }
+    break;
+  }
+  return nodes;
+}
+
+function renderEmmetNode(node, depth = 0) {
+  const indent = "  ".repeat(depth);
+  const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+  const attributes = [];
+  if (node.id) attributes.push('id="' + escapeHtml(node.id) + '"');
+  if (node.classes.length) attributes.push('class="' + escapeHtml(node.classes.join(" ")) + '"');
+  for (const [name, value] of node.attributes) {
+    if (/^on/i.test(name) || !/^[a-z_:][\w:.-]*$/i.test(name)) continue;
+    attributes.push(name + '="' + escapeHtml(value) + '"');
+  }
+  const opening = "<" + node.tag + (attributes.length ? " " + attributes.join(" ") : "") + ">";
+  if (voidTags.has(node.tag)) return indent + opening.slice(0, -1) + " />";
+  const text = node.text ? escapeHtml(node.text) : "";
+  if (!node.children.length) return indent + opening + text + "</" + node.tag + ">";
+  return indent + opening + (text ? text + "\n" : "\n") + node.children.map((child) => renderEmmetNode(child, depth + 1)).join("\n") + "\n" + indent + "</" + node.tag + ">";
+}
+
+function expandEmmetAbbreviation(value) {
+  const source = String(value ?? "").trim();
+  if (!source || source.length > 300 || /[<>\n]/.test(source)) return null;
+  const state = { index: 0 };
+  const nodes = parseEmmetList(source, state);
+  if (!nodes?.length || state.index !== source.length) return null;
+  return nodes.map((node) => renderEmmetNode(node)).join("\n");
+}
+
+function formatHtmlSource(source) {
+  const tokens = String(source ?? "").replace(/>\s*</g, ">\n<").split("\n").map((line) => line.trim()).filter(Boolean);
+  const voidTags = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/i;
+  const output = [];
+  let depth = 0;
+  for (const token of tokens) {
+    const closeTag = token.match(/^<\/([a-z][\w:-]*)/i);
+    const openTag = token.match(/^<([a-z][\w:-]*)\b/i);
+    if (closeTag) depth = Math.max(0, depth - 1);
+    output.push("  ".repeat(depth) + token);
+    if (openTag && !closeTag && !voidTags.test(openTag[1]) && !/\/>$/.test(token) && !/^<(?:pre|textarea|script|style)\b/i.test(token)) depth += 1;
+  }
+  return output.join("\n");
+}
+
+function expandEmmetAtCursor() {
+  const cursor = htmlSource.selectionStart ?? 0;
+  const lineStart = htmlSource.value.lastIndexOf("\n", cursor - 1) + 1;
+  const lineEndAt = htmlSource.value.indexOf("\n", cursor);
+  const lineEnd = lineEndAt < 0 ? htmlSource.value.length : lineEndAt;
+  const line = htmlSource.value.slice(lineStart, lineEnd);
+  const leading = line.match(/^\s*/)?.[0] ?? "";
+  const abbreviation = line.trim();
+  const expanded = expandEmmetAbbreviation(abbreviation);
+  if (!expanded) {
+    editorStatus.textContent = "مخفف Emmet شناخته نشد. نمونه: ul.nav>li.nav-item$*4>a";
+    return false;
+  }
+  const indented = expanded.split("\n").map((item) => leading + item).join("\n");
+  htmlSource.setRangeText(indented, lineStart, lineEnd, "select");
+  htmlSource.selectionStart = lineStart + indented.length;
+  htmlSource.selectionEnd = htmlSource.selectionStart;
+  updateCodeEditor();
+  syncContent();
+  editorStatus.textContent = "مخفف Emmet به HTML گسترش یافت.";
+  return true;
+}
+
+function indentCodeSelection() {
+  const start = htmlSource.selectionStart;
+  const end = htmlSource.selectionEnd;
+  const selection = htmlSource.value.slice(start, end);
+  if (selection.includes("\n")) {
+    const indented = selection.split("\n").map((line) => "  " + line).join("\n");
+    htmlSource.setRangeText(indented, start, end, "select");
+  } else {
+    htmlSource.setRangeText("  ", start, end, "end");
+  }
+  updateCodeEditor();
+}
+
 function currentHtml() {
   return currentEditorMode === "html" || (currentEditorMode === "preview" && previousEditingMode === "html")
     ? htmlSource.value
@@ -166,6 +369,7 @@ function setEditorMode(name) {
       htmlSource.value = visualEditor.innerHTML;
     }
     previousEditingMode = "html";
+    updateCodeEditor(htmlSource.value);
   } else if (name === "visual") {
     if (currentEditorMode === "html" || (currentEditorMode === "preview" && previousEditingMode === "html")) {
       visualEditor.innerHTML = sanitizeArticleHtml(htmlSource.value);
@@ -179,6 +383,7 @@ function setEditorMode(name) {
 
   currentEditorMode = name;
   visualEditor.hidden = name !== "visual";
+  codeEditorView.hidden = name !== "html";
   htmlSource.hidden = name !== "html";
   preview.hidden = name !== "preview";
   editorToolbar.hidden = name !== "visual";
@@ -189,7 +394,6 @@ function setEditorMode(name) {
   }
   syncContent();
 }
-
 editorModeButtons.forEach((button) => {
   button.addEventListener("click", () => setEditorMode(button.dataset.editorMode));
 });
@@ -199,6 +403,7 @@ function setEditorContent(value) {
   visualEditor.innerHTML = isHtmlArticleContent(raw) ? sanitizeArticleHtml(raw) : markdownToHtml(raw);
   htmlSource.value = "";
   preview.innerHTML = "";
+  codeEditorView.hidden = true;
   currentEditorMode = "visual";
   previousEditingMode = "visual";
   visualEditor.hidden = false;
@@ -212,6 +417,47 @@ function setEditorContent(value) {
   }
   syncContent();
 }
+
+
+htmlSource.addEventListener("input", () => {
+  updateCodeEditor();
+  syncContent();
+  if (editorStatus) editorStatus.textContent = "کد تغییر کرده است؛ پیش‌نمایش را بررسی کنید و سپس نوشته را ذخیره کنید.";
+});
+htmlSource.addEventListener("scroll", syncCodeScroll);
+htmlSource.addEventListener("keyup", updateCursorPosition);
+htmlSource.addEventListener("click", updateCursorPosition);
+htmlSource.addEventListener("select", updateCursorPosition);
+htmlSource.addEventListener("keydown", (event) => {
+  if (event.key === "Tab") {
+    event.preventDefault();
+    const cursor = htmlSource.selectionStart ?? 0;
+    const lineStart = htmlSource.value.lastIndexOf("\n", cursor - 1) + 1;
+    const lineEndAt = htmlSource.value.indexOf("\n", cursor);
+    const lineEnd = lineEndAt < 0 ? htmlSource.value.length : lineEndAt;
+    const beforeCaret = htmlSource.value.slice(lineStart, cursor).trim();
+    const afterCaret = htmlSource.value.slice(cursor, lineEnd).trim();
+    if (!event.shiftKey && beforeCaret && !afterCaret && !beforeCaret.includes("<")) {
+      if (expandEmmetAtCursor()) return;
+    }
+    indentCodeSelection();
+    syncContent();
+    return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    form.requestSubmit();
+  }
+});
+expandEmmetButton.addEventListener("click", expandEmmetAtCursor);
+formatHtmlButton.addEventListener("click", () => {
+  const cursor = htmlSource.selectionStart ?? 0;
+  htmlSource.value = formatHtmlSource(htmlSource.value);
+  htmlSource.setSelectionRange(Math.min(cursor, htmlSource.value.length), Math.min(cursor, htmlSource.value.length));
+  updateCodeEditor();
+  syncContent();
+  editorStatus.textContent = "کد HTML مرتب‌سازی شد؛ ساختار را قبل از ذخیره بررسی کنید.";
+});
 
 function saveSelection() {
   const selection = window.getSelection();
@@ -339,10 +585,6 @@ visualEditor.addEventListener("input", () => {
   saveSelection();
   syncContent();
   if (editorStatus) editorStatus.textContent = "تغییرات و قالب‌بندی در فرم ذخیره‌نشده‌اند؛ برای ثبت مقاله روی «ذخیره نوشته» بزنید.";
-});
-htmlSource.addEventListener("input", () => {
-  syncContent();
-  if (editorStatus) editorStatus.textContent = "کد HTML تغییر کرده است؛ پیش‌نمایش را بررسی کنید و سپس نوشته را ذخیره کنید.";
 });
 
 async function loadPosts() {
