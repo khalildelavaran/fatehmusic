@@ -18,7 +18,7 @@ function decodeHtmlEntities(value) {
 
 export function articleContentToText(value) {
   return decodeHtmlEntities(String(value ?? "")
-    .replace(/<!--[\\s\\S]*?-->/gu, " ")
+    .replace(/<!--[\s\S]*?-->/gu, " ")
     .replace(/<(script|style|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/giu, " ")
     .replace(/<br\s*\/?\s*>/giu, "\n")
     .replace(/<\/(?:p|div|h[1-6]|li|ul|ol|tr|table|section|article|blockquote)\s*>/giu, "\n")
