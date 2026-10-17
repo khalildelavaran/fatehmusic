@@ -26,6 +26,7 @@ import { courses as runtimeCourses } from "../../data/courses.js";
 import { instructors as runtimeInstructors } from "../../data/instructors.js";
 import { findComparisonCourses } from "../../seo/v2/comparison-courses.js";
 import { formatJalaliDate } from "../../utils/format-date";
+import { isHtmlArticleContent, sanitizeArticleHtml } from "../../utils/sanitize-article-html";
 import "../../styles/blog.css";
 
 const post = await getPublishedPost(Astro.params.slug ?? "");
@@ -128,6 +129,7 @@ function normalizeArticleText(value: unknown) {
 }
 
 function renderArticleContent(markdown: string) {
+  if (isHtmlArticleContent(markdown)) return sanitizeArticleHtml(markdown);
   const lines = normalizeArticleText(markdown).replace(/\r/g, "").split("\n");
   const blocks = [];
   let paragraph: string[] = [];
