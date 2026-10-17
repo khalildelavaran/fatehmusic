@@ -1,6 +1,7 @@
 import { formatJalaliDateTime } from "../../utils/format-date";
 import { expandEmmetAbbreviation, formatHtmlSource } from "../../utils/emmet";
 import { isHtmlArticleContent, sanitizeArticleHtml } from "../../utils/sanitize-article-html";
+import { summarizeArticleContent } from "../../utils/article-summary.js";
 
 const message = document.querySelector("#adminMessage");
 const generateButton = document.querySelector("#generateNowButton");
@@ -39,6 +40,116 @@ const headers = () => ({ "Content-Type": "application/json" });
 const setMessage = (text) => { if (message) message.textContent = text; };
 const statusLabel = (status) => (status === "published" ? "منتشر شده" : "پیش‌نویس");
 const formatDate = (value) => formatJalaliDateTime(value);
+
+const AUTO_FILLED_FIELDS = [
+  "slug", "topic", "related_course_slug", "related_course_title",
+  "meta_title", "excerpt", "meta_description"
+];
+const autoFilledValues = new Map();
+const manuallyEditedFields = new Set();
+let articleSeoTimer = null;
+let articleSeoController = null;
+let articleSeoRequestId = 0;
+
+function clearAutoFilledState() {
+  if (articleSeoTimer !== null) window.clearTimeout(articleSeoTimer);
+  articleSeoTimer = null;
+  if (articleSeoController) articleSeoController.abort();
+  articleSeoController = null;
+  articleSeoRequestId += 1;
+  autoFilledValues.clear();
+  manuallyEditedFields.clear();
+}
+
+function applyAutoFilledValue(name, value) {
+  const field = form.elements.namedItem(name);
+  if (!field || !("value" in field) || manuallyEditedFields.has(name)) return;
+
+  const nextValue = String(value ?? "");
+  const currentValue = String(field.value ?? "");
+  const lastGeneratedValue = autoFilledValues.get(name);
+  const canReplace = !currentValue.trim() ||
+    (lastGeneratedValue !== undefined && currentValue === lastGeneratedValue);
+  if (!canReplace) return;
+
+  if (currentValue !== nextValue) field.value = nextValue;
+  if (nextValue) autoFilledValues.set(name, nextValue);
+  else autoFilledValues.delete(name);
+}
+
+function updateArticleSummary() {
+  const article = contentValue?.value || "";
+  applyAutoFilledValue("excerpt", summarizeArticleContent(article, 230));
+  applyAutoFilledValue("meta_description", summarizeArticleContent(article, 160));
+}
+
+async function requestArticleSeoSuggestions() {
+  const titleField = form.elements.namedItem("title");
+  const topicField = form.elements.namedItem("topic");
+  const title = String(titleField?.value ?? "").trim();
+  const visibleTopic = String(topicField?.value ?? "").trim();
+  const generatedTopic = autoFilledValues.get("topic");
+  // Do not send an old generated topic as if the editor had chosen it manually.
+  const topic = generatedTopic && visibleTopic === generatedTopic && !manuallyEditedFields.has("topic")
+    ? ""
+    : visibleTopic;
+
+  if (articleSeoController) articleSeoController.abort();
+  const controller = new AbortController();
+  articleSeoController = controller;
+  const requestId = ++articleSeoRequestId;
+
+  try {
+    const response = await fetch("/api/admin/article-seo-suggestions", {
+      method: "POST",
+      headers: headers(),
+      credentials: "same-origin",
+      signal: controller.signal,
+      body: JSON.stringify({ title, topic })
+    });
+    if (requestId !== articleSeoRequestId) return;
+    if (response.status === 401) {
+      window.location.assign("/admin/login");
+      return;
+    }
+    const data = await response.json();
+    if (!response.ok || !data.success || !data.fields) return;
+
+    const fields = data.fields;
+    applyAutoFilledValue("topic", fields.topic);
+    applyAutoFilledValue("slug", fields.slug);
+    applyAutoFilledValue("related_course_slug", fields.related_course_slug);
+    applyAutoFilledValue("related_course_title", fields.related_course_title);
+    applyAutoFilledValue("meta_title", fields.meta_title);
+  } catch (error) {
+    if (error?.name !== "AbortError") console.error("Article SEO suggestion request failed:", error);
+  } finally {
+    if (requestId === articleSeoRequestId) articleSeoController = null;
+  }
+}
+
+function queueArticleSeoSuggestions() {
+  if (articleSeoTimer !== null) window.clearTimeout(articleSeoTimer);
+  articleSeoTimer = window.setTimeout(() => {
+    articleSeoTimer = null;
+    void requestArticleSeoSuggestions();
+  }, 300);
+}
+
+for (const name of AUTO_FILLED_FIELDS) {
+  const field = form.elements.namedItem(name);
+  field?.addEventListener("input", () => {
+    const currentValue = String(field.value ?? "");
+    const generatedValue = autoFilledValues.get(name);
+    if (generatedValue === undefined ? Boolean(currentValue.trim()) : currentValue !== generatedValue) {
+      manuallyEditedFields.add(name);
+    }
+  });
+}
+for (const name of ["title", "topic"]) {
+  form.elements.namedItem(name)?.addEventListener("input", queueArticleSeoSuggestions);
+}
+
 
 function activateTab(name) {
   if (!Object.hasOwn(tabPanels, name)) return;
@@ -239,6 +350,7 @@ function syncContent() {
   const html = normalizeEditorHtml(currentHtml());
   contentValue.value = html;
   updateEditorWordCount(html);
+  updateArticleSummary();
   return html;
 }
 
@@ -503,6 +615,7 @@ function renderPosts() {
 }
 
 function resetForm() {
+  clearAutoFilledState();
   form.reset();
   form.elements.id.value = "";
   setEditorContent("");
@@ -562,6 +675,7 @@ list.addEventListener("click", async (event) => {
   if (editId) {
     const post = posts.find((item) => String(item.id) === editId);
     if (post) {
+      clearAutoFilledState();
       Object.entries(post).forEach(([key, value]) => {
         if (key !== "content" && form.elements[key]) form.elements[key].value = value ?? "";
       });

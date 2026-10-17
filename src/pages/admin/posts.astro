@@ -158,12 +158,12 @@ if (session.role !== ROLES.ADMIN) return Astro.redirect("/admin");
               </section>
 
               <label class="article-excerpt-field">
-                <span>خلاصه مقاله</span>
+                <span>خلاصه مقاله (تولید خودکار از متن)</span>
                 <textarea name="excerpt" rows="3" required placeholder="خلاصه کوتاه برای صفحه وبلاگ و نتایج جست‌وجو…"></textarea>
               </label>
 
               <details class="post-settings" open>
-                <summary><span>تنظیمات مقاله و سئو</span><small>نشانی صفحه، موضوع، دوره مرتبط و اطلاعات موتورهای جست‌وجو</small></summary>
+                <summary><span>تنظیمات مقاله و سئو</span><small>اسلاگ، موضوع، دوره مرتبط و متادیتا خودکار پیشنهاد می‌شوند؛ خلاصه از متن ساخته می‌شود و همه مقادیر قابل ویرایش‌اند.</small></summary>
                 <div class="post-settings-grid">
                   <label><span>اسلاگ انگلیسی</span><input name="slug" dir="ltr" required placeholder="example-article" /></label>
                   <label><span>موضوع مقاله</span><input name="topic" required placeholder="آموزش گیتار" /></label>
