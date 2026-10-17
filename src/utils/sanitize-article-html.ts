@@ -179,6 +179,12 @@ function tokenizeHtml(source: string): string[] {
       continue;
     }
 
+    if (index + 1 < source.length && !/[a-z/!?]/i.test(source[index + 1])) {
+      tokens.push("<");
+      index += 1;
+      continue;
+    }
+
     const start = index;
     let quote: string | null = null;
     index += 1;
