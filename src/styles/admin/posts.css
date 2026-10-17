@@ -877,3 +877,39 @@
     .code-editor-toolbar{align-items:flex-start;flex-direction:column;}
     .code-editor-status{gap:9px;font-size:9px;}
 }
+
+
+/* Keep the line-number rail still while the highlighted code layer scrolls. */
+.code-line-numbers-gutter{
+    position:relative;
+    min-width:48px;
+    overflow:hidden;
+    border-right:1px solid #e7ebf1;
+    background:#f6f8fa;
+}
+.code-line-numbers{
+    box-sizing:border-box;
+    width:100%;
+    min-width:0;
+    margin:0;
+    padding:16px 10px 16px 5px;
+    overflow:visible;
+    border:0;
+    background:transparent;
+    color:#9aa4b2;
+    text-align:right;
+    white-space:pre;
+    user-select:none;
+    transform:translateY(0);
+    font:12.5px/1.75 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+}
+.rich-editor-highlight{
+    width:100%;
+    min-width:100%;
+    max-width:100%;
+}
+.rich-editor-highlight code{white-space:pre;}
+@media(max-width:760px){
+    .code-line-numbers-gutter{min-width:40px;}
+    .code-line-numbers{padding-inline-end:7px;font-size:11px;}
+}
