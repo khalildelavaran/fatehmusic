@@ -1,6 +1,6 @@
 const ALLOWED_TAGS = new Set([
   "p", "div", "span", "h1", "h2", "h3", "h4", "h5", "h6",
-  "strong", "b", "em", "i", "u", "s", "del", "mark", "small",
+  "strong", "b", "em", "i", "u", "s", "strike", "del", "mark", "small",
   "sub", "sup", "br", "hr", "blockquote", "pre", "code",
   "ul", "ol", "li", "a", "img", "table", "caption", "thead",
   "tbody", "tfoot", "tr", "th", "td", "font"
@@ -8,7 +8,7 @@ const ALLOWED_TAGS = new Set([
 
 const VOID_TAGS = new Set(["br", "hr", "img"]);
 const DROP_CONTENT_TAGS = new Set(["script", "style", "iframe", "object", "embed", "svg", "math", "template", "noscript"]);
-const HTML_LEADING_TAG = /^\s*<(?:!doctype\b|!--|\/?(?:html|body|p|div|span|h[1-6]|strong|b|em|i|u|s|del|mark|small|sub|sup|br|hr|blockquote|pre|code|ul|ol|li|a|img|table|caption|thead|tbody|tfoot|tr|th|td|font|script|style|iframe|object|embed|svg|math|template|noscript)\b)/i;
+const HTML_LEADING_TAG = /^\s*<(?:!doctype\b|!--|\/?(?:html|body|p|div|span|h[1-6]|strong|b|em|i|u|s|strike|del|mark|small|sub|sup|br|hr|blockquote|pre|code|ul|ol|li|a|img|table|caption|thead|tbody|tfoot|tr|th|td|font|script|style|iframe|object|embed|svg|math|template|noscript)\b)/i;
 
 export function isHtmlArticleContent(value: unknown): boolean {
   return HTML_LEADING_TAG.test(String(value ?? ""));
@@ -167,12 +167,50 @@ function sanitizeAttributes(tag: string, source: string): string {
   return attrs.length ? " " + attrs.join(" ") : "";
 }
 
+function tokenizeHtml(source: string): string[] {
+  const tokens: string[] = [];
+  let index = 0;
+  while (index < source.length) {
+    if (source[index] !== "<") {
+      const nextTag = source.indexOf("<", index);
+      const end = nextTag < 0 ? source.length : nextTag;
+      tokens.push(source.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    if (index + 1 < source.length && !/[a-z/!?]/i.test(source[index + 1])) {
+      tokens.push("<");
+      index += 1;
+      continue;
+    }
+
+    const start = index;
+    let quote: string | null = null;
+    index += 1;
+    while (index < source.length) {
+      const char = source[index];
+      if (quote) {
+        if (char === quote && source[index - 1] !== "\\") quote = null;
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === ">") {
+        index += 1;
+        break;
+      }
+      index += 1;
+    }
+    tokens.push(source.slice(start, index));
+  }
+  return tokens;
+}
+
 export function sanitizeArticleHtml(value: unknown): string {
   let source = String(value ?? "");
   source = source.replace(/<!--[\s\S]*?-->/g, "");
   source = source.replace(/<(script|style|iframe|object|embed|svg|math|template|noscript)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "");
 
-  const tokens = source.match(/<\/?[a-z][^>]*>|[^<]+|</gi) ?? [];
+  const tokens = tokenizeHtml(source);
   const output: string[] = [];
   const stack: string[] = [];
   let dropTag: string | null = null;
@@ -181,7 +219,7 @@ export function sanitizeArticleHtml(value: unknown): string {
     const tagMatch = token.match(/^<\s*(\/?)\s*([a-z][a-z0-9:-]*)\b([^>]*)>$/i);
     if (!tagMatch) {
       if (dropTag) continue;
-      output.push(token === "<" ? "&lt;" : token);
+      output.push(token.startsWith("<") ? token.replace(/</g, "&lt;") : token);
       continue;
     }
 
