@@ -45,10 +45,12 @@ import {
             <section class="footer-contact">
                 <h3>ارتباط با ما</h3>
 
-                <a href={contact.map.navigation} target="_blank" rel="noopener noreferrer">
-                    <MapPinned />
-                    <span>{contact.address.full}</span>
-                </a>
+                <address class="footer-business-address">
+                    <a href={contact.map.navigation} target="_blank" rel="noopener noreferrer">
+                        <MapPinned />
+                        <span>{contact.address.full}، {contact.address.city}، {contact.address.province}</span>
+                    </a>
+                </address>
 
                 <a href={"tel:+" + contact.phones.mobile.raw}>
                     <Smartphone />
@@ -80,3 +82,8 @@ import {
         </div>
     </div>
 </footer>
+
+<style>
+.footer-business-address{margin:0;font-style:normal}
+.footer-business-address a{display:flex;align-items:flex-start;gap:10px}
+</style>

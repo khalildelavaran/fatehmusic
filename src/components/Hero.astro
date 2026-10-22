@@ -1,3 +1,8 @@
+---
+import { Picture } from "astro:assets";
+import heroPhoto from "../assets/images/hero/academy.webp";
+---
+
 <section class="hero">
 
   <div class="container hero-container">
@@ -47,15 +52,17 @@
 
     <div class="hero-image">
       <div class="hero-image-wrapper">
-        <img
-          src="../images/hero/academy.webp"
+        <Picture
+          src={heroPhoto}
           alt="آموزشگاه موسیقی فاتح شوشتر"
           class="hero-photo"
+          widths={[320, 480, 640, 768]}
+          sizes="(max-width: 768px) 100vw, 50vw"
+          formats={["avif", "webp"]}
+          fallbackFormat="webp"
           loading="eager"
           fetchpriority="high"
           decoding="async"
-          width="768"
-          height="512"
         />
       </div>
     </div>

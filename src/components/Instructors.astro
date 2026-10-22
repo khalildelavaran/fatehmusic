@@ -1,10 +1,24 @@
 ---
 import { instructors as staticInstructors } from "../data/instructors";
+import type { ImageMetadata } from "astro";
+import { Picture } from "astro:assets";
 import { courses as staticCourses } from "../data/courses";
 import { schedules } from "../data/schedule";
 import { toPersianDigits } from "../utils/format-number";
 
 const resolvedInstructors = Array.isArray(Astro.props.instructors) ? Astro.props.instructors : staticInstructors;
+
+const instructorImageModules = import.meta.glob<{ default: ImageMetadata }>(
+  "../assets/images/instructors/*/profile.webp",
+  { eager: true }
+);
+
+const resolveInstructorImage = (imagePath: string): ImageMetadata | undefined => {
+  const match = String(imagePath ?? "").match(/\/images\/instructors\/(.+\/profile\.webp)$/);
+  if (!match) return undefined;
+  return instructorImageModules[`../assets/images/instructors/${match[1]}`]?.default;
+};
+
 
 const instructorCards = resolvedInstructors.map((ins: any) => {
   const linkedCourses = Array.isArray(ins.courses) && ins.courses.length
@@ -20,7 +34,7 @@ const instructorCards = resolvedInstructors.map((ins: any) => {
         { slug: "guitar-flamenco", title: "آموزش گیتار فلامنکو" }
       ].filter((course: any, index: number, courses: any[]) => courses.findIndex((item) => item.slug === course.slug) === index)
     : linkedCourses;
-  return { ...ins, courses: displayCourses, schedules: instructorSchedules, days };
+  return { ...ins, courses: displayCourses, schedules: instructorSchedules, days, imageAsset: resolveInstructorImage(ins.media?.images?.profile) };
 });
 
 const getInstructorCourseTitle = (title: string) => {
@@ -49,7 +63,20 @@ const getInstructorCourseTitle = (title: string) => {
         <div class="instructor-card">
           <div class="instructor-image">
             <a href={`/instructors/${ins.slug}`} class="instructor-image-link">
-              <img src={ins.media.images.profile} alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`} width="1200" height="1500" loading="lazy" decoding="async" />
+              {ins.imageAsset ? (
+                <Picture
+                  src={ins.imageAsset}
+                  alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`}
+                  widths={[240, 360, 480, 640, 800, 960]}
+                  sizes="(max-width: 600px) 94vw, (max-width: 1000px) 30vw, 280px"
+                  formats={["avif", "webp"]}
+                  fallbackFormat="webp"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <img src={ins.media.images.profile} alt={`تصویر ${ins.name}، ${ins.position} در آموزشگاه موسیقی فاتح شوشتر`} width="1200" height="1500" loading="lazy" decoding="async" />
+              )}
             </a>
             {ins.id === 1 && <span class="badge">مدیر آموزشگاه</span>}
             <a href={`/register?instructor=${ins.slug}`} rel="nofollow" class="card-register-badge" aria-label={`ثبت‌نام با ${ins.name}`}>ثبت‌نام با {ins.name}</a>
