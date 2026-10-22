@@ -47,6 +47,7 @@ const resolveGalleryImage = (imagePath: string): ImageMetadata | undefined => {
                 widths={[320, 480, 640, 800]}
                 sizes="(max-width: 620px) 95vw, (max-width: 900px) 48vw, 360px"
                 formats={["avif", "webp"]}
+                  fallbackFormat="webp"
                 loading="lazy"
                 decoding="async"
               />
