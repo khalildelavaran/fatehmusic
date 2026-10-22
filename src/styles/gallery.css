@@ -250,7 +250,7 @@
   text-align: center;
 }
 
-.lightbox-caption h3 {
+.lightbox-caption .lightbox-title {
   margin: 0 0 10px;
   color: #fff;
   font-size: 34px;
@@ -258,7 +258,7 @@
   letter-spacing: -.5px;
 }
 
-.lightbox-caption p {
+.lightbox-caption p:not(.lightbox-title) {
   max-width: 720px;
   margin: auto;
   color: rgba(255,255,255,.72);
@@ -323,7 +323,7 @@ body.lightbox-open {
   .lightbox-prev, .lightbox-next { width: 48px; height: 48px; font-size: 22px; }
   .lightbox-prev { left: 10px; }
   .lightbox-next { right: 10px; }
-  .lightbox-caption h3 { font-size: 24px; }
+  .lightbox-caption .lightbox-title { font-size: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
