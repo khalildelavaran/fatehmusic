@@ -15,6 +15,9 @@ export default defineConfig({
   },
 
   adapter: cloudflare({
+    // Generate responsive variants locally for prerendered pages and retain
+    // Cloudflare Images transformations for on-demand SSR routes.
+    imageService: { build: "compile", runtime: "cloudflare-binding" },
     // Remote bindings require CLOUDFLARE_API_TOKEN. In local/preview environments, use local bindings.
     remoteBindings: process.env.REMOTE_BINDINGS === "true"
   }),
