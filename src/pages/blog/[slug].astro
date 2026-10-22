@@ -89,7 +89,7 @@ const internalLinkTargets = [
   { url: `${site.url}/locations/shushtar`, title: "آموزش موسیقی در شوشتر", type: "LocalBusiness" }
 ];
 const semanticInternalLinks = [...new Map(
-  internalLinkTargets.filter((item) => item.url && item.title).map((item) => [item.url, item])
+  internalLinkTargets.filter((item) => item.url && item.title).map((item) => [item.url, item] as const)
 ).values()].slice(0, 6);
 const internalLinkCount = semanticInternalLinks.length + 7;
 const schema: object[] = [articleSchema, ...courseSchemas, ...relatedCourseInstructorSchemas, breadcrumbSchema].filter((item): item is object => item !== null);
