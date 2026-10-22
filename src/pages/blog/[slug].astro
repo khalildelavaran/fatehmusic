@@ -14,16 +14,11 @@ import {
   answersFromFaq,
   answersFromArticle,
   resolveTopics,
-  buildArticleClusterLinks,
-  buildArticleLinkCandidates,
-  buildSiteLinkCandidates,
-  buildInternalLinkPlan,
-  topicSlugs
+  
 } from "../../seo/index.js";
 import SeoInternalLinks from "../../components/SeoInternalLinks.astro";
-import { getPublishedPost, getPublishedPostSummaries } from "../../server/blog";
+import { getPublishedPost, getRelatedPublishedPostSummaries } from "../../server/blog";
 import { courses as runtimeCourses } from "../../data/courses.js";
-import { instructors as runtimeInstructors } from "../../data/instructors.js";
 import { findComparisonCourses } from "../../seo/v2/comparison-courses.js";
 import { formatJalaliDate } from "../../utils/format-date";
 import { isHtmlArticleContent, sanitizeArticleHtml } from "../../utils/sanitize-article-html";
@@ -34,9 +29,11 @@ if (!post) return Astro.rewrite("/404");
 
 const site = resolveSite();
 const canonicalUrl = `${site.url}/blog/${encodeURIComponent(Astro.params.slug ?? "")}`;
-const allPosts = await getPublishedPostSummaries();
-const clusterEntry = buildArticleClusterLinks(allPosts, 4).find((item) => item.slug === post.slug);
-const relatedPosts = clusterEntry?.related ?? [];
+const relatedPosts = await getRelatedPublishedPostSummaries({
+  slug: post.slug,
+  topic: post.topic,
+  related_course_slug: post.related_course_slug
+}, 4);
 const relatedCourse = post.related_course_slug ? resolveCourse(post.related_course_slug, site) : null;
 const comparisonCourses = findComparisonCourses(post.title, runtimeCourses)
   .map((course) => resolveCourse(course, site))
@@ -82,28 +79,19 @@ const articleText = isHtmlArticleContent(post.content)
   : post.content;
 const answerBlocks = answersFromArticle(articleText, canonicalUrl, canonicalUrl + "#article");
 const wordCount = articleText.trim().split(/\s+/).filter(Boolean).length + post.excerpt.trim().split(/\s+/).filter(Boolean).length;
-const internalLinkCandidates: Array<{
-  url: string;
-  title: string;
-  type?: string;
-  topics?: string[];
-  priority?: number;
-  local?: boolean;
-}> = [
-  ...buildArticleLinkCandidates(allPosts, site.url),
-  ...buildSiteLinkCandidates(site, {
-    courses: runtimeCourses,
-    instructors: runtimeInstructors
-  })
+const internalLinkTargets = [
+  ...(relatedCourse ? [{ url: `${site.url}/courses/${relatedCourse.slug}`, title: `دوره مرتبط: ${relatedCourse.title}`, type: "Course" }] : []),
+  ...comparisonCourses
+    .filter((course) => course.slug !== relatedCourse?.slug)
+    .map((course) => ({ url: `${site.url}/courses/${course.slug}`, title: course.title, type: "Course" })),
+  ...relatedPosts.map((related) => ({ url: `${site.url}/blog/${encodeURIComponent(related.slug)}`, title: related.title, type: "Article" })),
+  { url: `${site.url}/courses`, title: "همه دوره‌ها", type: "CollectionPage" },
+  { url: `${site.url}/locations/shushtar`, title: "آموزش موسیقی در شوشتر", type: "LocalBusiness" }
 ];
-const semanticInternalLinks = buildInternalLinkPlan({
-  currentUrl: canonicalUrl,
-  currentTopics: topicSlugs({ title: post.title, keywords, path: "/blog" }),
-  currentType: "Article",
-  candidates: internalLinkCandidates,
-  limit: 6
-});
-const internalLinkCount = 6 + relatedPosts.length;
+const semanticInternalLinks = [...new Map(
+  internalLinkTargets.filter((item) => item.url && item.title).map((item) => [item.url, item] as const)
+).values()].slice(0, 6);
+const internalLinkCount = semanticInternalLinks.length + 7;
 const schema: object[] = [articleSchema, ...courseSchemas, ...relatedCourseInstructorSchemas, breadcrumbSchema].filter((item): item is object => item !== null);
 
 function escapeHtml(value: string) {

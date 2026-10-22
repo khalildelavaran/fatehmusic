@@ -310,3 +310,69 @@ export async function getPublishedPost(slug: string): Promise<BlogPost | null> {
     return null;
   }
 }
+
+
+/**
+ * Load a small set of related articles for the public article page.
+ * This intentionally uses indexed equality conditions and a SQL LIMIT instead
+ * of clustering every published post on each Workers request.
+ */
+export async function getRelatedPublishedPostSummaries(
+  current: Pick<BlogPostSummary, "slug" | "topic" | "related_course_slug">,
+  limit = 4
+): Promise<BlogPostSummary[]> {
+  const slug = String(current?.slug ?? "").trim();
+  const topic = String(current?.topic ?? "").trim();
+  const courseSlug = String(current?.related_course_slug ?? "").trim();
+  const safeLimit = Math.max(0, Math.min(6, Math.trunc(Number(limit) || 4)));
+
+  if (!slug || safeLimit === 0 || (!topic && !courseSlug)) return [];
+
+  const db = env.DB;
+  if (!db) {
+    if (!import.meta.env.DEV) return [];
+    return fallbackBlogPosts
+      .filter((post) => post.slug !== slug && (
+        (courseSlug && post.related_course_slug === courseSlug) ||
+        (topic && post.topic === topic)
+      ))
+      .slice(0, safeLimit)
+      .map((post) => ({
+        id: post.id,
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        topic: post.topic,
+        related_course_slug: post.related_course_slug,
+        related_course_title: post.related_course_title,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        published_at: post.published_at
+      }));
+  }
+
+  try {
+    const result = await db.prepare(`SELECT id, slug, title, excerpt, topic,
+                    related_course_slug, related_course_title,
+                    created_at, updated_at, published_at
+             FROM blog_posts
+             WHERE status = 'published'
+               AND slug <> ?
+               AND ((? <> '' AND topic = ?) OR (? <> '' AND related_course_slug = ?))
+             ORDER BY
+               CASE
+                 WHEN ? <> '' AND related_course_slug = ? THEN 0
+                 WHEN ? <> '' AND topic = ? THEN 1
+                 ELSE 2
+               END,
+               COALESCE(published_at, created_at) DESC, id DESC
+             LIMIT ?`)
+      .bind(slug, topic, topic, courseSlug, courseSlug, courseSlug, courseSlug, topic, topic, safeLimit)
+      .all<BlogPostSummary>();
+
+    return result.results;
+  } catch (error) {
+    console.error("[blog] failed to load related published post summaries from D1:", error);
+    return [];
+  }
+}
