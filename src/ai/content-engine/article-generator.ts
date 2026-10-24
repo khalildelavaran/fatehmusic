@@ -433,17 +433,22 @@ export function ensureInstructorLinksInArticle(
   if (!missingTeachers.length) return articleContent;
 
   const links = missingTeachers.map((teacher: any) =>
-    \`[\${teacher.name || teacher.slug}](/instructors/\${teacher.slug})\`
+    "[" + (teacher.name || teacher.slug) + "](/instructors/" + teacher.slug + ")"
   );
   const sectionTitle = missingTeachers.length === 1 ? "مدرس مرتبط" : "مدرسان مرتبط";
-  const section = \`## \${sectionTitle}\n\nبرای آشنایی با مدرس\${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه \${links.join(" و ")} را ببینید.\`;
+  const section = "## " + sectionTitle + "\n\nبرای آشنایی با مدرس" +
+    (missingTeachers.length === 1 ? "" : "ان") +
+    " این دوره، صفحه " + links.join(" و ") + " را ببینید.";
 
   // Keep the article's existing content format intact.
   if (/<(?:h[1-6]|p|div|article|section|ul|ol)\b/i.test(articleContent)) {
     const anchors = missingTeachers.map((teacher: any) =>
-      \`<a href="/instructors/\${teacher.slug}">\${teacher.name || teacher.slug}</a>\`
+      '<a href="/instructors/' + teacher.slug + '">' +
+      (teacher.name || teacher.slug) + "</a>"
     );
-    const htmlSection = \`<h2>\${sectionTitle}</h2><p>برای آشنایی با مدرس\${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه \${anchors.join(" و ")} را ببینید.</p>\`;
+    const htmlSection = "<h2>" + sectionTitle + "</h2><p>برای آشنایی با مدرس" +
+      (missingTeachers.length === 1 ? "" : "ان") +
+      " این دوره، صفحه " + anchors.join(" و ") + " را ببینید.</p>";
     return articleContent + "\n\n" + htmlSection;
   }
 
