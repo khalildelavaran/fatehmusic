@@ -406,7 +406,7 @@ export function ensureInstructorLinksInArticle(
   content: string,
   topic: { title: string; relatedCourseSlug: string | null }
 ): string {
-  let articleContent = normalizeGeneratedText(content || "").trim();
+  const articleContent = normalizeGeneratedText(content || "").trim();
   if (!articleContent) return articleContent;
 
   const matchedCourses = courseMatchesArticleTitle(topic.title);
@@ -433,40 +433,32 @@ export function ensureInstructorLinksInArticle(
   if (!missingTeachers.length) return articleContent;
 
   const links = missingTeachers.map((teacher: any) =>
-    `[${teacher.name || teacher.slug}](/instructors/${teacher.slug})`
+    \`[\${teacher.name || teacher.slug}](/instructors/\${teacher.slug})\`
   );
   const sectionTitle = missingTeachers.length === 1 ? "مدرس مرتبط" : "مدرسان مرتبط";
-  const section = `## ${sectionTitle}\n\nبرای آشنایی با مدرس${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه ${links.join(" و ")} را ببینید.`;
+  const section = \`## \${sectionTitle}\n\nبرای آشنایی با مدرس\${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه \${links.join(" و ")} را ببینید.\`;
 
-  // Editor-created rich HTML bodies need HTML anchors; generated Markdown
-  // bodies should remain Markdown so the existing renderer handles them.
+  // Keep the article's existing content format intact.
   if (/<(?:h[1-6]|p|div|article|section|ul|ol)\b/i.test(articleContent)) {
     const anchors = missingTeachers.map((teacher: any) =>
-      `<a href="/instructors/${teacher.slug}">${teacher.name || teacher.slug}</a>`
+      \`<a href="/instructors/\${teacher.slug}">\${teacher.name || teacher.slug}</a>\`
     );
-    const htmlSection = `<h2>${sectionTitle}</h2><p>برای آشنایی با مدرس${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه ${anchors.join(" و ")} را ببینید.</p>`;
-    return articleContent + "\\n\\n" + htmlSection;
+    const htmlSection = \`<h2>\${sectionTitle}</h2><p>برای آشنایی با مدرس\${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه \${anchors.join(" و ")} را ببینید.</p>\`;
+    return articleContent + "\n\n" + htmlSection;
   }
 
-  const faqHeading = /^##\\s+(?:پرسش‌های متداول|سوالات متداول|سؤالات متداول)/mu;
+  const faqHeading = /^##\s+(?:پرسش‌های متداول|سوالات متداول|سؤالات متداول)/mu;
   if (faqHeading.test(articleContent)) {
-    return articleContent.replace(faqHeading, section + "\\n\\nexport function courseMatchesArticleTitle(title: string, courseCatalog: Array<any> = courses as Array<any>): any[] {
-  return matchCoursesInTitle(title, courseCatalog, {
-    comparison: isComparisonCourseTitle(title)
-  });
-}");
+    return articleContent.replace(faqHeading, section + "\n\n$&");
   }
-  const summaryHeading = /^##\\s+(?:جمع‌بندی|نتیجه‌گیری)/mu;
-  if (summaryHeading.test(articleContent)) {
-    return articleContent.replace(summaryHeading, section + "\\n\\nexport function courseMatchesArticleTitle(title: string, courseCatalog: Array<any> = courses as Array<any>): any[] {
-  return matchCoursesInTitle(title, courseCatalog, {
-    comparison: isComparisonCourseTitle(title)
-  });
-}");
-  }
-  return articleContent + "\\n\\n" + section;
-}
 
+  const summaryHeading = /^##\s+(?:جمع‌بندی|نتیجه‌گیری)/mu;
+  if (summaryHeading.test(articleContent)) {
+    return articleContent.replace(summaryHeading, section + "\n\n$&");
+  }
+
+  return articleContent + "\n\n" + section;
+}
 
 function appendCourseBrief(lines: string[], course: any, label = "دوره") {
   if (!course) return;
