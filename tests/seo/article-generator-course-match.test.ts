@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { courseMatchesArticleTitle } from "../../src/ai/content-engine/article-generator";
+import {
+  courseMatchesArticleTitle,
+  ensureInstructorLinksInArticle
+} from "../../src/ai/content-engine/article-generator";
 
 describe("article generator course matching", () => {
   const catalog = [
@@ -37,5 +40,27 @@ describe("article generator course matching", () => {
       courseMatchesArticleTitle("آموزش و تمرین گیتار برای مبتدی‌ها", catalog)
         .map((course: any) => course.slug)
     ).toEqual(["guitar-course"]);
+  });
+
+ 
+  it("adds the relevant guitar instructor link when the generated article omits it", () => {
+    const topic = {
+      title: "آموزش گیتار برای مبتدی‌ها",
+      relatedCourseSlug: "guitar-course"
+    };
+    const source = "# آموزش گیتار\n\nراهنمای کوتاه شروع گیتار.\n\n## پرسش‌های متداول\n\n### از کجا شروع کنم؟\nاز مبانی شروع کنید.";
+    const result = ensureInstructorLinksInArticle(source, topic);
+
+    expect(result).toContain("[خلیل دلاوران](/instructors/khalil-delavaran)");
+    expect(result.indexOf("## مدرس مرتبط")).toBeLessThan(result.indexOf("## پرسش‌های متداول"));
+    expect(ensureInstructorLinksInArticle(result, topic)).toBe(result);
+  });
+
+  it("leaves an article unchanged when the relevant instructor is already linked", () => {
+    const source = "# آموزش گیتار\n\nبرای آشنایی با مدرس، [خلیل دلاوران](/instructors/khalil-delavaran) را ببینید.";
+    expect(ensureInstructorLinksInArticle(source, {
+      title: "آموزش گیتار",
+      relatedCourseSlug: "guitar-course"
+    })).toBe(source);
   });
 });
