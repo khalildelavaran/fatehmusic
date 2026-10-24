@@ -131,43 +131,73 @@ const safeSchemaJson = JSON.stringify(seo.schemaGraph)
 
         <script is:inline>
           window.addEventListener("load", () => {
-            const loadGoogleAnalytics = () => {
-              if (window.__fatehGA) return;
-              window.__fatehGA = true;
+            if (window.__fatehAnalyticsScheduler) return;
+            window.__fatehAnalyticsScheduler = true;
 
-              const script = document.createElement("script");
-              script.async = true;
-              script.src = "https://www.googletagmanager.com/gtag/js?id=G-YKFKP4QH45";
-              document.head.appendChild(script);
+            const googleMeasurementId = "G-YKFKP4QH45";
+            const facebookPixelId = "830226966747297";
 
-              window.dataLayer = window.dataLayer || [];
-              window.gtag = window.gtag || function() { window.dataLayer.push(arguments); };
-              window.gtag("js", new Date());
-              window.gtag("config", "G-YKFKP4QH45", { send_page_view: true });
-            };
+            // Queue analytics commands without downloading the third-party libraries yet.
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = window.gtag || function() { window.dataLayer.push(arguments); };
+            window.gtag("js", new Date());
+            window.gtag("config", googleMeasurementId, { send_page_view: true });
 
-            if ("requestIdleCallback" in window) {
-              requestIdleCallback(loadGoogleAnalytics, { timeout: 2500 });
-            } else {
-              setTimeout(loadGoogleAnalytics, 1200);
+            // Keep Meta events in its normal queue until fbevents.js is requested.
+            if (typeof window.fbq !== "function") {
+              const fbq = function() {
+                if (fbq.callMethod) fbq.callMethod.apply(fbq, arguments);
+                else fbq.queue.push(arguments);
+              };
+              fbq.push = fbq;
+              fbq.loaded = true;
+              fbq.version = "2.0";
+              fbq.queue = [];
+              window.fbq = fbq;
+              window._fbq = fbq;
             }
-          }, { once: true });
-        </script>
+            window.fbq("init", facebookPixelId);
+            window.fbq("track", "PageView");
 
-        <script is:inline>
-          window.addEventListener("load", () => {
-            const loadFacebookPixel = () => {
-              if (window.fbq) return;
-              !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-              n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)
-              }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
-              fbq("init", "830226966747297");
-              fbq("track", "PageView");
+            let scriptsStarted = false;
+            let loadScheduled = false;
+
+            const loadThirdPartyAnalytics = () => {
+              if (scriptsStarted) return;
+              scriptsStarted = true;
+
+              const googleScript = document.createElement("script");
+              googleScript.async = true;
+              googleScript.src = `https://www.googletagmanager.com/gtag/js?id=${googleMeasurementId}`;
+              document.head.appendChild(googleScript);
+
+              const facebookScript = document.createElement("script");
+              facebookScript.async = true;
+              facebookScript.src = "https://connect.facebook.net/en_US/fbevents.js";
+              document.head.appendChild(facebookScript);
+
+              ["pointerdown", "keydown", "touchstart", "wheel"].forEach((eventName) => {
+                window.removeEventListener(eventName, scheduleThirdPartyAnalytics);
+              });
             };
-            if ("requestIdleCallback" in window) requestIdleCallback(loadFacebookPixel, { timeout: 3000 });
-            else setTimeout(loadFacebookPixel, 1500);
+
+            const scheduleThirdPartyAnalytics = () => {
+              if (scriptsStarted || loadScheduled) return;
+              loadScheduled = true;
+              if ("requestIdleCallback" in window) {
+                window.requestIdleCallback(loadThirdPartyAnalytics, { timeout: 2000 });
+              } else {
+                window.setTimeout(loadThirdPartyAnalytics, 300);
+              }
+            };
+
+            ["pointerdown", "keydown", "touchstart", "wheel"].forEach((eventName) => {
+              window.addEventListener(eventName, scheduleThirdPartyAnalytics, { once: true, passive: true });
+            });
+
+            // Also capture visits without interaction, while keeping heavy scripts
+            // out of the critical first seconds of rendering.
+            window.setTimeout(scheduleThirdPartyAnalytics, 5000);
           }, { once: true });
         </script>
       </>
