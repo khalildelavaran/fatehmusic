@@ -397,6 +397,76 @@ export function courseMatchesArticleTitle(title: string, courseCatalog: Array<an
     comparison: isComparisonCourseTitle(title)
   });
 }
+/**
+ * Ensure generated course articles name and link the official instructor(s).
+ * The model is prompted to add this link naturally, but this deterministic
+ * fallback prevents an otherwise valid draft from omitting instructor entities.
+ */
+export function ensureInstructorLinksInArticle(
+  content: string,
+  topic: { title: string; relatedCourseSlug: string | null }
+): string {
+  let articleContent = normalizeGeneratedText(content || "").trim();
+  if (!articleContent) return articleContent;
+
+  const matchedCourses = courseMatchesArticleTitle(topic.title);
+  const primaryCourse = topic.relatedCourseSlug
+    ? (courses as Array<any>).find((item) => item.slug === topic.relatedCourseSlug)
+    : null;
+  const relevantCourses = [...new Map(
+    [...matchedCourses, ...(primaryCourse ? [primaryCourse] : [])]
+      .filter((course) => course && Array.isArray(course.instructors))
+      .map((course) => [course.slug, course] as const)
+  ).values()];
+  const relevantTeachers = [...new Map(
+    relevantCourses
+      .flatMap((course) =>
+        (course.instructors || [])
+          .map((id: number) => (instructors as Array<any>).find((teacher) => teacher.id === id))
+          .filter(Boolean)
+      )
+      .map((teacher: any) => [teacher.slug, teacher] as const)
+  ).values()];
+  const missingTeachers = relevantTeachers.filter((teacher: any) =>
+    !articleContent.includes("/instructors/" + teacher.slug)
+  );
+  if (!missingTeachers.length) return articleContent;
+
+  const links = missingTeachers.map((teacher: any) =>
+    `[${teacher.name || teacher.slug}](/instructors/${teacher.slug})`
+  );
+  const sectionTitle = missingTeachers.length === 1 ? "مدرس مرتبط" : "مدرسان مرتبط";
+  const section = `## ${sectionTitle}\n\nبرای آشنایی با مدرس${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه ${links.join(" و ")} را ببینید.`;
+
+  // Editor-created rich HTML bodies need HTML anchors; generated Markdown
+  // bodies should remain Markdown so the existing renderer handles them.
+  if (/<(?:h[1-6]|p|div|article|section|ul|ol)\b/i.test(articleContent)) {
+    const anchors = missingTeachers.map((teacher: any) =>
+      `<a href="/instructors/${teacher.slug}">${teacher.name || teacher.slug}</a>`
+    );
+    const htmlSection = `<h2>${sectionTitle}</h2><p>برای آشنایی با مدرس${missingTeachers.length === 1 ? "" : "ان"} این دوره، صفحه ${anchors.join(" و ")} را ببینید.</p>`;
+    return articleContent + "\\n\\n" + htmlSection;
+  }
+
+  const faqHeading = /^##\\s+(?:پرسش‌های متداول|سوالات متداول|سؤالات متداول)/mu;
+  if (faqHeading.test(articleContent)) {
+    return articleContent.replace(faqHeading, section + "\\n\\nexport function courseMatchesArticleTitle(title: string, courseCatalog: Array<any> = courses as Array<any>): any[] {
+  return matchCoursesInTitle(title, courseCatalog, {
+    comparison: isComparisonCourseTitle(title)
+  });
+}");
+  }
+  const summaryHeading = /^##\\s+(?:جمع‌بندی|نتیجه‌گیری)/mu;
+  if (summaryHeading.test(articleContent)) {
+    return articleContent.replace(summaryHeading, section + "\\n\\nexport function courseMatchesArticleTitle(title: string, courseCatalog: Array<any> = courses as Array<any>): any[] {
+  return matchCoursesInTitle(title, courseCatalog, {
+    comparison: isComparisonCourseTitle(title)
+  });
+}");
+  }
+  return articleContent + "\\n\\n" + section;
+}
+
 
 function appendCourseBrief(lines: string[], course: any, label = "دوره") {
   if (!course) return;
@@ -464,6 +534,7 @@ function buildBrief(topic: SelectedTopic): string {
     "https://fatehmusic.ir/register"
   ];
   lines.push("لینک‌های داخلی مجاز: " + [...new Set(allowedLinks)].join(" | "));
+  lines.push("الزام لینک مدرس: نام مدرس/مدرسان رسمی مرتبط را در یک جمله طبیعی داخل متن مقاله به صفحه اختصاصی /instructors/... لینک کن. برای نام و تخصص مدرس فقط به فکت‌های رسمی همین بریف تکیه کن.");
   if (topic.excerpt) lines.push(`توضیح کوتاه موجود: ${topic.excerpt}`);
   lines.push("عنوان، موضوع، فکت‌های رسمی و whitelist لینک‌های بالا را مبنا قرار بده. slug را تغییر نده؛ URL بر اساس همین عنوان توسط سیستم تعیین می‌شود.");
   return lines.join("\n");
@@ -523,7 +594,11 @@ export async function runDailyArticleGeneration(env: ArticleEnv, options: Genera
       return { success: false, message: result.message };
     }
 
-    const article = result.article;
+    const generatedArticle = result.article;
+    const article = {
+      ...generatedArticle,
+      content: ensureInstructorLinksInArticle(generatedArticle.content || "", topic)
+    };
     const qualityError = validateGeneratedArticle(article, allowedInternalLinks(topic), topic.title);
     if (qualityError) {
       await releaseClaim();
