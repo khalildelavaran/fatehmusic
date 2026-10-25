@@ -766,7 +766,7 @@ export const courses = [
   active: true,
   priority: 23,
   instrument: "voice",
-  instructors: [2],
+  instructors: [13,14],
   level: ["مبتدی", "متوسط", "پیشرفته"],
   ageGroup: ["نوجوان", "بزرگسال"],
   category: "آواز",
